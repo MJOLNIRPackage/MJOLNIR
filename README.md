@@ -9,4 +9,4 @@ Neutron scattering software to be used at Multiplexing Joint Organization Lightw
     - [ ] Instrument object
     - [ ] Data flow
     - [ ] Visualization
-    - [ ] Fitting
+    - [ ] Fitting 
