@@ -13,5 +13,9 @@ python:
 install:
   - pip install -r requirements.txt
 # command to run tests
-script: ./MJOLNIR/MJOLNIR/tests/test
+script: ./MJOLNIR/MJOLNIR/tests/test.sh
 
+after_success:
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
+    then coveralls;
+    fi
