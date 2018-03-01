@@ -1,5 +1,6 @@
 build/
 *.xmind
-.vscode/
-MJOLNIR/.cache
-MJOLNIR/__pycache__
+.vscode/settings.json
+.vscode/launch.json
+MJOLNIR/__pycache__/
+MJOLNIR/.cache/
