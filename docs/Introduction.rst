@@ -45,7 +45,7 @@ After the initial upstart phase you are more than welcome to contribute to the s
 
     * souce code in a suitable subfolder (see 'Software structure'_)
     * Documentation of code located in the docs-folder having identical structure to the modules added
-    * Suitable tests for the new functionality located in the MJOLNIR/tests-folder
+    * Suitable tests for the new functionality added to the .travis.yml-file
     * Needed packages added to the reqirements.txt file
 
 Contribution Example:
