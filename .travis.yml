@@ -3,7 +3,6 @@ sudo: false
 language: python
 
 python:
-  - "2.6"
   - "2.7"
   - "3.4"
   - "3.5"
@@ -13,9 +12,12 @@ python:
 install:
   - pip install -r requirements.txt
 # command to run tests
-script: ./MJOLNIR/MJOLNIR/tests/test.sh
-
+script: 
+  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]];
+    then py.test -vv MJOLNIR/init.py --cov example;
+    else py.test -vv MJOLNIR/init.py;
+    fi
 after_success:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
+  - if [[ $TRAVIS_PYTHON_VERSION == 2.7 ]];
     then coveralls;
     fi
