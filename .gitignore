@@ -1,3 +1,5 @@
 build/
 *.xmind
 .vscode/
+MJOLNIR/.cache
+MJOLNIR/__pycache__
