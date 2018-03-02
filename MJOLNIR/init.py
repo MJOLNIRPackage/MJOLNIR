@@ -1,3 +1,7 @@
+"""
+MJOLNIR Module
+^^^^^^^^^^^^^^
+"""
 import numpy as np
 
 def initial(a,b,c):

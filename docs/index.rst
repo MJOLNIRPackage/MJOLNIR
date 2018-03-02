@@ -14,3 +14,5 @@ Welcome to MJOLNIR's documentation!
    data/data
    geometry/geometry
    statistics/statistics
+   MJOLNIR
+
