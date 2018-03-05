@@ -21,6 +21,3 @@ after_success:
     then coveralls;
     fi
 
-
-notifications : 
-	email : false
