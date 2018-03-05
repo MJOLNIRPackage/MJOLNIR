@@ -1,2 +1,4 @@
 pytest
 pycodestyle
+pytest-cov
+python-coveralls
