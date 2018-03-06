@@ -14,7 +14,7 @@ install:
   - pip install -r requirements.txt
 # command to run tests
 script: 
-  - pytest -vv MJOLNIR/init.py;
+  - pytest -vv MJOLNIR/__init__.py;
   - pytest -vv MJOLNIR/Geometry/GeometryObject.py;
     
 after_success:
