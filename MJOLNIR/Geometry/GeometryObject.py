@@ -1,23 +1,6 @@
-"""
-    GeometryObject
-    ==============
-    
-    General geometry object on which other MJOLNIR components are build.
-    Generates an empty object with attributes:
-
-    * Position (3d vector)
-    * Direction (3d vector)
-
-    Further, the object has the following methods:
-
-    * setPosition
-
-        """
-
-
 import math
 import numpy as np
-
+import unittest
 
 class GeometryObject(object):
     """
@@ -25,52 +8,54 @@ class GeometryObject(object):
     ==============
     
     General geometry object on which other MJOLNIR components are build.
-    Generates an empty object with attributes:
-
-        * Position (3d vector)
-        * Direction (3d vector)
-
-    Further, the object has the following methods:
-        * setPosition
-        """
+    """
 
     
 
     def __init__(self, position=(0.0,0.0,0.0), direction=(0,0,1)):
         """
-        Init
-        ----
-        
         Initialization of generic GeometryObject.
         Input is:
             * Position (3d vector)
             * Direction (3d vector)
         """
-
-        self.set_position(position)
-        self.set_direction(direction)
+        
+        self.position = position
+        self.direction = direction
     
     @property
-    def _position(self):
+    def position(self):
         return self._position
 
-    def get_position(self):
+    @position.getter
+    def position(self):
         return self._position
 
-    def set_position(self,position):
-        position = np.atleast_3d(position)
+    @position.setter
+    def position(self,position):
+        
+        position  = np.array(position)
+        if position.ndim !=1 or len(position)!=3:
+            raise AttributeError('Position is to be a 3 vector')
         self._position = position
 
     @property
-    def _direction(self):
+    def direction(self):
         return self._direction
 
-
-    def get_direction(self):
+    @direction.getter
+    def direction(self):
         return self._direction
 
-    def set_direction(self,direction):
-        direction = np.atleast_3d(direction)
+    @direction.setter
+    def direction(self,direction):
+        direction  = np.array(direction)
+        if direction.ndim !=1 or len(direction)!=3:
+            raise AttributeError('Direction is to be a 3 vector')
+        if np.abs(np.linalg.norm(direction))<1e-10:
+            raise AttributeError('Length of direction is not allowed to be zero')
+        
+        direction/=np.linalg.norm(direction)
         self._direction = direction
 
     # def setDirection(self,direction):
@@ -101,3 +86,55 @@ class GeometryObject(object):
 
     def __str__(self):
         return "Position = {}\tDirection = {}".format(self._position,self._direction)
+
+
+
+# Test of GeometryObject
+def test_init():
+    GenericObject = GeometryObject(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+    assert(np.all(GenericObject.position==np.array([0.0,1.0,0.0])))
+    assert(np.all(GenericObject.direction==(1.0,0.0,0.0)))
+
+def test_position():
+    GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
+    GenericObject.position = (0.0,0.0,0.0)
+    assert(np.all(GenericObject.position==(0.0,0.0,0.0)))
+
+def test_position_exception():
+    GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
+    try:
+        GenericObject.position=((0,0),(0,0))
+        assert False
+    except AttributeError:
+        assert True
+
+    try:
+        GenericObject.position=(0,0,0,0)
+        assert False
+    except AttributeError:
+        assert True
+
+def test_direction():
+    GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
+    GenericObject.direction = (0.0,0.0,0.5)
+    assert(np.all(GenericObject.direction==(0.0,0.0,1.0)))
+
+def test_direction_exception():
+    GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
+    try:
+        GenericObject.direction=((0,0),(0,0))
+        assert False
+    except AttributeError:
+        assert True
+
+    try:
+        GenericObject.direction=(0,0,0)
+        assert False
+    except AttributeError:
+        assert True
+
+    try:
+        GenericObject.direction=(0,0,0,1)
+        assert False
+    except AttributeError:
+        assert True
