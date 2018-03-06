@@ -1,6 +1,6 @@
 
 
-.. automodule:: geometry
+.. automodule:: Geometry
 
 .. autoclass:: GeometryObject
     :members:

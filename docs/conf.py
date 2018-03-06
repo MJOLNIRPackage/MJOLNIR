@@ -19,7 +19,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath('../MJOLNIR/'))
-sys.path.insert(0, os.path.abspath('../MJOLNIR/geometry'))
+sys.path.insert(0, os.path.abspath('../MJOLNIR/Geometry'))
 
 # -- Project information -----------------------------------------------------
 

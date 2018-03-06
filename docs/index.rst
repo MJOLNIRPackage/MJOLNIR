@@ -12,7 +12,7 @@ Welcome to MJOLNIR's documentation!
 
    Introduction
    data/data
-   geometry/geometry
+   Geometry/Geometry
    statistics/statistics
    MJOLNIR
 
