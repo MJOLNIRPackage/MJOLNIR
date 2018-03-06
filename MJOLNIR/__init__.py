@@ -1,10 +1,13 @@
 """
 MJOLNIR Module
 ^^^^^^^^^^^^^^
+
+Further documentation?
 """
 import numpy as np
 
 def initial(a,b,c):
+    """Initialzation test"""
     return np.linspace(a,b,c)
 
 
