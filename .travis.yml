@@ -9,14 +9,14 @@ python:
   - "3.6"
   - "2.6"
 
-# command to install dependencies
+
 install:
   - pip install -r requirements.txt
-# command to run tests
+
 script: 
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6]];
-    then pytest --cov MJOLNIR;
-    else pytest -vv;
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
+    then py.test -vv --cov MJOLNIR;
+    else py.test -vv;
     fi
 
 after_success:
@@ -24,3 +24,5 @@ after_success:
     then coveralls;
     fi
 
+notifications:
+  email: false
