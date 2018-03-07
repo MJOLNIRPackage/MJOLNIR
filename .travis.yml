@@ -14,9 +14,14 @@ install:
   - pip install -r requirements.txt
 # command to run tests
 script: 
-  - pytest -vv MJOLNIR/__init__.py;
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6]];
+    then pytest -vv MJOLNIR/__init__.py --cov MJOLNIR/__init__;
+         pytest -vv MJOLNIR/Geometry/GeometryObject.py  --cov MJOLNIR/Geometry/GeometryObject;
+    else
+    pytest -vv MJOLNIR/__init__.py;
   - pytest -vv MJOLNIR/Geometry/GeometryObject.py;
-    
+    fi
+
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
     then coveralls;
