@@ -1,7 +1,6 @@
 import math,numpy as np
-#import CAMEA
-#import CAMEA.component
 from MJOLNIR.Geometry import GeometryObject
+import matplotlib.pyplot as plt
 
 class Analyser(GeometryObject.GeometryObject):
     """Generic analyser object"""
@@ -55,23 +54,6 @@ def test_Generic_plot():
         assert False
     except NotImplementedError:
         assert True
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -202,6 +184,14 @@ def test_Analyser_height():
         assert True
 
 
+def test_TubeDetector1D_plot():
+    Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+    plt.ioff()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    Analyser.plot(ax)
+    
 
 
 
