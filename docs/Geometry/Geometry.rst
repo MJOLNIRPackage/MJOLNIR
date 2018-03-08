@@ -24,6 +24,8 @@ Detectors
 .. autoclass:: Detector
    :members: 
 
+------------------
+
 .. autoclass:: TubeDetector1D
    :members:
 
@@ -36,6 +38,9 @@ Analysers
 
 .. autoclass:: Analyser
    :members: 
+
+
+------------------
 
 .. autoclass:: FlatAnalyser
    :members:
