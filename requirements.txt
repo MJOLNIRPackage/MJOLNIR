@@ -3,4 +3,3 @@ pycodestyle
 pytest-cov
 python-coveralls
 matplotlib
-mpl_toolkits
