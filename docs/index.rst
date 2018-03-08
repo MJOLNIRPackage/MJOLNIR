@@ -11,8 +11,5 @@ Welcome to MJOLNIR's documentation!
    :caption: Contents:
 
    Introduction
-   data/data
-   Geometry/Geometry
-   statistics/statistics
    MJOLNIR
 

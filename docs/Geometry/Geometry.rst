@@ -1,7 +1,8 @@
-
+Geometry Module
+===============
 
 .. automodule:: Geometry
 
-.. autoclass:: GeometryObject
-    :members:
+.. autoclass:: Geometry.GeometryObject
+   :members: 
 

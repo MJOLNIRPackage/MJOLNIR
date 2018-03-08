@@ -1,23 +1,30 @@
 import math
 import numpy as np
-import unittest
+
 
 class GeometryObject(object):
-    """
-    GeometryObject
-    ==============
+    """GeometryObject
     
-    General geometry object on which other MJOLNIR components are build.
+    General geometry object on which other MJOLNIR components are build. All of the components needed to create an instrument should
+    inherit from this class in order enforce a uniform interface.
     """
 
     
 
     def __init__(self, position=(0.0,0.0,0.0), direction=(0,0,1)):
         """
-        Initialization of generic GeometryObject.
-        Input is:
-            * Position (3d vector)
-            * Direction (3d vector)
+        Kwargs:
+
+            Position (3vector): Position of object (default [0,0,0])
+
+            Direction (3vector): Direction along which the object points (default [0,0,1])
+
+        Raises:
+            AttributeError
+
+        >>> GenericObject = GeometryObject(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+        >>> print(GenericObject.position)
+        (0.0,1.0,0.0)
         """
         
         self.position = position

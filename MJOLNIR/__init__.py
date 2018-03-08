@@ -4,6 +4,8 @@ MJOLNIR Module
 
 Further documentation?
 """
+import Geometry, Statistic, Data
+
 import numpy as np
 
 def initial(a,b,c):
