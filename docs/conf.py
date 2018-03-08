@@ -177,4 +177,4 @@ todo_include_todos = True
 
 autoclass_content = "both"
 
-autodoc_mock_imports = ["numpy","scipy","matplotlib","np","math"]
+autodoc_mock_imports = ['numpy', 'matplotlib', 'matplotlib.pyplot']
