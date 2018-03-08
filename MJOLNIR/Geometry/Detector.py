@@ -1,11 +1,12 @@
-from MJOLNIR.Geometry import GeometryObject
-import numpy as np
-import matplotlib.pyplot as plt
-
 """
 Detector
 ========
 """
+
+from MJOLNIR.Geometry import GeometryObject
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 class Detector(GeometryObject.GeometryObject):
@@ -16,11 +17,7 @@ class Detector(GeometryObject.GeometryObject):
         Kwargs:
             Position (3vector): Position of object (default [0,0,0])
 
-            Direction (3vector): Direction along which the object points (default [0,0,1])
-
-    
-
-        """
+            Direction (3vector): Direction along which the object points (default [0,0,1])"""
         super(Detector,self).__init__(position,direction)
         self.type = "Generic Detector"
 
@@ -45,10 +42,8 @@ class Detector(GeometryObject.GeometryObject):
         Kwargs:
 
             offset (3vector): Offset of detector due to bank position (default [0,0,0])
-        
         >>> GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-        >>> GenericDetector.plot(ax)
-        """
+        >>> GenericDetector.plot(ax)"""
         raise NotImplementedError
 
     def __str__(self):
@@ -264,3 +259,12 @@ def test_TubeDetector_diameter():
         assert False
     except AttributeError:
         assert True
+
+def test_TubeDetector1D_plot():
+    TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+    plt.ioff()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    TubeDetector.plot(ax)
+    
