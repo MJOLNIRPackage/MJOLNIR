@@ -1,7 +1,5 @@
 Statistics Module
 =================
 
-.. autoclass:: Statistics     
-   :members: 
+.. automodule:: Statistics     
 
-   .. automethod:: __init__
