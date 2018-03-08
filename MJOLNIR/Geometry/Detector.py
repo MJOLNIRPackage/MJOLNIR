@@ -111,7 +111,7 @@ class TubeDetector1D(Detector):
     @pixels.setter
     def pixels(self,pixels):
         if(pixels<1):
-            raise AttributeError('The number of pixels need to be greater than 0')
+            raise AttributeError('The number of pixels need to be greater than 0.')
         self._pixels = int(pixels)   
 
     @property
@@ -125,7 +125,7 @@ class TubeDetector1D(Detector):
     @length.setter
     def length(self,length):
         if(length<0):
-            raise AttributeError('The lenght of the detector tube must be grater than 0')
+            raise AttributeError('The lenght of the detector tube must be grater than 0.')
         self._length = length
 
     @property
@@ -156,8 +156,8 @@ class TubeDetector1D(Detector):
 
             n (int): Number of points on the surface to be plotted (default 100)
         
-        >>> GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-        >>> GenericDetector.plot(ax)
+        >>> Detector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+        >>> Detector.plot(ax,offset=(0.0,0.0,0.0),n=100)
         """
         
         pos = self.position.copy()

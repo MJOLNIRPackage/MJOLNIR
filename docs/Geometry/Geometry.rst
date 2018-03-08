@@ -26,3 +26,16 @@ Detectors
 
 .. autoclass:: TubeDetector1D
    :members:
+
+
+
+Analysers
+==========
+
+.. automodule:: Analyser
+
+.. autoclass:: Analyser
+   :members: 
+
+.. autoclass:: FlatAnalyser
+   :members:
