@@ -4,3 +4,5 @@ ___________
 
 This is the data module.
 """
+import sys
+sys.path.append('.')
