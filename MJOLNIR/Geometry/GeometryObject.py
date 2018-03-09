@@ -56,7 +56,7 @@ class GeometryObject(object):
 
     @direction.setter
     def direction(self,direction):
-        direction  = np.array(direction)
+        direction  = np.array(direction,dtype=float)
         if direction.ndim !=1 or len(direction)!=3:
             raise AttributeError('Direction is to be a 3 vector')
         if np.abs(np.linalg.norm(direction))<1e-10:
