@@ -43,13 +43,12 @@ class GeometryConcept(object):
         return "Position = {}".format(self.position)
 
     def plot(self,ax):
-        """Plotting function.
-        
+        """
         Args:
 
             ax (matplotlib axis): 3D matplotlib axis into whicht plotting is performed
 
-        .. warning:
+        .. warning::
             Method not incorporated but acts as virtual method.
 
         """

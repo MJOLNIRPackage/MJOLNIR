@@ -97,7 +97,7 @@ class Wedge(GeometryConcept.GeometryConcept):
                 raise AttributeError('Object not analyser or detector or a simple list of these')
 
     def plot(self,ax):
-        """Recursive plotting routine"""
+        """Recursive plotting routine."""
         for obj in self.analysers+self.detectors:
             obj.plot(ax,offset=self.position)
 
