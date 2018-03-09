@@ -115,6 +115,12 @@ def test_Instrument_error():
         assert True
 
     try:
+        Instr.wedges=[Ana,Ana]
+        assert False
+    except AttributeError:
+        assert True
+
+    try:
         Instr.append("Wrong object type")
         assert False
     except AttributeError:
@@ -171,6 +177,7 @@ def test_Instrument_plot():
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
 
     wedge.append([Det,Ana])
+    Instr.append(wedge)
     plt.ioff()
     fig = plt.figure()
     ax = fig.gca(projection='3d')
