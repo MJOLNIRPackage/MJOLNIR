@@ -275,26 +275,3 @@ def test_TubeDetector1D_plot():
     Analyser.plot(ax)
     
 
-
-
-
-def plane(point,width,height,normal):
-    nppoint = np.array(point)
-    npnormal = np.array(normal)
-
-
-    npnormal = npnormal/np.linalg.norm(npnormal)
-    theta = np.arccos(np.dot(np.array([1,0,0]),npnormal))-math.pi/2.0
-    #print theta
-    inplaneHorizontal = np.array([math.cos(theta),math.sin(theta),0])*width/2.0
-
-    inplaneVertical = np.cross(npnormal,inplaneHorizontal)/(np.linalg.norm(inplaneHorizontal))*height/2.0
-
-
-
-    points = np.array([nppoint+inplaneHorizontal+inplaneVertical,nppoint+inplaneHorizontal-inplaneVertical,
-                nppoint-inplaneHorizontal-inplaneVertical,nppoint-inplaneHorizontal+inplaneVertical,
-                nppoint+inplaneHorizontal+inplaneVertical])
-
-    x,y,z= points.T
-    return x,y,z

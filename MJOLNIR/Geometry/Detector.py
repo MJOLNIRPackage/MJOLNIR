@@ -209,23 +209,6 @@ class TubeDetector1D(Detector):
 
 
 
-def cylinder(r,n,l):
-    """Return cylinder with radius r, length l and n points"""
-    r = np.atleast_2d(r)
-    r_rows,r_cols = r.shape
-
-    if r_cols>r_rows:
-        r = r.T
-
-    points = np.linspace(0,2*np.pi,n+1)
-    x = np.cos(points)*r
-    y = np.sin(points)*r
-    rpoints = np.atleast_2d(np.linspace(-l/2,l/2,len(r)))
-    z = np.ones((1,n+1))*rpoints.T
-    return x,y,z
-
-
-
 
 def test_TubeDetector_init():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=20,length=0.3,diameter=0.025)
