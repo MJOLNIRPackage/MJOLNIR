@@ -50,7 +50,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         """Append wedge(s) to instrument.
 
         Args
-            wedge (Wedge(s)): Single wedge of list of wedges
+            wedge (Wedge(s)): Single wedge or list of wedges
         """
         if isinstance(wedge,list):
             for obj in wedge:

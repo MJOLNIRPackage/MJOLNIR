@@ -1,3 +1,5 @@
+.. _GeometryModule:
+
 Geometry Module
 ===============
 
@@ -6,8 +8,13 @@ The geometry module is created in order to build a virtual copy of the instrumen
 
 .. currentmodule:: Geometry
 
-.. autosummary::
 
+
+.. autosummary::
+   :nosignatures:
+
+
+    
    GeometryConcept.GeometryConcept
    GeometryConcept.GeometryObject
    Detector.Detector
@@ -15,7 +22,7 @@ The geometry module is created in order to build a virtual copy of the instrumen
    Analyser.Analyser
    Analyser.FlatAnalyser
    Wedge.Wedge
-
+   Instrument.Instrument
 
 Below is an extended description of the different classes and their methods.
 
@@ -23,8 +30,8 @@ Below is an extended description of the different classes and their methods.
 
 .. automodule:: Geometry
 
-Geometry base class
-^^^^^^^^^^^^^^^^^^^
+Geometry base classes
+^^^^^^^^^^^^^^^^^^^^^
 
 General object from which other geometry objects inherits.
 
@@ -76,4 +83,13 @@ Wedge
 .. automodule:: Wedge
 
 .. autoclass:: Wedge
+    :members:
+
+
+Instrument
+^^^^^^^^^^
+
+.. automodule:: Instrument
+
+.. autoclass:: Instrument
     :members:
