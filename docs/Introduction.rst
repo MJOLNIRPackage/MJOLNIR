@@ -59,7 +59,7 @@ _____________________
     with given priors. This is to be done by adding a subroutine to 
     the fit object.
 
-    Initial thoughts: It is believed that building upon the article [CIT2002], 
+    Initial thoughts: It is believed that building upon the article [CIT2002]_, 
     where this feature was incorporated in a C++ script.
 
 

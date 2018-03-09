@@ -15,7 +15,13 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
+import sys
+import os
 
+sys.path.insert(0, os.path.abspath('../MJOLNIR/'))
+sys.path.insert(0, os.path.abspath('../MJOLNIR/Geometry'))
+sys.path.insert(0, os.path.abspath('../MJOLNIR/Statistics'))
+sys.path.insert(0, os.path.abspath('../MJOLNIR/Data'))
 
 # -- Project information -----------------------------------------------------
 
@@ -26,7 +32,9 @@ author = u'Jakob Lass'
 # The short X.Y version
 version = u''
 # The full version, including alpha/beta/rc tags
-release = u'0.0.1'
+
+release = u'0.1.0'
+
 
 
 # -- General configuration ---------------------------------------------------
@@ -70,7 +78,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = []
+exclude_patterns = ['_build','.vscode']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -168,3 +176,7 @@ texinfo_documents = [
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+autoclass_content = "both"
+
+autodoc_mock_imports = ['numpy', 'matplotlib', 'matplotlib.pyplot']
+
