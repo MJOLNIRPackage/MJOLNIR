@@ -23,6 +23,9 @@ class Instrument(GeometryConcept.GeometryConcept):
         self._wedges = []
 
         self.append(wedges)
+        self._settings = {}
+        self._settings['Initialized']=False
+        
 
     @property
     def wedges(self):
@@ -69,6 +72,20 @@ class Instrument(GeometryConcept.GeometryConcept):
         for wedge in self.wedges:
             wedge.plot(ax,offset=self.position)
 
+    @property
+    def settings(self):
+        return self._settings
+
+    @settings.getter
+    def settings(self):
+        return self._settings
+
+    @settings.setter
+    def settings(self,*args,**kwargs):
+        raise NotImplementedError('Settings cannot be overwritten.')
+
+            
+
 
 def test_Instrument_init():
     Instr = Instrument()
@@ -81,6 +98,8 @@ def test_Instrument_init():
     wedge = Wedge.Wedge(detectors=[Det,Det],analysers=Ana)
 
     Instr.wedges=[wedge,wedge]
+
+    assert(Instr.settings['Initialized']==False)
 
 
 
@@ -107,6 +126,12 @@ def test_Instrument_error():
     except AttributeError:
         assert True
 
+    try:
+        Instr.settings = {'Name','New dictionary'}
+        assert False
+    except NotImplementedError:
+        return True
+
 
 def test_Instrument_warnings():
     Instr = Instrument()
@@ -120,7 +145,6 @@ def test_Instrument_warnings():
         warnings.simplefilter("always")
         # Trigger a warning.
         Instr.wedges = wedge
-
         # Verify some things
         assert len(w) == 1
         assert issubclass(w[0].category, UserWarning)
@@ -152,3 +176,9 @@ def test_Instrument_plot():
     ax = fig.gca(projection='3d')
 
     Instr.plot(ax)
+
+def test_Instrument_Setting(): 
+    Instr = Instrument()
+    #Instr.updateSetting('New',True)
+    Instr.settings['SettingVersion']=1.0
+    assert(Instr.settings['SettingVersion']==1.0)
