@@ -12,7 +12,13 @@ class Detector(GeometryConcept.GeometryObject):
         Kwargs:
             Position (3vector): Position of object (default [0,0,0])
 
-            Direction (3vector): Direction along which the object points (default [0,0,1])"""
+            Direction (3vector): Direction along which the object points (default [0,0,1])
+            
+        raises:
+
+            NotImplementedError
+            
+        """
         super(Detector,self).__init__(position,direction)
         self.type = "Generic Detector"
 
@@ -57,7 +63,9 @@ def test_init():
 
 def test_Generic_plot():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    ax = []
+    plt.ioff()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
     try:
         GenericDetector.plot(ax)
         assert False

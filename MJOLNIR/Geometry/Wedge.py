@@ -6,65 +6,73 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Wedge(GeometryConcept.GeometryConcept):
     """Wedge object to keep track of analysers and detectors. To be used as a storage object and facilitate easy movement of multiple detectors and analysers as once."""
-    def __init__(self,position=(0,0,0)):
+    def __init__(self,position=(0,0,0),detectors=[],analysers=[]):
         """
         Args:
 
             position (float 3): Position of wedge (default (0,0,0))
 
-            direction (float 3): Direction of wedge
+        Kwargs:
+
+            detectors (list or single detector): Either a list or a single detector (default empty)
+
+            analysers (list or single analyser): Either a list or a single analyser (default empty)
 
         .. note::
-         Notice: A wedge does not have a direction. The direction of analysers and detectors are to be set individually.
+            A wedge does not have a direction. The direction of analysers and detectors are to be set individually.
 
         """
         super(Wedge,self).__init__(position)
-        self._Analysers = []
-        self._Detectors = []
+        self._analysers = []
+        self._detectors = []
+
+        self.append(analysers)
+        self.append(detectors)
+        
 
     @property
-    def Analysers(self):
-        return self._Analysers
+    def analysers(self):
+        return self._analysers
 
-    @Analysers.getter
-    def Analysers(self):
-        return self._Analysers
+    @analysers.getter
+    def analysers(self):
+        return self._analysers
 
-    @Analysers.setter
-    def Analysers(self,Analysers):
-        if len(self.Analysers)!=0:
+    @analysers.setter
+    def analysers(self,Analysers):
+        if len(self.analysers)!=0:
             warnings.warn('The list of analysers is not empty! Appending new analyser(s)')
         if isinstance(Analysers, list):
             for ana in Analysers:
                 if not issubclass(type(ana),Analyser.Analyser):
                     raise AttributeError('Object is not an analyser or a simple list of these')
-                self._Analysers.append(ana)
+                self._analysers.append(ana)
         else:
             if not issubclass(type(Analysers),Analyser.Analyser):
                 raise AttributeError('Object is not an analyser or a simple list of these')
-            self._Analysers.append(Analysers)
+            self._analysers.append(Analysers)
         
     @property
-    def Detectors(self):
-        return self._Analysers
+    def detectors(self):
+        return self._detectors
 
-    @Detectors.getter
-    def Detectors(self):
-        return self._Detectors
+    @detectors.getter
+    def detectors(self):
+        return self._detectors
 
-    @Detectors.setter
-    def Detectors(self,Detectors):
-        if len(self.Detectors)!=0:
+    @detectors.setter
+    def detectors(self,Detectors):
+        if len(self.detectors)!=0:
             warnings.warn('The list of detectors is not empty! Appending new detector(s)')
         if isinstance(Detectors, list):
             for det in Detectors:
                 if not issubclass(type(det),Detector.Detector):
                     raise AttributeError('Object is not a detector or a simple list of these')
-                self._Detectors.append(det)
+                self._detectors.append(det)
         else:
             if not issubclass(type(Detectors),Detector.Detector):
                 raise AttributeError('Object is not a detector or a simple list of these')
-            self._Detectors.append(Detectors)
+            self._detectors.append(Detectors)
 
     def append(self,Object):
         """Append Object(s) to corresponding list.
@@ -75,22 +83,22 @@ class Wedge(GeometryConcept.GeometryConcept):
         if isinstance(Object,list):
             for obj in Object:
                 if issubclass(type(obj),Analyser.Analyser):
-                    self._Analysers.append(obj)
+                    self._analysers.append(obj)
                 elif issubclass(type(obj),Detector.Detector):
-                    self._Detectors.append(obj)
+                    self._detectors.append(obj)
                 else:
                     raise AttributeError('Object not analyser or detector or a simple list of these')
         else:
             if issubclass(type(Object),Analyser.Analyser):
-                    self._Analysers.append(Object)
+                    self._analysers.append(Object)
             elif issubclass(type(Object),Detector.Detector):
-                self._Detectors.append(Object)
+                self._detectors.append(Object)
             else:
                 raise AttributeError('Object not analyser or detector or a simple list of these')
 
     def plot(self,ax):
         """Recursive plotting routine"""
-        for obj in self.Analysers+self.Detectors:
+        for obj in self.analysers+self.detectors:
             obj.plot(ax,offset=self.position)
 
 def test_Wedge_init():
@@ -99,12 +107,16 @@ def test_Wedge_init():
     Det = Detector.Detector(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.Analyser(position=(0.5,0,0),direction=(1,0,1))
 
-    wedge.Detectors=Det
-    wedge.Analysers=Ana
+    wedge.detectors=Det
+    wedge.analysers=Ana
 
     wedge2 = Wedge(position=(0,0,0))
-    wedge2.Detectors=[Det,Det]
-    wedge2.Analysers=[Ana,Ana]
+    wedge2.detectors=[Det,Det]
+    wedge2.analysers=[Ana,Ana]
+
+    wedge3 = Wedge(detectors=[Det,Det],analysers=Ana)
+    assert(len(wedge3.analysers)==1)
+    assert(len(wedge3.detectors)==2)
 
 
 def test_Wedge_error():
@@ -114,13 +126,13 @@ def test_Wedge_error():
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
 
     try:
-        wedge.Detectors=Ana
+        wedge.detectors=Ana
         assert False
     except AttributeError:
         assert True
 
     try:
-        wedge.Analysers=Det
+        wedge.analysers=Det
         assert False
     except AttributeError:
         assert True
@@ -144,14 +156,14 @@ def test_Wedge_warnings():
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
 
-    wedge.Detectors = Det
-    wedge.Analysers = Ana
+    wedge.detectors = Det
+    wedge.analysers = Ana
     with warnings.catch_warnings(record=True) as w: # From https://docs.python.org/3.1/library/warnings.html
         # Cause all warnings to always be triggered.
         warnings.simplefilter("always")
         # Trigger a warning.
-        wedge.Detectors = Det
-        wedge.Analysers = Ana
+        wedge.detectors = Det
+        wedge.analysers = Ana
         # Verify some things
         assert len(w) == 2
         assert issubclass(w[0].category, UserWarning)
@@ -165,12 +177,12 @@ def test_Wedge_append():
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
 
-    wedge.append([Det,Ana])
+    wedge.append([Det,Det,Ana])
     wedge.append(Det)
     wedge.append(Ana)
 
-    assert(len(wedge.Detectors)==2)
-    assert(len(wedge.Analysers)==2)
+    assert(len(wedge.detectors)==3)
+    assert(len(wedge.analysers)==2)
 
 def test_Wedge_plot():
     wedge = Wedge()

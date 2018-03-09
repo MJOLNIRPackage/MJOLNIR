@@ -1,5 +1,7 @@
 import math
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class GeometryConcept(object):
     """Abstract geometry concept. Used as base class for Wedge and Instrument."""
@@ -11,7 +13,7 @@ class GeometryConcept(object):
             Position (3vector): Position of object (default [0,0,0])
 
         Raises:
-            AttributeError
+            AttributeError, NotImplementedError
 
         >>> GenericConcept = GeometryConcept(position=(0.0,1.0,0.0))
         >>> print(GenericConcept.position)
@@ -34,10 +36,43 @@ class GeometryConcept(object):
             raise AttributeError('Position is to be a 3 vector')
         self._position = position
 
-def test_Concept_init():
-    GenericObject = GeometryObject(position=(0.0,1.0,0.0))
-    assert(np.all(GenericObject.position==np.array([0.0,1.0,0.0])))
+    def __repr__(self):
+        return "%s(%r)" % (self.__class__, self.__dict__)
 
+    def __str__(self):
+        return "Position = {}".format(self.position)
+
+    def plot(self,ax):
+        """Plotting function.
+        
+        Args:
+
+            ax (matplotlib axis): 3D matplotlib axis into whicht plotting is performed
+
+        .. warning:
+            Method not incorporated but acts as virtual method.
+
+        """
+        raise NotImplementedError
+
+
+def test_Concept_init():
+    Concept = GeometryConcept(position=(0.0,1.0,0.0))
+    assert(np.all(Concept.position==np.array([0.0,1.0,0.0])))
+
+
+def test_Concept_plot():
+    Concept = GeometryConcept()
+    plt.ioff()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    try:
+        Concept.plot(ax)
+        assert False
+    except NotImplementedError:
+        assert True
+
+    
 
 
 

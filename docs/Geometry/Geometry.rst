@@ -8,7 +8,8 @@ The geometry module is created in order to build a virtual copy of the instrumen
 
 .. autosummary::
 
-   GeometryObject.GeometryObject
+   GeometryConcept.GeometryConcept
+   GeometryConcept.GeometryObject
    Detector.Detector
    Detector.TubeDetector1D
    Analyser.Analyser
@@ -27,7 +28,13 @@ Geometry base class
 
 General object from which other geometry objects inherits.
 
-.. automodule:: GeometryObject
+.. automodule:: GeometryConcept
+
+.. autoclass:: GeometryConcept
+    :members:
+
+
+-----------------
 
 .. autoclass:: GeometryObject
    :members: 
