@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 class Analyser(GeometryObject.GeometryObject):
     """Generic analyser object"""
-    def __init__(self,position,direction,d_spacing,mosaicity):
+    def __init__(self,position,direction,d_spacing=3.35,mosaicity=60):
         """
         Args:
 
@@ -13,9 +13,9 @@ class Analyser(GeometryObject.GeometryObject):
 
             direction (float 3): Direction of analyser
 
-            d_spacing (float): The d spacing in Anstrom
+            d_spacing (float): The d spacing in Anstrom (default 3.35)
 
-            mosaicity (float): The standard deviation of mosaicity in arcminutes
+            mosaicity (float): The standard deviation of mosaicity in arcminutes (default 60)
         """
         super(Analyser,self).__init__(position,direction)
         self.d_spacing = d_spacing
