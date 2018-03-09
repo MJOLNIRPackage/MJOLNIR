@@ -1,8 +1,3 @@
-"""
-Detector
-========
-"""
-
 from MJOLNIR.Geometry import GeometryObject
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 
 class Detector(GeometryObject.GeometryObject):
-    """Generic detector type"""
+    """Generic detector being the base class of all detectors."""
 
     def __init__(self, position,direction):
         """
@@ -42,8 +37,12 @@ class Detector(GeometryObject.GeometryObject):
         Kwargs:
 
             offset (3vector): Offset of detector due to bank position (default [0,0,0])
+            
         >>> GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-        >>> GenericDetector.plot(ax)"""
+        >>> GenericDetector.plot(ax)
+        Plots detector tube in provided axis object.
+
+        """
         raise NotImplementedError
 
     def __str__(self):
@@ -66,7 +65,7 @@ def test_Generic_plot():
         assert True
 
 class TubeDetector1D(Detector):
-    """Tube detector as used on the prototype at PSI."""
+    """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
     def __init__(self, position, direction,length=0.25, pixels=456,diameter=0.02):
         """
         Args:
@@ -84,7 +83,7 @@ class TubeDetector1D(Detector):
             diameter (float): Diameter of tube in meters (default 0.02)
 
         Raises:
-            AttributeError, NotImplimentedError
+            AttributeError
         
 
         """
@@ -153,6 +152,8 @@ class TubeDetector1D(Detector):
         
         >>> Detector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> Detector.plot(ax,offset=(0.0,0.0,0.0),n=100)
+        Plots detector tube in provided axis object.
+
         """
         
         pos = self.position.copy()

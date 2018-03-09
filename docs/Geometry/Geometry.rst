@@ -1,12 +1,29 @@
 Geometry Module
 ===============
 
+
 The geometry module is created in order to build a virtual copy of the instrument in the MJOLNIR. This is done using the following classes
+
+.. currentmodule:: Geometry
+
+.. autosummary::
+
+   GeometryObject.GeometryObject
+   Detector.Detector
+   Detector.TubeDetector1D
+   Analyser.Analyser
+   Analyser.FlatAnalyser
+   Wedge.Wedge
+
+
+Below is an extended description of the different classes and their methods.
+
+
 
 .. automodule:: Geometry
 
-Geometry Object
-^^^^^^^^^^^^^^^
+Geometry base class
+^^^^^^^^^^^^^^^^^^^
 
 General object from which other geometry objects inherits.
 
@@ -17,7 +34,7 @@ General object from which other geometry objects inherits.
 
 
 Detectors
-==========
+^^^^^^^^^
 
 .. automodule:: Detector
 
@@ -32,7 +49,7 @@ Detectors
 
 
 Analysers
-==========
+^^^^^^^^^
 
 .. automodule:: Analyser
 
@@ -44,3 +61,12 @@ Analysers
 
 .. autoclass:: FlatAnalyser
    :members:
+
+
+Wedge
+^^^^^
+
+.. automodule:: Wedge
+
+.. autoclass:: Wedge
+    :members:

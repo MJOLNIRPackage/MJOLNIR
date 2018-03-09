@@ -3,12 +3,8 @@ import numpy as np
 
 
 class GeometryObject(object):
-    """GeometryObject
-    
-    General geometry object on which other MJOLNIR components are build. All of the components needed to create an instrument should
-    inherit from this class in order enforce a uniform interface.
-    """
-
+    """General geometry object on which other MJOLNIR components are build. All of the components needed to create an instrument should
+    inherit from this class in order enforce a uniform interface."""
     
 
     def __init__(self, position=(0.0,0.0,0.0), direction=(0,0,1)):

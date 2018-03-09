@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 class Wedge(GeometryObject.GeometryObject):
-    """Wedge object"""
+    """Wedge object to keep track of analysers and detectors. To be used as a storage object and facilitate easy movement of multiple detectors and analysers as once."""
     def __init__(self,position,direction):
         """
         Args:
@@ -13,6 +13,8 @@ class Wedge(GeometryObject.GeometryObject):
             position (float 3): Position of wedge
 
             direction (float 3): Direction of wedge
+
+        .. note:: Notice that the direction of a wedge does not influence the direction of an analyser or detector. These are to be rotated individually.
 
         """
         super(Wedge,self).__init__(position,direction)

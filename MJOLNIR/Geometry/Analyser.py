@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 class Analyser(GeometryObject.GeometryObject):
-    """Generic analyser object"""
+    """Generic analyser object. Base class from which all analysers must inherit."""
     def __init__(self,position,direction,d_spacing=3.35,mosaicity=60):
         """
         Args:
@@ -137,7 +137,7 @@ def test_Generic_errors():
 
 
 class FlatAnalyser(Analyser):
-    """Flat Analyser"""
+    """Simple flat analyser. """
     def __init__(self,position,direction,d_spacing=3.35,mosaicity=60,width=0.05,height=0.1):
         """
         Args:
