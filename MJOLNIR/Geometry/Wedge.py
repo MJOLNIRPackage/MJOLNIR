@@ -92,6 +92,11 @@ def test_Wedge_init():
     wedge.Detectors=Det
     wedge.Analysers=Ana
 
+    wedge2 = Wedge(position=(0,0,0),direction=(0,0,1))
+    wedge2.Detectors=[Det,Det]
+    wedge2.Analysers=[Ana,Ana]
+
+
 def test_Wedge_error():
     wedge = Wedge(position=(0,0,0),direction=(0,0,1))
 
