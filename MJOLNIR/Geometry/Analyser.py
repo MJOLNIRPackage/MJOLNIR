@@ -2,6 +2,7 @@ import math,numpy as np
 from MJOLNIR.Geometry import GeometryObject
 import warnings
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class Analyser(GeometryObject.GeometryObject):
     """Generic analyser object"""
@@ -198,7 +199,7 @@ class FlatAnalyser(Analyser):
 
 
 
-    def plot(self,ax,bankPos=np.array([0,0,0]),n=100):
+    def plot(self,ax,offset=np.array([0,0,0]),n=100):
         """
         Args:
 
@@ -215,7 +216,7 @@ class FlatAnalyser(Analyser):
         """
         pos = self.position.copy()
 
-        pos+=bankPos
+        pos+=offset
         Width = self.width / 2.0
         Height =self.height / 2.0
 
@@ -266,7 +267,7 @@ def test_Analyser_height():
         assert True
 
 
-def test_TubeDetector1D_plot():
+def test_FlatAnalyser_plot():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
     fig = plt.figure()

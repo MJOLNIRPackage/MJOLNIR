@@ -1,6 +1,8 @@
 import math,numpy as np
 from MJOLNIR.Geometry import GeometryObject,Analyser,Detector
 import warnings
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 class Wedge(GeometryObject.GeometryObject):
     """Wedge object"""
@@ -83,6 +85,11 @@ class Wedge(GeometryObject.GeometryObject):
             else:
                 raise AttributeError('Object not analyser or detector or a simple list of these')
 
+    def plot(self,ax):
+        """Recursive plotting routine"""
+        for obj in self.Analysers+self.Detectors:
+            obj.plot(ax,offset=self.position)
+
 def test_Wedge_init():
     wedge = Wedge(position=(0,0,0),direction=(0,0,1))
 
@@ -162,3 +169,14 @@ def test_Wedge_append():
     assert(len(wedge.Detectors)==2)
     assert(len(wedge.Analysers)==2)
 
+def test_Wedge_plot():
+    wedge = Wedge(position=(0,0,0),direction=(0,0,1))
+    Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
+    Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
+
+    wedge.append([Det,Ana])
+    plt.ioff()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    wedge.plot(ax)
