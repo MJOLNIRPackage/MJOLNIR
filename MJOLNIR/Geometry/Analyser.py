@@ -1,10 +1,10 @@
 import math,numpy as np
-from MJOLNIR.Geometry import GeometryObject
+from MJOLNIR.Geometry import GeometryConcept
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-class Analyser(GeometryObject.GeometryObject):
+class Analyser(GeometryConcept.GeometryObject):
     """Generic analyser object. Base class from which all analysers must inherit."""
     def __init__(self,position,direction,d_spacing=3.35,mosaicity=60):
         """

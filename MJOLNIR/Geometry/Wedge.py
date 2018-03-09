@@ -1,23 +1,24 @@
 import math,numpy as np
-from MJOLNIR.Geometry import GeometryObject,Analyser,Detector
+from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-class Wedge(GeometryObject.GeometryObject):
+class Wedge(GeometryConcept.GeometryConcept):
     """Wedge object to keep track of analysers and detectors. To be used as a storage object and facilitate easy movement of multiple detectors and analysers as once."""
-    def __init__(self,position,direction):
+    def __init__(self,position=(0,0,0)):
         """
         Args:
 
-            position (float 3): Position of wedge
+            position (float 3): Position of wedge (default (0,0,0))
 
             direction (float 3): Direction of wedge
 
-        .. note:: Notice that the direction of a wedge does not influence the direction of an analyser or detector. These are to be rotated individually.
+        .. note::
+         Notice: A wedge does not have a direction. The direction of analysers and detectors are to be set individually.
 
         """
-        super(Wedge,self).__init__(position,direction)
+        super(Wedge,self).__init__(position)
         self._Analysers = []
         self._Detectors = []
 
@@ -93,7 +94,7 @@ class Wedge(GeometryObject.GeometryObject):
             obj.plot(ax,offset=self.position)
 
 def test_Wedge_init():
-    wedge = Wedge(position=(0,0,0),direction=(0,0,1))
+    wedge = Wedge(position=(0,0,0))
 
     Det = Detector.Detector(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.Analyser(position=(0.5,0,0),direction=(1,0,1))
@@ -101,13 +102,13 @@ def test_Wedge_init():
     wedge.Detectors=Det
     wedge.Analysers=Ana
 
-    wedge2 = Wedge(position=(0,0,0),direction=(0,0,1))
+    wedge2 = Wedge(position=(0,0,0))
     wedge2.Detectors=[Det,Det]
     wedge2.Analysers=[Ana,Ana]
 
 
 def test_Wedge_error():
-    wedge = Wedge(position=(0,0,0),direction=(0,0,1))
+    wedge = Wedge(position=(0,0,0))
 
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
@@ -138,7 +139,7 @@ def test_Wedge_error():
 
 
 def test_Wedge_warnings():
-    wedge = Wedge(position=(0,0,0),direction=(0,0,1))
+    wedge = Wedge()
 
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
@@ -159,7 +160,7 @@ def test_Wedge_warnings():
         assert 'The list of analysers is not empty! Appending new analyser(s)' in str(w[1].message)
 
 def test_Wedge_append():
-    wedge = Wedge(position=(0,0,0),direction=(0,0,1))
+    wedge = Wedge()
 
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
@@ -172,7 +173,7 @@ def test_Wedge_append():
     assert(len(wedge.Analysers)==2)
 
 def test_Wedge_plot():
-    wedge = Wedge(position=(0,0,0),direction=(0,0,1))
+    wedge = Wedge()
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
 

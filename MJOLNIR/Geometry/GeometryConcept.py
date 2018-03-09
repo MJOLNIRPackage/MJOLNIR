@@ -1,9 +1,48 @@
 import math
 import numpy as np
 
+class GeometryConcept(object):
+    """Abstract geometry concept. Used as base class for Wedge and Instrument."""
+    def __init__(self,position=(0,0,0)):
+        self.position = position
+        """
+        Kwargs:
 
-class GeometryObject(object):
-    """General geometry object on which other MJOLNIR components are build. All of the components needed to create an instrument should
+            Position (3vector): Position of object (default [0,0,0])
+
+        Raises:
+            AttributeError
+
+        >>> GenericConcept = GeometryConcept(position=(0.0,1.0,0.0))
+        >>> print(GenericConcept.position)
+        (0.0,1.0,0.0)
+        """
+
+    @property
+    def position(self):
+        return self._position
+
+    @position.getter
+    def position(self):
+        return self._position
+
+    @position.setter
+    def position(self,position):
+        
+        position  = np.array(position)
+        if position.ndim !=1 or len(position)!=3:
+            raise AttributeError('Position is to be a 3 vector')
+        self._position = position
+
+def test_Concept_init():
+    GenericObject = GeometryObject(position=(0.0,1.0,0.0))
+    assert(np.all(GenericObject.position==np.array([0.0,1.0,0.0])))
+
+
+
+
+class GeometryObject(GeometryConcept):
+    """Physical geometry object on which other physical MJOLNIR components are build. All of the components needed to create an instrument should
     inherit from this class in order enforce a uniform interface."""
     
 
@@ -22,25 +61,10 @@ class GeometryObject(object):
         >>> print(GenericObject.position)
         (0.0,1.0,0.0)
         """
-        
-        self.position = position
+        super(GeometryObject,self).__init__(position)
         self.direction = direction
     
-    @property
-    def position(self):
-        return self._position
 
-    @position.getter
-    def position(self):
-        return self._position
-
-    @position.setter
-    def position(self,position):
-        
-        position  = np.array(position)
-        if position.ndim !=1 or len(position)!=3:
-            raise AttributeError('Position is to be a 3 vector')
-        self._position = position
 
     @property
     def direction(self):
@@ -93,7 +117,7 @@ class GeometryObject(object):
 
 
 # Test of GeometryObject
-def test_init():
+def test_Object_init():
     GenericObject = GeometryObject(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     assert(np.all(GenericObject.position==np.array([0.0,1.0,0.0])))
     assert(np.all(GenericObject.direction==(1.0,0.0,0.0)))
@@ -103,26 +127,26 @@ def test_position():
     GenericObject.position = (0.0,0.0,0.0)
     assert(np.all(GenericObject.position==(0.0,0.0,0.0)))
 
-def test_position_exception():
-    GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
+def test_Object_position_exception():
+    GenericConcept = GeometryConcept(position=(0,1.0,0.0))
     try:
-        GenericObject.position=((0,0),(0,0))
+        GenericConcept.position=((0,0),(0,0))
         assert False
     except AttributeError:
         assert True
 
     try:
-        GenericObject.position=(0,0,0,0)
+        GenericConcept.position=(0,0,0,0)
         assert False
     except AttributeError:
         assert True
 
-def test_direction():
+def test_Object_direction():
     GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
     GenericObject.direction = (0.0,0.0,0.5)
     assert(np.all(GenericObject.direction==(0.0,0.0,1.0)))
 
-def test_direction_exception():
+def test_Object_direction_exception():
     GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
     try:
         GenericObject.direction=((0,0),(0,0))

@@ -1,10 +1,10 @@
-from MJOLNIR.Geometry import GeometryObject
+from MJOLNIR.Geometry import GeometryConcept
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-class Detector(GeometryObject.GeometryObject):
+class Detector(GeometryConcept.GeometryObject):
     """Generic detector being the base class of all detectors."""
 
     def __init__(self, position,direction):
@@ -37,7 +37,7 @@ class Detector(GeometryObject.GeometryObject):
         Kwargs:
 
             offset (3vector): Offset of detector due to bank position (default [0,0,0])
-            
+
         >>> GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> GenericDetector.plot(ax)
         Plots detector tube in provided axis object.
