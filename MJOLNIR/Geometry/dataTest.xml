@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<Instrument Name='PSI-CAMEA' Author='Jakob Lass' Date='13/03/18'>
+    <Wedge position='0,0,0'>
+        <FlatAnalyser position='0,-0.2,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,-0.1,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,0.0,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,0.1,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,0.2,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <TubeDetector1D position='0,-0.2,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0,-0.1,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0, 0.0,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0, 0.1,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0, 0.2,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+    </Wedge>
+    <Wedge position='0,0,0'>
+        <FlatAnalyser position='0,-0.2,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,-0.1,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,0.0,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,0.1,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <FlatAnalyser position='0,0.2,0' direction='1,0,0' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+        <TubeDetector1D position='0,-0.2,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0,-0.1,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0, 0.0,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0, 0.1,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+        <TubeDetector1D position='0, 0.1,1' direction = '1,0,0' length='0.5' ></TubeDetector1D>
+    </Wedge>
+</Instrument>
