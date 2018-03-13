@@ -69,7 +69,7 @@ def parseXML(filename):
 	return Instr
 
 def createXMLString(instrument):
-	XMLString = '<?xml versin="1.0"?>\n'
+	XMLString = '<?xml version="1.0"?>\n'
 	XMLString+= '<Instrument '
 	for attrib in instrument.settings:
 		XMLString+="{}='{}' ".format(attrib,instrument.settings[attrib])
