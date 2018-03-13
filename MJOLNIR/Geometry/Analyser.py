@@ -21,7 +21,6 @@ class Analyser(GeometryConcept.GeometryObject):
         super(Analyser,self).__init__(position,direction)
         self.d_spacing = d_spacing
         self.mosaicity = mosaicity
-        self.type = "Generic Analyser"
         
 
     @property
@@ -84,14 +83,13 @@ class Analyser(GeometryConcept.GeometryObject):
         raise NotImplementedError
 
     def __str__(self):
-        returnString=('{} located at {}'.format(self.type,self.position))
+        returnString=('{} located at {}'.format(str(self.__class__).split('.')[-1][:-2],self.position))
         return returnString
 
 def test_init():
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
     assert(np.all(GenericAnalyser.position==np.array([0.0,1.0,0.0])))
     assert(np.all(GenericAnalyser.direction==(1.0,0.0,0.0)))
-    assert(GenericAnalyser.type=="Generic Analyser")
     assert(GenericAnalyser.d_spacing==3.35)
     assert(GenericAnalyser.mosaicity==60.0)
 
@@ -164,7 +162,6 @@ class FlatAnalyser(Analyser):
 
         """
         super(FlatAnalyser,self).__init__(position,direction,d_spacing,mosaicity)
-        self.type = "Flat Analyser"
         self.width = width
         self.height = height
 
@@ -245,7 +242,6 @@ def test_Analyser_init():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60,width=0.05,height=0.1)
     assert(np.all(Analyser.position==np.array([0.0,1.0,0.0])))
     assert(np.all(Analyser.direction==(1.0,0.0,0.0)))
-    assert(Analyser.type=="Flat Analyser")
     assert(Analyser.width==0.05)
     assert(Analyser.height==0.1)
  

@@ -20,7 +20,6 @@ class Detector(GeometryConcept.GeometryObject):
             
         """
         super(Detector,self).__init__(position,direction)
-        self.type = "Generic Detector"
 
     @property
     def type(self):
@@ -52,14 +51,13 @@ class Detector(GeometryConcept.GeometryObject):
         raise NotImplementedError
 
     def __str__(self):
-        returnString=('{} located at {}'.format(self.type,self.position))
+        returnString=('{} located at {}'.format(str(self.__class__).split('.')[-1][:-2],self.position))
         return returnString
 
 def test_init():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     assert(np.all(GenericDetector.position==np.array([0.0,1.0,0.0])))
     assert(np.all(GenericDetector.direction==(1.0,0.0,0.0)))
-    assert(GenericDetector.type=="Generic Detector")
 
 def test_Generic_plot():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
@@ -97,7 +95,6 @@ class TubeDetector1D(Detector):
         """
 
         super(TubeDetector1D,self).__init__(position,direction)
-        self.type = "1D Tube Detector"
         self.pixels = pixels
         self.length = length
         self.diameter = diameter
@@ -223,7 +220,6 @@ def test_TubeDetector_init():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=20,length=0.3,diameter=0.025)
     assert(np.all(TubeDetector.position==np.array([0.0,1.0,0.0])))
     assert(np.all(TubeDetector.direction==(1.0,0.0,0.0)))
-    assert(TubeDetector.type=="1D Tube Detector")
     assert(TubeDetector.pixels==20)
     assert(TubeDetector.length==0.3)
     assert(TubeDetector.diameter==0.025)

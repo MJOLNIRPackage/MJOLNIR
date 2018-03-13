@@ -68,6 +68,33 @@ def parseXML(filename):
 		Instr.append(temp_wedge)
 	return Instr
 
+def createXMLFile(instrument):
+	XMLString = '<?xml versin="1.0"?>\n'
+	XMLString+= '<Instrument '
+	for attrib in instrument.settings:
+		XMLString+="{}='{}' ".format(attrib,instrument.settings[attrib])
+	XMLString+='>\n'
+	
+	for wedge in instrument.wedges:
+		XMLString+="\t<Wedge position='{}'>\n"
+		for item in wedge.analysers + wedge.detectors:
+			itemClass = str(item.__class__).split('.')[-1][:-2]
+			XMLString+="\t\t<{}".format(itemClass)
+			for key in item.__dict__:
+				value = item.__getattribute__(key)
+				if isinstance(value,type(np.array([0,0,0]))):
+					valueStr = ','.join([str(x) for x in item.__getattribute__(key)])
+				else:
+					valueStr = str(value)
+				XMLString+=" {}='{}'".format(str(key),valueStr)
+			XMLString+="></{}>\n".format(itemClass)
+			
+		
+		XMLString+="\t</Wedge>\n"
+	XMLString+="</Instrument>\n"
+	return XMLString
+	
+
 def test_parseXML(): # Improve this test!
 	Instr = parseXML('MJOLNIR/Geometry/dataTest.xml')
 	
@@ -105,4 +132,5 @@ if __name__ == '__main__':
 	import MJOLNIR
 		
 	Instr = parseXML('/home/lass/Dropbox/PhD/Software/MJOLNIR/MJOLNIR/Geometry/dataTest.xml')
-	print(str(Instr))
+	#print(str(Instr))
+	print(createXMLFile(Instr))
