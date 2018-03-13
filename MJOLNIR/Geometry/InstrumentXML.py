@@ -119,7 +119,7 @@ def test_parseXML(): # Improve this test!
 	
 	
 	InstrLoaded = parseXML(tempFileName)
-	os.remove(tempFileName)
+	#os.remove(tempFileName)
 	
 	assert(Instr==InstrLoaded)
 
