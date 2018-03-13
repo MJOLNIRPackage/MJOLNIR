@@ -112,7 +112,7 @@ def test_parseXML(): # Improve this test!
 	Instr.append([wedge,wedge])
 	Instr.append(wedge)
 	
-	f = open(tempFileName,'x')
+	f = open(tempFileName,'w')
 
 	f.write(createXMLString(Instr))
 	f.close()
