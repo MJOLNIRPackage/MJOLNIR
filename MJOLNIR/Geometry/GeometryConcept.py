@@ -54,6 +54,9 @@ class GeometryConcept(object):
         """
         raise NotImplementedError
 
+    def __eq__(self, other): 
+        return np.logical_and(set(self.__dict__.keys()) == set(other.__dict__.keys()),self.__class__ == other.__class__)
+
 
 def test_Concept_init():
     Concept = GeometryConcept(position=(0.0,1.0,0.0))

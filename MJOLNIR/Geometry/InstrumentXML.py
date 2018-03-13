@@ -96,33 +96,32 @@ def createXMLString(instrument):
 	
 
 def test_parseXML(): # Improve this test!
-	Instr = parseXML('MJOLNIR/Geometry/dataTest.xml')
+	from MJOLNIR.Geometry import Wedge,Analyser,Detector,Instrument
+	import os
+	tempFileName = '__temp__'
 	
-	assert(len(Instr.wedges)==2)
-	assert(len(Instr.wedges[0].analysers)==5)
-	assert(len(Instr.wedges[0].detectors)==5)
-	assert(Instr.wedges[0].detectors[0].length==0.5)
-	assert(Instr.settings['Author']=='Jakob Lass')
-	assert(Instr.settings['Date']=='13/03/18')
-	assert(Instr.settings['Name']=='PSI-CAMEA')
-	
-	testAnalyser = Instr.wedges[0].analysers[3]
-	assert(testAnalyser.d_spacing==3.35)
-	assert(testAnalyser.mosaicity==60)
-	assert(testAnalyser.width==0.05)
-	assert(testAnalyser.height==0.1)
-	assert(np.all(testAnalyser.position==np.array([0,0.1,0],dtype=float)))
-	assert(np.all(testAnalyser.direction==np.array([1,0,0],dtype=float)))
-	
-	testDetector = Instr.wedges[1].detectors[2]
-	assert(testDetector.length==0.5)
-	assert(testDetector.pixels==456)
-	assert(testDetector.diameter==0.02)
-	assert(np.all(testDetector.position==np.array([0,0.0,1],dtype=float)))
-	assert(np.all(testDetector.direction==np.array([1,0,0],dtype=float)))
+	Instr = Instrument.Instrument()
+	Instr.settings['Author'] = 'Jakob Lass'
 
-	testWedge = Instr.wedges[0]
-	assert(np.all(testWedge.position==np.array([0,0.0,0],dtype=float)))
+	wedge = Wedge.Wedge(position=(0.5,0,0))
+
+	Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
+	Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
+
+	wedge.append([Det,Ana])
+	Instr.append([wedge,wedge])
+	Instr.append(wedge)
+	
+	f = open(tempFileName,'x')
+
+	f.write(createXMLString(Instr))
+	f.close()
+	
+	
+	InstrLoaded = parseXML(tempFileName)
+	os.remove(tempFileName)
+	
+	assert(Instr==InstrLoaded)
 
 if __name__ == '__main__':
 	import sys
@@ -132,5 +131,7 @@ if __name__ == '__main__':
 	import MJOLNIR
 		
 	Instr = parseXML('/home/lass/Dropbox/PhD/Software/MJOLNIR/MJOLNIR/Geometry/dataTest.xml')
+	Instr2= parseXML('/home/lass/Dropbox/PhD/Software/MJOLNIR/MJOLNIR/Geometry/dataTest.xml')
+	print(Instr==Instr2)
 	#print(str(Instr))
-	print(createXMLString(Instr))
+	#print(createXMLString(Instr))

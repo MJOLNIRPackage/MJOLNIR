@@ -61,7 +61,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         if isinstance(wedge,list):
             for obj in wedge:
                 if issubclass(type(obj),Wedge.Wedge):
-                    self._wedges.append(wedge)
+                    self._wedges.append(obj)
                 else:
                     raise AttributeError('Object not wedge or a simple list of wedges')
         else:
