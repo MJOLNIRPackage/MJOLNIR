@@ -31,7 +31,7 @@ class GeometryConcept(object):
     @position.setter
     def position(self,position):
         
-        position  = np.array(position)
+        position  = np.array(position,dtype=float)
         if position.ndim !=1 or len(position)!=3:
             raise AttributeError('Position is to be a 3 vector')
         self._position = position
@@ -40,7 +40,7 @@ class GeometryConcept(object):
         return "%s(%r)" % (self.__class__, self.__dict__)
 
     def __str__(self):
-        return "Position = {}".format(self.position)
+        return "{} with settings:\nPosition = {}".format(self.__class__,self.position)
 
     def plot(self,ax):
         """
@@ -53,6 +53,9 @@ class GeometryConcept(object):
 
         """
         raise NotImplementedError
+
+    def __eq__(self, other): 
+        return np.logical_and(set(self.__dict__.keys()) == set(other.__dict__.keys()),self.__class__ == other.__class__)
 
 
 def test_Concept_init():

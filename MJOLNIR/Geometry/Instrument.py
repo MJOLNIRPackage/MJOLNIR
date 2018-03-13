@@ -17,7 +17,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
         Raises:
             AttributeError
-
+        
         """
         super(Instrument,self).__init__(position)
         self._wedges = []

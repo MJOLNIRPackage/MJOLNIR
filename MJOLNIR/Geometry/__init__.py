@@ -1,6 +1,2 @@
-"""
-Geometry Module
-_______________
-
-This is the geometry module
-"""
+import sys
+sys.path.append('.')

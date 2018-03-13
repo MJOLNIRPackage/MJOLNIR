@@ -12,14 +12,14 @@ some possitive synagy is possible....
 
 
 
-Software structure
+Software Structure
 ------------------
 
 The software is devided into modules with submodules if applicable.
 
 License
 -------
-The software package is released under the software lincense ??? to allow for redistribution and usage of the code. If this linces file has not been shipped with your distribution of the code, please find it here: licence_.
+The software package is released under the software lincense Mozilla Public License Version 2.0 to allow for redistribution and usage of the code. If this linces file has not been shipped with your distribution of the code, please find it here: licence_.
 
 
 
@@ -43,10 +43,11 @@ After the initial upstart phase you are more than welcome to contribute to the s
 * Suggested changes are submitted through a pull request
 * Each contribution needs to include:
 
-    * souce code in a suitable subfolder (see 'Software structure'_)
+    * souce code in a suitable subfolder (see Software structure)
     * Documentation of code located in the docs-folder having identical structure to the modules added
     * Suitable tests for the new functionality added to the .travis.yml-file
     * Needed packages added to the reqirements.txt file
+
 
 Contribution Example:
 _____________________
@@ -58,9 +59,8 @@ _____________________
     with given priors. This is to be done by adding a subroutine to 
     the fit object.
 
-    Initial thoughts: It is believed that building upon the article [CIT2002], 
+    Initial thoughts: It is believed that building upon the article [CIT2002]_, 
     where this feature was incorporated in a C++ script.
 
 
-.. [CIT2002] A citation 
-   (as often used in journals).
+.. [CIT2002] Citation of relevant article or other document.
