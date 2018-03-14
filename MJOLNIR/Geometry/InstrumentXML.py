@@ -122,16 +122,3 @@ def test_parseXML(): # Improve this test!
 	os.remove(tempFileName)
 	
 	assert(Instr==InstrLoaded)
-
-if __name__ == '__main__':
-	import sys
-		
-	sys.path.append('.')
-	sys.path.append('../..')
-	import MJOLNIR
-		
-	Instr = parseXML('/home/lass/Dropbox/PhD/Software/MJOLNIR/MJOLNIR/Geometry/dataTest.xml')
-	Instr2= parseXML('/home/lass/Dropbox/PhD/Software/MJOLNIR/MJOLNIR/Geometry/dataTest.xml')
-	print(Instr==Instr2)
-	#print(str(Instr))
-	#print(createXMLString(Instr))

@@ -50,9 +50,7 @@ class Detector(GeometryConcept.GeometryObject):
         """
         raise NotImplementedError
 
-    def __str__(self):
-        returnString=('{} located at {}'.format(str(self.__class__).split('.')[-1][:-2],self.position))
-        return returnString
+
 
 def test_init():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))

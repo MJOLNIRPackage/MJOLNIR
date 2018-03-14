@@ -40,7 +40,8 @@ class GeometryConcept(object):
         return "%s(%r)" % (self.__class__, self.__dict__)
 
     def __str__(self):
-        return "Position = {}".format(self.position)
+        returnString=('{} located at {}'.format(str(self.__class__).split('.')[-1][:-2],self.position))
+        return returnString
 
     def plot(self,ax):
         """
