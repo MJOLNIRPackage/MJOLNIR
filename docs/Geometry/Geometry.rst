@@ -35,7 +35,10 @@ Geometry base classes
 
 General object from which other geometry objects inherits.
 
+
 .. automodule:: GeometryConcept
+
+.. _GeometryConcept:
 
 .. autoclass:: GeometryConcept
     :members:
@@ -43,8 +46,11 @@ General object from which other geometry objects inherits.
 
 -----------------
 
+.. _GeometryObject:
+
 .. autoclass:: GeometryObject
    :members: 
+
 
 
 Detectors
@@ -52,10 +58,14 @@ Detectors
 
 .. automodule:: Detector
 
+.. _Detector:
+
 .. autoclass:: Detector
    :members: 
 
 ------------------
+
+.. _TubeDetector1D:
 
 .. autoclass:: TubeDetector1D
    :members:
@@ -67,11 +77,15 @@ Analysers
 
 .. automodule:: Analyser
 
+.. _Analyser:
+
 .. autoclass:: Analyser
    :members: 
 
 
 ------------------
+
+.. _FlatAnalyser:
 
 .. autoclass:: FlatAnalyser
    :members:
@@ -82,6 +96,8 @@ Wedge
 
 .. automodule:: Wedge
 
+.. _Wedge:
+
 .. autoclass:: Wedge
     :members:
 
@@ -90,6 +106,8 @@ Instrument
 ^^^^^^^^^^
 
 .. automodule:: Instrument
+
+.. _Instrument:
 
 .. autoclass:: Instrument
     :members:
