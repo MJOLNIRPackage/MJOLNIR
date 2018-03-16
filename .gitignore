@@ -10,3 +10,4 @@ MJOLNIR/Geometry/.cache/
 lastfailed
 MJOLNIR/Geometry/__pycache__/*.pyc
 MJOLNIR.xmind
+tester.py
