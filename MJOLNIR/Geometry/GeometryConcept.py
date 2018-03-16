@@ -2,6 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import _pickle as pickle
 
 class GeometryConcept(object):
     """Abstract geometry concept. Used as base class for Wedge and Instrument."""
@@ -57,6 +58,28 @@ class GeometryConcept(object):
 
     def __eq__(self, other): 
         return np.logical_and(set(self.__dict__.keys()) == set(other.__dict__.keys()),self.__class__ == other.__class__)
+
+    def save(self, filename):
+        try:                                # Opening the given file with an error catch
+            fileObject = open(filename, 'wb')
+        except IOError as e:                        # Catch all IO-errors
+            print("Error in opening file:\n{}".format(e))
+        else:
+                pickle.dump(self, fileObject, -1)
+                fileObject.close()  
+
+    def load(self,filename):  # Method to load an object from a pickled file
+        try:                                # Opening the given file with an error catch
+            fileObject = open(filename, 'rb')
+        except IOError as e:                        # Catch all IO-errors
+            print("Error in opening file:\n{}".format(e))
+        else:
+            tmp_dict = pickle.load(fileObject)
+            
+            fileObject.close()
+            # TODO: Make checks that the object loaded is of correct format?
+            self=tmp_dict
+        
 
 def test_Concept_init():
     Concept = GeometryConcept(position=(0.0,1.0,0.0))
