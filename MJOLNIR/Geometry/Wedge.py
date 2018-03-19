@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Wedge(GeometryConcept.GeometryConcept):
     """Wedge object to keep track of analysers and detectors. To be used as a storage object and facilitate easy movement of multiple detectors and analysers as once."""
-    def __init__(self,position=(0,0,0),detectors=[],analysers=[]):
+    def __init__(self,position=(0,0,0),detectors=[],analysers=[],concept='ManyToMany',**kwargs):
         """
         Args:
 
@@ -18,6 +18,8 @@ class Wedge(GeometryConcept.GeometryConcept):
 
             analysers (list or single analyser): Either a list or a single analyser (default empty)
 
+            concept (string "ManyToMany" or "OneToOne"): Setting to controle if there is a "one to one" correspondence between analysers and detectors or a "many to many" relationship.
+
         .. note::
             A wedge does not have a direction. The direction of analysers and detectors are to be set individually.
 
@@ -28,6 +30,12 @@ class Wedge(GeometryConcept.GeometryConcept):
 
         self.append(analysers)
         self.append(detectors)
+        self._settings = {}
+        
+        for key in kwargs:
+            self.settings[key]=kwargs[key]
+        self.settings['Concept']=concept
+        
         
 
     @property
@@ -74,6 +82,18 @@ class Wedge(GeometryConcept.GeometryConcept):
                 raise AttributeError('Object is not a detector or a simple list of these')
             self._detectors.append(Detectors)
 
+    @property
+    def settings(self):
+        return self._settings
+
+    @settings.getter
+    def settings(self):
+        return self._settings
+
+    @settings.setter
+    def settings(self,*args,**kwargs):
+        raise NotImplementedError('Settings cannot be overwritten.')
+
     def append(self,Object):
         """Append Object(s) to corresponding list.
 
@@ -112,6 +132,65 @@ class Wedge(GeometryConcept.GeometryConcept):
             string+='\t'+str(det)+'\n'
 
         return string
+
+    def calculateDetectorAnalyserPositions(self):
+        """Find neutron position on analyser and detector. Assuming that the analyser is in the z=0 plane."""
+        if(len(self.detectors)==0 or len(self.analysers)==0):
+            raise ValueError('Wedge does not contain detectors and/or analysers.')
+
+        detectorPixelPositions = []
+        analyserPixelPositions = []
+        if self.settings['Concept']=='OneToOne':
+            if len(self.detectors)!=len(self.analysers):
+                raise RuntimeError('Concept set to OneToOne but number of detectors does not mach analysers ({}!?{}'.format(len(self.detectors),len(self.analysers)))
+            detectorCounter = 0
+            for det in self.detectors:
+                PixelPos = det.getPixelPositions()+self.position
+                if len(PixelPos)!=1:
+                    raise ValueError("OneToOne concept chosen by detector split into multiple parts!")
+                detectorPixelPositions.append(PixelPos)
+                LDA = PixelPos[0]-self.analysers[detectorCounter].position # Detector - analyser vector
+                LAS = self.analysers[detectorCounter].position+self.position
+                vertical = np.array([0,0,1])
+
+                perpVect = np.cross(vertical,LAS)
+
+                deltaXD = np.dot(PixelPos,perpVect)
+
+                LD = np.linalg.norm(LDA,axis=1)
+                LA = np.linalg.norm(LAS)
+
+                deltaXDprime = deltaXD/(LD/LA+1.0)
+
+                analyserPixelPositions.append(np.outer(deltaXDprime,perpVect)+self.analysers[detectorCounter].position+self.position)
+                detectorCounter+=1
+
+        elif self.settings['Concept']=='ManyToMany':
+            for det in self.detectors:
+                PixelPos = [x +self.position for x in det.getPixelPositions()]
+                if len(PixelPos)!=len(self.analysers):
+                    raise ValueError("ManyToMany concept chosen by detector split into number of parts not matching number of analysers!")
+                detectorPixelPositions.append(np.concatenate(PixelPos))
+                
+                LDA = [PixelPos[i]-self.analysers[i].position for i in range(len(PixelPos))] # Detector - analyser vector
+                LAS = [self.analysers[i].position+self.position for i in range(len(PixelPos))]
+                vertical = np.array([0,0,1])
+
+                perpVect = [np.cross(vertical,LAS[i]) for i in range(len(PixelPos))]
+
+                deltaXD = [np.dot(PixelPos[i],perpVect[i]) for i in range(len(PixelPos))]
+
+                LD = [np.linalg.norm(LDA[i],axis=1) for i in range(len(PixelPos))]
+                LA = [np.linalg.norm(LAS[i]) for i in range(len(PixelPos))]
+
+                deltaXDprime = [deltaXD[i]/(LD[i]/LA[i]+1.0) for i in range(len(PixelPos))]
+
+                analyserPixelPositions.append(np.concatenate([np.outer(deltaXDprime[i],perpVect[i])+self.analysers[i].position+self.position for i in range(len(PixelPos))]))
+
+        else:
+            raise ValueError("Wedge does not contain a Concept setting that is understood. Should be either 'OneToOne' or 'ManyToMany'")
+
+        return detectorPixelPositions,analyserPixelPositions
 
 def test_Wedge_init():
     wedge = Wedge(position=(0,0,0))
@@ -161,6 +240,36 @@ def test_Wedge_error():
     except AttributeError:
         assert True
 
+    try:
+        wedge.settings['Concept']='Wrong'
+        wedge.calculateDetectorAnalyserPositions()
+        assert False
+    except ValueError:
+        assert True
+
+    try:
+        wedge.settings['Concept']='OneToOne'
+        wedge.calculateDetectorAnalyserPositions()
+        assert False
+    except ValueError:
+        assert True
+
+    try:
+        wedge.settings['Concept']='OneToOne'
+        wedge.append([Det,Det,Ana])
+        wedge.calculateDetectorAnalyserPositions()
+        assert False
+    except RuntimeError:
+        assert True
+
+    try:
+        wedge.settings['Concept']='ManyToMany'
+        wedge.detectors[0].split=[10,30]
+        wedge.calculateDetectorAnalyserPositions()
+        assert False
+    except ValueError:
+        assert True
+
 
 def test_Wedge_warnings():
     wedge = Wedge()
@@ -207,3 +316,55 @@ def test_Wedge_plot():
     ax = fig.gca(projection='3d')
 
     wedge.plot(ax)
+
+def test_wedge_calculateDetectorAnalyserPositions_OneToOne():
+    wedge = Wedge(concept='OneToOne')
+    Det = Detector.TubeDetector1D(position=(1.0,0.0,1.0),direction=(1.0,0,0),length=0.5,pixels=5)
+    Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
+    Det2 = Detector.TubeDetector1D(position=(1.5,0.1,1.0),direction=(1.0,0,0),length=0.5,pixels=5)
+    Ana2 = Analyser.FlatAnalyser(position=(0.75,0,0),direction=(1,0,1))
+
+    wedge.append([Det,Det2,Ana,Ana2])
+
+    detectorPixelPositions,analyserPixelPositions = wedge.calculateDetectorAnalyserPositions()
+    #print(detectorPixelPositions,analyserPixelPositions)
+
+    DetPixelPos = np.array([[[0.8,0,1],[0.9,0,1],[1.0,0,1],[1.1,0,1],[1.2,0,1]]])
+    assert(np.all(DetPixelPos==detectorPixelPositions[0][0]))
+    assert(np.all([x==Ana.position for x in analyserPixelPositions[0]]))
+    
+    DetPixelPos2= np.array([[[1.3,0.1,1],[1.4,0.1,1],[1.5,0.1,1],[1.6,0.1,1],[1.7,0.1,1]]])
+    #print(analyserPixelPositions[1])
+    assert(np.all(DetPixelPos2==detectorPixelPositions[1][0]))
+    assert(np.all([x[0]==Ana2.position[0] for x in analyserPixelPositions[1]]))
+
+    offcenterpos = np.array([0.02225497,0.02166939,0.02105171,0.02041748,0.01977911])
+    #print(np.sum([analyserPixelPositions[1][i][1]-offcenterpos[i] for i in range(5)]))
+    assert(np.sum([analyserPixelPositions[1][i][1]-offcenterpos[i] for i in range(5)])<1e-8)
+    
+    
+
+def test_wedge_calculateDetectorAnalyserPositions_ManyToMany():
+    
+    wedge = Wedge(concept='ManyToMany')
+
+    
+    Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
+    Det2 = Detector.TubeDetector1D(position=(1.5,0.1,1.0),direction=(1.0,0,0),length=0.5,pixels=5,split=[2])
+    Ana2 = Analyser.FlatAnalyser(position=(0.75,0,0),direction=(1,0,1))
+
+    wedge.append([Det2,Ana,Ana2])
+
+    detectorPixelPositions,analyserPixelPositions = wedge.calculateDetectorAnalyserPositions()
+
+    #print(detectorPixelPositions)
+    #print(analyserPixelPositions)
+    
+    DetPixelPos2= np.array([[[1.3,0.1,1],[1.4,0.1,1],[1.5,0.1,1],[1.6,0.1,1],[1.7,0.1,1]]])
+    assert(np.all(DetPixelPos2==detectorPixelPositions[0]))
+    
+    anapos = np.array([0.5,0.5,0.75,0.75,0.75])
+    assert(np.all([analyserPixelPositions[0][i,0]==anapos[i] for i in range(5)]))
+
+    offcenterpos = np.array([0.00700467,0.00676014,0.02105171,0.02041748,0.01977911])
+    assert(np.sum([analyserPixelPositions[0][i][1]-offcenterpos[i] for i in range(5)])<1e-8)

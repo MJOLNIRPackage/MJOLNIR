@@ -1,11 +1,12 @@
 import numpy as np
-from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
+from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge,InstrumentXML
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import os
 
 class Instrument(GeometryConcept.GeometryConcept):
-    def __init__(self, position=(0,0,0),wedges=[],**kwargs):
+    def __init__(self, position=(0,0,0),wedges=[],filename='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
 
@@ -15,20 +16,27 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
 
+            filename (string): Filename of xml file (ending in xml) or object file (free ending)
+
         Raises:
             AttributeError
         
         """
-        super(Instrument,self).__init__(position)
-        self._wedges = []
-
-        self.append(wedges)
         self._settings = {}
-        
         for key in kwargs:
             self.settings[key]=kwargs[key]
         self._settings['Initialized']=False
-        
+
+        if filename !='':
+            if(filename.split('.')[-1]=='xml'):
+                parseXML(self,filename)
+            else:
+                self.load(filename)            
+        else:
+            super(Instrument,self).__init__(position)
+            self._wedges = []
+
+            self.append(wedges)
 
     @property
     def wedges(self):
@@ -97,7 +105,181 @@ class Instrument(GeometryConcept.GeometryConcept):
             string+=str(wedge)+'\n'
         return string
 
+    def initialize(self):
+        """Method to initialize and perform analytical calulations of scattering quantities. 
+        Initializes:
 
+            * A4: Matrix holding pixel A4. Shape (len(Wedges),len(detectors),pixels)
+            * Ef: Matrix holding pixel Ef. Shape (len(Wedges),len(detectors),pixels)
+        """
+        factorLambdasqrtE = 9.0445678
+
+        if(len(self.wedges)==0):
+            raise ValueError('Instrument does not contain any wedges and can thus not be initialized.')
+        self._A4 = []
+        self._Ef = []
+        beamDirection = np.array([0.0,1.0,0.0])
+
+        for wedge in self.wedges:
+            detectorPixelPositions,analyserPixelPositions = wedge.calculateDetectorAnalyserPositions()
+
+            A4 = [np.arccos(np.divide(np.dot(AnalyserPos,beamDirection),
+                np.linalg.norm(AnalyserPos,axis=1))) for AnalyserPos in analyserPixelPositions]
+            relPos = [detectorPixelPositions[i]-analyserPixelPositions[i] for i in range(len(analyserPixelPositions))]
+
+            A6 = [np.arccos(np.divide(np.einsum('ij,ij->i',analyserPixelPositions[i],relPos[i]),
+                np.linalg.norm(analyserPixelPositions[i],axis=1)*np.linalg.norm(relPos[i],axis=1))) for i in range(len(analyserPixelPositions))]
+            Ef = [np.power(factorLambdasqrtE/(wedge.analysers[0].d_spacing*2.0*np.sin(A6Sub/2.0)),2.0) for A6Sub in A6] ## TODO: d_spacing Make generic
+            self._A4.append(A4)
+            self._Ef.append(Ef)
+
+
+
+
+
+        self.settings['Initialized']=True
+
+    @property
+    def A4(self):
+        return self._A4
+    @A4.getter
+    def A4(self):
+        if(self.settings['Initialized']==False):
+            raise RuntimeError('Instrument is not initialized.')
+        return self._A4
+    @A4.setter
+    def A4(self,*args,**kwargs):
+        raise NotImplementedError('A4 cannot be overwritten.')
+
+    @property
+    def Ef(self):
+        return self._Ef
+    @Ef.getter
+    def Ef(self):
+        if(self.settings['Initialized']==False):
+            raise RuntimeError('Instrument is not initialized.')
+        return self._Ef
+    @Ef.setter
+    def Ef(self,*args,**kwargs):
+        raise NotImplementedError('Ef cannot be overwritten.')
+
+    
+    def saveXML(self,filename):
+        """Method for saving current file as XML in filename."""
+        XMLString = '<?xml version="1.0"?>\n'
+        XMLString+= '<Instrument '
+        for attrib in self.settings:
+            XMLString+="{}='{}' ".format(attrib,self.settings[attrib])
+
+        XMLString+="position='"+','.join([str(x) for x in self.position])+"'"
+        XMLString+='>\n'
+            
+        for wedge in self.wedges:
+            XMLString+="\t<Wedge "
+            for attrib in wedge.settings:
+                XMLString+="{}='{}' ".format(attrib,wedge.settings[attrib])
+
+            XMLString+="position='"+','.join([str(x) for x in wedge.position])+"'"
+            XMLString+='>\n'
+
+            for item in wedge.analysers + wedge.detectors:
+                itemClass = str(item.__class__).split('.')[-1][:-2]
+                XMLString+="\t\t<{}".format(itemClass)
+                for key in item.__dict__:
+                    value = item.__getattribute__(key)
+                    if isinstance(value,type(np.array([0,0,0]))):
+                        valueStr = ','.join([str(x) for x in item.__getattribute__(key)])
+                    else:
+                        valueStr = str(value)
+                    XMLString+=" {}='{}'".format(str(key)[1:],valueStr)
+                XMLString+="></{}>\n".format(itemClass)
+                
+            
+            XMLString+="\t</Wedge>\n"
+        XMLString+="</Instrument>\n"
+    
+        f = open(filename,'w')
+        f.write(XMLString)
+        f.close()
+
+def parseXML(Instr,filename):
+    import xml.etree.ElementTree as ET
+
+
+    tree = ET.parse(filename)
+    instr_root = tree.getroot()
+
+    
+    
+        
+    for attrib in instr_root.keys():
+        print(attrib)
+        if attrib=='position':
+            Instr.position = np.array(instr_root.attrib[attrib].split(','))
+        Instr.settings[attrib]=instr_root.attrib[attrib]
+    
+    
+    Instr._wedges=[]
+    for wedge in instr_root.getchildren():
+        
+        if wedge.tag in dir(Wedge):
+            Wedgeclass_ = getattr(Wedge, wedge.tag)
+        else:
+            raise ValueError("Element is supposed to be a Wedge, but got '{}'.".format(wedge.tag))
+        wedgeSettings = {}
+        
+        for attrib in wedge.keys():
+            if attrib=='Concept':
+                wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=str)
+            else:        
+                wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=float)
+            
+        temp_wedge = Wedgeclass_(**wedgeSettings)
+        
+        
+        
+        
+        for item in wedge.getchildren():
+            if item.tag in dir(Detector):
+                class_ = getattr(Detector, item.tag)
+            elif item.tag in dir(Analyser):
+                class_ = getattr(Analyser,item.tag)
+            else:
+                raise ValueError("Item '{}' not recognized as MJOLNIR detector or analyser.".format(item.tag))
+            
+            itemSettings = {}
+            for attrib in item.keys():
+                attribVal = item.get(attrib).strip().split(',')
+                if len(attribVal)==1:
+                    if(attrib=='split'):
+                        try:
+                            val=float(attribVal[0])
+                        except ValueError:
+                            val=[]
+                        itemSettings[attrib]=val
+                    else:
+                        itemSettings[attrib]=float(attribVal[0])
+                else:
+                    if(attrib=='split'):
+                        #print(type(attribVal))
+                        itemSettings[attrib]=attribVal
+                    else:
+                        itemSettings[attrib]=np.array(attribVal,dtype=float)    
+            try:
+                temp_item = class_(**itemSettings)
+            except TypeError as e:
+                print(e.args[0])
+                raise ValueError('Item {} misses argument(s):{}'.format(class_,e.args[0].split(':')[1]))
+            except ValueError:
+                raise ValueError('Item {} not initialized due to error.'.format(class_))
+            #print(temp_item)
+            temp_wedge.append(temp_item)
+            #print()
+
+        #print(str(temp_wedge))
+        Instr.append(temp_wedge)
+    #print(str(Instr))
+   
 
 
 def test_Instrument_init():
@@ -199,6 +381,78 @@ def test_Instrument_plot():
 
 def test_Instrument_Setting(): 
     Instr = Instrument()
-    #Instr.updateSetting('New',True)
     Instr.settings['SettingVersion']=1.0
     assert(Instr.settings['SettingVersion']==1.0)
+
+
+def test_Instrument_Initialization():
+    Instr = Instrument()
+
+    wedge = Wedge.Wedge(position=(0.5,0,0),concept='ManyToMany')
+    pixels=33
+    split = [12]
+    Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0),pixels=pixels,split=split)
+    Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
+    
+
+    wedge.append([Det,Det,Ana,Ana,Ana])
+    Instr.append(wedge)
+    try:
+        Instr.initialize()
+        assert False
+    except ValueError:
+        assert True
+    Instr.wedges[0].detectors[0].split = [12,20]
+    Instr.initialize()
+
+    assert(len(Instr.A4)==1)
+    assert(len(Instr.A4[0])==2)
+    assert(len(Instr.A4[0][0])==pixels)
+    assert(len(Instr.A4)==len(Instr.Ef))
+    assert(len(Instr.A4[0])==len(Instr.Ef[0]))
+    assert(len(Instr.A4[0][0])==len(Instr.Ef[0][0]))
+    assert(Instr.settings['Initialized']==True)
+
+
+def test_Istrument_saveload():
+    import os
+    Instr = Instrument()
+    Instr2 = Instrument()
+
+    wedge = Wedge.Wedge(position=(0.5,0,0))
+
+    Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
+    Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
+
+    wedge.append([Det,Ana])
+    Instr.append(wedge)
+
+    tempFile = 'temp.bin'
+    Instr.save(tempFile)
+    Instr2.load(tempFile)
+    os.remove(tempFile)
+    
+    assert(Instr==Instr2)
+
+
+def test_parseXML(): # Improve this test!
+
+    tempFileName = '__temp__.xml'
+        
+    Instr = Instrument()
+    Instr.settings['Author'] = 'Jakob Lass'
+
+    wedge = Wedge.Wedge(position=(0.5,0,0))
+
+    Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
+    Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
+
+    wedge.append([Det,Ana])
+    Instr.append([wedge,wedge])
+    Instr.append(wedge)
+    Instr.saveXML(tempFileName)
+        
+    InstrLoaded = Instrument(filename=tempFileName)
+    os.remove(tempFileName)
+
+    assert(Instr==InstrLoaded)

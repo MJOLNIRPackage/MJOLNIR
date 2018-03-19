@@ -2,7 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import _pickle as pickle
+import pickle as pickle
 
 class GeometryConcept(object):
     """Abstract geometry concept. Used as base class for Wedge and Instrument."""

@@ -70,7 +70,7 @@ def test_Generic_plot():
 
 class TubeDetector1D(Detector):
     """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
-    def __init__(self, position, direction,length=0.25, pixels=456,diameter=0.02):
+    def __init__(self, position, direction,length=0.25, pixels=456,diameter=0.02,split=[]):
         """
         Args:
 
@@ -86,6 +86,8 @@ class TubeDetector1D(Detector):
 
             diameter (float): Diameter of tube in meters (default 0.02)
 
+            split (list int): Edge pixels for slitting the tube into areas lidt by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
+
         Raises:
             AttributeError
         
@@ -96,6 +98,8 @@ class TubeDetector1D(Detector):
         self.pixels = pixels
         self.length = length
         self.diameter = diameter
+               
+        self.split = split
 
     @property
     def pixels(self):
@@ -139,6 +143,23 @@ class TubeDetector1D(Detector):
             raise AttributeError('The diameter of the detector tube must be grater than 0')
         self._diameter = diameter
 
+    @property
+    def split(self):
+        return self._split
+
+    @split.getter
+    def split(self):
+        return self._split
+
+    @split.setter
+    def split(self,split):
+        if not isinstance(split,list):
+            raise AttributeError('The splitting of the analyser must be a list with length areas+1')
+        npSplit = np.array(split,dtype=int)
+        if len(npSplit.shape)>1:
+            raise ValueError('Split list is to be 1D.')
+        else:
+            self._split = npSplit
 
 
     def plot(self,ax,offset=(0.0,0.0,0.0),n=100):
@@ -210,17 +231,27 @@ class TubeDetector1D(Detector):
         ax.plot_surface(Xcrot+pos[0], Ycrot+pos[1], Zcrot+pos[2], alpha=1.0, rstride=rstride, cstride=cstride)
         ax.plot_surface(Xcrot2+pos[0], Ycrot2+pos[1], Zcrot2+pos[2], alpha=1.0, rstride=rstride, cstride=cstride)
 
+    def getPixelPositions(self):
+        """Return pixel positions relative to center."""
+        scale = (np.arange(self.pixels,dtype=float)-(self.pixels-1.0)/2.0)/self.pixels*self.length   # the distance of the pixels relative to the central pixel
+        scale.shape=(self.pixels,1)
+        direction = self.direction.copy()
+        direction.shape=(1,3)
+        pixelPositions = np.dot(scale,direction)+self.position
 
+
+        return np.split(pixelPositions,self.split)
 
 
 
 def test_TubeDetector_init():
-    TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=20,length=0.3,diameter=0.025)
+    TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=20,length=0.3,diameter=0.025,split=[0,57,57*2])
     assert(np.all(TubeDetector.position==np.array([0.0,1.0,0.0])))
     assert(np.all(TubeDetector.direction==(1.0,0.0,0.0)))
     assert(TubeDetector.pixels==20)
     assert(TubeDetector.length==0.3)
     assert(TubeDetector.diameter==0.025)
+    assert(np.all(TubeDetector.split==np.array([0,57,57*2])))
 
 def test_TubeDetector_pixels():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
@@ -246,6 +277,20 @@ def test_TubeDetector_diameter():
     except AttributeError:
         assert True
 
+def test_TubeDetector_split():
+    TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=100)
+    try:
+        TubeDetector.split=-0.1
+        assert False
+    except AttributeError:
+        assert True
+
+    TubeDetector.split=[50]
+    pixelPos = TubeDetector.getPixelPositions()
+    assert(len(pixelPos)==2)
+    assert(len(pixelPos[0])==50)
+
+
 def test_TubeDetector1D_plot():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
@@ -253,4 +298,17 @@ def test_TubeDetector1D_plot():
     ax = fig.gca(projection='3d')
 
     TubeDetector.plot(ax)
+    
+
+def test_TubeDetector1D_getPixelPositions():
+    TubeDetector = TubeDetector1D(position=(1.0,0.0,1.0),direction=(1.0,0,0),length=0.5,pixels=5)
+    positions = TubeDetector.getPixelPositions()
+
+    AssumedPositions = np.array([[0.8,0,1],[0.9,0,1],[1.0,0,1],[1.1,0,1],[1.2,0,1]])
+    
+    assert(np.all(AssumedPositions==positions))
+
+    
+    
+
     

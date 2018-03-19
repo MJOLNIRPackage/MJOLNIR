@@ -16,7 +16,7 @@ def parseXML(filename):
 	instr_root = tree.getroot()
 
 	instrSettings = {}
-	
+		
 	for attrib in instr_root.keys():
 		instrSettings[attrib]=instr_root.attrib[attrib]
 
@@ -31,7 +31,10 @@ def parseXML(filename):
 		wedgeSettings = {}
 		
 		for attrib in wedge.keys():
-			wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=float)
+			if attrib=='Concept':
+				wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=str)
+			else:		
+				wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=float)
 			
 		temp_wedge = Wedgeclass_(**wedgeSettings)
 		#print(temp_wedge)
@@ -50,9 +53,20 @@ def parseXML(filename):
 			for attrib in item.keys():
 				attribVal = item.get(attrib).strip().split(',')
 				if len(attribVal)==1:
-					itemSettings[attrib]=float(attribVal[0])
+					if(attrib=='split'):
+						try:
+							val=float(attribVal[0])
+						except ValueError:
+							val=[]
+						itemSettings[attrib]=val
+					else:
+						itemSettings[attrib]=float(attribVal[0])
 				else:
-					itemSettings[attrib]=np.array(attribVal)	
+					if(attrib=='split'):
+						#print(type(attribVal))
+						itemSettings[attrib]=attribVal
+					else:
+						itemSettings[attrib]=np.array(attribVal,dtype=float)	
 			try:
 				temp_item = class_(**itemSettings)
 			except TypeError as e:
@@ -74,9 +88,13 @@ def createXMLString(instrument):
 	for attrib in instrument.settings:
 		XMLString+="{}='{}' ".format(attrib,instrument.settings[attrib])
 	XMLString+='>\n'
-	
+		
 	for wedge in instrument.wedges:
-		XMLString+="\t<Wedge position='{}'>\n".format(','.join([str(x) for x in wedge.position]))
+		XMLString+="\t<Wedge "
+		for attrib in wedge.settings:
+			XMLString+="{}='{}' ".format(attrib,wedge.settings[attrib])
+		XMLString+='>\n'
+
 		for item in wedge.analysers + wedge.detectors:
 			itemClass = str(item.__class__).split('.')[-1][:-2]
 			XMLString+="\t\t<{}".format(itemClass)
@@ -93,13 +111,13 @@ def createXMLString(instrument):
 		XMLString+="\t</Wedge>\n"
 	XMLString+="</Instrument>\n"
 	return XMLString
-	
+		
 
 def test_parseXML(): # Improve this test!
 	from MJOLNIR.Geometry import Wedge,Analyser,Detector,Instrument
 	import os
 	tempFileName = '__temp__'
-	
+		
 	Instr = Instrument.Instrument()
 	Instr.settings['Author'] = 'Jakob Lass'
 
@@ -111,14 +129,14 @@ def test_parseXML(): # Improve this test!
 	wedge.append([Det,Ana])
 	Instr.append([wedge,wedge])
 	Instr.append(wedge)
-	
+		
 	f = open(tempFileName,'w')
 
 	f.write(createXMLString(Instr))
 	f.close()
-	
-	
+		
+		
 	InstrLoaded = parseXML(tempFileName)
 	os.remove(tempFileName)
-	
+		
 	assert(Instr==InstrLoaded)
