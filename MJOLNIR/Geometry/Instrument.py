@@ -270,7 +270,7 @@ def parseXML(Instr,filename):
                 temp_item = class_(**itemSettings)
             except TypeError as e:
                 print(e.args[0])
-                raise ValueError('Item {} misses argument(s):{}'.format(class_,e.args[0].split(':')[1]))
+                raise ValueError('Item {} misses argument(s):{}'.format(class_,e.args[0].split(':')[0]))
             except AttributeError as e:
                 raise AttributeError('Error in passing {} with attributes {}'.format(class_,itemSettings))
             except ValueError:
