@@ -273,4 +273,4 @@ def test_FlatAnalyser_plot():
     
 def test_FlatAnalyser_str():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    assert(str(Analyser)=='FlatAnalyser located at [ 0.  1.  0.]')
+    assert(str(Analyser)=='FlatAnalyser located at '+np.array2string(np.array([0.0,1.0,0.0])))

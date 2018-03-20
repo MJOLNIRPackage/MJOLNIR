@@ -34,7 +34,7 @@ class Wedge(GeometryConcept.GeometryConcept):
         
         for key in kwargs:
             self.settings[key]=kwargs[key]
-        self.settings['Concept']=concept
+        self.settings['concept']=concept
         
         
 
@@ -119,7 +119,7 @@ class Wedge(GeometryConcept.GeometryConcept):
     def plot(self,ax,offset=(0,0,0)):
         """Recursive plotting routine."""
         for obj in self.analysers+self.detectors:
-            obj.plot(ax,offset=self.position+offset)
+            obj.plot(ax,offset=np.array(self.position,dtype=float)+np.array(offset,dtype=float))
 
     def __str__(self):
         string = ''
@@ -140,7 +140,7 @@ class Wedge(GeometryConcept.GeometryConcept):
 
         detectorPixelPositions = []
         analyserPixelPositions = []
-        if self.settings['Concept']=='OneToOne':
+        if self.settings['concept']=='OneToOne':
             if len(self.detectors)!=len(self.analysers):
                 raise RuntimeError('Concept set to OneToOne but number of detectors does not mach analysers ({}!?{}'.format(len(self.detectors),len(self.analysers)))
             detectorCounter = 0
@@ -165,7 +165,7 @@ class Wedge(GeometryConcept.GeometryConcept):
                 analyserPixelPositions.append(np.outer(deltaXDprime,perpVect)+self.analysers[detectorCounter].position+self.position)
                 detectorCounter+=1
 
-        elif self.settings['Concept']=='ManyToMany':
+        elif self.settings['concept']=='ManyToMany':
             for det in self.detectors:
                 PixelPos = [x +self.position for x in det.getPixelPositions()]
                 if len(PixelPos)!=len(self.analysers):
@@ -241,21 +241,21 @@ def test_Wedge_error():
         assert True
 
     try:
-        wedge.settings['Concept']='Wrong'
+        wedge.settings['concept']='Wrong'
         wedge.calculateDetectorAnalyserPositions()
         assert False
     except ValueError:
         assert True
 
     try:
-        wedge.settings['Concept']='OneToOne'
+        wedge.settings['concept']='OneToOne'
         wedge.calculateDetectorAnalyserPositions()
         assert False
     except ValueError:
         assert True
 
     try:
-        wedge.settings['Concept']='OneToOne'
+        wedge.settings['concept']='OneToOne'
         wedge.append([Det,Det,Ana])
         wedge.calculateDetectorAnalyserPositions()
         assert False
@@ -263,7 +263,7 @@ def test_Wedge_error():
         assert True
 
     try:
-        wedge.settings['Concept']='ManyToMany'
+        wedge.settings['concept']='ManyToMany'
         wedge.detectors[0].split=[10,30]
         wedge.calculateDetectorAnalyserPositions()
         assert False

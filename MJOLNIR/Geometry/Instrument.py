@@ -16,26 +16,28 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
 
-            filename (string): Filename of xml file (ending in xml) or object file (free ending)
+            filename (string): Filename of xml file (ending in xml). To load binary files use self.load(filename).
 
         Raises:
             AttributeError
         
         """
-        self._settings = {}
-        for key in kwargs:
-            self.settings[key]=kwargs[key]
-        self._settings['Initialized']=False
+        
+        self._wedges = []
 
+        
+        self._settings = {}
         if filename !='':
             if(filename.split('.')[-1]=='xml'):
                 parseXML(self,filename)
             else:
-                self.load(filename)            
+                raise ValueError('File not of type XML.')
         else:
             super(Instrument,self).__init__(position)
-            self._wedges = []
-
+            
+            for key in kwargs:
+                self.settings[key]=kwargs[key]
+            self._settings['Initialized']=False
             self.append(wedges)
 
     @property
@@ -213,7 +215,6 @@ def parseXML(Instr,filename):
     
         
     for attrib in instr_root.keys():
-        print(attrib)
         if attrib=='position':
             Instr.position = np.array(instr_root.attrib[attrib].split(','))
         Instr.settings[attrib]=instr_root.attrib[attrib]
@@ -229,7 +230,7 @@ def parseXML(Instr,filename):
         wedgeSettings = {}
         
         for attrib in wedge.keys():
-            if attrib=='Concept':
+            if attrib=='concept':
                 wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=str)
             else:        
                 wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=float)
@@ -270,6 +271,8 @@ def parseXML(Instr,filename):
             except TypeError as e:
                 print(e.args[0])
                 raise ValueError('Item {} misses argument(s):{}'.format(class_,e.args[0].split(':')[1]))
+            except AttributeError as e:
+                raise AttributeError('Error in passing {} with attributes {}'.format(class_,itemSettings))
             except ValueError:
                 raise ValueError('Item {} not initialized due to error.'.format(class_))
             #print(temp_item)
@@ -416,7 +419,7 @@ def test_Instrument_Initialization():
 
 def test_Istrument_saveload():
     import os
-    Instr = Instrument()
+    Instr = Instrument(position=(0,1,0))
     Instr2 = Instrument()
 
     wedge = Wedge.Wedge(position=(0.5,0,0))
@@ -432,7 +435,9 @@ def test_Istrument_saveload():
     Instr2.load(tempFile)
     os.remove(tempFile)
     
+
     assert(Instr==Instr2)
+
 
 
 def test_parseXML(): # Improve this test!

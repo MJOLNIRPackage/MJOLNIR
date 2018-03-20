@@ -31,7 +31,7 @@ def parseXML(filename):
 		wedgeSettings = {}
 		
 		for attrib in wedge.keys():
-			if attrib=='Concept':
+			if attrib=='concept':
 				wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=str)
 			else:		
 				wedgeSettings[attrib]=np.array(wedge.attrib[attrib].strip().split(','),dtype=float)

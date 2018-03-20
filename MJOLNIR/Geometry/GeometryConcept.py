@@ -34,7 +34,7 @@ class GeometryConcept(object):
         
         position  = np.array(position)
         if position.ndim !=1 or len(position)!=3:
-            raise AttributeError('Position is to be a 3 vector')
+            raise AttributeError('Position is to be a 3 vector, got {}.'.format(position))
         self._position = position
 
     def __repr__(self):
@@ -68,7 +68,8 @@ class GeometryConcept(object):
                 pickle.dump(self, fileObject, -1)
                 fileObject.close()  
 
-    def load(self,filename):  # Method to load an object from a pickled file
+    def load(self,filename):
+        """Method to load an object from a pickled file."""
         try:                                # Opening the given file with an error catch
             fileObject = open(filename, 'rb')
         except IOError as e:                        # Catch all IO-errors
