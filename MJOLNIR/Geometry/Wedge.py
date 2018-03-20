@@ -240,12 +240,6 @@ def test_Wedge_error():
     except AttributeError:
         assert True
 
-    try:
-        wedge.settings['concept']='Wrong'
-        wedge.calculateDetectorAnalyserPositions()
-        assert False
-    except ValueError:
-        assert True
 
     try:
         wedge.settings['concept']='OneToOne'
@@ -265,6 +259,13 @@ def test_Wedge_error():
     try:
         wedge.settings['concept']='ManyToMany'
         wedge.detectors[0].split=[10,30]
+        wedge.calculateDetectorAnalyserPositions()
+        assert False
+    except ValueError:
+        assert True
+
+    try:
+        wedge.settings['concept']='Wrong'
         wedge.calculateDetectorAnalyserPositions()
         assert False
     except ValueError:
@@ -368,3 +369,16 @@ def test_wedge_calculateDetectorAnalyserPositions_ManyToMany():
 
     offcenterpos = np.array([0.00700467,0.00676014,0.02105171,0.02041748,0.01977911])
     assert(np.sum([analyserPixelPositions[0][i][1]-offcenterpos[i] for i in range(5)])<1e-8)
+
+def test_wedge_string_dummy():
+    wedge = Wedge(concept='ManyToMany')
+
+    string = str(wedge)
+    assert True
+
+def test_wedge_repr_dummy():
+    wedge = Wedge(concept='ManyToMany')
+
+    string = repr(wedge)
+    assert True
+    

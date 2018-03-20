@@ -302,6 +302,13 @@ def test_Instrument_init():
 
 
 def test_Instrument_error():
+    
+    try:
+        Instr = Instrument(filename='wrongDummyFile.bin')
+        assert False
+    except ValueError:
+        assert True
+
     Instr = Instrument()
 
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
@@ -399,6 +406,25 @@ def test_Instrument_Initialization():
     
 
     wedge.append([Det,Det,Ana,Ana,Ana])
+
+    try:
+        Instr.initialize()
+        assert False
+    except ValueError:
+        assert True
+
+    try:
+        print(Instr.A4)
+        assert False
+    except RuntimeError:
+        assert True
+
+    try:
+        print(Instr.Ef)
+        assert False
+    except RuntimeError:
+        assert True
+
     Instr.append(wedge)
     try:
         Instr.initialize()
@@ -415,6 +441,19 @@ def test_Instrument_Initialization():
     assert(len(Instr.A4[0])==len(Instr.Ef[0]))
     assert(len(Instr.A4[0][0])==len(Instr.Ef[0][0]))
     assert(Instr.settings['Initialized']==True)
+
+    try:
+        Instr.A4 = []
+        assert False
+    except NotImplementedError:
+        assert True
+
+    try:
+        Instr.Ef = []
+        assert False
+    except NotImplementedError:
+        assert True
+
 
 
 def test_Istrument_saveload():
@@ -461,3 +500,67 @@ def test_parseXML(): # Improve this test!
     os.remove(tempFileName)
 
     assert(Instr==InstrLoaded)
+
+
+def test_XML_errors():
+
+    fileString = ""
+    fileString+="<?xml version='1.0'?>"
+    fileString+="<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>"
+    fileString+="<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>"
+    fileString+="<FlatAnalyser direction='0.707,0.0,0.707' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>"
+    fileString+="<TubeDetector1D position='1.198,0.0580,0.71' direction='0.998,0.04841,0.0' pixels='456' length='0.883' diameter='0.02' split='57, 114, 171, 228, 285, 342, 399'></TubeDetector1D>"
+    fileString+="</Wedge>"
+    fileString+="</Instrument>"
+
+    temp_file = 'Tempfile.xml'
+    f = open(temp_file,'w')
+    f.write(fileString)
+    f.close()
+
+    try:
+        Instr = Instrument(filename=temp_file)
+        assert False
+    except ValueError:
+        assert True
+
+    fileString = ""
+    fileString+="<?xml version='1.0'?>"
+    fileString+="<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>"
+    fileString+="<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>"
+    fileString+="<FlatAnalyser position='0.0580,0.71' direction='0.707,0.0,0.707' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>"
+    fileString+="<TubeDetector1D position='1.198,0.0580,0.71' direction='0.998,0.04841,0.0' pixels='456' length='0.883' diameter='0.02' split='57, 114, 171, 228, 285, 342, 399'></TubeDetector1D>"
+    fileString+="</Wedge>"
+    fileString+="</Instrument>"
+    f = open(temp_file,'w')
+    f.write(fileString)
+    f.close()
+    try:
+        Instr = Instrument(filename=temp_file)
+        assert False
+    except AttributeError:
+        assert True
+
+    fileString = ""
+    fileString+="<?xml version='1.0'?>"
+    fileString+="<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>"
+    fileString+="<FlatAnalyser position='0.0,0.0,0.0' concept='ManyToMany'>"
+    fileString+="<FlatAnalyser position='0.0580,0.71' direction='0.707,0.0,0.707' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>"
+    fileString+="<TubeDetector1D position='1.198,0.0580,0.71' direction='0.998,0.04841,0.0' pixels='456' length='0.883' diameter='0.02' split='57, 114, 171, 228, 285, 342, 399'></TubeDetector1D>"
+    fileString+="</FlatAnalyser>"
+    fileString+="</Instrument>"
+    f = open(temp_file,'w')
+    f.write(fileString)
+    f.close()
+    try:
+        Instr = Instrument(filename=temp_file)
+        assert False
+    except ValueError:
+        assert True
+    os.remove(temp_file)
+
+def test_instrument_string_dummy(): # Todo: Improve test!
+    Instr = Instrument()
+
+    string = str(Instr)
+    assert True
