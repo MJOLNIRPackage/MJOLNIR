@@ -1,12 +1,27 @@
 import math,numpy as np
-from MJOLNIR.Geometry import GeometryObject
+from MJOLNIR.Geometry import GeometryConcept
+import warnings
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
-class Analyser(GeometryObject.GeometryObject):
-    """Generic analyser object"""
-    def __init__(self,position,direction):
+class Analyser(GeometryConcept.GeometryObject):
+    """Generic analyser object. Base class from which all analysers must inherit."""
+    def __init__(self,position,direction,d_spacing=3.35,mosaicity=60):
+        """
+        Args:
+
+            position (float 3): Position of analyser in meters
+
+            direction (float 3): Direction of analyser
+
+            d_spacing (float): The d spacing in Anstrom (default 3.35)
+
+            mosaicity (float): The standard deviation of mosaicity in arcminutes (default 60)
+        """
         super(Analyser,self).__init__(position,direction)
-        self.type = "Generic Analyser"
+        self.d_spacing = d_spacing
+        self.mosaicity = mosaicity
+        
 
     @property
     def type(self):
@@ -19,7 +34,39 @@ class Analyser(GeometryObject.GeometryObject):
     @type.setter
     def type(self,type):
         self._type = type
+
+    @property
+    def d_spacing(self):
+        return self._d_spacing
+
+    @d_spacing.getter
+    def d_spacing(self):
+        return self._d_spacing
+
+    @d_spacing.setter
+    def d_spacing(self,d_spacing):
+        if d_spacing<0.0:
+            raise AttributeError
+        if d_spacing>10.0:
+            warnings.warn('The unit of d spacing is Angstrom')
+        self._d_spacing = d_spacing
         
+    @property
+    def mosaicity(self):
+        return self._mosaicity
+
+    @mosaicity.getter
+    def mosaicity(self):
+        return self._mosaicity
+
+    @mosaicity.setter
+    def mosaicity(self,mosaicity):
+        if mosaicity<0.0:
+            raise AttributeError('The mosaicity should be non-negative')
+        if mosaicity<1.0:
+            warnings.warn('The unit of mosaicity is arcminutes')
+        self._mosaicity = mosaicity
+
     def plot(self,ax,offset=(0.0,0.0,0.0)):
         """
         Args:
@@ -36,18 +83,19 @@ class Analyser(GeometryObject.GeometryObject):
         raise NotImplementedError
 
     def __str__(self):
-        returnString=('{} located at {}'.format(self.type,self.position))
+        returnString=('{} located at {}'.format(str(self.__class__).split('.')[-1][:-2],self.position))
         return returnString
 
 def test_init():
-    GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+    GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
     assert(np.all(GenericAnalyser.position==np.array([0.0,1.0,0.0])))
     assert(np.all(GenericAnalyser.direction==(1.0,0.0,0.0)))
-    assert(GenericAnalyser.type=="Generic Analyser")
+    assert(GenericAnalyser.d_spacing==3.35)
+    assert(GenericAnalyser.mosaicity==60.0)
 
 def test_Generic_plot():
     
-    GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+    GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
     ax = []
     try:
         GenericAnalyser.plot(ax)
@@ -55,11 +103,40 @@ def test_Generic_plot():
     except NotImplementedError:
         assert True
 
+def test_warnings():
+    GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
+
+    with warnings.catch_warnings(record=True) as w: # From https://docs.python.org/3.1/library/warnings.html
+        # Cause all warnings to always be triggered.
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        GenericAnalyser.d_spacing = 20.0
+        GenericAnalyser.mosaicity = 0.5
+        # Verify some things
+        assert len(w) == 2
+        assert issubclass(w[0].category, UserWarning)
+        assert issubclass(w[1].category, UserWarning)
+        assert "The unit of d spacing is Angstrom" in str(w[0].message)
+        assert "The unit of mosaicity is arcminutes" in str(w[1].message)
+
+def test_Generic_errors():
+    GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
+    try:
+        GenericAnalyser.d_spacing=-0.1
+        assert False
+    except AttributeError:
+        assert True
+
+    try:
+        GenericAnalyser.mosaicity=-0.1
+        assert False
+    except AttributeError:
+        assert True
 
 
 class FlatAnalyser(Analyser):
-    """Flat Analyser"""
-    def __init__(self,position,direction,width=0.05,height=0.1):
+    """Simple flat analyser. """
+    def __init__(self,position,direction,d_spacing=3.35,mosaicity=60,width=0.05,height=0.1):
         """
         Args:
 
@@ -68,6 +145,10 @@ class FlatAnalyser(Analyser):
             Direction (3vector): Direction along which the object points (default [0,0,1])
 
         Kwargs:
+
+            d_spacing (float): D spacing of analyser in Angstrom
+
+            mosaicity (float): Mosaicity in arcminutes
 
             length (float): Length of detector tube in meters (default 0.25)
 
@@ -80,8 +161,7 @@ class FlatAnalyser(Analyser):
         
 
         """
-        super(FlatAnalyser,self).__init__(position,direction)
-        self.type = "Flat Analyser"
+        super(FlatAnalyser,self).__init__(position,direction,d_spacing,mosaicity)
         self.width = width
         self.height = height
 
@@ -110,13 +190,13 @@ class FlatAnalyser(Analyser):
 
     @height.setter
     def height(self,height):
-        if(height<0):
+        if(height<0.0):
             raise AttributeError('The height of the analyser must be grater than 0.')
         self._height = height
 
 
 
-    def plot(self,ax,bankPos=np.array([0,0,0]),n=100):
+    def plot(self,ax,offset=np.array([0,0,0]),n=100):
         """
         Args:
 
@@ -133,7 +213,7 @@ class FlatAnalyser(Analyser):
         """
         pos = self.position.copy()
 
-        pos+=bankPos
+        pos+=offset
         Width = self.width / 2.0
         Height =self.height / 2.0
 
@@ -159,10 +239,9 @@ class FlatAnalyser(Analyser):
 
 
 def test_Analyser_init():
-    Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),width=0.05,height=0.1)
+    Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60,width=0.05,height=0.1)
     assert(np.all(Analyser.position==np.array([0.0,1.0,0.0])))
     assert(np.all(Analyser.direction==(1.0,0.0,0.0)))
-    assert(Analyser.type=="Flat Analyser")
     assert(Analyser.width==0.05)
     assert(Analyser.height==0.1)
  
@@ -184,7 +263,7 @@ def test_Analyser_height():
         assert True
 
 
-def test_TubeDetector1D_plot():
+def test_FlatAnalyser_plot():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
     fig = plt.figure()
@@ -192,27 +271,6 @@ def test_TubeDetector1D_plot():
 
     Analyser.plot(ax)
     
-
-
-
-
-def plane(point,width,height,normal):
-    nppoint = np.array(point)
-    npnormal = np.array(normal)
-
-
-    npnormal = npnormal/np.linalg.norm(npnormal)
-    theta = np.arccos(np.dot(np.array([1,0,0]),npnormal))-math.pi/2.0
-    #print theta
-    inplaneHorizontal = np.array([math.cos(theta),math.sin(theta),0])*width/2.0
-
-    inplaneVertical = np.cross(npnormal,inplaneHorizontal)/(np.linalg.norm(inplaneHorizontal))*height/2.0
-
-
-
-    points = np.array([nppoint+inplaneHorizontal+inplaneVertical,nppoint+inplaneHorizontal-inplaneVertical,
-                nppoint-inplaneHorizontal-inplaneVertical,nppoint-inplaneHorizontal+inplaneVertical,
-                nppoint+inplaneHorizontal+inplaneVertical])
-
-    x,y,z= points.T
-    return x,y,z
+def test_FlatAnalyser_str():
+    Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+    assert(str(Analyser)=='FlatAnalyser located at '+np.array2string(np.array([0.0,1.0,0.0])))

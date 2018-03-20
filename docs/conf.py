@@ -33,7 +33,7 @@ author = u'Jakob Lass'
 version = u''
 # The full version, including alpha/beta/rc tags
 
-release = u'0.1.0'
+release = u'0.2.0'
 
 
 
@@ -54,6 +54,8 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.intersphinx'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

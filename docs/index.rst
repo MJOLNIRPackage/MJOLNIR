@@ -11,5 +11,6 @@ Welcome to MJOLNIR's documentation!
    :caption: Contents:
 
    Introduction
+   Tutorial
    MJOLNIR
 

@@ -1,25 +1,25 @@
-"""
-Detector
-========
-"""
-
-from MJOLNIR.Geometry import GeometryObject
+from MJOLNIR.Geometry import GeometryConcept
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 
-class Detector(GeometryObject.GeometryObject):
-    """Generic detector type"""
+class Detector(GeometryConcept.GeometryObject):
+    """Generic detector being the base class of all detectors."""
 
     def __init__(self, position,direction):
         """
         Kwargs:
             Position (3vector): Position of object (default [0,0,0])
 
-            Direction (3vector): Direction along which the object points (default [0,0,1])"""
+            Direction (3vector): Direction along which the object points (default [0,0,1])
+            
+        raises:
+
+            NotImplementedError
+            
+        """
         super(Detector,self).__init__(position,direction)
-        self.type = "Generic Detector"
 
     @property
     def type(self):
@@ -42,23 +42,26 @@ class Detector(GeometryObject.GeometryObject):
         Kwargs:
 
             offset (3vector): Offset of detector due to bank position (default [0,0,0])
+
         >>> GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-        >>> GenericDetector.plot(ax)"""
+        >>> GenericDetector.plot(ax)
+        Plots detector tube in provided axis object.
+
+        """
         raise NotImplementedError
 
-    def __str__(self):
-        returnString=('{} located at {}'.format(self.type,self.position))
-        return returnString
+
 
 def test_init():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     assert(np.all(GenericDetector.position==np.array([0.0,1.0,0.0])))
     assert(np.all(GenericDetector.direction==(1.0,0.0,0.0)))
-    assert(GenericDetector.type=="Generic Detector")
 
 def test_Generic_plot():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    ax = []
+    plt.ioff()
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
     try:
         GenericDetector.plot(ax)
         assert False
@@ -66,8 +69,8 @@ def test_Generic_plot():
         assert True
 
 class TubeDetector1D(Detector):
-    """Tube detector as used on the prototype at PSI."""
-    def __init__(self, position, direction,length=0.25, pixels=456,diameter=0.02):
+    """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
+    def __init__(self, position, direction,length=0.25, pixels=456,diameter=0.02,split=[]):
         """
         Args:
 
@@ -83,17 +86,20 @@ class TubeDetector1D(Detector):
 
             diameter (float): Diameter of tube in meters (default 0.02)
 
+            split (list int): Edge pixels for slitting the tube into areas lidt by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
+
         Raises:
-            AttributeError, NotImplimentedError
+            AttributeError
         
 
         """
 
         super(TubeDetector1D,self).__init__(position,direction)
-        self.type = "1D Tube Detector"
         self.pixels = pixels
         self.length = length
         self.diameter = diameter
+               
+        self.split = split
 
     @property
     def pixels(self):
@@ -137,6 +143,23 @@ class TubeDetector1D(Detector):
             raise AttributeError('The diameter of the detector tube must be grater than 0')
         self._diameter = diameter
 
+    @property
+    def split(self):
+        return self._split
+
+    @split.getter
+    def split(self):
+        return self._split
+
+    @split.setter
+    def split(self,split):
+        if not isinstance(split,list):
+            raise AttributeError('The splitting of the analyser must be a list with length areas+1')
+        npSplit = np.array(split,dtype=int)
+        if len(npSplit.shape)>1:
+            raise ValueError('Split list is to be 1D.')
+        else:
+            self._split = npSplit
 
 
     def plot(self,ax,offset=(0.0,0.0,0.0),n=100):
@@ -153,10 +176,12 @@ class TubeDetector1D(Detector):
         
         >>> Detector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> Detector.plot(ax,offset=(0.0,0.0,0.0),n=100)
+        Plots detector tube in provided axis object.
+
         """
         
         pos = self.position.copy()
-        pos+=offset
+        pos+=np.array(offset,dtype=float)
 
 
         r = self.diameter/2
@@ -206,35 +231,27 @@ class TubeDetector1D(Detector):
         ax.plot_surface(Xcrot+pos[0], Ycrot+pos[1], Zcrot+pos[2], alpha=1.0, rstride=rstride, cstride=cstride)
         ax.plot_surface(Xcrot2+pos[0], Ycrot2+pos[1], Zcrot2+pos[2], alpha=1.0, rstride=rstride, cstride=cstride)
 
+    def getPixelPositions(self):
+        """Return pixel positions relative to center."""
+        scale = (np.arange(self.pixels,dtype=float)-(self.pixels-1.0)/2.0)/self.pixels*self.length   # the distance of the pixels relative to the central pixel
+        scale.shape=(self.pixels,1)
+        direction = self.direction.copy()
+        direction.shape=(1,3)
+        pixelPositions = np.dot(scale,direction)+self.position
 
 
-
-def cylinder(r,n,l):
-    """Return cylinder with radius r, length l and n points"""
-    r = np.atleast_2d(r)
-    r_rows,r_cols = r.shape
-
-    if r_cols>r_rows:
-        r = r.T
-
-    points = np.linspace(0,2*np.pi,n+1)
-    x = np.cos(points)*r
-    y = np.sin(points)*r
-    rpoints = np.atleast_2d(np.linspace(-l/2,l/2,len(r)))
-    z = np.ones((1,n+1))*rpoints.T
-    return x,y,z
-
+        return np.split(pixelPositions,self.split)
 
 
 
 def test_TubeDetector_init():
-    TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=20,length=0.3,diameter=0.025)
+    TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=20,length=0.3,diameter=0.025,split=[0,57,57*2])
     assert(np.all(TubeDetector.position==np.array([0.0,1.0,0.0])))
     assert(np.all(TubeDetector.direction==(1.0,0.0,0.0)))
-    assert(TubeDetector.type=="1D Tube Detector")
     assert(TubeDetector.pixels==20)
     assert(TubeDetector.length==0.3)
     assert(TubeDetector.diameter==0.025)
+    assert(np.all(TubeDetector.split==np.array([0,57,57*2])))
 
 def test_TubeDetector_pixels():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
@@ -260,6 +277,20 @@ def test_TubeDetector_diameter():
     except AttributeError:
         assert True
 
+def test_TubeDetector_split():
+    TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=100)
+    try:
+        TubeDetector.split=-0.1
+        assert False
+    except AttributeError:
+        assert True
+
+    TubeDetector.split=[50]
+    pixelPos = TubeDetector.getPixelPositions()
+    assert(len(pixelPos)==2)
+    assert(len(pixelPos[0])==50)
+
+
 def test_TubeDetector1D_plot():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
@@ -267,4 +298,17 @@ def test_TubeDetector1D_plot():
     ax = fig.gca(projection='3d')
 
     TubeDetector.plot(ax)
+    
+
+def test_TubeDetector1D_getPixelPositions():
+    TubeDetector = TubeDetector1D(position=(1.0,0.0,1.0),direction=(1.0,0,0),length=0.5,pixels=5)
+    positions = TubeDetector.getPixelPositions()
+
+    AssumedPositions = np.array([[0.8,0,1],[0.9,0,1],[1.0,0,1],[1.1,0,1],[1.2,0,1]])
+    
+    assert(np.all(AssumedPositions==positions))
+
+    
+    
+
     
