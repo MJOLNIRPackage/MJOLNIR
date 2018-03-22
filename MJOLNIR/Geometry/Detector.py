@@ -70,7 +70,7 @@ def test_Generic_plot():
 
 class TubeDetector1D(Detector):
     """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
-    def __init__(self, position, direction,length=0.25, pixels=456,diameter=0.02,split=[]):
+    def __init__(self, position, direction,length=0.25, pixels=452,diameter=0.02,split=[]):
         """
         Args:
 
@@ -82,7 +82,7 @@ class TubeDetector1D(Detector):
 
             length (float): Length of detector tube in meters (default 0.25)
 
-            pixels (int): Number of pixels (default 456)
+            pixels (int): Number of pixels (default 452)
 
             diameter (float): Diameter of tube in meters (default 0.02)
 
