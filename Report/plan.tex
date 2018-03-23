@@ -1,0 +1,200 @@
+\section{Plan}
+\subsection{Notes from meeting 13/03/18}
+Focusig, in principle for eliptical $\rightarrow$ simulated by straight
+for MA15 (test case for MA9)
+\begin{itemize}
+\item 2.3 degrees opening angle \@ 4AA
+\item m=6
+\item sample size: 5x5mm
+\item 30cm at the magnet. Compare with only sample position (should be 5x5mm)
+\item Inner dimention is 7mm (focus for 5 mm on sample position)
+\item limits for outer diameter
+\item Reference sample to look at resolution
+\item[?] Maybe Union
+\item Build up a 'complete' back-end
+\end{itemize}
+
+\subsection{Magnet limitations}
+\begin{figure}[H]\centering
+\includegraphics[width=0.7\linewidth]{Figures/NeutronOptics}
+\caption{Sketch of optic dimensions due to magnet limitations.}
+\end{figure}
+\begin{itemize}
+\item MagnetOpticsOpening = 0.030,
+\item MagnetOpticsEnd = 0.007,
+\item MagnetOpticsLenght=0.268,
+\item MagnetOpticsM = 6,
+\item MagnetOpticsWidth = 0.2,
+\end{itemize}
+
+\subsection{Original setup}
+Setup consists of:
+\lstset {language=C++}
+\begin{lstlisting}
+
+COMPONENT MonoFLat = Monochromator_curved(
+    zwidth = 0.05, yheight = 0.025, gap = 0.0005, NH =3,
+    NV = 5, DM=3.355, mosaich = 37, mosaicv = 37, r0 = 1,
+     RV = RV_mono, RH = RH_mono)
+  AT (0, 0, 1.6) RELATIVE SlitGuideEnd
+  ROTATED (0, thetaA1,0) RELATIVE SlitGuideEnd
+
+COMPONENT A2 = Arm()
+  AT (0, 0, 1.6) RELATIVE SlitGuideEnd
+  ROTATED (0, thetaA2, 0) RELATIVE SlitGuideEnd
+
+COMPONENT SlitMagnetStart = Slit(
+    xwidth = MagnetSlitWidth, yheight = MagnetSlitHeight)
+  AT (0, 0, 1.3) RELATIVE A2
+
+COMPONENT PsdMagnet = PSD_monitor(
+    nx = 100, ny = 100, filename = "PSD_Magnet_opening.dat", xwidth = 0.2,
+    yheight = 0.2)
+  AT (0, 0, 1.3) RELATIVE A2
+
+COMPONENT DivMon_Magnet = Divergence_monitor(
+    nh = 100, nv = 100, filename = "Div_Magnet_opening.dat",
+    xwidth = 0.2, yheight = 0.2, maxdiv_h = 6, maxdiv_v = 6.5)
+   AT (0, 0, 0 ) RELATIVE PREVIOUS
+
+
+COMPONENT PsdSampleBeamProfile = PSD_monitor(
+    nx = 100, ny = 100, filename = "PsdSampleBeamProfile.dat", xwidth = 0.2,
+    yheight = 0.2)
+  AT (0, 0, 1.6) RELATIVE A2
+
+
+COMPONENT DivMonSampleBeamProfile = Divergence_monitor(
+    nh = 100, nv = 100, filename = "DivMonSampleBeamProfile.dat",
+    xwidth = 0.2, yheight = 0.2, maxdiv_h = 6, maxdiv_v = 6.5)
+   AT (0, 0, 0 ) RELATIVE PREVIOUS
+
+COMPONENT PsdSampleSimulator = PSD_monitor(
+    nx = 100, ny = 100, filename = "PsdSampleSimulator.dat", xwidth = 0.005,
+    yheight = 0.005)
+  AT (0, 0, 0) RELATIVE PREVIOUS
+
+COMPONENT DivMonSampleSimulator = Divergence_monitor(
+    nh = 100, nv = 100, filename = "DivMonSampleSimulator.dat",
+    xwidth = 0.005, yheight = 0.005, maxdiv_h = 6, maxdiv_v = 6.5)
+   AT (0, 0, 0 ) RELATIVE PREVIOUS
+\end{lstlisting}
+\begin{figure}[H]\centering
+\includegraphics[width=0.99\linewidth]{Figures/VisualOriginalFlat.png}
+\caption{Flat monochromator with slits and without optics.}
+\includegraphics[width=0.99\linewidth]{Figures/VisualFlatOpticsFlat.png}
+\caption{Flat monochromator with slits and with optics.}
+\end{figure}
+
+
+\subsection{Comparison}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|}\hline
+ & Flat Mono WO & VCurved Mono WO  & Flat Mono W & VCurved Mono W\\ \hline
+Intensities & 177282 & 432272 & 204688 & 591671 \\ \hline
+Flat Mono WO & 1 & 2.44 & {\color{red}1.15} & 3.34 \\ \hline
+VCurved Mono WO & -- & 1 & 0.47 & {\color{red}1.37} \\ \hline
+Flat Mono W & -- & -- & 1 & 2.89 \\ \hline
+VCurved Mono W & -- & -- & -- & 1 \\ \hline
+\end{tabular}
+\caption{Comparison between vertically focused/unfocused and with/without optics}
+\end{table}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.98\linewidth]{Figures/NoOpticsFlat}\caption{No optics flat.}
+\includegraphics[width=0.98\linewidth]{Figures/NoOpticsCurved}\caption{No optics curved vertically.}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.98\linewidth]{Figures/FlatOpticsFlat}\caption{Flat optics flat.}
+\includegraphics[width=0.98\linewidth]{Figures/FlatOpticsCurved}\caption{Flat optics curved vertically.}
+\end{figure}
+
+\subsection{Future Monochromator}
+The future monochromator might change the efficiency of adding the optics. The monochromator is given as
+\lstset {language=C++}
+\begin{lstlisting}
+COMPONENT Mono = Monochromator_curved(
+    zwidth = 0.01, yheight = 0.01, gap = 0.0005, NH =24,
+    NV = 13, DM=3.355,mosaich = 37, mosaicv = 37, r0 = 1,
+     RV = RV_mono, RH = RH_mono)
+  AT (0, 0, 1.6) RELATIVE SlitGuideEnd
+  ROTATED (0, thetaA1,0) RELATIVE SlitGuideEnd
+\end{lstlisting}
+\begin{table}[H]
+\begin{tabular}{|c|c|c|c|c|}\hline
+ & Flat Mono WO & Curved Mono WO  & Flat Mono W & VCurved Mono W\\ \hline
+Intensities & 160212 & 598328 & 197003 & 833920 \\ \hline
+Flat Mono WO & 1 & 3.73 & {\color{red}1.23} & 5.21 \\ \hline
+VCurved Mono WO & -- & 1 & 0.33 & {\color{red}1.39} \\ \hline
+Flat Mono W & -- & -- & 1 & 4.23 \\ \hline
+VCurved Mono W & -- & -- & -- & 1 \\ \hline
+\end{tabular}
+\caption{Comparison between double focused/unfocused and with/without optics with the future monochromator.}
+\end{table}
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth]{Figures/FutureVISUAL}
+\end{figure}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.98\linewidth]{Figures/FutureFlat}\caption{No optics flat with new monochromator.}
+\includegraphics[width=0.98\linewidth]{Figures/FutureFocusing}\caption{No optics double focusing with new monochromator.}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.98\linewidth]{Figures/FutureFlatWithOptics}\caption{Flat optics flat with the future monochromator.}
+\includegraphics[width=0.98\linewidth]{Figures/FutureFocusingWithOptics}\caption{Flat optics double focusing with the future monochromator.}
+\end{figure}
+
+
+\subsection{Next steps}
+Possible next steps
+\begin{itemize}
+\item Eliptical optics
+\item Optimzation of optic opening
+\item Full simulation
+\end{itemize}
+\newpage
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth]{Figures/EScanOverview}
+\caption{Energy scan, flat monochromator, without optics, VanSample with radius=0.005m and yheight=0.01m}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=0.99\linewidth]{Figures/VisualEscan}
+\caption{Instrument view of energy scan simulation with two slits.}
+\end{figure}
+\newpage
+\subsection{Folder overview}
+\subsubsection{Old Monochromator}
+Flat monochromator without optics:
+\begin{itemize}
+\item OriginalFlat
+\end{itemize}
+Vertically curved monochromator without optics:
+\begin{itemize}
+\item OriginalCurved
+\end{itemize}
+Flat monochromator with flat optics:
+\begin{itemize}
+\item FlatOpticsFlat
+\end{itemize}
+Vertically curved monochromator with flat optics:
+\begin{itemize}
+\item FlatOpticsCurved
+\end{itemize}
+\subsubsection{New Monochromator}
+Flat monochromator without optics:
+\begin{itemize}
+\item FutureMonochromator/Flat
+\end{itemize}
+Double focusing monochromator without optics:
+\begin{itemize}
+\item FutureMonochromator/DoubleCurved
+\end{itemize}
+Flat monochromator with flat optics:
+\begin{itemize}
+\item FutureMonochromator/FlatWithOptics
+\end{itemize}
+Doble focusing monochromator with flat optics:
+\begin{itemize}
+\item FutureMonochromator/CurvedWithOptics
+\end{itemize}
+\label{sidsteSide}

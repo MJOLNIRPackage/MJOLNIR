@@ -1,0 +1,758 @@
+% Latex preamble
+% Author: Thorbjørn Louring Koch + Jakob Lass
+% Version: 6.4
+% Remember to update the goddam version number!!!
+
+% Define document type and basic settings
+\documentclass[a4paper,11pt,twoside]{article}
+
+% Remove warnings for overfull and underfull box up until a given length
+\hfuzz=25.002pt 
+\tolerance=10001
+\hbadness=10000
+
+% Remove indent after new paragraf
+%\setlength{\parindent}{0pt}
+
+% Enable all UTF-8 char's
+\usepackage[utf8]{inputenc}
+
+\usepackage{longtable}
+
+\usepackage{cite}
+\newcommand{\citein}[1]{$\mbox{[\!\!\citenum{#1}]}$}
+
+
+\newcommand{\findCite}[1]{\citep{??}{\color{red}{#1}}}
+\newcommand{\apref}[1]{[\ref{#1}]}
+\newcommand{\aprefp}[1]{$^{\mbox{\scriptsize{[\ref{#1}]}}}$}
+\usepackage[nottoc]{tocbibind}
+
+%\newcommand{\TODO}[1]{{\color{red}{#1}}}
+
+% Enable figure placements
+\usepackage{graphicx,wrapfig,lipsum}
+\usepackage{float}
+\usepackage[font={small,sl},labelfont=bf]{caption}
+\usepackage{placeins}
+
+% Page references
+%\usepackage{pageslts,refcount}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+\usepackage{cleveref}
+
+% Text above arrows
+\usepackage{mathtools}
+
+% Standalones
+\usepackage[mode=buildnew]{standalone}
+
+% Make landscape mode possible
+\usepackage{lscape}
+
+\usepackage{subcaption}
+\DeclareCaptionLabelFormat{andtable}{#1~#2  \&  \tablename~\thetable}
+
+% Enable multiple columns
+\usepackage{multicol}
+
+% Make every section, subsection, and subsubsection a label
+
+% From Cystal
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage[mode=buildnew]{standalone}
+\DeclareCaptionLabelFormat{andtable}{#1~#2  \&  \tablename~\thetable}
+
+
+
+
+
+\usepackage{simplewick}
+% Fancy pagestyle
+%-----------------------------------------------------------------------------------
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\setlength{\headheight}{14pt}
+% Standard pagestyle
+\fancypagestyle{standard}{
+	\fancyhf{}
+	\fancyhead[R]{\textsc{\myTitle}}
+	\fancyhead[C]{}
+	\fancyhead[L]{\textsc{\nouppercase\leftmark}}
+	\fancyfoot[C]{ }
+	\fancyfoot[LO]{\thepage  \ of \pageref{sidsteSide}}%\pageref{LastPage}}
+	\fancyfoot[RE]{\thepage  \ of \pageref{sidsteSide}}%\pageref{LastPage}}
+	}
+
+
+%% rightmark
+\fancypagestyle{rightmark}{
+	\fancyhf{}
+	\fancyhead[R]{\textsc{\myTitle}}
+	\fancyhead[C]{}
+	\fancyhead[L]{\textsc{\nouppercase\rightmark}}
+	\fancyfoot[C]{ }
+	\fancyfoot[LO]{\thepage  \ of \pageref{sidsteSide}}%\pageref{LastPage}}
+	\fancyfoot[RE]{\thepage  \ of \pageref{sidsteSide}}%\pageref{LastPage}}
+	}
+
+% TOC - style	 
+\fancypagestyle{toc}{
+	\fancyhf{}
+	\fancyhead[R]{\textsc{\myTitle}}
+	\fancyhead[C]{}
+	\fancyhead[L]{\textsc{Contents}}
+	\fancyfoot[C]{ \thepage }
+	\fancyfoot[LO]{}
+	\fancyfoot[RE]{}
+	} 
+	
+% Preface - style	 
+\fancypagestyle{preface}{
+	\fancyhf{}
+	\fancyhead[R]{\textsc{\myTitle}}
+	\fancyhead[C]{}
+	\fancyhead[L]{\textsc{Preface}}
+	\fancyfoot[C]{ \thepage }
+	\fancyfoot[LO]{}
+	\fancyfoot[RE]{}
+	} 	
+
+% Bibliography - style
+\fancypagestyle{Bibliography}{
+	\fancyhf{}
+	\fancyhead[R]{\textsc{\myTitle}}
+	\fancyhead[C]{}
+	\fancyhead[L]{\textsc{\nouppercase Bibliography}}
+	\fancyfoot[C]{\thepage}
+%	\fancyfoot[LO]{\thepage}%  \ of \pageref{LastPage}}
+%	\fancyfoot[RE]{\thepage}%  \ of \pageref{LastPage}}
+	}
+	 	
+% Appendix - style
+\fancypagestyle{Appendix}{
+	\fancyhf{}
+	\fancyhead[R]{\textsc{\myTitle}}
+	\fancyhead[C]{}
+	\fancyhead[L]{\textsc{Appendix - \nouppercase\rightmark}}
+	\fancyfoot[C]{\thepage}
+%	\fancyfoot[LO]{\thepage}%  \ of \pageref{LastPage}}
+%	\fancyfoot[RE]{\thepage}%  \ of \pageref{LastPage}}
+	} 	
+
+% Margins
+\usepackage[top=3cm, bottom=3.5cm, left=2.5cm, right=2.5cm]{geometry}
+
+
+
+
+
+% Better layout for mathematics
+%------------------------------------------------------------------------------------------------
+\usepackage{amsmath,amssymb,stmaryrd,amsfonts,amssymb}
+\SetSymbolFont{stmry}{bold}{U}{stmry}{m}{n}
+\usepackage[amssymb]{SIunits}
+% No spacing after comma in mathmode
+\usepackage{icomma}
+% Feynmann slah
+\usepackage{slashed}
+% Include section number in equations
+\numberwithin{equation}{section}
+
+% Nicer tabulars
+\usepackage{array}
+\setlength\extrarowheight{3pt}
+
+% New font - primarily for script r
+\usepackage{calligra}
+\DeclareMathAlphabet{\mathcalligra}{T1}{calligra}{m}{n}
+\DeclareFontShape{T1}{calligra}{m}{n}{<->s*[2.2]callig15}{}
+\newcommand{\scripty}[1]{\ensuremath{\mathcalligra{#1}}}
+
+
+% Grafic settings
+%------------------------------------------------------------------------------------------------
+\usepackage{graphicx}
+
+% Bibliography settings
+%------------------------------------------------------------------------------------------------
+ \usepackage[square,super,comma,longnamesfirst,sort&compress]{natbib}
+ 
+\renewcommand\refname{Bibliography}
+
+% TOC
+%------------------------------------------------------------------------------------
+\setcounter{tocdepth}{2}
+
+% New command which creates a box around the argument
+\newcommand{\boxit}[1]{\addtolength{\fboxsep}{2pt} \boxed{ #1 }}
+
+% Change font of headers
+\usepackage{sectsty}
+
+%\renewcommand{\sfdefault}{ptm}
+\renewcommand{\rmdefault}{ptm}
+
+\allsectionsfont{\bfseries}
+
+
+
+% Colours
+\usepackage[usenames,dvipsnames,table]{xcolor}
+\definecolor{SciGreen}{RGB}{78,131,63}
+\definecolor{LinkColor}{RGB}{48, 67, 163}%{40,50,100}
+\definecolor{WHITE}{RGB}{255,255,255}
+\definecolor{rowColor1}{RGB}{201,201,201}
+\definecolor{rowColor2}{RGB}{221,221,221}
+
+% Enable todos (Must be placed after xcolor
+\usepackage{todonotes}
+\setlength{\marginparwidth}{2cm} % _________________________________________CHANGES MARGIN SIZE!!_____________________
+
+
+% 3D plots
+\usepackage{pgfplots}
+
+% Front page
+%-----------------------------------------------------------------------------------
+
+\newcommand*{\myTitlepage} % Create the command for including the title page in the document
+{\begingroup
+\begin{center}
+{\color{SciGreen}
+	\rule{\linewidth}{2.5px}\vspace{-7px}
+	\rule{0.95 \linewidth}{1.5px}\vspace{12px}
+}
+
+\textsc{\Huge{{\qquad \quad \myTitle}}}
+\vspace{10px}
+\newline
+\textsc{\Large{{\qquad \mySubTitle}}}
+
+{\color{SciGreen}
+	\vspace{5px}
+	\rule{0.95 \linewidth}{1.5px}\vspace{-7px}
+	\rule{\linewidth}{2.5px}
+}
+
+\textit{\myName}
+
+\vfill
+
+
+\end{center}
+\begin{minipage}{0.25\linewidth}
+\includegraphics[width=\linewidth]{Figures/sciencelogo.eps}
+\end{minipage}
+\begin{minipage}{0.74\linewidth}
+\begin{flushright}
+\Large{
+\textsc{\myDate \\ \myProject \\ \myDepartment \\ \mySupervisor }
+}
+\end{flushright}
+\end{minipage}
+
+%\newpage
+\endgroup}
+
+% 
+
+\newcommand{\miniscule}{\@setfontsize\miniscule{3}{4}}
+
+% Links
+%\usepackage[pdftex,
+%            pdfauthor={Thorbjørn Louring Koch & Jakob Lass},
+%            pdftitle={Bachelor project},
+%            pdfsubject={Effective Field Theory},
+%            pdfkeywords={QCD,EFT},
+%            pdfproducer={},
+%            pdfcreator={pdflatex},
+%            hidelinks]{hyperref}
+
+
+
+
+%% Enables the use of \capitalisewords{}-command
+\usepackage{mfirstuc}
+
+
+%Conditional statements
+\usepackage{xifthen}
+
+
+
+
+
+% Custom commands
+%-----------------------------------------------------------------------------------
+% remove retarded spacing after \left and \right
+\let\originalleft\left
+\let\originalright\right
+\renewcommand{\left}{\mathopen{}\mathclose\bgroup\originalleft}
+\renewcommand{\right}{\aftergroup\egroup\originalright}
+
+% Timely average
+\newcommand{\avg}[1]{\left\langle #1 \right\rangle}
+
+% Flexible parathesis
+\newcommand{\parh}[1]{\left( #1 \right) }
+\newcommand{\sbrac}[1]{\left[ #1 \right] }
+
+% frac enclosed in parenthesis
+\newcommand{\fracp}[2]{\left( \frac{#1}{#2} \right)}
+
+% Trigonmetric functions with input
+\renewcommand{\tan}[2][]{\mathrm{tan}^{#1}\parh{#2}}
+\renewcommand{\sin}[2][]{\mathrm{sin}^{#1}\parh{#2}}
+\renewcommand{\cos}[2][]{\mathrm{cos}^{#1}\parh{#2}}
+\renewcommand{\cot}[2][]{\mathrm{cot}^{#1}\parh{#2}}
+\renewcommand{\tanh}[2][]{\mathrm{tanh}^{#1}\parh{#2}}
+\renewcommand{\sinh}[2][]{\mathrm{sinh}^{#1}\parh{#2}}
+\renewcommand{\cosh}[2][]{\mathrm{cosh}^{#1}\parh{#2}}
+\renewcommand{\coth}[2][]{\mathrm{coth}^{#1}\parh{#2}}
+\newcommand{\sech}[2][]{\mathrm{sech}^{#1}\parh{#2}}
+
+% Inverse trigometric functions
+\newcommand{\atan}[2][]{\mathrm{atan}^{#1}\parh{#2}}
+\newcommand{\atanT}[3][]{\mathrm{atan2}^{#1}\parh{#2,#3}}
+\newcommand{\asin}[2][]{\mathrm{asin}^{#1}\parh{#2}}
+\newcommand{\acos}[2][]{\mathrm{acos}^{#1}\parh{#2}}
+\newcommand{\acot}[2][]{\mathrm{acot}^{#1}\parh{#2}}
+\newcommand{\atanh}[2][]{\mathrm{atanh}^{#1}\parh{#2}}
+\newcommand{\asinh}[2][]{\mathrm{asinh}^{#1}\parh{#2}}
+\newcommand{\acosh}[2][]{\mathrm{acosh}^{#1}\parh{#2}}
+
+% Exponential function with input
+\renewcommand{\exp}[1]{\mathrm{exp}\parh{#1}}
+\newcommand{\expp}[1][]{\mathrm{e}^\parh{#1}}
+
+% Logarithm with parenthesis
+\renewcommand{\ln}[1]{\mathrm{ln}\parh{#1}}
+
+% Phytagoras
+\newcommand{\pyth}[2]{\sqrt{\parh{#1}^2+\parh{#2}^2}}
+
+% Defining the adjoint of an operator
+\newcommand{\adj}{^\dagger}
+
+%Defintion of determinant
+\renewcommand{\det}[1]{\left|#1\right|}
+
+
+\newcommand{\fork}[5]{
+   	   #1 =\left\{
+     \begin{array}{lll}
+       #2 & \mathrm{if} & #3 \\
+       #4 & \mathrm{if} & #5
+     \end{array}
+   \right.}
+% Piecewise functions - do not put in equation environment 
+\newcommand{\forkf}[5]
+{\begingroup
+ \begin{displaymath}
+   	   #1 =\left\{
+     \begin{array}{lll}
+       #2 & \mathrm{if} & #3 \\
+       #4 & \mathrm{if} & #5
+     \end{array}
+   \right.
+\end{displaymath} 
+\endgroup}
+
+\newcommand{\forkff}[7]
+{\begingroup
+ \begin{displaymath}
+   	   #1 =\left\{
+     \begin{array}{lll}
+       #2 & \mathrm{if} & #3 \\
+       #4 & \mathrm{if} & #5 \\
+       #6 & \mathrm{if} & #7
+     \end{array}
+   \right.
+\end{displaymath} 
+\endgroup}
+
+% Evaluate at position, arg1 evaluated at arg2
+\newcommand{\peval}[2]{\left. #1 \right| _{#2}}
+
+% Curl, divergence and laplace
+\newcommand{\diw}{\nabla \cdot}
+\newcommand{\curl}{\nabla \times}
+\newcommand{\lap}{\nabla ^2}
+
+% Time derivatives
+\newcommand{\pdt}[1][]{\frac{\partial #1}{\partial t}}
+\newcommand{\dt}[1][]{\frac{d #1}{dt}}
+
+% Arbitrary derivatives
+\newcommand{\pdx}[2][]{\frac{\partial #1}{\partial #2}}
+\newcommand{\dx}[2][]{\frac{d #1}{d #2}}
+
+% Vectors
+\newcommand{\mvec}[1]{\mathbf{#1}}
+\newcommand{\mhat}[1]{\mathbf{\hat{#1}}}
+\newcommand{\vtilde}[1]{\mathbf{\tilde{#1}}}
+
+% Operator
+\newcommand{\mop}[1]{\boldsymbol{\mathbf{#1}}}
+\newcommand{\Tr}[1]{\mathrm{Tr}\parh{#1}}
+\newcommand{\Trs}[1]{\mathrm{Tr}\sbrac{#1}}
+
+% Bracket notation
+\newcommand{\ket}[1]{\left| #1 \right>}
+\newcommand{\bra}[1]{\left< #1 \right|}
+\newcommand{\bracket}[2]{\left< #1 \vphantom{#2} \right| \left. #2 \vphantom{#1} \right>}
+\newcommand{\matelm}[3]{\left< #1 \vphantom{#2 #3} \right| #2 \vphantom{#1 #3} \left| #3 \vphantom{#1 #2} \right>}
+
+% Commutator
+\newcommand{\comu}[2]{\left[ #1 , #2 \right]}
+
+% Anti comu
+\newcommand{\acom}[2]{\left\lbrace #1 , #2 \right\rbrace}
+
+% Hermitian conjugate
+\newcommand{\herm}[1]{#1 ^{\dagger}}
+
+% full space integral
+\newcommand{\infint}{\int_{-\infty}^{\infty}}
+
+% Absolute sqaure of wave function
+\newcommand{\Psisq}{\left| \Psi \right| ^2}
+\newcommand{\psisq}{\left| \psi \right| ^2}
+
+% Strait exp function
+\newcommand{\e}{\mathrm{e}}
+
+% Floor
+\newcommand{\floor}[1]{\left \lfloor{#1}\right \rfloor}
+
+% Ceil
+\newcommand{\ceil}[1]{\left \lceil{#1}\right \rceil}
+
+
+% Covariant derivative
+\newcommand{\cov}[1]{\nabla_{#1}}
+
+% Partial derivative with subscript
+\newcommand{\psub}[1]{\partial_{#1}}
+
+\newcommand{\psup}[1]{\partial^{#1}}
+
+% Christoffel connection
+\newcommand{\chris}[2]{\Gamma^{#1}_{#2}}
+
+\newcommand{\chc}[4]{\frac{1}{2}g^{#3 #4}\parh{\psub{#1}g_{#2 #4}+\psub{#2}g_{#1 #4}-\psub{#4}g_{#1 #2}}}
+
+% Change of variables
+\newcommand{\pvec}[1]{\pdx[x^{#1'}]{x^#1}}
+
+\newcommand{\pdual}[1]{\pdx[x^{#1}]{x^{#1'}}}
+
+% Metric
+\newcommand{\g}{g_{\mu \nu}}
+
+% Tau derivatives
+\newcommand{\dtau}[1][]{\dx[#1]{\tau}}
+
+% Lagrangian density
+\renewcommand{\L}{\mathcal{L}}
+\renewcommand{\H}{\mathcal{H}}
+
+% Feynmann diagrams
+\usepackage{feynmp-auto}
+
+% Tikz
+\usepackage{tikz}
+\usepackage{bm}
+\usetikzlibrary{shapes,arrows,decorations.markings,positioning,shadows}
+\usepgfplotslibrary{patchplots,colormaps}
+
+\usepackage{adjustbox}
+
+\tikzset{mylabel/.style  args={at #1 #2  with #3}{
+    postaction={decorate,
+    decoration={
+      markings,
+      mark= at position #1
+      with  \node [#2] {#3};
+ } } } }
+
+
+\newcommand{\op}[1]{\boldsymbol{\mathbf{#1}}}
+
+% definition of Hamiltonian and Lagrangian
+\newcommand{\Hamiltonian}{\op{H}}
+\newcommand{\Lagrangian}{\op{L}}
+\newcommand{\Operator}[1]{\op{#1}}
+
+
+\newcommand{\TimeEvolution}[1]{
+\ifthenelse{\equal{#1}{}}{\op{U} }{\op{U}\parh{#1} }
+}
+\newcommand{\TimeEvolutiond}[1]{
+\ifthenelse{\equal{#1}{}}{\op{U}^\dagger }{\op{U}^{\dagger}\parh{#1} }
+}
+
+
+
+% Tensor notation
+
+\newcommand{\dm}{\partial_\mu}
+\newcommand{\dM}{\partial^\mu}
+\newcommand{\dn}{\partial_\nu}
+\newcommand{\dN}{\partial^\nu}
+\newcommand{\da}{\partial_\alpha}
+\newcommand{\dA}{\partial^\alpha}
+\newcommand{\db}{\partial_\beta}
+\newcommand{\dB}{\partial^\beta}
+\newcommand{\ds}{\partial_\sigma}
+\newcommand{\dS}{\partial^\sigma}
+\newcommand{\dr}{\partial_\rho}
+\newcommand{\dR}{\partial^\rho}
+
+% Other usefull commands
+\newcommand{\Note}{{\color{red}Note:\\}}
+\newcommand{\abs}[1]{\left| #1\right|}
+\ifthenelse{\equal{0.0}{0.0}}{\newcommand{\Linker}[1]{#1}}{\newcommand{\Linker}[1]{{\color{red}#1}}}
+
+% Trace
+\newcommand{\tr}[1]{\mathrm{Tr}\left(#1\right)}
+
+
+% New definition of square root:
+% it renames \sqrt as \oldsqrt
+\let\oldsqrt\sqrt
+% it defines the new \sqrt in terms of the old one
+\def\sqrt{\mathpalette\DHLhksqrt}
+\def\DHLhksqrt#1#2{%
+\setbox0=\hbox{$#1\oldsqrt{#2\,}$}\dimen0=\ht0
+\advance\dimen0-0.3\ht0
+\setbox2=\hbox{\vrule height\ht0 depth -\dimen0}%
+{\box0\lower0.4pt\box2}}
+
+\newcommand{\EQM}[1]{\psub{\mu}\parh{\pdx[\L]{(\psub{\mu}#1)}}-\pdx[\L]{#1}=0}
+
+% Trace and order 
+\renewcommand{\O}[1]{\mathcal{O}\parh{#1}}
+\renewcommand{\Tr}[1]{\mathrm{Tr}\left(#1\right)}
+
+% Enable python-scripts
+%% Python
+%% Default fixed font does not support bold face
+\DeclareFixedFont{\ttb}{T1}{txtt}{bx}{n}{8} % for bold
+\DeclareFixedFont{\ttm}{T1}{txtt}{m}{n}{8}  % for normal
+
+
+% Custom colors
+
+\usepackage{color}
+\definecolor{deepblue}{rgb}{0,0,0.5}
+\definecolor{deepred}{rgb}{0.6,0,0}
+\definecolor{deepgreen}{rgb}{0,0.5,0}
+
+\definecolor{PSIGreen}{rgb}{0.305882353,0.882352941,0.129411765}
+\definecolor{PSILightBlue}{rgb}{0.235294118,0.952941176,0.952941176}
+\definecolor{PSIBlue}{rgb}{0.164705882,0.133333333,1}
+\definecolor{PSIOrannge}{rgb}{0.992156863,0.505882353,0.098039216}
+\definecolor{PSIYellow}{rgb}{0.788235294,0.819607843,0.152941176}
+
+
+\usepackage{listings}
+
+% Python style for highlighting
+\newcommand\pythonstyle{\lstset{
+language=Python,
+lineskip={-3pt},
+basicstyle=	\small,
+otherkeywords={self},             % Add keywords here
+keywordstyle=\color{deepblue},
+emph={CAMEA,component,FlatAnalyser,TubeDetector1D,data,DataSet,instrument,save,calculateTransformation,makeHistogram,analyser,detector,bank,numpy,np,plt,
+Bank,saveInstrument,gca,plot,set_xlabel,set_ylabel,set_zlabel,set_xlim,set_ylim,set_zlim,figure,matplotlib,pyplot,mpl_toolkits,mplot3d,Axes3D,
+savefig,array,radians,append,insert,add,cos,sin,ceil,crystal,pi,gaussianFilter,setCrystal,plotCrystal,load,Plot,
+itertools,chain,arange,FBZFolding,DataObject,FitObject,statistic,mSQWLimits},
+ % Custom highlighting
+emphstyle=\ttb\small\bfseries,    % Custom highlighting style
+stringstyle=\color{deepgreen},
+breaklines=false,
+frame=none,
+%postbreak=\raisebox{0ex}[0ex][0ex],
+commentstyle=\ttb\color{gray},
+showstringspaces=false,  
+tabsize=4,          % 
+literate={\ \ }{{\ }}1
+}}
+
+
+% Python environment
+\lstnewenvironment{pythonScript}[2][]
+{
+\pythonstyle
+\lstset{#1}
+}
+{}
+
+\newcommand\pythonexternal[2][]{{
+\pythonstyle
+\lstinputlisting[#1]{#2}}}
+
+
+% Python style for highlighting
+\newcommand\instrumentstyle{\lstset{
+language=Python,
+frame = none,
+lineskip={-10pt},
+basicstyle=	\small,
+otherkeywords={self},             % Add keywords here
+keywordstyle=\color{deepblue},
+emph={_analyser,FlatAnalyser,_detector,TubeDetector1D},
+ % Custom highlighting
+emphstyle=\ttb\small\bfseries,    % Custom highlighting style
+stringstyle=\color{deepgreen},
+breaklines=false,
+commentstyle=\ttb\color{gray},
+tabsize=4,          % 
+showstringspaces=false,            % 
+literate={\ \ }{{\ }}1
+}}
+
+
+% Python environmentDocument
+\lstnewenvironment{instrument}[1][]
+{
+\instrumentstyle
+\lstset{#1}
+}
+{}
+
+\usepackage[framemethod=TikZ]{mdframed}
+
+\lstnewenvironment{PyScript}[1]{
+  \pythonstyle
+\lstset{linewidth=10cm}
+\mdframed[backgroundcolor=black!05,roundcorner=5pt,shadow=true]%,shadowsize=2pt,shadowcolor=black!30]
+}{%
+  \endmdframed
+  \captionof{lstlisting}{#1}
+  \ignorespaces \vspace{0.2cm}
+}
+
+\lstnewenvironment{InstrScript}[1]{
+  \instrumentstyle
+\lstset{linewidth=10cm}
+\mdframed[backgroundcolor=black!05,roundcorner=5pt,shadow=true]%,shadowsize=2pt,shadowcolor=black!30]
+}{%
+  \endmdframed
+  \captionof{lstlisting}{#1}
+  \ignorespaces\vspace{0.2cm}
+}
+
+\renewcommand{\lstlistingname}{Script}% Listing -> Scripts
+\renewcommand{\lstlistlistingname}{List of \lstlistingname s}% List of Listings -> List of Scripts
+
+
+
+% Greek numbering _______________________________________________
+\makeatletter
+\newcommand*{\greek}[1]{%
+  \expandafter\@greek\csname c@#1\endcsname
+}
+\newcommand*{\@greek}[1]{%
+  $\ifcase#1\or\alpha\or\beta\or\gamma\or\delta\or\varepsilon
+    \or\zeta\or\eta\or\theta\or\iota\or\kappa\or\lambda
+    \or\mu\or\nu\or\xi\or o\or\pi\or\varrho\or\sigma
+    \or\tau\or\upsilon\or\phi\or\chi\or\psi\or\omega
+    \else\@ctrerr\fi$
+}
+
+
+% Really nasty shit for the nice spherical picture
+
+%\tikzexternalize
+%% helper macros
+
+% The 3D code is based on The drawing is based on Tomas M. Trzeciak's 
+% `Stereographic and cylindrical map projections example`: 
+% http://www.texample.net/tikz/examples/map-projections/
+\newcommand\pgfmathsinandcos[3]{%
+  \pgfmathsetmacro#1{sin(#3)}%
+  \pgfmathsetmacro#2{cos(#3)}%
+}
+\newcommand\LongitudePlane[3][current plane]{%
+  \pgfmathsinandcos\sinEl\cosEl{#2} % elevation
+  \pgfmathsinandcos\sint\cost{#3} % azimuth
+  \tikzset{#1/.estyle={cm={\cost,\sint*\sinEl,0,\cosEl,(0,0)}}}
+}
+\newcommand\LatitudePlane[3][current plane]{%
+  \pgfmathsinandcos\sinEl\cosEl{#2} % elevation
+  \pgfmathsinandcos\sint\cost{#3} % latitude
+  \pgfmathsetmacro\yshift{\cosEl*\sint}
+  \tikzset{#1/.estyle={cm={\cost,0,0,\cost*\sinEl,(0,\yshift)}}} %
+}
+\newcommand\DrawLongitudeCircle[2][1]{
+  \LongitudePlane{\angEl}{#2}
+  \tikzset{current plane/.prefix style={scale=#1}}
+   % angle of "visibility"
+  \pgfmathsetmacro\angVis{atan(sin(#2)*cos(\angEl)/sin(\angEl))} %
+  \draw[current plane,thin,black] (\angVis:1) arc (\angVis:\angVis+180:1);
+%  \draw[current plane,thin] (\angVis-180:1) arc (\angVis-180:\angVis:1);
+}%this is fake: for drawing the grid
+\newcommand\DrawLongitudeCirclered[2][1]{
+  \LongitudePlane{\angEl}{#2}
+  \tikzset{current plane/.prefix style={scale=#1}}
+   % angle of "visibility"
+  \pgfmathsetmacro\angVis{atan(sin(#2)*cos(\angEl)/sin(\angEl))} %
+  %\draw[current plane,red,thick] (100:1) arc (100:180:1);
+  \draw[current plane,very thick,red] (90:1) arc (90:30:1);
+}%for drawing the grid
+
+
+
+\newcommand\DrawLatitudeCircle[2][1]{
+  \LatitudePlane{\angEl}{#2}
+  \tikzset{current plane/.prefix style={scale=#1}}
+  \pgfmathsetmacro\sinVis{sin(#2)/cos(#2)*sin(\angEl)/cos(\angEl)}
+  % angle of "visibility"
+  \pgfmathsetmacro\angVis{asin(min(1,max(\sinVis,-1)))}
+ % \draw[current plane,thin,black] (\angVis:1) arc (\angVis:-\angVis-180:1);
+  \draw[current plane,thin] (180-\angVis:1) arc (180-\angVis:\angVis:1);
+}%Defining functions to draw limited latitude circles (for the red mesh)
+
+
+\tikzset{%
+  >=latex,
+  inner sep=0pt,%
+  outer sep=2pt,%
+  mark coordinate/.style={inner sep=0pt,outer sep=0pt,minimum size=3pt,
+    fill=black,circle}%
+}
+\usepackage{amsmath}
+\usetikzlibrary{arrows}
+\pagestyle{empty}
+\usepackage{pgfplots}
+\usetikzlibrary{calc,fadings,decorations.pathreplacing}
+
+
+
+\newcommand{\multiequations}[5]{\\
+\noindent\begin{minipage}{#3\linewidth}\vspace{#5}
+\begin{subequations}
+\begin{align}
+%d\vec{\mu}=I\vec{dA}
+#1
+\end{align}
+\end{subequations}
+\end{minipage}%
+\begin{minipage}{4\linewidth}\vspace{#5cm}\addtocounter{equation}{-1}
+\begin{subequations}
+\begin{align}
+%\setcounter{equation}{1}
+#2
+\end{align}
+\end{subequations}
+\end{minipage}\\}
+
+

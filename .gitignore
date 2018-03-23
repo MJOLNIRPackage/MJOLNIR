@@ -10,3 +10,10 @@ build/
 lastfailed
 MJOLNIR.xmind
 tester.py
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.gz
+
