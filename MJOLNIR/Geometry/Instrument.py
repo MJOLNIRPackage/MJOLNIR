@@ -1,5 +1,5 @@
 import numpy as np
-from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge,InstrumentXML
+from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
