@@ -3,11 +3,10 @@ build/
 *.pyc
 .vscode/settings.json
 .vscode/launch.json
-MJOLNIR/__pycache__/
-MJOLNIR/.cache/
-MJOLNIR/Geometry/__pycache__/
-MJOLNIR/Geometry/.cache/
+*/__pycache__/
+*/.cache/
+*/*/__pycache__/
+*/*/.cache/
 lastfailed
-MJOLNIR/Geometry/__pycache__/*.pyc
 MJOLNIR.xmind
 tester.py
