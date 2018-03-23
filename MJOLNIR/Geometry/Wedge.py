@@ -1,3 +1,7 @@
+import sys
+sys.path.append('.')
+sys.path.append('..')
+sys.path.append('../..')
 import math,numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector
 import warnings

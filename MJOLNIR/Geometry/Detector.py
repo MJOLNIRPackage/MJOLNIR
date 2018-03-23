@@ -1,3 +1,7 @@
+import sys
+sys.path.append('.')
+sys.path.append('..')
+sys.path.append('../..')
 from MJOLNIR.Geometry import GeometryConcept
 import numpy as np
 import matplotlib.pyplot as plt

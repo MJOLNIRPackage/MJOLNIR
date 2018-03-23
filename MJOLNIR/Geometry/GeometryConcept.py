@@ -1,3 +1,7 @@
+import sys
+sys.path.append('.')
+sys.path.append('..')
+sys.path.append('../..')
 import math
 import numpy as np
 import matplotlib.pyplot as plt
