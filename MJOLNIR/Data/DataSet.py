@@ -526,8 +526,8 @@ class DataSet(object):
             factorsqrtEK = 0.694692
             
             A4File = np.array(file.get('entry/CAMEA/detector/polar_angle'))
-            
-            A4Total = A4.reshape((1,*A4.shape))+np.deg2rad(A4File).reshape((*A4File.shape,1,1))
+            A4Shape = A4.shape
+            A4Total = A4.reshape((1,A4Shape[0],A4Shape[1]))+np.deg2rad(A4File).reshape((A4File.shape[0],1,1))
             
             #PixelEdgeA4Shaped = PixelEdge.reshape((1,PixelEdge.shape[0],EPrDetector,binning,2))
             
@@ -554,22 +554,22 @@ class DataSet(object):
             # Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
 
             #Qx = ki.reshape((*ki.shape,1,1,1))-(kf.reshape((1,1,*Ef.shape))*np.cos(A4Total)).reshape((1,*A4Total.shape))
-            Qx = ki.reshape((*ki.shape,1,1,1))-(kf.reshape((1,1,*EfMean.shape))*np.cos(A4Mean)).reshape((1,*A4Mean.shape))
+            Qx = ki.reshape((ki.shape[0],1,1,1))-(kf.reshape((1,1,EfMean.shape[0],EfMean.shape[1]))*np.cos(A4Mean)).reshape((1,A4Mean.shape[0],A4Mean.shape[1],A4Mean.shape[2]))
             #Qy = np.zeros((*ki.shape,1,1,1))-kf.reshape((1,1,*Ef.shape))*np.sin(A4Total.reshape((1,*A4Total.shape)))
-            Qy = np.zeros((*ki.shape,1,1,1))-kf.reshape((1,1,*EfMean.shape))*np.sin(A4Mean.reshape((1,*A4Mean.shape)))
+            Qy = np.zeros((ki.shape[0],1,1,1))-kf.reshape((1,1,EfMean.shape[0],EfMean.shape[1]))*np.sin(A4Mean.reshape((1,A4Mean.shape[0],A4Mean.shape[1],A4Mean.shape[2])))
             
-            QX = Qx.reshape((1,*Qx.shape))*np.cos(A3.reshape((*A3.shape,1,1,1,1)))-Qy.reshape((1,*Qy.shape))*np.sin(A3.reshape((*A3.shape,1,1,1,1)))
-            QY = Qx.reshape((1,*Qx.shape))*np.sin(A3.reshape((*A3.shape,1,1,1,1)))+Qy.reshape((1,*Qy.shape))*np.cos(A3.reshape((*A3.shape,1,1,1,1)))
+            QX = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))-Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))
+            QY = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))+Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))
             if QX.shape.count(1)!=2:
                 raise ValueError('At least two parameters changed simulatneously!')
             
             #EnergyShape = (1,len(Ei),1,*Ef.shape)
-            EnergyShape = (1,len(Ei),1,*EfMean.shape)
+            EnergyShape = (1,len(Ei),1,EfMean.shape[0],EfMean.shape[1])
             #DeltaE = (Ei.reshape((*Ei.shape,1,1))-Ef.reshape((1,*Ef.shape))).reshape(EnergyShape)
-            DeltaE = (Ei.reshape((*Ei.shape,1,1))-EfMean.reshape((1,*EfMean.shape))).reshape(EnergyShape)
+            DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
             
             #Intensity = Data.reshape(*QX.shape)
-            Intensity = DataMean.reshape(*QX.shape)
+            Intensity = DataMean.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
         
             DeltaE=DeltaE.repeat(QX.shape[0],axis=0)
             DeltaE=DeltaE.repeat(QX.shape[2],axis=2)
@@ -765,9 +765,7 @@ def test_Normalization_tables():
 
     dataset = DataSet(instrument=Instr,normalizationfiles=NF)
 
-    dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['PrismaticHighDefinition'])
-    os.rmdir('TestData/8_pixels')
-    os.rmdir('TestData/Raw')
+    dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['PrismaticHighDefinition']) 
 
 
 def test_Convert_Data():
