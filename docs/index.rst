@@ -14,3 +14,12 @@ Welcome to MJOLNIR's documentation!
    Tutorial
    MJOLNIR
 
+
+
+
+.. image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.2
+    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
+
+.. image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=master
+    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR
+
