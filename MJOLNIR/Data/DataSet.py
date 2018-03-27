@@ -192,7 +192,7 @@ class DataSet(object):
     def EnergyCalibration(self,datafile,savelocation,tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition','Unbinned'],InstrumentType='CAMEA',plot=False):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'EnergyCalibration_Np.calib', where Np is the number of pixels.
         
-        Generates 4 different tables:
+        Generates 5 different tables:
 
         - Unbinned (452 pixels/detector)
             .. warning::
@@ -203,6 +203,8 @@ class DataSet(object):
         - Prismatic Low Definition (3 pixels/energy or 24 pixels/detector)
 
         - Single (1 pixel/energy or 8 pixels/detector)
+
+        - Number (integer)
 
         Arguments:
 
@@ -253,12 +255,14 @@ class DataSet(object):
                     bins.append(pixels)
                 elif table=='PrismaticHighDefinition':
                     bins.append(8)
-                elif table==table=='PrismaticLowDefinition':
+                elif table=='PrismaticLowDefinition':
                     bins.append(3)
-                elif table==table=='Single':
+                elif table=='Single':
                     bins.append(1)
+                elif isinstance(table,int):
+                    bins.append(table)
                 else:
-                    raise AttributeError("Provided table attribute ({}) not recognized, should be 'Unbinned','PrismaticHighDefinition','PrismaticLowDefinition', and or'Single'")
+                    raise AttributeError("Provided table attribute ({}) not recognized, should be 'Unbinned','PrismaticHighDefinition','PrismaticLowDefinition','Single', and/or integer.")
             if len(bins)==0:
                 raise AttributeError("No binning has been chosen for normalization routine.")
             # Initial finding of peaks
