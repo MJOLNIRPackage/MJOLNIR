@@ -24,3 +24,5 @@ TestData/Raw
 
 *.calib
 *.nxs
+
+.*/
