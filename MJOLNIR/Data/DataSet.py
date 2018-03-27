@@ -39,6 +39,7 @@ class DataSet(object):
         Raises:
             ValueError,NotImplementedError
         
+        
         """
         
         self._instrument = None
@@ -217,7 +218,8 @@ class DataSet(object):
 
 
         .. note::
-            Assumes that file contains a scan over  Ei.
+            Assumes that file contains a scan over  Ei. If one is in doubt whether the Vanadium normalization data has enough data points to allow a full 8 pixel binning, start with 1 pixel and 3, as the 8 pixel binning may end up raising an error.
+        
 
         .. warning::
             At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Guassian width of Vanadium peaks.
@@ -479,8 +481,115 @@ class DataSet(object):
 
 
 
+    def ConvertDatafile(self,datafiles,normalizationfile):
+        """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXqom format and saves in a file with same name, but of type .nxs.
+        Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
+        Args:
+
+            datafiles (string or list of): File path(s), file must be of hdf format (required).
+
+            normalizationfile (string): File path to normalization file (required).
+
+        Raises:
+
+            IOError
             
+        """
+
+        binning = int(normalizationfile.split('_')[-1].split('.')[0]) # Find binning from normalization file name
+        
+        if not isinstance(datafiles,list):
+            datafiles=[datafiles]
+        for datafile in datafiles:
+            normalization = np.genfromtxt(normalizationfile,delimiter=',',skip_header=3)
+            EPrDetector = len(self.instrument.wedges[0].detectors[0].split)+1
+            
+            
+            file = hdf.File(datafile)
+        
+            A4 = np.array(self.instrument.A4)
+            A4=A4.reshape(A4.shape[0]*A4.shape[1],A4.shape[2],order='C')
+            Ef = np.array(self.instrument.Ef)
+            Ef=Ef.reshape(Ef.shape[0]*Ef.shape[1],Ef.shape[2],order='C')
+            
+            PixelEdge = normalization[:,7:].reshape(A4.shape[0],EPrDetector,binning,2).astype(int)
+            
+            Data = np.array(file.get('/entry/data/data'))
+            
+            #ScanPoints = Data.shape[0]
+            
+            if not Data.shape[1:]==A4.shape:
+                raise AttributeError('The shape of the data{} does not match instrument{}!'.format(Data.shape[1:],A4.shape))
+            
+            
+            factorsqrtEK = 0.694692
+            
+            A4File = np.array(file.get('entry/CAMEA/detector/polar_angle'))
+            
+            A4Total = A4.reshape((1,*A4.shape))+np.deg2rad(A4File).reshape((*A4File.shape,1,1))
+            
+            #PixelEdgeA4Shaped = PixelEdge.reshape((1,PixelEdge.shape[0],EPrDetector,binning,2))
+            
+            A4Mean = np.zeros((A4Total.shape[0],A4Total.shape[1],EPrDetector*binning))
+            #EfMean = np.zeros((Ef.shape[0],EPrDetector*binning))
+            DataMean=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
+            for i in range(A4Total.shape[1]): # for each detector
+                for j in range(EPrDetector):
+                    for k in range(binning):
+                        A4Mean[:,i,j*binning+k] = np.mean(A4Total[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
+                        DataMean[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
+                        #EfMean[i,j*binning+k] = np.mean(Ef[i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=0)
+            
+            EfMean = normalization[:,4].reshape(A4.shape[0],EPrDetector*binning)
+            
+            #kf = factorsqrtEK*np.sqrt(Ef)
+            kf = factorsqrtEK*np.sqrt(EfMean)
+            Ei = np.array(file.get('/entry/CAMEA/monochromator/energy'))
+            
+            ki = factorsqrtEK*np.sqrt(Ei)
+            
+            A3 = np.array(file.get('/entry/sample/rotation_angle/'))
+            
+            # Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
+
+            #Qx = ki.reshape((*ki.shape,1,1,1))-(kf.reshape((1,1,*Ef.shape))*np.cos(A4Total)).reshape((1,*A4Total.shape))
+            Qx = ki.reshape((*ki.shape,1,1,1))-(kf.reshape((1,1,*EfMean.shape))*np.cos(A4Mean)).reshape((1,*A4Mean.shape))
+            #Qy = np.zeros((*ki.shape,1,1,1))-kf.reshape((1,1,*Ef.shape))*np.sin(A4Total.reshape((1,*A4Total.shape)))
+            Qy = np.zeros((*ki.shape,1,1,1))-kf.reshape((1,1,*EfMean.shape))*np.sin(A4Mean.reshape((1,*A4Mean.shape)))
+            
+            QX = Qx.reshape((1,*Qx.shape))*np.cos(A3.reshape((*A3.shape,1,1,1,1)))-Qy.reshape((1,*Qy.shape))*np.sin(A3.reshape((*A3.shape,1,1,1,1)))
+            QY = Qx.reshape((1,*Qx.shape))*np.sin(A3.reshape((*A3.shape,1,1,1,1)))+Qy.reshape((1,*Qy.shape))*np.cos(A3.reshape((*A3.shape,1,1,1,1)))
+            if QX.shape.count(1)!=2:
+                raise ValueError('At least two parameters changed simulatneously!')
+            
+            #EnergyShape = (1,len(Ei),1,*Ef.shape)
+            EnergyShape = (1,len(Ei),1,*EfMean.shape)
+            #DeltaE = (Ei.reshape((*Ei.shape,1,1))-Ef.reshape((1,*Ef.shape))).reshape(EnergyShape)
+            DeltaE = (Ei.reshape((*Ei.shape,1,1))-EfMean.reshape((1,*EfMean.shape))).reshape(EnergyShape)
+            
+            #Intensity = Data.reshape(*QX.shape)
+            Intensity = DataMean.reshape(*QX.shape)
+        
+            DeltaE=DeltaE.repeat(QX.shape[0],axis=0)
+            DeltaE=DeltaE.repeat(QX.shape[2],axis=2)
+            
+            Monitor = np.array(file.get('/entry/control/data'),dtype=int)
+            Monitor.shape = (len(Monitor),1,1)
+            Monitor = np.repeat(Monitor,Intensity.shape[3],axis=1)
+            Monitor = np.repeat(Monitor,Intensity.shape[4],axis=2)
+            Monitor.shape = Intensity.shape
+            ## TODO: Don't let all things vary at the same time!!
+            
+            
+            saveNXsqom(datafile,file,datafile.replace('.h5','.nxs'),Intensity,Monitor,QX,QY,DeltaE,normalizationfile)
+            
+            file.close()
+        
+
+
+
+
 
 def Gaussian(x,A,mu,sigma,b):
     #A,mu,sigma,b = args
@@ -511,6 +620,64 @@ def IsListOfStrings(object):
     
 
 
+def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,normalizationfile):
+    
+    fd = hdf.File(savefilename,'w')
+    group_path = fs['/entry'].parent.name
+    
+    group_id = fd.require_group(group_path)
+    
+    
+    fs.copy('/entry', group_id, name="/entry")
+    
+    definition = fd.create_dataset('entry/definition',(1,),dtype='S70',data=np.string_('NXsqom'))
+    definition.attrs['NX_class'] = 'NX_CHAR'
+    
+    process = fd.create_group('entry/reduction')
+    process.attrs['NX_class']=b'NXprocess'
+    proc = process.create_group('MJOLNIR_algorithm_convert')
+    proc.attrs['NX_class']=b'NXprocess'
+    author= proc.create_dataset('author',shape=(1,),dtype='S70',data=np.string_('Jakob Lass'))
+    author.attrs['NX_class']=b'NX_CHAR'
+    
+    date= proc.create_dataset('date',shape=(1,),dtype='S70',data=np.string_(datetime.datetime.now()))
+    date.attrs['NX_class']=b'NX_CHAR'
+    
+    description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.string_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
+    description.attrs['NX_class']=b'NX_CHAR'
+    
+    rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(datafile))
+    rawdata.attrs['NX_class']=b'NX_CHAR'
+    
+    normalization = proc.create_dataset('normalization table',shape=(1,),dtype='S200',data=np.string_(normalizationfile))
+    normalization.attrs['NX_class']=b'NX_CHAR'
+    
+    data = fd.get('entry/data')
+    data['rawdata']=data['data']
+    del data['data']
+    
+    
+    fileLength = Intensity.size
+    
+    Int = data.create_dataset('data',shape=(fileLength,),dtype='int32',data=Intensity.flatten())
+    Int.attrs['NX_class']='NX_INT'
+    
+    monitor = data.create_dataset('monitor',shape=(fileLength,),dtype='int32',data=Monitor.flatten())
+    monitor.attrs['NX_class']=b'NX_INT'
+    
+    qx = data.create_dataset('qx',shape=(fileLength,),dtype='float32',data=QX.flatten())
+    qx.attrs['NX_class']=b'NX_FLOAT'
+    
+    qy = data.create_dataset('qy',shape=(fileLength,),dtype='float32',data=QY.flatten())
+    qy.attrs['NX_class']=b'NX_FLOAT'
+    
+    qz = data.create_dataset('qz',shape=(fileLength,),dtype='float32',data=np.zeros((fileLength,)))
+    qz.attrs['NX_class']=b'NX_FLOAT'
+    
+    en = data.create_dataset('en',shape=(fileLength,),dtype='float32',data=DeltaE.flatten())
+    en.attrs['NX_class']=b'NX_FLOAT'
+
+    fd.close()
 
 
 
@@ -589,3 +756,32 @@ def test_DataSet_SaveLoad():
 
 
 
+def test_Normalization_tables():
+    Instr = Instrument.Instrument(filename='TestData/CAMEA_Full.xml')
+    Instr.initialize()
+
+    NF = 'TestData/VanNormalization.h5'
+
+
+    dataset = DataSet(instrument=Instr,normalizationfiles=NF)
+
+    dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['PrismaticHighDefinition'])
+    os.rmdir('TestData/8_pixels')
+    os.rmdir('TestData/Raw')
+
+
+def test_Convert_Data():
+    Instr = Instrument.Instrument(filename='TestData/CAMEA_Full.xml')
+    Instr.initialize()
+
+    NF = 'TestData/VanNormalization.h5'
+    dataset = DataSet(instrument=Instr,normalizationfiles=NF)
+
+    normalizationfile = 'TestData/EnergyNormalization_8.calib'
+
+    if not os.path.exists(normalizationfile):
+        dataset.EnergyCalibration(NF,'TestData/',tables=['PrismaticHighDefinition'])
+
+    DataFiles = 'TestData/VanNormalization.h5'
+
+    dataset.ConvertDatafile(datafiles=DataFiles,normalizationfile=normalizationfile)
