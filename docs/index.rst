@@ -17,9 +17,9 @@ Welcome to MJOLNIR's documentation!
 
 
 
-.. image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.2
+.. image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.3
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
 
-.. image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=master
+.. image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=0.3
     :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR
 
