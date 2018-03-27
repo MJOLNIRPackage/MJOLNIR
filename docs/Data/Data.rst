@@ -11,7 +11,6 @@ Data Module
    :nosignatures:
 
     DataSet.DataSet
-    FileObject.FileObject
 
 .. automodule:: Data
 
@@ -30,14 +29,3 @@ Data set object designed to...
     :members:
 
 
-File Object
-^^^^^^^^^^^
-
-Something about the file object.
-
-.. automodule:: FileObject
-
-.. _FileObject:
-
-.. autoclass:: FileObject
-    :members:

@@ -19,6 +19,8 @@ tester.py
 
 Normalization/*_pixels
 Normalization/Raw
+TestData/*_pixels
+TestData/Raw
 
 *.calib
 *.nxs
