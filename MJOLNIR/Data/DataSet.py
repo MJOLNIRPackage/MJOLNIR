@@ -546,7 +546,8 @@ class DataSet(object):
                         #EfMean[i,j*binning+k] = np.mean(Ef[i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=0)
             
             EfMean = normalization[:,4].reshape(A4.shape[0],EPrDetector*binning)
-            
+            Normalization = (normalization[:,3]*np.sqrt(2*np.pi)*normalization[:,5]).reshape(A4.shape[0],EPrDetector*binning)
+
             #kf = factorsqrtEK*np.sqrt(Ef)
             kf = factorsqrtEK*np.sqrt(EfMean)
             Ei = np.array(file.get('/entry/CAMEA/monochromator/energy'))
@@ -572,6 +573,8 @@ class DataSet(object):
             #DeltaE = (Ei.reshape((*Ei.shape,1,1))-Ef.reshape((1,*Ef.shape))).reshape(EnergyShape)
             DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
             
+            
+            
             #Intensity = Data.reshape(*QX.shape)
             Intensity = DataMean.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
         
@@ -583,10 +586,15 @@ class DataSet(object):
             Monitor = np.repeat(Monitor,Intensity.shape[3],axis=1)
             Monitor = np.repeat(Monitor,Intensity.shape[4],axis=2)
             Monitor.shape = Intensity.shape
+
+            Normalization.shape = (1,1,1,Normalization.shape[0],Normalization.shape[1])
+            Normalization = np.repeat(Normalization,Intensity.shape[0],axis=0)
+            Normalization = np.repeat(Normalization,Intensity.shape[1],axis=1)
+            Normalization = np.repeat(Normalization,Intensity.shape[2],axis=2)
             ## TODO: Don't let all things vary at the same time!!
             
             
-            saveNXsqom(datafile,file,datafile.replace('.h5','.nxs'),Intensity,Monitor,QX,QY,DeltaE,normalizationfile)
+            saveNXsqom(datafile,file,datafile.replace('.h5','.nxs'),Intensity,Monitor,QX,QY,DeltaE,normalizationfile,Normalization)
             
             file.close()
         
@@ -624,7 +632,7 @@ def IsListOfStrings(object):
     
 
 
-def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,normalizationfile):
+def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,normalizationfile,Normalization):
     
     fd = hdf.File(savefilename,'w')
     group_path = fs['/entry'].parent.name
@@ -653,8 +661,8 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,normaliza
     rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(datafile))
     rawdata.attrs['NX_class']=b'NX_CHAR'
     
-    normalization = proc.create_dataset('normalization table',shape=(1,),dtype='S200',data=np.string_(normalizationfile))
-    normalization.attrs['NX_class']=b'NX_CHAR'
+    normalizationString = proc.create_dataset('normalization table',shape=(1,),dtype='S200',data=np.string_(normalizationfile))
+    normalizationString.attrs['NX_class']=b'NX_CHAR'
     
     data = fd.get('entry/data')
     data['rawdata']=data['data']
@@ -668,6 +676,9 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,normaliza
     
     monitor = data.create_dataset('monitor',shape=(fileLength,),dtype='int32',data=Monitor.flatten())
     monitor.attrs['NX_class']=b'NX_INT'
+
+    normalization = data.create_dataset('normalization',shape=(fileLength,),dtype='float32',data=Normalization.flatten())
+    normalization.attrs['NX_class']=b'NX_FLOAT'
     
     qx = data.create_dataset('qx',shape=(fileLength,),dtype='float32',data=QX.flatten())
     qx.attrs['NX_class']=b'NX_FLOAT'
