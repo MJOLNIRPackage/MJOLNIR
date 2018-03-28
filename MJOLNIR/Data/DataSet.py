@@ -1011,7 +1011,7 @@ def test_Normalization_tables():
         assert True
 
 
-     dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['PrismaticHighDefinition']) 
+    dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['PrismaticHighDefinition']) 
 
 
 def test_DataSet_Convert_Data():
@@ -1024,7 +1024,7 @@ def test_DataSet_Convert_Data():
     normalizationfile = 'TestData/EnergyNormalization_8.calib'
 
     if not os.path.exists(normalizationfile):
-        dataset.EnergyCalibration(NF,'TestData/',tables=['PrismaticHighDefinition'])
+        dataset.EnergyCalibration(NF,'TestData/',tables=['PrismaticHighDefinition','PrismaticLowDefinition','Single',2])
 
     DataFiles = 'TestData/VanNormalization.h5'
 
