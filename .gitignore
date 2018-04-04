@@ -26,3 +26,5 @@ TestData/Raw
 *.nxs
 
 .*/
+dist/*
+MJOLNIR.egg-info/*
