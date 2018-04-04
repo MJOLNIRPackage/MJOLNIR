@@ -115,12 +115,13 @@ class GeometryObject(GeometryConcept):
         """
         Kwargs:
 
-            Position (3vector): Position of object (default [0,0,0])
+            - Position (3vector): Position of object (default [0,0,0])
 
-            Direction (3vector): Direction along which the object points (default [0,0,1])
+            - Direction (3vector): Direction along which the object points (default [0,0,1])
 
         Raises:
-            AttributeError
+            
+            - AttributeError
 
         >>> GenericObject = GeometryObject(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> print(GenericObject.position)

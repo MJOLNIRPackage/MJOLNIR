@@ -28,16 +28,19 @@ class DataSet(object):
         
         Kwargs:
             
-            instrument (Instrument): Instrument object describing the data (default None).
+            - instrument (Instrument): Instrument object describing the data (default None).
 
-            datafiles (list of strings): List of datafiles to be used in conversion.
+            - datafiles (list of strings): List of datafiles to be used in conversion.
 
-            normalizationfiles (string or list of strings): Location of Vanadium normalization file(s).
+            - normalizationfiles (string or list of strings): Location of Vanadium normalization file(s).
 
-            templocation (string): Location of temporary files (default _temp/.
+            - templocation (string): Location of temporary files (default _temp/.
 
         Raises:
-            ValueError,NotImplementedError
+
+            - ValueError
+            
+            - NotImplementedError
         
         
         """
@@ -215,17 +218,17 @@ class DataSet(object):
 
         - Number (integer)
 
-        Arguments:
+        Args:
 
-            datafile (string): String to data single data file used for normalization (required).
+            - datafile (string): String to data single data file used for normalization (required).
 
-            savelocation (string): String to save location folder (required)
+            - savelocation (string): String to save location folder (required)
 
-            tables (list): List of needed conversion tables (Default: ['Single','PrismaticLowDefinition','PrismaticHighDefinition','Unbinned'], increasing number of pixels).
+            - tables (list): List of needed conversion tables (Default: ['Single','PrismaticLowDefinition','PrismaticHighDefinition','Unbinned'], increasing number of pixels).
 
-            InstrumentType (string): Type of instrument (default CAMEA).
+            - InstrumentType (string): Type of instrument (default CAMEA).
 
-            plot (boolean): Set to True if pictures of all fit are to be stored in savelocation
+            - plot (boolean): Set to True if pictures of all fit are to be stored in savelocation
 
 
         .. note::
@@ -423,7 +426,7 @@ class DataSet(object):
                     warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3))
                     
                 if plot:
-                    EiX = np.linspace(Ei[0],Ei[-1],200)
+                    EiX = np.linspace(Ei[0],Ei[-1],len(Ei))
                     if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
                         os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
                     colors=np.zeros((3,detpixels))
@@ -442,22 +445,29 @@ class DataSet(object):
                     if plot:
                         plt.clf()
                         plt.title('Detector {}, {} pixels'.format(i,detpixels))
-                        x=np.linspace(0,detpixels,200)
+                        x=np.linspace(0,detpixels,len(Ei))
                     for j in range(analysers):
 
                         center = int(round(sortedPeakPos[i,j]))
                         width = activePixels[i,j].sum()
                         pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
-
+                        
                         for k in range(detpixels):
                             binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
-                            
-
+                            #print('{},{}'.format(pixelAreas[k],pixelAreas[k+1]))
+                            #[print(x) for x in binPixelData]
                             guess = [np.max(binPixelData), Ei[np.argmax(binPixelData)],0.1,0]
                             try:
                                 res = scipy.optimize.curve_fit(Gaussian,Ei,binPixelData,p0=guess)
                             except:
-                                raise ValueError('Fitting not converged, probably due to too few points.')
+                                if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
+                                    os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
+                                plt.figure()
+                                plt.scatter(Ei,binPixelData)
+                                plt.plot(Ei,Gaussian(Ei,guess[0],guess[1],guess[2],guess[3]))
+                                plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=300)
+                                plt.close()
+                                #raise ValueError('Fitting not converged, probably due to too few points.')
 
 
 
@@ -500,13 +510,13 @@ class DataSet(object):
 
         Args:
 
-            datafiles (string or list of): File path(s), file must be of hdf format (required).
+            - datafiles (string or list of): File path(s), file must be of hdf format (required).
 
-            normalizationfile (string): File path to normalization file (required).
+            - normalizationfile (string): File path to normalization file (required).
 
         Raises:
 
-            IOError
+            - IOError
             
         """
 
@@ -555,9 +565,7 @@ class DataSet(object):
             
             EfMean = normalization[:,4].reshape(A4.shape[0],EPrDetector*binning)
             Normalization = (normalization[:,3]*np.sqrt(2*np.pi)*normalization[:,5]).reshape(A4.shape[0],EPrDetector*binning)
-            #print(np.max(np.rad2deg(A4Mean)))
-            #print(np.min(np.rad2deg(A4Mean)))
-            #kf = factorsqrtEK*np.sqrt(Ef)
+
             kf = factorsqrtEK*np.sqrt(EfMean)
             Ei = np.array(file.get('/entry/CAMEA/monochromator/energy'))
             

@@ -14,15 +14,15 @@ class Wedge(GeometryConcept.GeometryConcept):
         """
         Args:
 
-            position (float 3): Position of wedge (default (0,0,0))
+            - position (float 3): Position of wedge (default (0,0,0))
 
         Kwargs:
 
-            detectors (list or single detector): Either a list or a single detector (default empty)
+            - detectors (list or single detector): Either a list or a single detector (default empty)
 
-            analysers (list or single analyser): Either a list or a single analyser (default empty)
+            - analysers (list or single analyser): Either a list or a single analyser (default empty)
 
-            concept (string "ManyToMany" or "OneToOne"): Setting to controle if there is a "one to one" correspondence between analysers and detectors or a "many to many" relationship.
+            - concept (string "ManyToMany" or "OneToOne"): Setting to controle if there is a "one to one" correspondence between analysers and detectors or a "many to many" relationship.
 
         .. note::
             A wedge does not have a direction. The direction of analysers and detectors are to be set individually.
@@ -101,8 +101,9 @@ class Wedge(GeometryConcept.GeometryConcept):
     def append(self,Object):
         """Append Object(s) to corresponding list.
 
-        Args
-            object (Detector(s)/Analyser(s)): Single detector/analyser of list of detectors/analysers
+        Args:
+
+            - object (Detector(s)/Analyser(s)): Single detector/analyser of list of detectors/analysers
         """
         if isinstance(Object,list):
             for obj in Object:

@@ -14,13 +14,13 @@ class Analyser(GeometryConcept.GeometryObject):
         """
         Args:
 
-            position (float 3): Position of analyser in meters
+            - position (float 3): Position of analyser in meters
 
-            direction (float 3): Direction of analyser
+            - direction (float 3): Direction of analyser
 
-            d_spacing (float): The d spacing in Anstrom (default 3.35)
+            - d_spacing (float): The d spacing in Anstrom (default 3.35)
 
-            mosaicity (float): The standard deviation of mosaicity in arcminutes (default 60)
+            - mosaicity (float): The standard deviation of mosaicity in arcminutes (default 60)
         """
         super(Analyser,self).__init__(position,direction)
         self.d_spacing = d_spacing
@@ -75,11 +75,11 @@ class Analyser(GeometryConcept.GeometryObject):
         """
         Args:
 
-            ax (matplotlib.pyplot 3d axis): Axis object into which the analyser is plotted
+            - ax (matplotlib.pyplot 3d axis): Axis object into which the analyser is plotted
 
         Kwargs:
 
-            offset (3vector): Offset of analuser due to bank position (default [0,0,0])
+            - offset (3vector): Offset of analuser due to bank position (default [0,0,0])
         
         >>> GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> GenericAnalyser.plot(ax)
@@ -144,24 +144,27 @@ class FlatAnalyser(Analyser):
         """
         Args:
 
-            Position (3vector): Position of object (default [0,0,0])
+            - Position (3vector): Position of object (default [0,0,0])
 
-            Direction (3vector): Direction along which the object points (default [0,0,1])
+            - Direction (3vector): Direction along which the object points (default [0,0,1])
 
         Kwargs:
 
-            d_spacing (float): D spacing of analyser in Angstrom
+            - d_spacing (float): D spacing of analyser in Angstrom
 
-            mosaicity (float): Mosaicity in arcminutes
+            - mosaicity (float): Mosaicity in arcminutes
 
-            length (float): Length of detector tube in meters (default 0.25)
+            - length (float): Length of detector tube in meters (default 0.25)
 
-            pixels (int): Number of pixels (default 456)
+            - pixels (int): Number of pixels (default 456)
 
-            diameter (float): Diameter of tube in meters (default 0.02)
+            - diameter (float): Diameter of tube in meters (default 0.02)
 
         Raises:
-            AttributeError, NotImplimentedError
+            
+            - AttributeError
+            
+            - NotImplimentedError
         
 
         """
@@ -204,13 +207,13 @@ class FlatAnalyser(Analyser):
         """
         Args:
 
-            ax (matplotlib.pyplot 3d axis): Axis object into which the analyser is plotted
+            - ax (matplotlib.pyplot 3d axis): Axis object into which the analyser is plotted
 
         Kwargs:
 
-            offset (3vector): Offset of detector due to bank position (default [0,0,0])
+            - offset (3vector): Offset of detector due to bank position (default [0,0,0])
 
-            n (int): Number of points on the surface to be plotted (default 100)
+            - n (int): Number of points on the surface to be plotted (default 100)
         
         >>> Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> Analyser.plot(ax,offset=(0.0,0.0,0.0),n=100)

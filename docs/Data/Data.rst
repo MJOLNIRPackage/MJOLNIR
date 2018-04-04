@@ -11,6 +11,7 @@ Data Module
    :nosignatures:
 
     DataSet.DataSet
+    Viewer3D.Viewer3D
 
 .. automodule:: Data
 
@@ -26,6 +27,20 @@ Data set object designed to...
 .. _DataSet:
 
 .. autoclass:: DataSet
+    :members:
+
+
+Data viewing tool
+^^^^^^^^^^^^^^^^^
+
+Visualization tool designed to deal with the difficulties of handling 3D data.
+
+
+.. automodule:: Viewer3D
+
+.. _Viewer3D:
+
+.. autoclass:: Viewer3D
     :members:
 
 

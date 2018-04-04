@@ -10,7 +10,10 @@ from matplotlib.widgets import Slider
 import warnings
 
 class Viewer3D(object):
-    def __init__(self,Data,bins,axis=2,log=False):
+    def __init__(self,Data,bins,axis=2):
+        """3 dimensional viewing object generating interactive Matplotlib figure. Keeps track of all the different plotting functions and variables in order to allow
+        the user to change between different slicing modes and to scroll through the data in an interactive way.
+        """
         self.Data = Data
         self.bins = bins
         
@@ -95,12 +98,7 @@ class Viewer3D(object):
         self.upperLim = upperLim
         self.lowerLim = 0
         self.axis = axis
-        
-        #cidkey = 
-        
-        
-        
-        
+
         
     def stringValue(self):
         if self.axis==2:

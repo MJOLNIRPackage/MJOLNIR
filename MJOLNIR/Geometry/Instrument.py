@@ -16,14 +16,15 @@ class Instrument(GeometryConcept.GeometryConcept):
 
         Kwargs:
             
-            position (float 3d): Position of the instrument alwasy at origin(?) (default (0,0,0))
+            - position (float 3d): Position of the instrument alwasy at origin(?) (default (0,0,0))
 
-            wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
+            - wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
 
-            filename (string): Filename of xml file (ending in xml). To load binary files use self.load(filename).
+            - filename (string): Filename of xml file (ending in xml). To load binary files use self.load(filename).
 
         Raises:
-            AttributeError
+            
+            - AttributeError
         
         """
         
@@ -70,7 +71,8 @@ class Instrument(GeometryConcept.GeometryConcept):
         """Append wedge(s) to instrument.
 
         Args
-            wedge (Wedge(s)): Single wedge or list of wedges
+            
+            - wedge (Wedge(s)): Single wedge or list of wedges
         """
         if isinstance(wedge,list):
             for obj in wedge:
@@ -115,8 +117,9 @@ class Instrument(GeometryConcept.GeometryConcept):
         """Method to initialize and perform analytical calulations of scattering quantities. 
         Initializes:
 
-            * A4: Matrix holding pixel A4. Shape (len(Wedges),len(detectors),pixels)
-            * Ef: Matrix holding pixel Ef. Shape (len(Wedges),len(detectors),pixels)
+            -  A4: Matrix holding pixel A4. Shape (len(Wedges),len(detectors),pixels)
+            
+            -  Ef: Matrix holding pixel Ef. Shape (len(Wedges),len(detectors),pixels)
         """
         factorLambdasqrtE = 9.0445678
 

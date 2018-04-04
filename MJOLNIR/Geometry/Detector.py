@@ -13,14 +13,15 @@ class Detector(GeometryConcept.GeometryObject):
 
     def __init__(self, position,direction):
         """
-        Kwargs:
-            Position (3vector): Position of object (default [0,0,0])
+        args:
 
-            Direction (3vector): Direction along which the object points (default [0,0,1])
+            - Position (3vector): Position of object (default [0,0,0])
+
+            - Direction (3vector): Direction along which the object points (default [0,0,1])
             
         raises:
 
-            NotImplementedError
+            - NotImplementedError
             
         """
         super(Detector,self).__init__(position,direction)
@@ -41,11 +42,11 @@ class Detector(GeometryConcept.GeometryObject):
         """
         Args:
 
-            ax (matplotlib.pyplot 3d axis): Axis object into which the detector is plotted
+            - ax (matplotlib.pyplot 3d axis): Axis object into which the detector is plotted
 
         Kwargs:
 
-            offset (3vector): Offset of detector due to bank position (default [0,0,0])
+            - offset (3vector): Offset of detector due to bank position (default [0,0,0])
 
         >>> GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> GenericDetector.plot(ax)
@@ -78,22 +79,23 @@ class TubeDetector1D(Detector):
         """
         Args:
 
-            Position (3vector): Position of object (default [0,0,0])
+            - Position (3vector): Position of object (default [0,0,0])
 
-            Direction (3vector): Direction along which the object points (default [0,0,1])
+            - Direction (3vector): Direction along which the object points (default [0,0,1])
 
         Kwargs:
 
-            length (float): Length of detector tube in meters (default 0.25)
+            - length (float): Length of detector tube in meters (default 0.25)
 
-            pixels (int): Number of pixels (default 452)
+            - pixels (int): Number of pixels (default 452)
 
-            diameter (float): Diameter of tube in meters (default 0.02)
+            - diameter (float): Diameter of tube in meters (default 0.02)
 
-            split (list int): Edge pixels for slitting the tube into areas lidt by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
+            - split (list int): Edge pixels for slitting the tube into areas lidt by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
 
         Raises:
-            AttributeError
+            
+            - AttributeError
         
 
         """
@@ -170,13 +172,13 @@ class TubeDetector1D(Detector):
         """
         Args:
 
-            ax (matplotlib.pyplot 3d axis): Axis object into which the detector is plotted
+            - ax (matplotlib.pyplot 3d axis): Axis object into which the detector is plotted
 
         Kwargs:
 
-            offset (3vector): Offset of detector due to bank position (default [0,0,0])
+            - offset (3vector): Offset of detector due to bank position (default [0,0,0])
 
-            n (int): Number of points on the surface to be plotted (default 100)
+            - n (int): Number of points on the surface to be plotted (default 100)
         
         >>> Detector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
         >>> Detector.plot(ax,offset=(0.0,0.0,0.0),n=100)
