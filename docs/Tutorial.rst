@@ -48,7 +48,7 @@ In order to not having to create an instrument from scratch each time a data tre
 |                                                                                                                                      |
 +-------------------------------------------------------------------+------------------------------------------------------------------+
 | .. literalinclude:: ../Tutorials/Load_Instrument_From_XML_file.py |  .. SimpleInstrument:                                            |
-|     :lines: 4-21,23-34,36-45,47                                   |                                                                  |
+|     :lines: 4-21,23-33,35-44,46                                   |                                                                  |
 |     :language: python                                             |  .. figure:: ../Tutorials/SimpleInstrument.png                   |
 |     :linenos:                                                     |    :width: 90%                                                   |
 |                                                                   |                                                                  |
@@ -124,4 +124,30 @@ With the above normalization table created, on can easily convert raw data files
 
 The code then converts the scan file, be it either Ei, A4, or A3 scan, into a new HDF file following the Nexus NXsqom data convention. This is followed in order to facilitate easy interfacing with other software later used. The location of the converted file is the same as the original but the new file has the ending .nxs. Furthermore, in order to store all information and ensure that no data is lost, all information already present in the raw data file is copied into the new. This also include the original raw data counts.
 
+
+Bin data and visualize
+^^^^^^^^^^^^^^^^^^^^^^
+Having converted the data into the Nexus NXsqom format, one wants to both rebin the data and visualize it. As different detector pixels covers different positions in reciprocal space, one needs to rebin the data in order to avoid large areas of no data. This is done using the method in the :ref:`DataSet<DataSet>` called binData3D. As input one needs to provide the step size in the x, y, and z directions, the 3D position and intensity. Furthermore, normalization and monitor count can be specified in order to also bin these. Returned is the rebinned data together with normalization and monitor count, if applicable, and the bins used.
+
++-------------------------------------------------------------------+------------------------------------------------------------------+
+|      .. literalinclude:: ../Tutorials/Binning_data.py             |    .. Visualization_E_546:                                       |
+|         :lines: 4-22,24,27,30-                                    |                                                                  |
+|         :language: python                                         |    .. figure:: ../Tutorials/Visualization_E_546.png              |
+|         :linenos:                                                 |      :width: 90%                                                 |
+|                                                                   |                                                                  |
+| Binning of the converted data into Qx and Qy bins of size 0.05AA  |  Cut through data along the energy direction showing Qx and Qy   |
+| and energy in 0.2 meV. Intensity is calculated and with the bins  |  for a phonon scan at the energy 5.46 meV.                       |
+| passed to the visualizer.                                         |                                                                  |
++-------------------------------------------------------------------+------------------------------------------------------------------+
+|  .. Visualization_Qx_119:                                         |  .. SimpleInstrumentEf:                                          |
+|                                                                   |                                                                  |
+|  .. figure:: ../Tutorials/Visualization_Qx_119.png                |  .. figure:: ../Tutorials/Visualization_Qy_089.png               |
+|    :width: 90%                                                    |    :width: 90%                                                   |
+|                                                                   |                                                                  |
+| Cut of data along the Qx direction.                               | Cut of data along the Qx direction.                              |
+|                                                                   |                                                                  |
+|                                                                   |                                                                  |
++-------------------------------------------------------------------+------------------------------------------------------------------+
+
+The bins and calculated intensity is then passed on to the Viewer3D object, that generates a matplotlib figure. This plot is made interactive through the slider in the bottom, that shows the current position along the axis as well as the value of this. By pressing the up/down arrows (or +/- buttons as well as scrolling) one can change this value and thus investigate the third dimension. By default the energy direction is chosen but it can be changed by pressing the 0, 1, or 2 numerical buttons. This is to be understood as which direction is to be sliced. Further, by clicking on the plot, the x and y value corresponding to the point is printed to the terminal. This is then intented to be used in further data treatment when cuts are needed. 
 
