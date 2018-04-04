@@ -271,7 +271,7 @@ class DataSet(object):
                 elif isinstance(table,int):
                     bins.append(table)
                 else:
-                    raise AttributeError("Provided table attribute ({}) not recognized, should be 'Unbinned','PrismaticHighDefinition','PrismaticLowDefinition','Single', and/or integer.")
+                    raise AttributeError("Provided table attribute ({}) not recognized, should be 'Unbinned','PrismaticHighDefinition','PrismaticLowDefinition','Single', and/or integer.".format(table))
             if len(bins)==0:
                 raise AttributeError("No binning has been chosen for normalization routine.")
             # Initial finding of peaks
@@ -525,7 +525,7 @@ class DataSet(object):
             A4=A4.reshape(A4.shape[0]*A4.shape[1],A4.shape[2],order='C')
             Ef = np.array(self.instrument.Ef)
             Ef=Ef.reshape(Ef.shape[0]*Ef.shape[1],Ef.shape[2],order='C')
-            
+
             PixelEdge = normalization[:,7:].reshape(A4.shape[0],EPrDetector,binning,2).astype(int)
             
             Data = np.array(file.get('/entry/data/data'))
@@ -540,8 +540,7 @@ class DataSet(object):
             
             A4File = np.array(file.get('entry/CAMEA/detector/polar_angle'))
             A4Shape = A4.shape
-            A4Total = A4.reshape((1,A4Shape[0],A4Shape[1]))+np.deg2rad(A4File).reshape((A4File.shape[0],1,1))
-            
+            A4Total = -A4.reshape((1,A4Shape[0],A4Shape[1]))-np.deg2rad(A4File).reshape((A4File.shape[0],1,1))#-np.deg2rad(2.3173119802914783)
             #PixelEdgeA4Shaped = PixelEdge.reshape((1,PixelEdge.shape[0],EPrDetector,binning,2))
             
             A4Mean = np.zeros((A4Total.shape[0],A4Total.shape[1],EPrDetector*binning))
@@ -556,14 +555,15 @@ class DataSet(object):
             
             EfMean = normalization[:,4].reshape(A4.shape[0],EPrDetector*binning)
             Normalization = (normalization[:,3]*np.sqrt(2*np.pi)*normalization[:,5]).reshape(A4.shape[0],EPrDetector*binning)
-
+            #print(np.max(np.rad2deg(A4Mean)))
+            #print(np.min(np.rad2deg(A4Mean)))
             #kf = factorsqrtEK*np.sqrt(Ef)
             kf = factorsqrtEK*np.sqrt(EfMean)
             Ei = np.array(file.get('/entry/CAMEA/monochromator/energy'))
             
             ki = factorsqrtEK*np.sqrt(Ei)
             
-            A3 = np.array(file.get('/entry/sample/rotation_angle/'))
+            A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))
             
             # Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
 
@@ -1011,7 +1011,8 @@ def test_Normalization_tables():
         assert True
 
 
-    dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['PrismaticHighDefinition']) 
+    #dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['Single']) 
+    dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
 
 
 def test_DataSet_Convert_Data():
@@ -1024,7 +1025,7 @@ def test_DataSet_Convert_Data():
     normalizationfile = 'TestData/EnergyNormalization_8.calib'
 
     if not os.path.exists(normalizationfile):
-        dataset.EnergyCalibration(NF,'TestData/',tables=['PrismaticHighDefinition','PrismaticLowDefinition','Single',2])
+        dataset.EnergyCalibration(NF,'TestData/',tables=['PrismaticHighDefinition'])
 
     DataFiles = 'TestData/VanNormalization.h5'
 
