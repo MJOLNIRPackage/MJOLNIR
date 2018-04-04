@@ -10,4 +10,4 @@ Instr.initialize()
 NF = '../TestData/VanNormalization.h5'
 
 dataset = DataSet.DataSet(instrument=Instr,normalizationfiles=NF)
-dataset.EnergyCalibration(NF,'../TestData/',plot=False,tables=['PrismaticHighDefinition',3]) 
+dataset.EnergyCalibration(NF,'../TestData/',plot=True,tables=['PrismaticHighDefinition',3]) 

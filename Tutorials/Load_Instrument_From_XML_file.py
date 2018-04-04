@@ -31,7 +31,6 @@ for det in range(len(Instr.wedges[0].detectors)):
 plt.grid('on')
 plt.xlabel('Pixel')
 plt.ylabel('A4 [deg]')
-plt.tight_layout()
 plt.savefig('SimpleInstrument_A4.png',format='png',dpi=300)
 
 plt.figure()
