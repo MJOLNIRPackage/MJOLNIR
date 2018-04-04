@@ -15,10 +15,13 @@ class GeometryConcept(object):
         """
         Kwargs:
 
-            Position (3vector): Position of object (default [0,0,0])
+            - Position (3vector): Position of object (default [0,0,0])
 
         Raises:
-            AttributeError, NotImplementedError
+
+            - AttributeError
+
+            - NotImplementedError
 
         >>> GenericConcept = GeometryConcept(position=(0.0,1.0,0.0))
         >>> print(GenericConcept.position)
@@ -52,10 +55,10 @@ class GeometryConcept(object):
         """
         Args:
 
-            ax (matplotlib axis): 3D matplotlib axis into whicht plotting is performed
+            - ax (matplotlib axis): 3D matplotlib axis into whicht plotting is performed
 
         .. warning::
-            Method not incorporated but acts as virtual method.
+            Method not incorporated, but acts as virtual method.
 
         """
         raise NotImplementedError

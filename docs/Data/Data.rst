@@ -11,6 +11,8 @@ Data Module
    :nosignatures:
 
     DataSet.DataSet
+    DataSet.binData3D
+    DataSet.calculateGrid3D
     Viewer3D.Viewer3D
 
 .. automodule:: Data
@@ -19,8 +21,7 @@ Data Module
 Data Set Object
 ^^^^^^^^^^^^^^^
 
-Data set object designed to...
-
+Object to take care of all data conversion and treatment taking it from raw hdf5 files obtained at the instrument into rebinned data sets converted to S(q,omega). 
 
 .. automodule:: DataSet
 
@@ -30,10 +31,22 @@ Data set object designed to...
     :members:
 
 
+
+Data Set bin data
+^^^^^^^^^^^^^^^^^
+.. autofunction:: binData3D
+
+
+Data Set calculated 3D grid
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: calculateGrid3D
+
+
+
 Data viewing tool
 ^^^^^^^^^^^^^^^^^
 
-Visualization tool designed to deal with the difficulties of handling 3D data.
+Visualization tool designed to deal with the difficulties of handling 3D data. 
 
 
 .. automodule:: Viewer3D
@@ -42,5 +55,6 @@ Visualization tool designed to deal with the difficulties of handling 3D data.
 
 .. autoclass:: Viewer3D
     :members:
+
 
 
