@@ -582,6 +582,10 @@ class DataSet(object):
             #ScanPoints = Data.shape[0]
             
             if not Data.shape[1:]==A4.shape:
+                print(datafile)
+                print(datafiles)
+                print(Data)
+                print(file)
                 raise AttributeError('The shape of the data{} does not match instrument{}!'.format(Data.shape[1:],A4.shape))
             
             
