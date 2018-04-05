@@ -529,7 +529,7 @@ class DataSet(object):
 
 
 
-    def ConvertDatafile(self,datafiles=None,calibrationfile=None):
+    def ConvertDatafile(self,datafiles=None,calibrationfile=None,savelocation=None):
         """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
@@ -538,6 +538,8 @@ class DataSet(object):
             - datafiles (string or list of): File path(s), file must be of hdf format (default self.datafiles).
 
             - calibrationfile (string): File path to normalization file (default self.calibrationfiles[-1]).
+
+            - savelocation (string): File path to save location of data file(s) (defaults to same as raw file).
 
         Raises:
 
@@ -655,11 +657,69 @@ class DataSet(object):
             Normalization = np.repeat(Normalization,Intensity.shape[2],axis=2)
             ## TODO: Don't let all things vary at the same time!!
             
-            
-            saveNXsqom(datafile,file,datafile.replace('.h5','.nxs'),Intensity,Monitor,QX,QY,DeltaE,calibrationfile,Normalization)
+            if not savelocation is None:
+                saveloc = savelocation+datafile.replace('.h5','.nxs').split('/')[-1]
+            else:
+                saveloc = datafile.replace('.h5','.nxs')
+            saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,calibrationfile,Normalization)
             
             file.close()
-            self.convertedfiles.append(datafile.replace('.h5','.nxs'))
+            self.convertedfiles.append(saveloc)
+
+    def binData3D(self,dx,dy,dz,datafiles=None):
+        """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
+
+        Args:
+
+            - dx (float): step sizes along the x direction (required).
+
+            - dy (float): step sizes along the y direction (required).
+
+            - dz (float): step sizes along the z direction (required).
+
+        Kwargs:
+
+            - datafile (string or list of strings): Location(s) of data file to be binned (default converted file in DataSet).
+
+        Raises:
+
+            - AttributeError
+
+        Returns:
+
+            - Datalist: List of converted data files having 4 sub arrays: Intensity(counts), Monitor, Normalization, Normalization count
+            - bins: 3 arrays containing edge positions in x, y, and z directions.
+        """
+        
+        if datafiles is None:
+            if len(self.convertedfiles)==0:
+                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+            else:
+                datafiles = self.convertedfiles
+        elif not isinstance(datafiles,list):
+            datafiles = [datafiles]
+        else:
+            raise AttributeError('datafiles attribute not understood.')
+
+        returnData = []
+
+        for data in datafiles:
+            
+            file = hdf.File(data,'r')
+
+            I = np.array(file.get('entry/data/data'))
+            posx = np.array(file.get('entry/data/qx'))
+            posy = np.array(file.get('entry/data/qy'))
+            energy = np.array(file.get('entry/data/en'))
+            Norm = np.array(file.get('entry/data/normalization'))
+            Monitor = np.array(file.get('entry/data/monitor'))
+            file.close()
+
+            pos = [posx,posy,energy]
+            _tempData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
+            returnData.append(_tempData)
+
+        return returnData,bins
         
 
 
