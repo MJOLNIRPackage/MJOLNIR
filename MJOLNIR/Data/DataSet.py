@@ -1140,7 +1140,7 @@ def test_Normalization_tables():
         assert True
 
 
-    #dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['Single']) 
+    dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['Single']) 
     dataset.EnergyCalibration(savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     assert(dataset.calibrationfiles[-1]=='TestData/EnergyNormalization_2.calib')
     
@@ -1240,6 +1240,6 @@ def test_DataSet_full_test():
     warnings.simplefilter("ignore")
     Intensity = np.divide(BinnedData[0]*BinnedData[3],BinnedData[1]*BinnedData[2])
     warnings.simplefilter('once')
-    
+
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
     del viewer
