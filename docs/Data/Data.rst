@@ -32,13 +32,13 @@ Object to take care of all data conversion and treatment taking it from raw hdf5
 
 
 
-Data Set bin data
-^^^^^^^^^^^^^^^^^
+DataSet bin data
+^^^^^^^^^^^^^^^^
 .. autofunction:: binData3D
 
 
-Data Set calculated 3D grid
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+DataSet calculated 3D grid
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autofunction:: calculateGrid3D
 
 

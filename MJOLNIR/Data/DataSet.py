@@ -36,7 +36,7 @@ class DataSet(object):
 
             - calibrationfiles (string or list of strings): Location of calibration normalization file(s).
 
-            - convertedFiles (string or list of strings): Location of converted data files.
+            - convertedfiles (string or list of strings): Location of converted data files.
 
         Raises:
 
@@ -225,19 +225,15 @@ class DataSet(object):
     def EnergyCalibration(self,datafile=None,savelocation='energycalibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],InstrumentType='CAMEA',plot=False):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'EnergyCalibration_Np.calib', where Np is the number of pixels.
         
-        Generates 5 different tables:
+        Generates 4 different tables:
 
-        - Unbinned (452 pixels/detector)
-            .. warning::
-                Does not support unbinned normalization! Raises warning at current time.
+            - Prismatic High Definition (8 pixels/energy or 64 pixels/detector)
 
-        - Prismatic High Definition (8 pixels/energy or 64 pixels/detector)
+            - Prismatic Low Definition (3 pixels/energy or 24 pixels/detector)
 
-        - Prismatic Low Definition (3 pixels/energy or 24 pixels/detector)
+            - Single (1 pixel/energy or 8 pixels/detector)
 
-        - Single (1 pixel/energy or 8 pixels/detector)
-
-        - Number (integer)
+            - Number (integer)
 
         Kwargs:
 
