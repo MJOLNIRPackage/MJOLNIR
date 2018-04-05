@@ -523,7 +523,7 @@ class DataSet(object):
 
 
     def ConvertDatafile(self,datafiles=None,calibrationfile=None,savelocation=None):
-        """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXqom format and saves in a file with same name, but of type .nxs.
+        """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
         Kwargs:
@@ -554,7 +554,6 @@ class DataSet(object):
                 print('Using normalization file {}'.format(calibrationfile))
 
         binning = int(calibrationfile.split('_')[-1].split('.')[0]) # Find binning from normalization file name
-        
 
         if datafiles is None:
             if len(self.datafiles)==0:
@@ -651,6 +650,8 @@ class DataSet(object):
             ## TODO: Don't let all things vary at the same time!!
             
             if not savelocation is None:
+                if savelocation[-1]!='/':
+                    savelocation+='/'
                 saveloc = savelocation+datafile.replace('.h5','.nxs').split('/')[-1]
             else:
                 saveloc = datafile.replace('.h5','.nxs')
@@ -1232,7 +1233,8 @@ def test_DataSet_full_test():
 
     dataset = DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFile)
     dataset.EnergyCalibration(tables=[8],savelocation='TestData')
-    dataset.ConvertDatafile(savelocation='TestData',datafiles='TestData/cameasim2018n000005.h5')
+    
+    dataset.ConvertDatafile(datafiles=DataFile,savelocation='TestData')
 
     Data,bins = dataset.binData3D(0.05,0.05,0.2)
 
