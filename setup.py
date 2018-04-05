@@ -25,7 +25,7 @@ setup(
     packages=['MJOLNIR','MJOLNIR/Data','MJOLNIR/Geometry','MJOLNIR/Statistics'],
     python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,',
    install_requires=['matplotlib','numpy','h5py','scipy','datetime'],
-    data_files=[('MJOLNIR/TestData',['TestData/CAMEA_Full_2.xml','TestData/EnergyNormalization_2.calib','TestData/EnergyNormalization_3.calib','TestData/EnergyNormalization_8.calib','TestData/VanNormalization.h5','TestData/VanNormalization.nxs','TestData/cameasim2018n000005.nxs'])],
+    #data_files=[('MJOLNIR/TestData',['TestData/CAMEA_Full_2.xml','TestData/EnergyNormalization_2.calib','TestData/EnergyNormalization_3.calib','TestData/EnergyNormalization_8.calib','TestData/VanNormalization.h5','TestData/VanNormalization.nxs','TestData/cameasim2018n000005.nxs'])],
 
     classifiers=[
         'Development Status :: 3 - Alpha',

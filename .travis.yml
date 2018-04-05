@@ -14,7 +14,7 @@ before_script: # configure a headless display to test plot generation
   - sleep 3 # give xvfb some time to start
 
 install:
-  - pip install -r requirements.txt
+  - pip install .
 
 script: 
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];

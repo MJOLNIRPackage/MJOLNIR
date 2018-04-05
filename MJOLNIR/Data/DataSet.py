@@ -439,10 +439,7 @@ class DataSet(object):
             fitParameters = []
             activePixelRanges = []
             for detpixels in bins:
-                if detpixels==pixels:
-                    warnings.warn('Skipping full no binning option.') #<----------------------------- TODO
-                    continue
-                elif detpixels*analysers*3>len(Ei):
+                if detpixels*analysers*3>len(Ei):
                     warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3))
                     
                 if plot:
@@ -1115,7 +1112,11 @@ def test_DataSet_SaveLoad():
     os.remove(temp)
     assert(D1==D2) 
 
-
+def test_DataSet_str():
+    Instr = Instrument.Instrument()
+    D1 = DataSet(datafiles='Here',normalizationfiles = 'Van.nxs',instrument=Instr)
+    string = str(D1)
+    print(string)
 
 def test_Normalization_tables():
     Instr = Instrument.Instrument(filename='TestData/CAMEA_Full.xml')
@@ -1140,7 +1141,7 @@ def test_Normalization_tables():
 
 
     #dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['Single']) 
-    dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
+    dataset.EnergyCalibration(savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     assert(dataset.calibrationfiles[-1]=='TestData/EnergyNormalization_2.calib')
     
 
@@ -1150,10 +1151,11 @@ def test_DataSet_Convert_Data():
     Instr.initialize()
 
     NF = 'TestData/VanNormalization.h5'
-    dataset = DataSet(instrument=Instr,normalizationfiles=NF)
+    DataFiles = 'TestData/VanNormalization.h5'
+    dataset = DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFiles)
 
     calibrationfiles = 'TestData/EnergyNormalization_8.calib'
-    DataFiles = 'TestData/VanNormalization.h5'
+    
 
     try:
         dataset.ConvertDatafile(datafiles=DataFiles)
@@ -1167,7 +1169,7 @@ def test_DataSet_Convert_Data():
          dataset.calibrationfiles.append(calibrationfiles)
 
     dataset.ConvertDatafile(datafiles=DataFiles,calibrationfile=calibrationfiles)
-    dataset.ConvertDatafile(datafiles=[DataFiles])
+    dataset.ConvertDatafile(savelocation='TestData')
 
 
 def test_DataSet_3DMesh():
@@ -1214,3 +1216,30 @@ def test_DataSet_BinData():
     assert(RebinnedNormCount.dtype==int)
     assert(RebinnedNorm.dtype==Norm.dtype)
     assert(ReBinnedI.dtype==I.dtype)
+
+
+def test_DataSet_full_test():
+    import MJOLNIR.Data.Viewer3D
+    import warnings
+    plt.ioff()
+    Instr = Instrument.Instrument(filename='TestData/CAMEA_Full_2.xml')
+    Instr.initialize()
+
+    NF = 'TestData/VanNormalization.h5'
+    DataFile='TestData/cameasim2018n000005.h5'
+
+
+    dataset = DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFile)
+    dataset.EnergyCalibration(tables=[8],savelocation='TestData')
+    dataset.ConvertDatafile(savelocation='TestData')
+
+    Data,bins = dataset.binData3D(0.05,0.05,0.2)
+
+    BinnedData = Data[0]
+
+    warnings.simplefilter("ignore")
+    Intensity = np.divide(BinnedData[0]*BinnedData[3],BinnedData[1]*BinnedData[2])
+    warnings.simplefilter('once')
+    
+    viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
+    del viewer
