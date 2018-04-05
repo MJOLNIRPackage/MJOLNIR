@@ -13,4 +13,5 @@ Contains a list of different tutorials in order to familiarize users with the ob
    GenerateNormalization
    ConvertData
    BinAndVisualize
+   Full
 
