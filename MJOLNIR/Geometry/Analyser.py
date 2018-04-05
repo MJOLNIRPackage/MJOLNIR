@@ -150,17 +150,9 @@ class FlatAnalyser(Analyser):
 
         Kwargs:
 
-<<<<<<< HEAD
             - d_spacing (float): D spacing of analyser in Angstrom
 
             - mosaicity (float): Mosaicity in arcminutes
-=======
-            d_spacing (float): D spacing of analyser in Angstrom
-
-            mosaicity (float): Mosaicity in arcminutes
-
-            length (float): Length of detector tube in meters (default 0.25)
->>>>>>> 3520f67b2469a964cd65311c8330b2e8dec56210
 
             - length (float): Length of detector tube in meters (default 0.25)
 

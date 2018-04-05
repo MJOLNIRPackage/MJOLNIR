@@ -75,11 +75,7 @@ def test_Generic_plot():
 
 class TubeDetector1D(Detector):
     """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
-<<<<<<< HEAD
     def __init__(self, position, direction,length=0.25, pixels=452,diameter=0.02,split=[]):
-=======
-    def __init__(self, position, direction,length=0.25, pixels=456,diameter=0.02,split=[]):
->>>>>>> 3520f67b2469a964cd65311c8330b2e8dec56210
         """
         Args:
 
@@ -100,12 +96,8 @@ class TubeDetector1D(Detector):
             split (list int): Edge pixels for slitting the tube into areas lidt by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
 
         Raises:
-<<<<<<< HEAD
             
             - AttributeError
-=======
-            AttributeError
->>>>>>> 3520f67b2469a964cd65311c8330b2e8dec56210
         
 
         """
