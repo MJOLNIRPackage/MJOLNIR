@@ -7,5 +7,5 @@ Below is a list of links to the documentation for individual core functionalitie
    :maxdepth: 1
 
    Geometry
-   FileConversion
    EnergyNormalization
+   FileConversion
