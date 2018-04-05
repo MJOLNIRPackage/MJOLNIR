@@ -567,7 +567,7 @@ class DataSet(object):
         for datafile in datafiles:
             normalization = np.genfromtxt(calibrationfile,delimiter=',',skip_header=3)
             EPrDetector = len(self.instrument.wedges[0].detectors[0].split)+1
-            
+            print(datafile)
             
             file = hdf.File(datafile)
         
@@ -1169,7 +1169,8 @@ def test_DataSet_Convert_Data():
          dataset.calibrationfiles.append(calibrationfiles)
 
     dataset.ConvertDatafile(datafiles=DataFiles,calibrationfile=calibrationfiles)
-    dataset.ConvertDatafile(savelocation='TestData')
+    dataset.ConvertDatafile(datafiles=DataFiles,savelocation='TestData')
+    
 
 
 def test_DataSet_3DMesh():

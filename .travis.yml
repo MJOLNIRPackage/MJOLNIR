@@ -15,6 +15,7 @@ before_script: # configure a headless display to test plot generation
 
 install:
   - pip install .
+  - pip install -r requirements.txt
 
 script: 
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
