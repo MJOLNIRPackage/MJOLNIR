@@ -23,7 +23,7 @@ NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*si
 
 
 class DataSet(object):
-    def __init__(self, instrument=None,datafiles=None,normalizationfiles=None, templocation='_temp/', **kwargs):
+    def __init__(self, instrument=None,datafiles=None,normalizationfiles=None, calibrationfiles=None, convertedfiles=None, **kwargs):
         """DataSet object to hold all informations about data.
         
         Kwargs:
@@ -34,7 +34,9 @@ class DataSet(object):
 
             - normalizationfiles (string or list of strings): Location of Vanadium normalization file(s).
 
-            - templocation (string): Location of temporary files (default _temp/).
+            - calibrationfiles (string or list of strings): Location of calibration normalization file(s).
+
+            - convertedFiles (string or list of strings): Location of converted data files.
 
         Raises:
 
@@ -48,6 +50,8 @@ class DataSet(object):
         self._instrument = None
         self._datafiles = []
         self._normalizationfiles = []
+        self._convertedfiles = []
+        self._calibrationfiles = []
         if instrument is not None:
             self.instrument = instrument
 
@@ -58,13 +62,14 @@ class DataSet(object):
         if normalizationfiles is not None:
             self.normalizationfiles = normalizationfiles
         
+        if convertedfiles is not None:
+            self.convertedfiles = convertedfiles
+
+        if calibrationfiles is not None:
+            self.calibrationfiles = calibrationfiles
 
 
         self._settings = {}
-        
-
-        if templocation is not None:
-            self.templocation=templocation
             
         
         
@@ -122,23 +127,39 @@ class DataSet(object):
             #print('Error {} while parsing input.!'.format(e))
             raise(e)
 
+
     @property
-    def templocation(self):
-        return self._templocation
+    def convertedfiles(self):
+        return self._convertedfiles
 
-    @templocation.getter
-    def templocation(self):
-        return self._templocation
+    @convertedfiles.getter
+    def convertedfiles(self):
+        return self._convertedfiles
 
-    @templocation.setter
-    def templocation(self,templocation):
-        if isinstance(templocation,str):
-            if not templocation[-1]=='/':
-                templocation+='/'
-            self._templocation=templocation
-        else:
-            raise AttributeError('Temporary location ({}) is not a string!'.format(templocation))
+    @convertedfiles.setter
+    def convertedfiles(self,convertedfiles):
+        try:
+            self._convertedfiles = IsListOfStrings(convertedfiles)
+        except Exception as e:
+            #print('Error {} while parsing input.!'.format(e))
+            raise(e)
 
+
+    @property
+    def calibrationfiles(self):
+        return self._calibrationfiles
+
+    @calibrationfiles.getter
+    def calibrationfiles(self):
+        return self._calibrationfiles
+
+    @calibrationfiles.setter
+    def calibrationfiles(self,calibrationfiles):
+        try:
+            self._calibrationfiles = IsListOfStrings(calibrationfiles)
+        except Exception as e:
+            #print('Error {} while parsing input.!'.format(e))
+            raise(e)
 
     @property
     def settings(self):
@@ -201,7 +222,7 @@ class DataSet(object):
         return string
 
 
-    def EnergyCalibration(self,datafile,savelocation,tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],InstrumentType='CAMEA',plot=False):
+    def EnergyCalibration(self,datafile=None,savelocation='energycalibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],InstrumentType='CAMEA',plot=False):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'EnergyCalibration_Np.calib', where Np is the number of pixels.
         
         Generates 5 different tables:
@@ -218,11 +239,11 @@ class DataSet(object):
 
         - Number (integer)
 
-        Args:
+        Kwargs:
 
             - datafile (string): String to data single data file used for normalization (required).
 
-            - savelocation (string): String to save location folder (required)
+            - savelocation (string): String to save location folder (energycalibration)
 
             - tables (list): List of needed conversion tables (Default: ['Single','PrismaticLowDefinition','PrismaticHighDefinition','Unbinned'], increasing number of pixels).
 
@@ -242,6 +263,9 @@ class DataSet(object):
         if self.instrument.settings['Initialized']==False:
             self.initialize()
 
+        if datafile is None:
+            datafile = self.normalizationfiles[0]
+            print('Using {} for normalization table.'.format(datafile))
 
         if InstrumentType=='CAMEA':
 
@@ -500,32 +524,53 @@ class DataSet(object):
 
                 file.write(tableString)
                 file.close()
+                self.calibrationfiles.append(savelocation+tableName)
 
 
 
 
-    def ConvertDatafile(self,datafiles,normalizationfile):
+    def ConvertDatafile(self,datafiles=None,calibrationfile=None):
         """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
-        Args:
+        Kwargs:
 
-            - datafiles (string or list of): File path(s), file must be of hdf format (required).
+            - datafiles (string or list of): File path(s), file must be of hdf format (default self.datafiles).
 
-            - normalizationfile (string): File path to normalization file (required).
+            - calibrationfile (string): File path to normalization file (default self.calibrationfiles[-1]).
 
         Raises:
 
             - IOError
+
+            - AttributeError
             
         """
 
-        binning = int(normalizationfile.split('_')[-1].split('.')[0]) # Find binning from normalization file name
+        if calibrationfile is None:
+            binnings = []
+            for nfile in self.calibrationfiles:
+                binnings.append(int(nfile.split('_')[-1].split('.')[0]))
+            if len(binnings)==0:
+                raise AttributeError('No normalization file provided either through input of in the DataSet object.')
+            else:
+                maxarg = np.argmax(binnings)
+                calibrationfile = self.calibrationfiles[maxarg]
+                print('Using normalization file {}'.format(calibrationfile))
+
+        binning = int(calibrationfile.split('_')[-1].split('.')[0]) # Find binning from normalization file name
         
+
+        if datafiles is None:
+            if len(self.datafiles)==0:
+                raise AttributeError('No data files file provided either through input of in the DataSet object.')
+            datafiles = self.datafiles
+
+
         if not isinstance(datafiles,list):
             datafiles=[datafiles]
         for datafile in datafiles:
-            normalization = np.genfromtxt(normalizationfile,delimiter=',',skip_header=3)
+            normalization = np.genfromtxt(calibrationfile,delimiter=',',skip_header=3)
             EPrDetector = len(self.instrument.wedges[0].detectors[0].split)+1
             
             
@@ -611,9 +656,10 @@ class DataSet(object):
             ## TODO: Don't let all things vary at the same time!!
             
             
-            saveNXsqom(datafile,file,datafile.replace('.h5','.nxs'),Intensity,Monitor,QX,QY,DeltaE,normalizationfile,Normalization)
+            saveNXsqom(datafile,file,datafile.replace('.h5','.nxs'),Intensity,Monitor,QX,QY,DeltaE,calibrationfile,Normalization)
             
             file.close()
+            self.convertedfiles.append(datafile.replace('.h5','.nxs'))
         
 
 
@@ -906,16 +952,15 @@ def test_Dataset_Initialization():
     except RuntimeError:
         assert True
     
-    dataset = DataSet(instrument=Instr,OhterSetting=10.0,datafiles='SomeFile',normalizationfiles=['VanData','SecondFile'])
+    dataset = DataSet(instrument=Instr,OhterSetting=10.0,datafiles='SomeFile',normalizationfiles=['VanData','SecondFile'],convertedfiles='Converted.nxs')
     assert(dataset.datafiles[0]=='SomeFile')
     assert(dataset.normalizationfiles[0]=='VanData')
     assert(dataset.normalizationfiles[1]=='SecondFile')
     assert(len(dataset.normalizationfiles)==2)
     assert(dataset.instrument==Instr)
-    assert(dataset.templocation=='_temp/')
+    assert(len(dataset.calibrationfiles)==0)
+    assert(dataset.convertedfiles[0]=='Converted.nxs')
 
-    dataset.templocation = 'Other/'
-    assert(dataset.templocation== 'Other/')
 
     try:
         dataset.initialize()
@@ -954,17 +999,23 @@ def test_DataSet_Error():
         assert False
     except AttributeError:
         assert True
-    
-    try:
-        ds.templocation = 10
-        assert False
-    except AttributeError:
-        assert True
 
     try:
         ds.settings={}
         assert False
     except NotImplementedError:
+        assert True
+
+    try:
+        ds.convertedfiles = 10
+        assert False
+    except AttributeError:
+        assert True
+
+    try:
+        ds.calibrationfiles = 10
+        assert False
+    except AttributeError:
         assert True
 
     try:
@@ -990,10 +1041,7 @@ def test_DataSet_Error():
     except RuntimeError:
         assert True
 
-    
-
-
-        
+            
 
 def test_DataSet_Equality():
     D1 = DataSet(datafiles='Here',normalizationfiles=['Van/1.nxs','Van/2.nxs'])
@@ -1002,7 +1050,6 @@ def test_DataSet_Equality():
 def test_DataSet_SaveLoad():
     Instr = Instrument.Instrument()
     D1 = DataSet(datafiles='Here',normalizationfiles = 'Van.nxs',instrument=Instr)
-    # D1.normalizationfiles = 'Van.nxs'
 
     temp = 'temporary.bin'
 
@@ -1010,9 +1057,6 @@ def test_DataSet_SaveLoad():
     D2 = DataSet()
     D2.load(temp)
     os.remove(temp)
-    #print(DataSet.__dict__)
-    #print(str(D1))
-    #print(str(D2))
     assert(D1==D2) 
 
 
@@ -1027,13 +1071,13 @@ def test_Normalization_tables():
     dataset = DataSet(instrument=Instr,normalizationfiles=NF)
 
     try:
-        dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=[])
+        dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=[]) # No binning specified 
         assert False
     except AttributeError:
         assert True
 
     try:
-        dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=['Nothing?'])
+        dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=['Nothing?']) # Wrong binning
         assert False
     except AttributeError:
         assert True
@@ -1041,6 +1085,8 @@ def test_Normalization_tables():
 
     #dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['Single']) 
     dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
+    assert(dataset.calibrationfiles[-1]=='TestData/EnergyNormalization_2.calib')
+    
 
 
 def test_DataSet_Convert_Data():
@@ -1050,14 +1096,22 @@ def test_DataSet_Convert_Data():
     NF = 'TestData/VanNormalization.h5'
     dataset = DataSet(instrument=Instr,normalizationfiles=NF)
 
-    normalizationfile = 'TestData/EnergyNormalization_8.calib'
-
-    if not os.path.exists(normalizationfile):
-        dataset.EnergyCalibration(NF,'TestData/',tables=['PrismaticHighDefinition'])
-
+    calibrationfiles = 'TestData/EnergyNormalization_8.calib'
     DataFiles = 'TestData/VanNormalization.h5'
 
-    dataset.ConvertDatafile(datafiles=DataFiles,normalizationfile=normalizationfile)
+    try:
+        dataset.ConvertDatafile(datafiles=DataFiles)
+        assert False
+    except AttributeError: # Cant find normalization table
+        assert True
+
+    if not os.path.exists(calibrationfiles):
+        dataset.EnergyCalibration(savelocation='TestData/',tables=['PrismaticHighDefinition'])
+    else:
+         dataset.calibrationfiles.append(calibrationfiles)
+
+    dataset.ConvertDatafile(datafiles=DataFiles,calibrationfile=calibrationfiles)
+    dataset.ConvertDatafile(datafiles=[DataFiles])
 
 
 def test_DataSet_3DMesh():
