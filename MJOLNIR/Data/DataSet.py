@@ -1232,7 +1232,7 @@ def test_DataSet_full_test():
 
     dataset = DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFile)
     dataset.EnergyCalibration(tables=[8],savelocation='TestData')
-    dataset.ConvertDatafile(savelocation='TestData')
+    dataset.ConvertDatafile(savelocation='TestData',datafiles='TestData/cameasim2018n000005.h5')
 
     Data,bins = dataset.binData3D(0.05,0.05,0.2)
 
