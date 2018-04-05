@@ -7,16 +7,26 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "2.6"
 
-# command to install dependencies
+before_script: # configure a headless display to test plot generation
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
 install:
+  - pip install .
   - pip install -r requirements.txt
-# command to run tests
+
 script: 
-  - py.test -vv MJOLNIR/init.py;
-    
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
+    then py.test MJOLNIR/ -vv --cov MJOLNIR;
+    else py.test MJOLNIR/ -vv;
+    fi
+
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
     then coveralls;
     fi
+
+notifications:
+  email: false

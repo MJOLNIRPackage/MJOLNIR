@@ -1,0 +1,27 @@
+% Bibliography
+\pagestyle{Bibliography}
+\pagenumbering{Roman}
+\setlength{\parindent}{0pt}
+\renewcommand{\bibsection}{\section*{Bibliography}\addcontentsline{toc}{section}{Bibliography}Titles of entries in the bibliography with {\color{LinkColor}blue} color are hyperlinks to the articles online.}
+
+\bibliography{litteratur}
+\bibliographystyle{unsrtnat}
+
+\newpage
+\setlength{\parindent}{17pt}
+
+\ifthenelse{\equal{0.0}{0.0}}{}{
+
+% Appendices
+\pagestyle{Appendix}
+\renewcommand{\theequation}{\Alph{subsection}.\arabic{equation}}
+\section*{Appendices}
+\addcontentsline{toc}{section}{Appendices}
+\setcounter{subsection}{0}
+\renewcommand{\thesubsection}{\Alph{subsection}}
+\ifthenelse{\equal{\Appendices}{0.0}}{[Intentionally left blank - Appendices will be printed here]}{
+
+\include{BinningTables}{0.0}
+
+}
+}

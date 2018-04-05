@@ -1,0 +1,11 @@
+\contentsline {section}{Table of Contents}{A}{Doc-Start}
+\contentsline {section}{\numberline {1}Plan}{1}{section.1}
+\contentsline {subsection}{\numberline {1.1}Notes from meeting 13/03/18}{1}{subsection.1.1}
+\contentsline {subsection}{\numberline {1.2}Magnet limitations}{1}{subsection.1.2}
+\contentsline {subsection}{\numberline {1.3}Original setup}{2}{subsection.1.3}
+\contentsline {subsection}{\numberline {1.4}Comparison}{3}{subsection.1.4}
+\contentsline {subsection}{\numberline {1.5}Future Monochromator}{5}{subsection.1.5}
+\contentsline {subsection}{\numberline {1.6}Next steps}{8}{subsection.1.6}
+\contentsline {subsection}{\numberline {1.7}Folder overview}{10}{subsection.1.7}
+\contentsline {subsubsection}{\numberline {1.7.1}Old Monochromator}{10}{subsubsection.1.7.1}
+\contentsline {subsubsection}{\numberline {1.7.2}New Monochromator}{10}{subsubsection.1.7.2}

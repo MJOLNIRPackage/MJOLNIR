@@ -11,6 +11,16 @@ Welcome to MJOLNIR's documentation!
    :caption: Contents:
 
    Introduction
-   data/data
-   geometry/geometry
-   statistics/statistics
+   Tutorials/Tutorial
+   MJOLNIR
+   InDepthDocumentation/Documentation
+
+
+
+
+.. image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.3
+    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
+
+.. image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=0.3
+    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR
+
