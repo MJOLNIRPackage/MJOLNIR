@@ -132,8 +132,10 @@ class Instrument(GeometryConcept.GeometryConcept):
         for wedge in self.wedges:
             detectorPixelPositions,analyserPixelPositions = wedge.calculateDetectorAnalyserPositions()
 
-            A4 = [np.arccos(np.divide(np.dot(AnalyserPos,beamDirection),
+            A4 = [-np.arccos(np.divide(np.dot(AnalyserPos,beamDirection),
                 np.linalg.norm(AnalyserPos,axis=1))) for AnalyserPos in analyserPixelPositions]
+
+                
             relPos = [detectorPixelPositions[i]-analyserPixelPositions[i] for i in range(len(analyserPixelPositions))]
 
             A6 = [np.arccos(np.divide(np.einsum('ij,ij->i',analyserPixelPositions[i],relPos[i]),
@@ -248,8 +250,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         z_an[6]=1.3098;
         z_an[7]=1.3747;
 
-
-
+        
 
         H1 = 0.7
         H2 = 0.71
@@ -257,29 +258,31 @@ class Instrument(GeometryConcept.GeometryConcept):
         det_cen = 1.2
         wedges=8
 
+        offset = -np.max(ang_1) # offset needed
 
-        string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18'>\n"
-        for W in range(wedges):
+
+        string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>\n"
+        for W in -np.arange(wedges):
             
             string+="\t<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>\n"
             
-            Anaposx = -np.sin((-W*7.5)*np.pi/180)*z_an
-            Anaposy = np.cos((-W*7.5)*np.pi/180)*z_an;
+            Anaposx = -np.sin((W*7.5+offset)*np.pi/180)*z_an
+            Anaposy = np.cos((W*7.5+offset)*np.pi/180)*z_an;
             
             for i in range(len(z_an)):
                 string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
             
             
-            detx_1 = -np.sin((ang_1-W*7.5)*np.pi/180)*det_cen
-            detz_1 = np.cos((ang_1-W*7.5)*np.pi/180)*det_cen;
+            detx_1 = -np.sin((ang_1+W*7.5+offset)*np.pi/180)*det_cen
+            detz_1 = np.cos((ang_1+W*7.5+offset)*np.pi/180)*det_cen;
             
             
-            detx_2 = -np.sin((ang_2-W*7.5)*np.pi/180)*det_cen
-            detz_2 = np.cos((ang_2-W*7.5)*np.pi/180)*det_cen;
+            detx_2 = -np.sin((ang_2+W*7.5+offset)*np.pi/180)*det_cen
+            detz_2 = np.cos((ang_2+W*7.5+offset)*np.pi/180)*det_cen;
             for i in range(7):
-                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(-detx_1[i])+','+str(-detz_1[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
             for i in range(6):
-                string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H1)+"' direction='"+str(-detx_2[i])+','+str(-detz_2[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+                string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
                 
             string+="\t</Wedge>\n"
             

@@ -593,7 +593,7 @@ class DataSet(object):
             
             A4File = np.array(file.get('entry/CAMEA/detector/polar_angle'))
             A4Shape = A4.shape
-            A4Total = -A4.reshape((1,A4Shape[0],A4Shape[1]))-np.deg2rad(A4File).reshape((A4File.shape[0],1,1))#-np.deg2rad(2.3173119802914783)
+            A4Total = A4.reshape((1,A4Shape[0],A4Shape[1]))-np.deg2rad(A4File).reshape((A4File.shape[0],1,1))#-np.deg2rad(2.3173119802914783)
             #PixelEdgeA4Shaped = PixelEdge.reshape((1,PixelEdge.shape[0],EPrDetector,binning,2))
             
             A4Mean = np.zeros((A4Total.shape[0],A4Total.shape[1],EPrDetector*binning))
@@ -696,26 +696,39 @@ class DataSet(object):
                 datafiles = self.convertedfiles
         elif not isinstance(datafiles,list):
             datafiles = [datafiles]
-        else:
-            raise AttributeError('datafiles attribute not understood.')
+        #else:
+            #raise AttributeError('datafiles attribute not understood.')
 
-        returnData = []
+        #returnData = []
+        I = []
+        posx = []
+        posy = []
+        energy = []
+        Norm = []
+        Monitor = []
 
         for data in datafiles:
             
             file = hdf.File(data,'r')
 
-            I = np.array(file.get('entry/data/data'))
-            posx = np.array(file.get('entry/data/qx'))
-            posy = np.array(file.get('entry/data/qy'))
-            energy = np.array(file.get('entry/data/en'))
-            Norm = np.array(file.get('entry/data/normalization'))
-            Monitor = np.array(file.get('entry/data/monitor'))
+            I.append(np.array(file.get('entry/data/data')))
+            posx.append(np.array(file.get('entry/data/qx')))
+            posy.append(np.array(file.get('entry/data/qy')))
+            energy.append(np.array(file.get('entry/data/en')))
+            Norm.append(np.array(file.get('entry/data/normalization')))
+            Monitor.append(np.array(file.get('entry/data/monitor')))
             file.close()
 
-            pos = [posx,posy,energy]
-            _tempData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
-            returnData.append(_tempData)
+        I = np.concatenate(I)
+        posx = np.concatenate(posx)
+        posy = np.concatenate(posy)
+        energy = np.concatenate(energy)
+        Norm = np.concatenate(Norm)
+        Monitor = np.concatenate(Monitor)
+
+        pos=[posx,posy,energy]
+
+        returnData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
 
         return returnData,bins
         
@@ -915,7 +928,7 @@ def calculateGrid3D(X,Y,Z):
 
 
 
-def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
+def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
     """ 3D binning of data.
 
     Args:
@@ -936,6 +949,8 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
 
         - mon (array): Flattened monitor array.
 
+        - bins (list of arrays): Bins locating edges in the x, y, and z directions.
+
     returns:
 
         Rebinned intensity (and if provided Normalization, Monitor, and Normalization Count) and X, Y, and Z bins in 3 1D arrays.
@@ -948,9 +963,26 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
 
     """
 
+    if bins is None:
+        bins = calculateBins(dx,dy,dz,pos)
+    
     
 
-    
+    intensity =    np.histogramdd(np.array(pos).T,bins=bins,weights=data.flatten())[0].astype(data.dtype)
+
+    returndata = [intensity]
+    if mon is not None:
+        MonitorCount=  np.histogramdd(np.array(pos).T,bins=bins,weights=mon.flatten())[0].astype(mon.dtype)
+        returndata.append(MonitorCount)
+    if norm is not None:
+        Normalization= np.histogramdd(np.array(pos).T,bins=bins,weights=norm.flatten())[0].astype(norm.dtype)
+        NormCount =    np.histogramdd(np.array(pos).T,bins=bins,weights=np.ones_like(data).flatten())[0].astype(int)
+        returndata.append(Normalization)
+        returndata.append(NormCount)
+
+    return returndata,bins
+
+def calculateBins(dx,dy,dz,pos):
     diffx = np.abs(np.max(pos[0])-np.min(pos[0]))
     diffy = np.abs(np.max(pos[1])-np.min(pos[1]))
     diffz = np.abs(np.max(pos[2])-np.min(pos[2]))
@@ -968,22 +1000,9 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
     XX,YY,ZZ = calculateGrid3D(X,Y,Z)
     
     bins=[XX[:,0,0],YY[0,:,0],ZZ[0,0,:]]
-    
-    
+    return bins
 
-    intensity =    np.histogramdd(np.array(pos).T,bins=bins,weights=data.flatten())[0].astype(data.dtype)
 
-    returndata = [intensity]
-    if mon is not None:
-        MonitorCount=  np.histogramdd(np.array(pos).T,bins=bins,weights=mon.flatten())[0].astype(mon.dtype)
-        returndata.append(MonitorCount)
-    if norm is not None:
-        Normalization= np.histogramdd(np.array(pos).T,bins=bins,weights=norm.flatten())[0].astype(norm.dtype)
-        NormCount =    np.histogramdd(np.array(pos).T,bins=bins,weights=np.ones_like(data).flatten())[0].astype(int)
-        returndata.append(Normalization)
-        returndata.append(NormCount)
-
-    return returndata,bins
 
 #__________________________TESTS_______________________
 
@@ -1228,7 +1247,7 @@ def test_DataSet_full_test():
     import MJOLNIR.Data.Viewer3D
     import warnings
     plt.ioff()
-    Instr = Instrument.Instrument(filename='TestData/CAMEA_Full_2.xml')
+    Instr = Instrument.Instrument(filename='TestData/CAMEA.xml')
     Instr.initialize()
 
     NF = 'TestData/VanNormalization.h5'
