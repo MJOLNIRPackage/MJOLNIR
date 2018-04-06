@@ -211,6 +211,88 @@ class Instrument(GeometryConcept.GeometryConcept):
         f.write(XMLString)
         f.close()
 
+    def generateCAMEAXML(self,filename):
+        """Generate CAMEA XML file to be used as instrument file.
+
+        Args:
+
+            - filename: Name of file to be saved (required)
+
+        """
+        ang_1 = np.zeros((7,))
+        ang_2 = np.zeros((6,))
+
+        ang_1[0]=-3.33;
+        ang_1[1]=-2.22;
+        ang_1[2]=-1.11;
+        ang_1[3]=0;
+        ang_1[4]=1.11;
+        ang_1[5]=2.22;
+        ang_1[6]=3.33;
+
+        ang_2[0]=-2.775;
+        ang_2[1]=-1.665;
+        ang_2[2]=-0.555;
+        ang_2[3]=0.555;
+        ang_2[4]=1.665;
+        ang_2[5]=2.775;
+
+
+        z_an = np.zeros((8,))
+        z_an[0]=0.9300;
+        z_an[1]=0.9939;
+        z_an[2]=1.0569;
+        z_an[3]=1.1195;
+        z_an[4]=1.1827;
+        z_an[5]=1.2456;
+        z_an[6]=1.3098;
+        z_an[7]=1.3747;
+
+
+
+
+        H1 = 0.7
+        H2 = 0.71
+
+        det_cen = 1.2
+        wedges=8
+
+
+        string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18'>\n"
+        for W in range(wedges):
+            
+            string+="\t<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>\n"
+            
+            Anaposx = -np.sin((-W*7.5)*np.pi/180)*z_an
+            Anaposy = np.cos((-W*7.5)*np.pi/180)*z_an;
+            
+            for i in range(len(z_an)):
+                string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
+            
+            
+            detx_1 = -np.sin((ang_1-W*7.5)*np.pi/180)*det_cen
+            detz_1 = np.cos((ang_1-W*7.5)*np.pi/180)*det_cen;
+            
+            
+            detx_2 = -np.sin((ang_2-W*7.5)*np.pi/180)*det_cen
+            detz_2 = np.cos((ang_2-W*7.5)*np.pi/180)*det_cen;
+            for i in range(7):
+                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(-detx_1[i])+','+str(-detz_1[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+            for i in range(6):
+                string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H1)+"' direction='"+str(-detx_2[i])+','+str(-detz_2[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+                
+            string+="\t</Wedge>\n"
+            
+        string+="</Instrument>"
+
+        if filename.split('.')[-1]!='xml':
+            filename+='.xml'
+
+        with open(filename,'w') as f:
+            f.write(string)
+        
+
+
 def parseXML(Instr,filename):
     import xml.etree.ElementTree as ET
 
@@ -571,3 +653,13 @@ def test_instrument_string_dummy(): # Todo: Improve test!
 
     string = str(Instr)
     assert True
+
+def test_instrument_create_xml():
+
+    Instr = Instrument()
+    filename = 'temp'
+    Instr.generateCAMEAXML(filename)
+
+    Instr2 = Instrument(filename=filename+'.xml')
+    os.remove(filename+'.xml')
+    assert(len(Instr2.wedges)==8)
