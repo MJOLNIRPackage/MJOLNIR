@@ -1312,9 +1312,13 @@ def test_Normalization_tables():
     except AttributeError:
         assert True
 
-
+    
     Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=True,tables=['Single']) 
     Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
+    import os
+    os.rmdir('TestData/Raw')
+    os.rmdir('TestData/A4')
+    os.rmdir('TestData/1_pixels')
 
 
 def test_instrument_Convert_McStas():
