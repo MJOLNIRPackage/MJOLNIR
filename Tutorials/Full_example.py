@@ -1,28 +1,20 @@
 import sys
 sys.path.append('..')
 
-#from MJOLNIR.Geometry import Instrument
 from MJOLNIR.Data import DataSet,Viewer3D
-import numpy as np
+import warnings
 import matplotlib.pyplot as plt
+import numpy as np
+DataFile = ['../TestData/cameasim2018n000011.h5']
 
-#Instr = Instrument.Instrument(filename='/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/CAMEA_Full.xml')
-#Instr.initialize()
-
-#NF = '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/VanNormalization.h5'
-#DataFile='../TestData/cameasim2018n000011.h5'
-
-DataFile = ['/home/lass/Dropbox/PhD/Software/DataSimulation/BeFilterTestIn10.h5','/home/lass/Dropbox/PhD/Software/DataSimulation/BeFilterTestOut10.h5','/home/lass/Dropbox/PhD/Software/DataSimulation/T0Phonon10meV.h5']
-
-dataset = DataSet.DataSet(datafiles=DataFile[2])
-dataset.ConvertDatafile(savelocation='/home/lass/Dropbox/PhD/Software/DataSimulation/')
+dataset = DataSet.DataSet(datafiles=DataFile)
+dataset.ConvertDatafile(savelocation='../TestData/')
 
 Data,bins = dataset.binData3D(0.08,0.08,0.25)
 
-
-BinnedData = Data
-
-Intensity = np.divide(BinnedData[0]*BinnedData[3],BinnedData[1]*BinnedData[2])
-
+warnings.simplefilter('ignore')
+Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+warnings.simplefilter('once')
 viewer = Viewer3D.Viewer3D(Intensity,bins)
-plt.show()
+plt.plot()
+

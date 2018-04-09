@@ -26,61 +26,52 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
 ::
 
     cameasim2018n0000xx.nxs
-    └── entry
-        ├── CAMEA (NX_class = NXinstrument)
-        │   ├── detector (NX_class = NXdetector)
-        │   │   ├── data (32-bit integer,    NP x 104 x 452)
-        │   │   └── polar_angle (32-bit floating-point,    1)
-        │   │
-        │   └── monochromator
-        │       ├── d_spacing (32-bit floating-point,    1)
-        │       ├── energy (32-bit floating-point,    1)
-        │       ├── rotation_angle (32-bit floating-point,    1)
-        │       └── type (String, length = 70,    1)
-        │
-        ├── control (NX_class = NXmonitor)
-        │   ├── data (32-bit integer,    NP)
-        │   ├── mode (String, length = 70,    1)
-        │   ├── preset (32-bit integer, 1)
-        │   └── time (32-bit floating-point,    NP)
-        │
-        ├── data (NX_class = NXdata)
-        │   ├── data (32-bit integer,    NNP)
-        │   ├── en (32-bit floating-point,    NNP)
-        │   ├── monitor (32-bit integer,    NNP)
-        │   ├── normalization (32-bit floating-point,    NNP)
-        │   ├── qx (32-bit floating-point,    NNP)
-        │   ├── qy (32-bit floating-point,    NNP)
-        │   ├── qz (32-bit floating-point,    NNP)
-        │   ├── rawdata (32-bit integer,    NP x 104 x 452)
-        │   └── rotation_angle (32-bit floating-point,    NP)
-        │
-        ├── definition (String, length = 70,    1)
-        │
-        ├── end_time (String, length = 70,    1)
-        │
-        ├── proposal_id (String, length = 70,    1)
-        │
-        ├── proposal_user (NX_class = NXuser)
-        │   └── name (String, length = 70,    1)
-        │
-        ├── reduction (NX_class = NXprocess)
-        │   └── MJOLNIR_algorithm_convert (NX_class = NXprocess)
-        │       ├── author (String, length = 70,    1)
-        │       ├── date (String, length = 70,    1)
-        │       ├── description (String, length = 70,    1)
-        │       ├── normalization table (String, length = 70,    1)
-        │       └── rawdata (String, length = 70,    1)
-        │
-        ├── sample (NX_class = NXsample)
-        │   ├── name (String, length = 70,    1)
-        │   ├── orientation_matrix (32-bit floating-point,    3 x 3)
-        │   ├── plane_normal (32-bit floating-point,    3)
-        │   ├── polar_angle (32-bit floating-point,    1)
-        │   ├── rotation_angle (32-bit floating-point,    NP)
-        │   └── unit_cell (32-bit floating-point,    6)
-        │
-        ├── start_time (String, length = 70,    1)
-        │
-        └── title (String, length = 70,    1)
+        └── entry
+            ├── CAMEA
+            │    ├── detector
+            │    │    ├── data
+            │    │    ├── polar_angle
+            │    └── monochromator
+            │         ├── d_spacing
+            │         ├── energy
+            │         ├── rotation_angle
+            │         └── type
+            ├── calibration
+            │    ├── 1_pixels
+            │    ├── 3_pixels
+            │    ├── 8_pixels
+            ├── control
+            │    ├── data
+            │    ├── mode
+            │    ├── preset
+            │    ├── time
+            ├── data
+            │    ├── data
+            │    ├── en
+            │    ├── monitor
+            │    ├── normalization
+            │    ├── qx
+            │    ├── qy
+            │    ├── qz
+            │    └── rotation_angle
+            ├── definition
+            ├── end_time
+            ├── proposal_id
+            ├── proposal_user
+            │    └── name
+            ├── reduction
+            │    └── MJOLNIR_algorithm_convert
+            │         ├── author
+            │         ├── binning
+            │         ├── date
+            │         ├── description
+            │         └── rawdata
+            ├── sample
+            │    ├── name
+            │    ├── orientation_matrix
+            │    ├── plane_normal
+            │    ├── polar_angle
+            │    └── unit_cell
+            ├── start_time
+            └── title
 

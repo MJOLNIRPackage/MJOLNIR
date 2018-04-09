@@ -26,12 +26,12 @@ Full example of the data treatment starting from the instrument definitions prov
 | and energy in 0.2 meV. Intensity is calculated and with the bins  |  for a phonon scan at the energy 5.46 meV.                       |
 | passed to the visualizer.                                         |                                                                  |
 +-------------------------------------------------------------------+------------------------------------------------------------------+
-|  .. Visualization_Qx_119:                                         |  .. SimpleInstrumentEf:                                          |
+|  .. Visualization_Qx_119:                                         |  .. Visualization_Qy_1_84:                                       |
 |                                                                   |                                                                  |
-|  .. figure:: ../../Tutorials/Visualization_Qx_119.png             |  .. figure:: ../../Tutorials/Visualization_Qy_089.png            |
+|  .. figure:: ../../Tutorials/Visualization_Qx_0_5.png             |  .. figure:: ../../Tutorials/Visualization_Qy_1_84.png           |
 |    :width: 90%                                                    |    :width: 90%                                                   |
 |                                                                   |                                                                  |
-| Cut of data along the Qx direction.                               | Cut of data along the Qx direction.                              |
+| Cut of data along the Qx direction.                               | Cut of data along the Qy direction.                              |
 |                                                                   |                                                                  |
 |                                                                   |                                                                  |
 +-------------------------------------------------------------------+------------------------------------------------------------------+

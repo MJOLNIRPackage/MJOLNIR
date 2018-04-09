@@ -5,7 +5,7 @@ from MJOLNIR.Data import DataSet,Viewer3D
 import numpy as np
 import h5py as hdf
 import matplotlib.pyplot as plt
-filename = '../../CAMEA_Test_Files/cameasim2018n000005.nxs'
+filename = '../../CAMEA_Test_Files/cameasim2018n000011.nxs'
 
 file = hdf.File(filename,'r')
 
@@ -21,7 +21,7 @@ file.close()
 pos = [posx,posy,energy]
 
 import warnings
-Data,bins = DataSet.binData3D(0.05,0.05,0.2,pos,I,norm=Norm,mon=Monitor)
+Data,bins = DataSet.binData3D(0.075,0.075,0.2,pos,I,norm=Norm,mon=Monitor)
 
 warnings.simplefilter("ignore")
 Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])

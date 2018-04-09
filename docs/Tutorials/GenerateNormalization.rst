@@ -30,15 +30,17 @@ Having chosen binning(s) one creates the tables either with or without creating 
 +-------------------------------------------------------------------+------------------------------------------------------------------+
 
 In the end, it is the data in the normalization file, in the above case denoted EnergyNormalization_8.calib and located in the TestData, folder that is essensial. It contains the normalization and energy location of all peaks on all detectors in the format:
- - Detector
- - Energy
- - Pixel
- - Amplitude
- - Center
- - Width
- - Background
- - lowerBin
- - upperBin
+
+ - Detector (int)
+ - Energy (int)
+ - Pixel (int)
+ - Amplitude  [Arb]
+ - Center [meV]
+ - Width [meV]
+ - Background [Arb]
+ - lowerBin [pixelId]
+ - upperBin [pixelId]
+ - A4Offset [deg]
 
 on each line starting with detector 0, analyser 0, pixel 0 increasing index of pixel, then analyser and lastly detector. 
 
