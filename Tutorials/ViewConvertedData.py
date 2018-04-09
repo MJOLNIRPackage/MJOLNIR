@@ -6,7 +6,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py as hdf
 
-ConvertedDataFile=['../TestData/cameasim2018n000005.nxs','../TestData/cameasim2018n000006.nxs']
+ConvertedDataFile=['/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000001.nxs','/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000004.nxs',
+                   '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000005.nxs','/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000006.nxs',
+                   '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000007.nxs','/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000008.nxs',
+                   '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000009.nxs','/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000010.nxs',
+                   '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000011.nxs']
 
 I = []
 qx = []
@@ -15,7 +19,7 @@ energy = []
 Norm = []
 Monitor = []
 
-for data in ConvertedDataFile:
+for data in [ConvertedDataFile[3]]:
     
     file = hdf.File(data,'r')
 
@@ -36,9 +40,16 @@ Monitor = np.concatenate(Monitor)
 
 pos=[qx,qy,energy]
 
-Data,bins = DataSet.binData3D(0.075,0.075,0.1,pos,I,norm=Norm,mon=Monitor)
+Data,bins = DataSet.binData3D(0.035,0.035,0.1,pos,I,norm=Norm,mon=Monitor)
 
 Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
 
+a=4.95
+astar = 2*np.pi/a
+
 viewer = Viewer3D.Viewer3D(Intensity,bins)
+#for i in np.arange(0,2.1,2):
+#    for j in np.arange(0,2.1,2):
+#        viewer.ax.scatter(i*astar,j*astar)
+
 plt.show()

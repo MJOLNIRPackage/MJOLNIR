@@ -1,22 +1,23 @@
 import sys
 sys.path.append('..')
 
-from MJOLNIR.Geometry import Instrument
+#from MJOLNIR.Geometry import Instrument
 from MJOLNIR.Data import DataSet,Viewer3D
 import numpy as np
 import matplotlib.pyplot as plt
 
-Instr = Instrument.Instrument(filename='../TestData/CAMEA_Full.xml')
-Instr.initialize()
+#Instr = Instrument.Instrument(filename='/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/CAMEA_Full.xml')
+#Instr.initialize()
 
-NF = '../TestData/VanNormalization.h5'
-DataFile='../TestData/cameasim2018n000005.h5'
+#NF = '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/VanNormalization.h5'
+#DataFile='../TestData/cameasim2018n000011.h5'
 
-dataset = DataSet.DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFile)
-dataset.EnergyCalibration(tables=[8],savelocation='./')
-dataset.ConvertDatafile(savelocation='./')
+DataFile = ['/home/lass/Dropbox/PhD/Software/DataSimulation/BeFilterTestIn10.h5','/home/lass/Dropbox/PhD/Software/DataSimulation/BeFilterTestOut10.h5','/home/lass/Dropbox/PhD/Software/DataSimulation/T0Phonon10meV.h5']
 
-Data,bins = dataset.binData3D(0.05,0.05,0.2,)
+dataset = DataSet.DataSet(datafiles=DataFile[2])
+dataset.ConvertDatafile(savelocation='/home/lass/Dropbox/PhD/Software/DataSimulation/')
+
+Data,bins = dataset.binData3D(0.08,0.08,0.25)
 
 
 BinnedData = Data
