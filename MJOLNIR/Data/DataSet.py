@@ -20,7 +20,7 @@ monLocation = 'entry/control/data'#'entry/Monitor'
 
 
 class DataSet(object):
-    def __init__(self, datafiles=None,normalizationfiles=None, calibrationfiles=None, convertedfiles=None, **kwargs):
+    def __init__(self, datafiles=None, normalizationfiles=None, calibrationfiles=None, convertedfiles=None, **kwargs):
         """DataSet object to hold all informations about data.
         
         Kwargs:
@@ -170,8 +170,8 @@ class DataSet(object):
         except IOError as e:                        # Catch all IO-errors
             print("Error in opening file:\n{}".format(e))
         else:
-                pickle.dump(self, fileObject)
-                fileObject.close()  
+            pickle.dump(self, fileObject)
+            fileObject.close()  
 
 
     def __eq__(self, other): 
@@ -690,7 +690,7 @@ def test_DataSet_Creation():
 def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
-        
+    del emptyDataset
     dataset = DataSet(OhterSetting=10.0,datafiles='SomeFile',convertedfiles='Converted.nxs')
     assert(dataset.datafiles[0]=='SomeFile')
     assert(dataset.convertedfiles[0]=='Converted.nxs')
@@ -828,3 +828,4 @@ def test_DataSet_full_test():
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
     
     os.remove('TestData/cameasim2018n000001.nxs')
+    del viewer
