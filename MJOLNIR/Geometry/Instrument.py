@@ -672,7 +672,7 @@ def parseXML(Instr,filename):
         
     for attrib in instr_root.keys():
         if attrib=='position':
-            Instr.position = np.array(instr_root.attrib[attrib].split(','))
+            Instr.position = np.array(instr_root.attrib[attrib].split(','),dtype=float)
         Instr.settings[attrib]=instr_root.attrib[attrib]
     
     
