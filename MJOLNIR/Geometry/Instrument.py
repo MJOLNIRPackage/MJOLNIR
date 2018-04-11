@@ -445,6 +445,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
                     plt.tight_layout()
                     plt.savefig(savelocation+'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
+                    print('Saving: {}'.format(savelocation+'/Raw/Fit_wedge_'+str(k)+'.png'))
 
             
             ## Sort the positions such that peak 1 is the furthermost left peak and assert diff(pos)>100

@@ -798,9 +798,7 @@ def test_DataSet_BinData():
 
 
     assert(ReBinnedI.shape==(3,5,5))
-    assert(np.all(bins[0]==np.linspace(-0.25,1.25,4)))
-    assert(np.all(bins[1]==np.linspace(-0.125,1.125,6)))
-    assert(np.all(bins[2]==np.linspace(1-0.125,2.125,6)))
+    assert(np.all(bins[0].shape()=(4,6,6)))
 
     assert(RebinnedNorm.shape==ReBinnedI.shape)
     assert(RebinnedNormCount.shape==ReBinnedI.shape)
