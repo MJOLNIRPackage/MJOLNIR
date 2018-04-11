@@ -1320,12 +1320,3 @@ def test_Normalization_tables():
     
 
 
-def test_instrument_Convert_McStas(): # pragma: no cover
-    import os
-    calibration=['TestData/Normalization_8.calib',
-             'TestData/Normalization_3.calib',
-             'TestData/Normalization_1.calib']
-    convertToHDF(filename='TestData/cameasim2018n000001_TEST.h5',title='Test',sample='PB',fname='TestData/PhononSamplecanA3/',CalibrationFile=calibration)
-    
-    os.remove('TestData/cameasim2018n000001_TEST.h5')
-
