@@ -630,16 +630,16 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
     #NonNaNs = 1-np.isnan(data.flatten())
 
     #pos = [np.array(x[NonNaNs]) for x in pos]
-
-    intensity =    np.histogramdd(np.array(pos).T,bins=bins,weights=data.flatten())[0].astype(data.dtype)
+    HistBins = [bins[0][:,0,0],bins[1][0,:,0],bins[2][0,0,:]]
+    intensity =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=data.flatten())[0].astype(data.dtype)
 
     returndata = [intensity]
     if mon is not None:
-        MonitorCount=  np.histogramdd(np.array(pos).T,bins=bins,weights=mon.flatten())[0].astype(mon.dtype)
+        MonitorCount=  np.histogramdd(np.array(pos).T,bins=HistBins,weights=mon.flatten())[0].astype(mon.dtype)
         returndata.append(MonitorCount)
     if norm is not None:
-        Normalization= np.histogramdd(np.array(pos).T,bins=bins,weights=norm.flatten())[0].astype(norm.dtype)
-        NormCount =    np.histogramdd(np.array(pos).T,bins=bins,weights=np.ones_like(data).flatten())[0].astype(int)
+        Normalization= np.histogramdd(np.array(pos).T,bins=HistBins,weights=norm.flatten())[0].astype(norm.dtype)
+        NormCount =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=np.ones_like(data).flatten())[0].astype(int)
         returndata.append(Normalization)
         returndata.append(NormCount)
 
@@ -662,7 +662,7 @@ def calculateBins(dx,dy,dz,pos):
     
     XX,YY,ZZ = calculateGrid3D(X,Y,Z)
     
-    bins=[XX[:,0,0],YY[0,:,0],ZZ[0,0,:]]
+    bins=[XX,YY,ZZ]
     return bins
 
 def getNX_class(x,y,attribute):

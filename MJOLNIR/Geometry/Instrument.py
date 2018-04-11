@@ -763,8 +763,8 @@ def findPeak(data):
 
 
 
-def convertToHDF(filename,title,sample,fname,CalibrationFile=None):
-    """Convert McStats simulation to h5 format"""
+def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no cover
+    """Convert McStas simulation to h5 format"""
     def addMetaData(entry,title):
         dset = entry.create_dataset('start_time',(1,),dtype='<S70')
         dset[0] = b'2018-03-22T16:44:02+01:00'
@@ -1320,7 +1320,7 @@ def test_Normalization_tables():
     
 
 
-def test_instrument_Convert_McStas():
+def test_instrument_Convert_McStas(): # pragma: no cover
     import os
     calibration=['TestData/Normalization_8.calib',
              'TestData/Normalization_3.calib',
