@@ -19,7 +19,7 @@ energy = []
 Norm = []
 Monitor = []
 
-for data in [ConvertedDataFile[3]]:
+for data in ConvertedDataFile:
     
     file = hdf.File(data,'r')
 
@@ -40,7 +40,7 @@ Monitor = np.concatenate(Monitor)
 
 pos=[qx,qy,energy]
 
-Data,bins = DataSet.binData3D(0.035,0.035,0.1,pos,I,norm=Norm,mon=Monitor)
+Data,bins = DataSet.binData3D(0.05,0.05,0.2,pos,I,norm=Norm,mon=Monitor)
 
 Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
 

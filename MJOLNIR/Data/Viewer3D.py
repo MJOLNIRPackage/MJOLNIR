@@ -19,7 +19,7 @@ class Viewer3D(object):  # pragma: no cover
 
             - Data (3D array): Three dimensional numpy array with Qx, Qy, and E along the first, second, and third directions respectively.
 
-            - bins (List of 1D arrays): Linearly distributed coordinates of the three directions as returned by the BinData3D functionality of DataSet.
+            - bins (List of 1D arrays): Coordinates of the three directions as returned by the BinData3D functionality of DataSet.
 
         Kwargs:
 
@@ -71,17 +71,18 @@ class Viewer3D(object):  # pragma: no cover
             
         textposition = [self.Energy_slider_ax.get_position().p1[0]+0.005,self.Energy_slider_ax.get_position().p0[1]+0.005]
         self.text = self.figure.text(textposition[0], textposition[1],s=self.stringValue())
-        self.shading = 'flat'
+        self.shading = 'gouraud'
         #self.imcbaxes = self.figure.add_axes([0.0, 0.2, 0.2, 0.7])
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
         if self.shading=='flat':
             self.im = self.ax.pcolormesh(self.X[:,0,0].T,self.Y[0,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
         elif self.shading=='gouraud':
-            XX = 0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T
-            YY = 0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T
+            XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
+            YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
             self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
         else:
             raise AttributeError('Did not understand shading {}.'.format(self.shading))
+        self._caxis = self.im.get_clim()
         self.cbaxes = self.figure.add_axes([0.8, 0.2, 0.03, 0.7])
         self.colorbar = self.figure.colorbar(self.im,cax = self.cbaxes)
         warnings.simplefilter("ignore")
@@ -96,6 +97,21 @@ class Viewer3D(object):  # pragma: no cover
         self.Energy_slider.set_val(self.value)
 
         self.cid = self.figure.canvas.mpl_connect('button_press_event', onclick)
+
+
+    @property
+    def caxis(self):
+        return self._caxis
+
+    @caxis.getter
+    def caxis(self):
+        return self._caxis
+
+    @caxis.setter
+    def caxis(self,caxis):
+        self._caxis = caxis
+        self.im.set_clim(caxis)
+        self.colorbar.update_bruteforce(self.im)
 
     def setAxis(self,axis):
         if axis==2:
@@ -139,17 +155,28 @@ class Viewer3D(object):  # pragma: no cover
             unit = ' meV'
         else:
             unit = ' 1/AA'
-        
-        return str(np.round(self.Z[0,0,self.value],2))+unit
+        try:
+            val = 0.5*(self.Z[0,0,self.value+1]+self.Z[0,0,self.value])
+        except:
+            val = 0.5*(2*self.Z[0,0,self.value]-self.Z[0,0,self.value-1])
+        return str(np.round(val,2))+unit
     
     
     def plot(self):
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
-        self.im.set_array(self.masked_array[:,:,self.value].T.ravel()) # = self.ax.pcolormesh(self.X.T[:-1],self.Y.T[:-1],self.masked_array[:,:,self.value].T,zorder=10,shading='gouraud')
+        #self.im.set_array(self.masked_array[:,:,self.value].T.ravel()) # = self.ax.pcolormesh(self.X.T[:-1],self.Y.T[:-1],self.masked_array[:,:,self.value].T,zorder=10,shading='gouraud')
         #self.im.autoscale()
         #self.colorbar.update_bruteforce(self.im)
         self.text.set_text(self.stringValue())
-        
+        self.im.remove()
+        if self.shading=='flat':
+            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+        elif self.shading=='gouraud':
+            XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
+            YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
+            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+        self.im.set_clim(self.caxis)
+
         #ylim = [self.Y[0],self.Y[-1]]
         xlim = self.ax.get_xlim()
         ylim = self.ax.get_ylim()
@@ -179,10 +206,11 @@ def onkeypress(event,self):
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
-            self.ax.set_xlim([np.min(self.X[:,0,0]),np.max(self.X[:,0,0])])
-            self.ax.set_ylim([np.min(self.Y[0,:,0]),np.max(self.Y[0,:,0])])
+            self.ax.set_xlim([np.min(self.X),np.max(self.X)])
+            self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
     elif event.key in ['1']:
         if self.axis!=1:
             reloadslider(self,1)
@@ -193,10 +221,11 @@ def onkeypress(event,self):
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
-            self.ax.set_xlim([np.min(self.X[:,0,0]),np.max(self.X[:,0,0])])
-            self.ax.set_ylim([np.min(self.Y[0,:,0]),np.max(self.Y[0,:,0])])
+            self.ax.set_xlim([np.min(self.X),np.max(self.X)])
+            self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
     elif event.key in ['2']:
         if self.axis!=2:
             reloadslider(self,2)
@@ -204,12 +233,15 @@ def onkeypress(event,self):
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,0,0].T,self.Y[0,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
             elif self.shading=='gouraud':
-                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,1:]).T,0.5*(self.Y[:-1,:-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+                XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
+                YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
+                self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            self.im.set_clim(self.caxis)
             self.plot()
-            self.ax.set_xlim([np.min(self.X[:,0,0]),np.max(self.X[:,0,0])])
-            self.ax.set_ylim([np.min(self.Y[0,:,0]),np.max(self.Y[0,:,0])])
+            self.ax.set_xlim([np.min(self.X),np.max(self.X)])
+            self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
 
 def reloadslider(self,axis):
     self.Energy_slider.set_val(0)
