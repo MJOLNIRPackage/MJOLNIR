@@ -827,17 +827,20 @@ def test_DataSet_full_test():
     os.remove('TestData/cameasim2018n000001.nxs')
     del viewer
 
-def test_DataSet_Visualization
-    DataFile = ['../TestData/cameasim2018n000001.h5']
+def test_DataSet_Visualization():
+    import warnings
+    from MJOLNIR.Data import Viewer3D
+    DataFile = ['TestData/cameasim2018n000001.h5']
 
-    dataset = DataSet.DataSet(datafiles=DataFile)
-    dataset.ConvertDatafile(savelocation='../TestData')
+    dataset = DataSet(datafiles=DataFile)
+    dataset.ConvertDatafile(savelocation='TestData/')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
-
+    plt.ioff()
     warnings.simplefilter('ignore')
     Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
     warnings.simplefilter('once')
     viewer = Viewer3D.Viewer3D(Intensity,bins)
     viewer.caxis = (0,100)
     plt.plot()
+    plt.close()
