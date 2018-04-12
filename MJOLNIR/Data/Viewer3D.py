@@ -243,7 +243,7 @@ def onkeypress(event,self): # pragma: no cover
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
 
-def reloadslider(self,axis): 
+def reloadslider(self,axis): # pragma: no cover
     self.Energy_slider.set_val(0)
     self.setAxis(axis)
     self.Energy_slider.label.remove()#self.Energy_slider.label.text('')

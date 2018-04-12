@@ -51,5 +51,5 @@ viewer = Viewer3D.Viewer3D(Intensity,bins)
 #for i in np.arange(0,2.1,2):
 #    for j in np.arange(0,2.1,2):
 #        viewer.ax.scatter(i*astar,j*astar)
-
+viewer.caxis=(0.5e-6,5e-5)
 plt.show()
