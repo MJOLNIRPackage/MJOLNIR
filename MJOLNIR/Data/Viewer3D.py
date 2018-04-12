@@ -10,7 +10,7 @@ import matplotlib.gridspec
 
 import warnings
 
-class Viewer3D(object):  # pragma: no cover
+class Viewer3D(object):  
     def __init__(self,Data,bins,axis=2):
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
@@ -71,12 +71,12 @@ class Viewer3D(object):  # pragma: no cover
             
         textposition = [self.Energy_slider_ax.get_position().p1[0]+0.005,self.Energy_slider_ax.get_position().p0[1]+0.005]
         self.text = self.figure.text(textposition[0], textposition[1],s=self.stringValue())
-        self.shading = 'gouraud'
+        self.shading = 'flat'
         #self.imcbaxes = self.figure.add_axes([0.0, 0.2, 0.2, 0.7])
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
         if self.shading=='flat':
             self.im = self.ax.pcolormesh(self.X[:,0,0].T,self.Y[0,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
-        elif self.shading=='gouraud':
+        elif self.shading=='gouraud':  # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
             self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
@@ -99,7 +99,7 @@ class Viewer3D(object):  # pragma: no cover
         self.cid = self.figure.canvas.mpl_connect('button_press_event', onclick)
 
 
-    @property
+    @property 
     def caxis(self):
         return self._caxis
 
@@ -119,12 +119,12 @@ class Viewer3D(object):  # pragma: no cover
             self.ax.set_xlabel('Qx [1/AA]')
             self.ax.set_ylabel('Qy [1/AA]')
             label = 'Energy'
-        elif axis==1:
+        elif axis==1:  # pragma: no cover
             axes = (0,2,1)
             self.ax.set_xlabel('Qx [1/AA]')
             self.ax.set_ylabel('E [meV]')
             label = 'Qy'
-        elif axis==0:
+        elif axis==0:  # pragma: no cover
             axes = (1,2,0)
             self.ax.set_xlabel('Qy [1/AA]')
             self.ax.set_ylabel('E [meV]')
@@ -171,7 +171,7 @@ class Viewer3D(object):  # pragma: no cover
         self.im.remove()
         if self.shading=='flat':
             self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
-        elif self.shading=='gouraud':
+        elif self.shading=='gouraud': # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
             self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
@@ -185,13 +185,13 @@ class Viewer3D(object):  # pragma: no cover
             #self.ax.set_xlim(np.min([xlim[0],ylim[0]]),np.max([xlim[1],ylim[1]]))
 
 
-def onclick(event):
+def onclick(event): # pragma: no cover
     if event.xdata is not None:
         print('x={}, y={}, xdata={}, ydata={}'.format(event.x, event.y, event.xdata, event.ydata))
 
 
 
-def onkeypress(event,self):
+def onkeypress(event,self): # pragma: no cover
     if event.key in ['+','up']:
         increaseAxis(event,self)
     elif event.key in ['-','down']:
@@ -243,7 +243,7 @@ def onkeypress(event,self):
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
 
-def reloadslider(self,axis):
+def reloadslider(self,axis): 
     self.Energy_slider.set_val(0)
     self.setAxis(axis)
     self.Energy_slider.label.remove()#self.Energy_slider.label.text('')
@@ -259,22 +259,22 @@ def reloadslider(self,axis):
     self.im.remove()
     
         
-def onscroll(event,self):
+def onscroll(event,self): # pragma: no cover
     if(event.button=='up'):
         increaseAxis(event,self)
     elif event.button=='down':
         decreaseAxis(event,self)
 
 
-def increaseAxis(event,self):
+def increaseAxis(event,self): # pragma: no cover
     self.Energy_slider.set_val(self.Energy_slider.val+1)
     
     
-def decreaseAxis(event,self):
+def decreaseAxis(event,self): # pragma: no cover
     self.Energy_slider.set_val(self.Energy_slider.val-1)   
     
 
-def sliders_on_changed(self,val):
+def sliders_on_changed(self,val): # pragma: no cover
         value = int(np.round(val))
         
         if value>self.Energy_slider.valmax:

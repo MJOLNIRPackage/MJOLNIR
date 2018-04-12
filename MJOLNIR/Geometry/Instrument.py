@@ -567,6 +567,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.ylabel('Weight [arb]')
                         plt.tight_layout(rect=(0,0,1,0.95))
                         plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=300)
+                        print('Saving: {}'.format(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i)))
 
                 # Perform A4 calibration
                 A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
