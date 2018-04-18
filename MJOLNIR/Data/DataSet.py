@@ -195,7 +195,7 @@ class DataSet(object):
         """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
-        Kwargs
+        Kwargs:
 
             - datafiles (string or list of): File path(s), file must be of hdf format (default DataSet.datafiles).
 
@@ -260,7 +260,7 @@ class DataSet(object):
             else:
                 A3Zero = np.deg2rad(np.array(A3Zero))
 
-            A4 = np.deg2rad(np.array(normalization[:,9]))#-A4Zero
+            A4 = np.deg2rad(np.array(normalization[:,9]))+A4Zero
             A4=A4.reshape(detectors,binning*EPrDetector,order='C')
             Ef = np.array(normalization[:,4])
             Ef=Ef.reshape(detectors,binning*EPrDetector,order='C')
@@ -287,7 +287,7 @@ class DataSet(object):
             
             ki = factorsqrtEK*np.sqrt(Ei)
             
-            A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))#+A3Zero
+            A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))+A3Zero
             
             #### Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
 
@@ -356,6 +356,7 @@ class DataSet(object):
         Returns:
 
             - Datalist: List of converted data files having 4 sub arrays: Intensity(counts), Monitor, Normalization, Normalization count
+
             - bins: 3 arrays containing edge positions in x, y, and z directions.
         """
         
@@ -614,7 +615,7 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
 
     returns:
 
-        Rebinned intensity (and if provided Normalization, Monitor, and Normalization Count) and X, Y, and Z bins in 3 1D arrays.
+        Rebinned intensity (and if provided Normalization, Monitor, and Normalization Count) and X, Y, and Z bins in 3 3D arrays.
 
 
     Example:
