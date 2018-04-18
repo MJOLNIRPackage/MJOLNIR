@@ -7,30 +7,25 @@ from scipy.ndimage import filters
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle as pickle
-from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge,Instrument
 import h5py as hdf
 import scipy.optimize
 import datetime
-import warnings
 
 dataLocation = 'entry/data/data'#'entry/Detectors/Detectors'
 EiLocation = 'entry/data/incident_energy' # 'entry/Ei'
 monLocation = 'entry/control/data'#'entry/Monitor'
 
 
-NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*sigma
 
 
 
 class DataSet(object):
-    def __init__(self, instrument=None,datafiles=None,normalizationfiles=None, calibrationfiles=None, convertedfiles=None, **kwargs):
+    def __init__(self, datafiles=None, normalizationfiles=None, calibrationfiles=None, convertedfiles=None, **kwargs):
         """DataSet object to hold all informations about data.
         
         Kwargs:
             
-            - instrument (Instrument): Instrument object describing the data (default None).
-
-            - datafiles (list of strings): List of datafiles to be used in conversion.
+             - datafiles (list of strings): List of datafiles to be used in conversion.
 
             - normalizationfiles (string or list of strings): Location of Vanadium normalization file(s).
 
@@ -47,13 +42,10 @@ class DataSet(object):
         
         """
         
-        self._instrument = None
         self._datafiles = []
         self._normalizationfiles = []
         self._convertedfiles = []
         self._calibrationfiles = []
-        if instrument is not None:
-            self.instrument = instrument
 
 
         if datafiles is not None:
@@ -78,20 +70,6 @@ class DataSet(object):
             self.settings[key]=kwargs[key]
         
 
-    @property
-    def instrument(self):
-        return self._instrument
-
-    @instrument.getter
-    def instrument(self):
-        return self._instrument
-
-    @instrument.setter
-    def instrument(self,instrument):
-        if not issubclass(type(instrument),Instrument.Instrument):
-            raise AttributeError('Instrument provided is not of instrument type!')
-        else:
-            self._instrument = instrument
 
 
     @property
@@ -192,20 +170,9 @@ class DataSet(object):
         except IOError as e:                        # Catch all IO-errors
             print("Error in opening file:\n{}".format(e))
         else:
-                pickle.dump(self, fileObject)
-                fileObject.close()  
+            pickle.dump(self, fileObject)
+            fileObject.close()  
 
-    def initialize(self):
-        ## Needed things for initialization: Instrument(?!), datafiles, normalizationfiles(?)
-        if self.instrument is None:
-            raise RuntimeError("DataSet object does not contain an instrument!")
-        if len(self.datafiles) == 0:
-            raise RuntimeError("DataSet object does not contain data files!")
-        if len(self.normalizationfiles) ==0:
-            raise RuntimeError("DataSet object does not contain normalization files!")
-
-        if self.instrument.settings['Initialized']==False:
-            self.instrument.initialize()
 
     def __eq__(self, other): 
         return np.logical_and(set(self.__dict__.keys()) == set(other.__dict__.keys()),self.__class__ == other.__class__)
@@ -222,315 +189,17 @@ class DataSet(object):
         return string
 
 
-    def EnergyCalibration(self,datafile=None,savelocation='energycalibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],InstrumentType='CAMEA',plot=False):
-        """Method to generate look-up tables for normalization. Saves calibration file(s) as 'EnergyCalibration_Np.calib', where Np is the number of pixels.
-        
-        Generates 4 different tables:
-
-            - Prismatic High Definition (8 pixels/energy or 64 pixels/detector)
-
-            - Prismatic Low Definition (3 pixels/energy or 24 pixels/detector)
-
-            - Single (1 pixel/energy or 8 pixels/detector)
-
-            - Number (integer)
-
-        Kwargs:
-
-            - datafile (string): String to data single data file used for normalization (required).
-
-            - savelocation (string): String to save location folder (energycalibration)
-
-            - tables (list): List of needed conversion tables (Default: ['Single','PrismaticLowDefinition','PrismaticHighDefinition','Unbinned'], increasing number of pixels).
-
-            - InstrumentType (string): Type of instrument (default CAMEA).
-
-            - plot (boolean): Set to True if pictures of all fit are to be stored in savelocation
 
 
-        .. note::
-            Assumes that file contains a scan over  Ei. If one is in doubt whether the Vanadium normalization data has enough data points to allow a full 8 pixel binning, start with 1 pixel and 3, as the 8 pixel binning may end up raising an error.
-        
-
-        .. warning::
-            At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Guassian width of Vanadium peaks.
-
-        """
-        if self.instrument.settings['Initialized']==False:
-            self.initialize()
-
-        if datafile is None:
-            datafile = self.normalizationfiles[0]
-            print('Using {} for normalization table.'.format(datafile))
-
-        if InstrumentType=='CAMEA':
-
-            NormFile = hdf.File(datafile)
-
-            if savelocation[-1]!='/':
-                savelocation+='/'
-            
-            Data = np.array(NormFile.get(dataLocation)).transpose(1,0,2)
-            Ei = np.array(NormFile.get(EiLocation))
-            analysers = 8
-            pixels = len(self.instrument.A4[0][0]) # <------------------- Change!
-            detectors = len(self.instrument.A4[0])*len(self.instrument.A4)
-            detectorsorInWedge = len(self.instrument.A4[0])
-            wedges = len(self.instrument.A4)
-
-            if pixels!=Data.shape[2]:
-                raise ValueError('The number of pixels ({}) in the data file does not match instrument description ({})!'.format(pixels,Data.shape[2]))
-
-            bins = []
-            for table in tables:
-                if table=='Unbinned':
-                    bins.append(pixels)
-                elif table=='PrismaticHighDefinition':
-                    bins.append(8)
-                elif table=='PrismaticLowDefinition':
-                    bins.append(3)
-                elif table=='Single':
-                    bins.append(1)
-                elif isinstance(table,int):
-                    bins.append(table)
-                else:
-                    raise AttributeError("Provided table attribute ({}) not recognized, should be 'Unbinned','PrismaticHighDefinition','PrismaticLowDefinition','Single', and/or integer.".format(table))
-            if len(bins)==0:
-                raise AttributeError("No binning has been chosen for normalization routine.")
-            # Initial finding of peaks
-            peakPos = np.ones((detectors,analysers),dtype=float)*(-1)
-            peakVal = np.zeros_like(peakPos,dtype=float)
-            peakWidth = np.ones_like(peakPos,dtype=float)
-            peakBackg = np.zeros_like(peakPos,dtype=float)
-
-            # Looking only at pixel direction (integration over E)
-            ESummedData = Data.sum(axis=1)
-            dataSubtracted = np.array(ESummedData.copy(),dtype=float)
-
-            
-
-            if plot:
-                plt.ioff()
-                plt.figure(figsize=(16,11))
-                if not os.path.exists(savelocation+'Raw'):
-                    os.makedirs(savelocation+'Raw')
-                for i in range(detectors):
-                    plt.clf()
-                    plt.scatter(np.arange(pixels),np.sum(Data[:][i],axis=0),s=5)
-                    plt.ylim(0,np.max(np.sum(Data[i],axis=0))*1.1)
-                    plt.xlabel('Pixel')
-                    plt.ylabel('Intensity [arg]')
-                    plt.title('Vanadium normalization detector '+str(i))
-                    plt.tight_layout()
-                    plt.savefig(savelocation+'Raw/detector'+str(i)+'.png',format='png', dpi=150)
-            
-            for j in range(analysers):
-                peakPos[:,j],peakVal[:,j] = findPeak(dataSubtracted) # Find a peak in data
-                for i in range(detectors):
-                    guess = [peakVal[i,j],float(peakPos[i,j]),pixels/100.0,np.min(ESummedData[i])]
-                    #if i ==7:
-                    #    print(guess)
-                    res = scipy.optimize.curve_fit(Gaussian,np.arange(ESummedData.shape[1]),dataSubtracted[i,:],p0=[guess])
-                    #if np.abs(res[0][1]-guess[1])>10:
-                    #    print('Peak in detector {} with analyser {}, guess {}, diff {}'.format(i,j,guess[1],np.abs(res[0][1]-guess[1])))
-                    peakPos[i,j] = res[0][1]
-                    peakVal[i,j] = res[0][0]
-                    peakWidth[i,j]= res[0][2]
-
-                    # Generate peak as the one fitted and subtract it from signal
-                    x=np.arange(pixels)
-                    y = Gaussian(x,peakVal[i,j],peakPos[i,j],peakWidth[i,j],peakBackg[i,j])
-                    #dataSubtracted[i]-=y
-                    peak = y>peakVal[i,j]*0.05
-                    dataSubtracted[i,peak]= 0
-
-            if plot:
-                plt.clf()
-                #figman = plt.get_current_fig_manager()
-                #figman.window.setGeometry(1366, 24, 1920, 1176)
-                plt.suptitle('Fits')
-                x = np.arange(pixels)
-                for k in range(wedges):
-                    for i in range(detectorsorInWedge):
-                        y=np.zeros_like(x,dtype=float)
-                        plt.subplot(4, 4, i+1)
-                        plt.scatter(np.arange(pixels),ESummedData[i+13*k],s=4)
-                        #    plt.scatter(peakPos[i],peakVal[i])
-                        for j in range(analysers):
-                            y += Gaussian(x,peakVal[i+13*k,j],peakPos[i+13*k,j],peakWidth[i+13*k,j],peakBackg[i+13*k,j])
-                            plt.plot([peakPos[i+13*k,j],peakPos[i+13*k,j]],[0,np.max(ESummedData[i+13*k])*1.1])
-                        plt.plot(x,y,'k')
-                        plt.xlabel('Pixel')
-                        plt.ylabel('Intensity [arg]')
-                        plt.title('Detector {}'.format(i))
-                        #plt.legend(['Fit','Data'])
-                        plt.ylim(0,np.max(ESummedData[i+13*k])*1.1)
-
-                    plt.tight_layout()
-                    plt.savefig(savelocation+'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
-
-            
-            ## Sort the positions such that peak 1 is the furthermost left peak and assert diff(pos)>100
-            sortedPeakPosArg = np.argsort(peakPos,axis=1)
-            sortedPeakPos = np.sort(peakPos,axis=1)
-            sortedPeakPos[np.logical_or(sortedPeakPos>pixels,sortedPeakPos<0)]=5*pixels # High number
-
-            sortedPeakPosArg2 = np.argsort(sortedPeakPos,axis=1)
-            sortedPeakPos.sort(axis=1)
-
-            differences = np.diff(sortedPeakPos,axis=1)
-            outliers = np.zeros_like(peakPos,dtype=bool)
-            outliers[:,:-1]=differences<pixels/10
-            sortedPeakPos[outliers]=5*pixels
-            sortedPeakPosArg3 = np.argsort(sortedPeakPos,axis=1)
-            argSort = np.array([sortedPeakPosArg[i,sortedPeakPosArg2[i,sortedPeakPosArg3[i,:]]] for i in range(detectors)])
-            sortedPeakPos = np.sort(sortedPeakPos,axis=1)
-            peaks=np.sum(sortedPeakPos<5*pixels,axis=1) # Number of peaks found
-
-
-            if np.any(peaks!=analysers):
-                raise ValueError('Wrong number of peaks, {} found in detector(s): {}\nIn total error in {} detector(s).'.format(peaks[peaks!=analysers],np.arange(peaks.shape[0])[peaks!=analysers],np.sum(peaks[peaks!=analysers])))
-
-            pixelpos  = np.array([peakPos[i,argSort[i]] for i in range(detectors)])
-            #amplitudes= np.array([peakVal[i,argSort[i]] for i in range(detectors)])
-            widths    = np.array([peakWidth[i,argSort[i]] for i in range(detectors)])
-            #backgrounds=np.array([peakBackg[i,argSort[i]] for i in range(detectors)])
-            
-             ## Define the active detector area
-            sigmas = NumberOfSigmas # Active area is all pixels inside of pm 3 sigmas
-
-            lowerPixel = pixelpos-sigmas*widths
-            upperPixel = pixelpos+sigmas*widths
-
-            split = (lowerPixel[:,1:]-upperPixel[:,:-1])/2+upperPixel[:,:-1]
-
-            extendedSplit=np.zeros((split.shape[0],split.shape[1]+2))
-            extendedSplit[:,1:-1] = split
-            extendedSplit[:,-1]=np.ones((split.shape[0]))*pixels
-
-            x=np.arange(pixels)
-            activePixels = np.zeros((detectors,analysers,pixels),dtype=bool)
-            for i in range(detectors):
-                if plot:
-                    plt.clf()
-                    plt.title('Detector {} Active pixels'.format(i))
-                    plt.scatter(x,ESummedData[i],s=4,color='black')
-                for j in range(analysers):
-                    activePixels[i,j] = np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])
-                    if plot: plt.scatter(x[np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],
-                        ESummedData[i,np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],s=4,color='red')
-                if plot:
-                    plt.ylim(0,np.max(ESummedData[i])*1.1)
-                    plt.xlabel('Pixel')
-                    plt.ylabel('Intensity [arg]')
-                    plt.savefig(savelocation+'/Raw/Active_'+str(i)+'.png',format='png', dpi=150)
-
-
-           
-            
-
-            Eguess = np.zeros_like(peakPos,dtype=int)
-            for i in range(Eguess.shape[0]):
-                for j in range(analysers):
-                    Eguess[i,j]=np.argmax(Data[i,:,int(pixelpos[i,j])])
-
-
-            
-            fitParameters = []
-            activePixelRanges = []
-            for detpixels in bins:
-                if detpixels*analysers*3>len(Ei):
-                    warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3))
-                    
-                if plot:
-                    EiX = np.linspace(Ei[0],Ei[-1],len(Ei))
-                    if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
-                        os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
-                    colors=np.zeros((3,detpixels))
-                    if pixels==1:
-                        colors[:,0]=[0.65,0.2,0.45]
-                    else:
-                        colors[0]=np.linspace(0.3,1.0,detpixels)
-                        colors[1]=np.linspace(0.2,0.2,detpixels)
-                        colors[2]=np.linspace(0.8,0.1,detpixels)
-                    plt.suptitle('{} pixels'.format(detpixels))
-
-                fittedParameters=np.zeros((detectors,analysers,detpixels,4))
-                activePixelDetector=[]
-                for i in range(detectors):
-                    activePixelAnalyser = []
-                    if plot:
-                        plt.clf()
-                        plt.title('Detector {}, {} pixels'.format(i,detpixels))
-                        x=np.linspace(0,detpixels,len(Ei))
-                    for j in range(analysers):
-
-                        center = int(round(sortedPeakPos[i,j]))
-                        width = activePixels[i,j].sum()
-                        pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
-                        
-                        for k in range(detpixels):
-                            binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
-                            #print('{},{}'.format(pixelAreas[k],pixelAreas[k+1]))
-                            #[print(x) for x in binPixelData]
-                            guess = [np.max(binPixelData), Ei[np.argmax(binPixelData)],0.1,0]
-                            try:
-                                res = scipy.optimize.curve_fit(Gaussian,Ei,binPixelData,p0=guess)
-                            except:
-                                if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
-                                    os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
-                                plt.figure()
-                                plt.scatter(Ei,binPixelData)
-                                plt.plot(Ei,Gaussian(Ei,guess[0],guess[1],guess[2],guess[3]))
-                                plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=300)
-                                plt.close()
-                                #raise ValueError('Fitting not converged, probably due to too few points.')
-
-
-
-                            fittedParameters[i,j,k]=res[0]
-                            if plot:
-                                plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
-                                plt.scatter(Ei,binPixelData,color=colors[:,k])
-                        activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
-                    activePixelDetector.append(activePixelAnalyser)
-                    if plot:
-                        plt.grid('on')
-                        plt.xlabel('Ei [meV]')
-                        plt.ylabel('Weight [arb]')
-                        plt.tight_layout(rect=(0,0,1,0.95))
-                        plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=300)
-
-
-                fitParameters.append(fittedParameters)
-                activePixelRanges.append(np.array(activePixelDetector))
-                tableString = 'Normalization for {} pixel(s) using data {}\nPerformed {}\nDetector,Energy,Pixel,Amplitude,Center,Width,Background,lowerBin,upperBin\n'.format(detpixels,datafile,datetime.datetime.now())
-                for i in range(len(fittedParameters)):
-                    for j in range(len(fittedParameters[i])):
-                        for k in range(len(fittedParameters[i][j])):
-                            tableString+=str(i)+','+str(j)+','+str(k)+','+','.join([str(x) for x in fittedParameters[i][j][k]])
-                            tableString+=','+str(activePixelRanges[-1][i][j][k])+','+str(activePixelRanges[-1][i][j][k+1])+'\n'
-                
-                tableName = 'EnergyNormalization_{}.calib'.format(detpixels)
-                print('Saving {} pixel data to {}'.format(detpixels,savelocation+tableName))
-                file = open(savelocation+tableName,mode='w')
-
-                file.write(tableString)
-                file.close()
-                self.calibrationfiles.append(savelocation+tableName)
-
-
-
-
-    def ConvertDatafile(self,datafiles=None,calibrationfile=None,savelocation=None):
+    def ConvertDatafile(self,datafiles=None,binning=8,savelocation=None):
         """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
         Kwargs:
 
-            - datafiles (string or list of): File path(s), file must be of hdf format (default self.datafiles).
+            - datafiles (string or list of): File path(s), file must be of hdf format (default DataSet.datafiles).
 
-            - calibrationfile (string): File path to normalization file (default self.calibrationfiles[-1]).
+            - binning (int): Binning to be used when converting files (default 8).
 
             - savelocation (string): File path to save location of data file(s) (defaults to same as raw file).
 
@@ -542,18 +211,6 @@ class DataSet(object):
             
         """
 
-        if calibrationfile is None:
-            binnings = []
-            for nfile in self.calibrationfiles:
-                binnings.append(int(nfile.split('_')[-1].split('.')[0]))
-            if len(binnings)==0:
-                raise AttributeError('No normalization file provided either through input of in the DataSet object.')
-            else:
-                maxarg = np.argmax(binnings)
-                calibrationfile = self.calibrationfiles[maxarg]
-                print('Using normalization file {}'.format(calibrationfile))
-
-        binning = int(calibrationfile.split('_')[-1].split('.')[0]) # Find binning from normalization file name
 
         if datafiles is None:
             if len(self.datafiles)==0:
@@ -564,78 +221,91 @@ class DataSet(object):
         if not isinstance(datafiles,list):
             datafiles=[datafiles]
         for datafile in datafiles:
-            normalization = np.genfromtxt(calibrationfile,delimiter=',',skip_header=3)
-            EPrDetector = len(self.instrument.wedges[0].detectors[0].split)+1
-            print(datafile)
             
-            file = hdf.File(datafile)
-        
-            A4 = np.array(self.instrument.A4)
-            A4=A4.reshape(A4.shape[0]*A4.shape[1],A4.shape[2],order='C')
-            Ef = np.array(self.instrument.Ef)
-            Ef=Ef.reshape(Ef.shape[0]*Ef.shape[1],Ef.shape[2],order='C')
+            file = hdf.File(datafile,mode='r+')             
+            instrument = getInstrument(file)
+            
+            
+            if instrument.name.split('/')[-1] == 'CAMEA':
+                EPrDetector = 8 # <----------_ REDO
+            elif instrument.name.split('/')[-1] == 'MULTIFLEXX':
+                EPrDetector = 1
+            
+            
+            
+            normalization = np.array(file.get('entry/calibration/{}_pixels'.format(binning)))
+            if(normalization.shape==()):
+                raise AttributeError('Binning not found in data file ({})'.format(binning))
 
-            PixelEdge = normalization[:,7:].reshape(A4.shape[0],EPrDetector,binning,2).astype(int)
-            
-            Data = np.array(file.get('/entry/data/data'))
-            
-            #ScanPoints = Data.shape[0]
-            
-            if not Data.shape[1:]==A4.shape:
-                print(datafile)
-                print(datafiles)
-                print(Data)
-                print(file)
-                raise AttributeError('The shape of the data{} does not match instrument{}!'.format(Data.shape[1:],A4.shape))
             
             
+            Data = np.array(instrument.get('detector/data'))
+
+            detectors = Data.shape[1]
+            
+            if instrument.name.split('/')[-1] == 'MULTIFLEXX':
+                Data.shape = (Data.shape[0],Data.shape[1],1)
+
+            A4Zero = file.get('entry/zeros/A4')
+            
+            if A4Zero is None:
+                A4Zero=0.0
+            else:
+                A4Zero = np.deg2rad(np.array(A4Zero))
+
+            
+            A3Zero = file.get('entry/zeros/A3')
+            if A3Zero is None:
+                A3Zero=0.0
+            else:
+                A3Zero = np.deg2rad(np.array(A3Zero))
+
+            A4 = np.deg2rad(np.array(normalization[:,9]))+A4Zero
+            A4=A4.reshape(detectors,binning*EPrDetector,order='C')
+            Ef = np.array(normalization[:,4])
+            Ef=Ef.reshape(detectors,binning*EPrDetector,order='C')
+
+            PixelEdge = normalization[:,7:9].reshape(detectors,EPrDetector,binning,2).astype(int)
+
             factorsqrtEK = 0.694692
             
-            A4File = np.array(file.get('entry/CAMEA/detector/polar_angle'))
+            A4File = np.array(instrument.get('detector/polar_angle'))
             A4Shape = A4.shape
-            A4Total = -A4.reshape((1,A4Shape[0],A4Shape[1]))-np.deg2rad(A4File).reshape((A4File.shape[0],1,1))#-np.deg2rad(2.3173119802914783)
-            #PixelEdgeA4Shaped = PixelEdge.reshape((1,PixelEdge.shape[0],EPrDetector,binning,2))
-            
-            A4Mean = np.zeros((A4Total.shape[0],A4Total.shape[1],EPrDetector*binning))
-            #EfMean = np.zeros((Ef.shape[0],EPrDetector*binning))
+            A4Mean = A4.reshape((1,A4Shape[0],A4Shape[1]))-np.deg2rad(A4File).reshape((A4File.shape[0],1,1))
+
             DataMean=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
-            for i in range(A4Total.shape[1]): # for each detector
+            for i in range(detectors): # for each detector
                 for j in range(EPrDetector):
                     for k in range(binning):
-                        A4Mean[:,i,j*binning+k] = np.mean(A4Total[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
                         DataMean[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
-                        #EfMean[i,j*binning+k] = np.mean(Ef[i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=0)
-            
+
             EfMean = normalization[:,4].reshape(A4.shape[0],EPrDetector*binning)
             Normalization = (normalization[:,3]*np.sqrt(2*np.pi)*normalization[:,5]).reshape(A4.shape[0],EPrDetector*binning)
 
             kf = factorsqrtEK*np.sqrt(EfMean)
-            Ei = np.array(file.get('/entry/CAMEA/monochromator/energy'))
+            Ei = np.array(instrument.get('monochromator/energy'))
             
             ki = factorsqrtEK*np.sqrt(Ei)
             
-            A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))
+            A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))+A3Zero
             
-            # Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
+            #### Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
 
-            #Qx = ki.reshape((*ki.shape,1,1,1))-(kf.reshape((1,1,*Ef.shape))*np.cos(A4Total)).reshape((1,*A4Total.shape))
             Qx = ki.reshape((ki.shape[0],1,1,1))-(kf.reshape((1,1,EfMean.shape[0],EfMean.shape[1]))*np.cos(A4Mean)).reshape((1,A4Mean.shape[0],A4Mean.shape[1],A4Mean.shape[2]))
-            #Qy = np.zeros((*ki.shape,1,1,1))-kf.reshape((1,1,*Ef.shape))*np.sin(A4Total.reshape((1,*A4Total.shape)))
             Qy = np.zeros((ki.shape[0],1,1,1))-kf.reshape((1,1,EfMean.shape[0],EfMean.shape[1]))*np.sin(A4Mean.reshape((1,A4Mean.shape[0],A4Mean.shape[1],A4Mean.shape[2])))
             
             QX = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))-Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))
             QY = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))+Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))
-            if QX.shape.count(1)!=2:
-                raise ValueError('At least two parameters changed simulatneously!')
+            #print(QX.shape)
+            #print(QY)
+            #print(QX.shape.count(1))
             
-            #EnergyShape = (1,len(Ei),1,*Ef.shape)
+            #if QX.shape.count(1)!=2:
+            #    raise ValueError('At least two parameters changed simulatneously!')
+            
             EnergyShape = (1,len(Ei),1,EfMean.shape[0],EfMean.shape[1])
-            #DeltaE = (Ei.reshape((*Ei.shape,1,1))-Ef.reshape((1,*Ef.shape))).reshape(EnergyShape)
             DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
             
-            
-            
-            #Intensity = Data.reshape(*QX.shape)
             Intensity = DataMean.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
         
             DeltaE=DeltaE.repeat(QX.shape[0],axis=0)
@@ -659,7 +329,7 @@ class DataSet(object):
                 saveloc = savelocation+datafile.replace('.h5','.nxs').split('/')[-1]
             else:
                 saveloc = datafile.replace('.h5','.nxs')
-            saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,calibrationfile,Normalization)
+            saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization)
             
             file.close()
             self.convertedfiles.append(saveloc)
@@ -686,6 +356,7 @@ class DataSet(object):
         Returns:
 
             - Datalist: List of converted data files having 4 sub arrays: Intensity(counts), Monitor, Normalization, Normalization count
+
             - bins: 3 arrays containing edge positions in x, y, and z directions.
         """
         
@@ -696,41 +367,45 @@ class DataSet(object):
                 datafiles = self.convertedfiles
         elif not isinstance(datafiles,list):
             datafiles = [datafiles]
-        else:
-            raise AttributeError('datafiles attribute not understood.')
+        #else:
+            #raise AttributeError('datafiles attribute not understood.')
 
-        returnData = []
+        #returnData = []
+        I = []
+        posx = []
+        posy = []
+        energy = []
+        Norm = []
+        Monitor = []
 
         for data in datafiles:
             
             file = hdf.File(data,'r')
 
-            I = np.array(file.get('entry/data/data'))
-            posx = np.array(file.get('entry/data/qx'))
-            posy = np.array(file.get('entry/data/qy'))
-            energy = np.array(file.get('entry/data/en'))
-            Norm = np.array(file.get('entry/data/normalization'))
-            Monitor = np.array(file.get('entry/data/monitor'))
+            I.append(np.array(file.get('entry/data/data')))
+            posx.append(np.array(file.get('entry/data/qx')))
+            posy.append(np.array(file.get('entry/data/qy')))
+            energy.append(np.array(file.get('entry/data/en')))
+            Norm.append(np.array(file.get('entry/data/normalization')))
+            Monitor.append(np.array(file.get('entry/data/monitor')))
             file.close()
 
-            pos = [posx,posy,energy]
-            _tempData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
-            returnData.append(_tempData)
+        I = np.concatenate(I)
+        posx = np.concatenate(posx)
+        posy = np.concatenate(posy)
+        energy = np.concatenate(energy)
+        Norm = np.concatenate(Norm)
+        Monitor = np.concatenate(Monitor)
+
+        pos=[posx,posy,energy]
+
+        returnData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
 
         return returnData,bins
         
 
 
 
-
-
-def Gaussian(x,A,mu,sigma,b):
-    #A,mu,sigma,b = args
-    return A*np.exp(-np.power(mu-x,2.0)*0.5*np.power(sigma,-2.0))+b
-
-
-def findPeak(data):
-    return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
 
 
@@ -753,7 +428,7 @@ def IsListOfStrings(object):
     
 
 
-def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,normalizationfile,Normalization):
+def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization):
     
     fd = hdf.File(savefilename,'w')
     group_path = fs['/entry'].parent.name
@@ -782,8 +457,8 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,normaliza
     rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(datafile))
     rawdata.attrs['NX_class']=b'NX_CHAR'
     
-    normalizationString = proc.create_dataset('normalization table',shape=(1,),dtype='S200',data=np.string_(normalizationfile))
-    normalizationString.attrs['NX_class']=b'NX_CHAR'
+    normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
+    normalizationString.attrs['NX_class']=b'NX_INT'
     
     data = fd.get('entry/data')
     data['rawdata']=data['data']
@@ -915,7 +590,7 @@ def calculateGrid3D(X,Y,Z):
 
 
 
-def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
+def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
     """ 3D binning of data.
 
     Args:
@@ -936,9 +611,11 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
 
         - mon (array): Flattened monitor array.
 
+        - bins (list of arrays): Bins locating edges in the x, y, and z directions.
+
     returns:
 
-        Rebinned intensity (and if provided Normalization, Monitor, and Normalization Count) and X, Y, and Z bins in 3 1D arrays.
+        Rebinned intensity (and if provided Normalization, Monitor, and Normalization Count) and X, Y, and Z bins in 3 3D arrays.
 
 
     Example:
@@ -948,9 +625,28 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
 
     """
 
+    if bins is None:
+        bins = calculateBins(dx,dy,dz,pos)
     
+    #NonNaNs = 1-np.isnan(data.flatten())
 
-    
+    #pos = [np.array(x[NonNaNs]) for x in pos]
+    HistBins = [bins[0][:,0,0],bins[1][0,:,0],bins[2][0,0,:]]
+    intensity =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=data.flatten())[0].astype(data.dtype)
+
+    returndata = [intensity]
+    if mon is not None:
+        MonitorCount=  np.histogramdd(np.array(pos).T,bins=HistBins,weights=mon.flatten())[0].astype(mon.dtype)
+        returndata.append(MonitorCount)
+    if norm is not None:
+        Normalization= np.histogramdd(np.array(pos).T,bins=HistBins,weights=norm.flatten())[0].astype(norm.dtype)
+        NormCount =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=np.ones_like(data).flatten())[0].astype(int)
+        returndata.append(Normalization)
+        returndata.append(NormCount)
+
+    return returndata,bins
+
+def calculateBins(dx,dy,dz,pos):
     diffx = np.abs(np.max(pos[0])-np.min(pos[0]))
     diffy = np.abs(np.max(pos[1])-np.min(pos[1]))
     diffz = np.abs(np.max(pos[2])-np.min(pos[2]))
@@ -967,147 +663,75 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None):
     
     XX,YY,ZZ = calculateGrid3D(X,Y,Z)
     
-    bins=[XX[:,0,0],YY[0,:,0],ZZ[0,0,:]]
-    
-    
+    bins=[XX,YY,ZZ]
+    return bins
 
-    intensity =    np.histogramdd(np.array(pos).T,bins=bins,weights=data.flatten())[0].astype(data.dtype)
+def getNX_class(x,y,attribute):
+    try:
+        variableType = y.attrs['NX_class']
+    except:
+        variableType = ''
+    if variableType==attribute:
+        return x
 
-    returndata = [intensity]
-    if mon is not None:
-        MonitorCount=  np.histogramdd(np.array(pos).T,bins=bins,weights=mon.flatten())[0].astype(mon.dtype)
-        returndata.append(MonitorCount)
-    if norm is not None:
-        Normalization= np.histogramdd(np.array(pos).T,bins=bins,weights=norm.flatten())[0].astype(norm.dtype)
-        NormCount =    np.histogramdd(np.array(pos).T,bins=bins,weights=np.ones_like(data).flatten())[0].astype(int)
-        returndata.append(Normalization)
-        returndata.append(NormCount)
+def getInstrument(file):
+    location = file.visititems(lambda x,y: getNX_class(x,y,b'NXinstrument'))
+    return file.get(location)
 
-    return returndata,bins
-
-#__________________________TESTS_______________________
+#________________________________________________TESTS_____________________________________________
 
 def test_DataSet_Creation():
-    Instr = Instrument.Instrument()
 
-    dataset = DataSet(instrument=Instr,OhterSetting=10.0)
+    dataset = DataSet(OtherSetting=10.0)
     
-    if(dataset.settings['OhterSetting']!=10.0):
+    if(dataset.settings['OtherSetting']!=10.0):
         assert False
 
-    try:
-        dataset = DataSet(instrument=np.array([1.0]))
-        assert False
-    except:
-        assert True
 
 def test_Dataset_Initialization():
-    Instr = Instrument.Instrument()
+
     emptyDataset = DataSet()
-    try:
-        emptyDataset.initialize()
-        assert False
-    except RuntimeError:
-        assert True
-    
-    dataset = DataSet(instrument=Instr,OhterSetting=10.0,datafiles='SomeFile',normalizationfiles=['VanData','SecondFile'],convertedfiles='Converted.nxs')
+    del emptyDataset
+    dataset = DataSet(OhterSetting=10.0,datafiles='SomeFile',convertedfiles='Converted.nxs')
     assert(dataset.datafiles[0]=='SomeFile')
-    assert(dataset.normalizationfiles[0]=='VanData')
-    assert(dataset.normalizationfiles[1]=='SecondFile')
-    assert(len(dataset.normalizationfiles)==2)
-    assert(dataset.instrument==Instr)
-    assert(len(dataset.calibrationfiles)==0)
     assert(dataset.convertedfiles[0]=='Converted.nxs')
 
 
-    try:
-        dataset.initialize()
-        assert False
-    except:
-        assert True
-
-    wedge = Wedge.Wedge(position=(0.5,0,0),concept='ManyToMany')
-    pixels=33
-    split = [12,20]
-    Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0),pixels=pixels,split=split)
-    Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
-    wedge.append([Det,Det,Ana,Ana,Ana])
-    Instr.append(wedge)
-
-    dataset.initialize()
-
 def test_DataSet_Error():
-    try:
-        ds = DataSet(instrument='Nope')
-        assert False
-    except AttributeError:
-        assert True
-    Instr = Instrument.Instrument()
+    
 
     ds = DataSet()
     
-    try:
+    try: # Wrong data file type
         ds.datafiles = 100
         assert False
     except AttributeError:
         assert True
-    
-    try:
-        ds.normalizationfiles = 10
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+
+    try: # Can't overwrite settings
         ds.settings={}
         assert False
     except NotImplementedError:
         assert True
 
-    try:
+    try:# Wrong data file type
         ds.convertedfiles = 10
         assert False
     except AttributeError:
         assert True
 
-    try:
-        ds.calibrationfiles = 10
-        assert False
-    except AttributeError:
-        assert True
-
-    try:
-        print(ds.instrument)
-        ds.initialize()
-        assert False
-    except RuntimeError:
-        assert True
-
-    ds.instrument=Instr
-    print(ds.datafiles)
-    print(ds.normalizationfiles)
-    try:
-        ds.initialize()
-        assert False
-    except RuntimeError:
-        assert True
-
     ds.datafiles = 'Here.h5'
-    try:
-        ds.initialize()
-        assert False
-    except RuntimeError:
-        assert True
 
-            
+
 
 def test_DataSet_Equality():
-    D1 = DataSet(datafiles='Here',normalizationfiles=['Van/1.nxs','Van/2.nxs'])
+    D1 = DataSet(datafiles='Here',convertedfiles=['Van/1.nxs','Van/2.nxs'])
     assert(D1==D1)
 
 def test_DataSet_SaveLoad():
-    Instr = Instrument.Instrument()
-    D1 = DataSet(datafiles='Here',normalizationfiles = 'Van.nxs',instrument=Instr)
+    
+    D1 = DataSet(datafiles='Here',convertedfiles = 'Van.nxs')
 
     temp = 'temporary.bin'
 
@@ -1118,63 +742,25 @@ def test_DataSet_SaveLoad():
     assert(D1==D2) 
 
 def test_DataSet_str():
-    Instr = Instrument.Instrument()
-    D1 = DataSet(datafiles='Here',normalizationfiles = 'Van.nxs',instrument=Instr)
+    D1 = DataSet(datafiles='Here',normalizationfiles = 'Van.nxs')
     string = str(D1)
     print(string)
 
-def test_Normalization_tables():
-    Instr = Instrument.Instrument(filename='TestData/CAMEA_Full.xml')
-    Instr.initialize()
-
-    NF = 'TestData/VanNormalization.h5'
-
-
-    dataset = DataSet(instrument=Instr,normalizationfiles=NF)
-
-    try:
-        dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=[]) # No binning specified 
-        assert False
-    except AttributeError:
-        assert True
-
-    try:
-        dataset.EnergyCalibration(NF,'TestData/',plot=False,tables=['Nothing?']) # Wrong binning
-        assert False
-    except AttributeError:
-        assert True
-
-
-    dataset.EnergyCalibration(NF,'TestData/',plot=True,tables=['Single']) 
-    dataset.EnergyCalibration(savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
-    assert(dataset.calibrationfiles[-1]=='TestData/EnergyNormalization_2.calib')
-    
-
 
 def test_DataSet_Convert_Data():
-    Instr = Instrument.Instrument(filename='TestData/CAMEA_Full.xml')
-    Instr.initialize()
 
-    NF = 'TestData/VanNormalization.h5'
-    DataFiles = 'TestData/VanNormalization.h5'
-    dataset = DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFiles)
-
-    calibrationfiles = 'TestData/EnergyNormalization_8.calib'
+    DataFiles = 'TestData/cameasim2018n000001.h5'
+    dataset = DataSet(datafiles=DataFiles)
     
 
     try:
-        dataset.ConvertDatafile(datafiles=DataFiles)
+        dataset.ConvertDatafile(datafiles=DataFiles,binning=100)
         assert False
     except AttributeError: # Cant find normalization table
         assert True
 
-    if not os.path.exists(calibrationfiles):
-        dataset.EnergyCalibration(savelocation='TestData/',tables=['PrismaticHighDefinition'])
-    else:
-         dataset.calibrationfiles.append(calibrationfiles)
-
-    dataset.ConvertDatafile(datafiles=DataFiles,calibrationfile=calibrationfiles)
-    dataset.ConvertDatafile(datafiles=DataFiles,savelocation='TestData')
+    dataset.ConvertDatafile(datafiles=DataFiles,binning=8,savelocation='TestData/')
+    os.remove('TestData/cameasim2018n000001.nxs')
     
 
 
@@ -1213,10 +799,7 @@ def test_DataSet_BinData():
 
 
     assert(ReBinnedI.shape==(3,5,5))
-    assert(np.all(bins[0]==np.linspace(-0.25,1.25,4)))
-    assert(np.all(bins[1]==np.linspace(-0.125,1.125,6)))
-    assert(np.all(bins[2]==np.linspace(1-0.125,2.125,6)))
-
+    #assert(np.all(bins[0].shape=(4,6,6)))
     assert(RebinnedNorm.shape==ReBinnedI.shape)
     assert(RebinnedNormCount.shape==ReBinnedI.shape)
     assert(RebinnedNormCount.dtype==int)
@@ -1227,26 +810,38 @@ def test_DataSet_BinData():
 def test_DataSet_full_test():
     import MJOLNIR.Data.Viewer3D
     import warnings
+    import matplotlib.pyplot as plt
+    import os
     plt.ioff()
-    Instr = Instrument.Instrument(filename='TestData/CAMEA_Full_2.xml')
-    Instr.initialize()
+    DataFile = ['TestData/cameasim2018n000001.h5']
 
-    NF = 'TestData/VanNormalization.h5'
-    DataFile='TestData/cameasim2018n000005.h5'
+    dataset = DataSet(datafiles=DataFile)
+    dataset.ConvertDatafile(savelocation='TestData/')
 
-
-    dataset = DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFile)
-    dataset.EnergyCalibration(tables=[8],savelocation='TestData')
+    Data,bins = dataset.binData3D(0.08,0.08,0.25)
     
-    dataset.ConvertDatafile(datafiles=DataFile,savelocation='TestData')
-
-    Data,bins = dataset.binData3D(0.05,0.05,0.2)
-
-    BinnedData = Data[0]
-
-    warnings.simplefilter("ignore")
-    Intensity = np.divide(BinnedData[0]*BinnedData[3],BinnedData[1]*BinnedData[2])
+    warnings.simplefilter('ignore')
+    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
     warnings.simplefilter('once')
-
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
+    
+    os.remove('TestData/cameasim2018n000001.nxs')
     del viewer
+
+def test_DataSet_Visualization():
+    import warnings
+    from MJOLNIR.Data import Viewer3D
+    DataFile = ['TestData/cameasim2018n000001.h5']
+
+    dataset = DataSet(datafiles=DataFile)
+    dataset.ConvertDatafile(savelocation='TestData/')
+
+    Data,bins = dataset.binData3D(0.08,0.08,0.25)
+    plt.ioff()
+    warnings.simplefilter('ignore')
+    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+    warnings.simplefilter('once')
+    viewer = Viewer3D.Viewer3D(Intensity,bins)
+    viewer.caxis = (0,100)
+    plt.plot()
+    plt.close()
