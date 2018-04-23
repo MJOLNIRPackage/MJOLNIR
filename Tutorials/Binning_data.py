@@ -9,7 +9,7 @@ filename = '../../CAMEA_Test_Files/cameasim2018n000011.nxs'
 
 file = hdf.File(filename,'r')
 
-I = np.array(file.get('entry/data/data'))
+I = np.array(file.get('entry/data/intensity'))
 posx = np.array(file.get('entry/data/qx'))
 posy = np.array(file.get('entry/data/qy'))
 energy = np.array(file.get('entry/data/en'))

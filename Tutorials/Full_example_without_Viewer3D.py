@@ -32,7 +32,7 @@ Monitor = []
 for data in ConvertedDataFile:
     file = hdf.File(data,'r')
 
-    I.append(np.array(file.get('entry/data/data')))
+    I.append(np.array(file.get('entry/data/intensity')))
     qx.append(np.array(file.get('entry/data/qx')))
     qy.append(np.array(file.get('entry/data/qy')))
     energy.append(np.array(file.get('entry/data/en')))
