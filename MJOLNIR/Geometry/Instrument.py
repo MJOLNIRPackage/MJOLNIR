@@ -395,7 +395,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             
 
-            if plot:
+            if plot: # pragma: no cover
                 plt.ioff()
                 plt.figure(figsize=(16,11))
                 if not os.path.exists(savelocation+'Raw'):
@@ -425,7 +425,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     peak = y>peakVal[i,j]*0.05
                     dataSubtracted[i,peak]= 0
 
-            if plot:
+            if plot: # pragma: no cover
                 plt.clf()
                 plt.suptitle('Fits')
                 x = np.arange(pixels)
@@ -487,15 +487,15 @@ class Instrument(GeometryConcept.GeometryConcept):
             x=np.arange(pixels)
             activePixels = np.zeros((detectors,analysers,pixels),dtype=bool)
             for i in range(detectors):
-                if plot:
+                if plot: # pragma: no cover
                     plt.clf()
                     plt.title('Detector {} Active pixels'.format(i))
                     plt.scatter(x,ESummedData[i],s=4,color='black')
                 for j in range(analysers):
                     activePixels[i,j] = np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])
-                    if plot: plt.scatter(x[np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],
+                    if plot: plt.scatter(x[np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])], # pragma: no cover
                         ESummedData[i,np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],s=4,color='red')
-                if plot:
+                if plot: # pragma: no cover
                     plt.ylim(0,np.max(ESummedData[i])*1.1)
                     plt.xlabel('Pixel')
                     plt.ylabel('Intensity [arg]')
@@ -512,7 +512,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if detpixels*analysers*3>len(Ei):
                     warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3))
                     
-                if plot:
+                if plot: # pragma: no cover
                     EiX = np.linspace(Ei[0],Ei[-1],len(Ei))
                     if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
                         os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
@@ -529,7 +529,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 activePixelDetector=[]
                 for i in range(detectors):
                     activePixelAnalyser = []
-                    if plot:
+                    if plot: # pragma: no cover
                         plt.clf()
                         plt.title('Detector {}, {} pixels'.format(i,detpixels))
                         x =np.linspace(0,detpixels,len(Ei))
@@ -556,12 +556,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                                 plt.close()
 
                             fittedParameters[i,j,k]=res[0]
-                            if plot:
+                            if plot: # pragma: no cover
                                 plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
                                 plt.scatter(Ei,binPixelData,color=colors[:,k])
                         activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
                     activePixelDetector.append(activePixelAnalyser)
-                    if plot:
+                    if plot: # pragma: no cover
                         plt.grid('on')
                         plt.xlabel('Ei [meV]')
                         plt.ylabel('Weight [arb]')
@@ -621,7 +621,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     else:
                         A4FitValue[i] = fit[0][1]
 
-                if plot==True:
+                if plot==True: # pragma: no cover
                     if not os.path.exists(savelocation+'A4'):
                         os.makedirs(savelocation+'A4')
                     plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=300)
@@ -629,7 +629,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
 
 
-                if plot==True:
+                if plot==True: # pragma: no cover
                     plt.clf()
                     plt.scatter(range(A4.shape[0]),A4FitValue)
                     plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
@@ -1175,7 +1175,7 @@ def test_Instrument_Initialization():
 
 
 
-def test_Istrument_saveload():
+def test_Instrument_saveload():
     import os
     Instr = Instrument(position=(0,1,0))
     Instr2 = Instrument()
@@ -1317,7 +1317,7 @@ def test_Normalization_tables():
         assert True
 
     
-    Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=True,tables=['Single']) 
+    Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Single']) 
     Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     
 
