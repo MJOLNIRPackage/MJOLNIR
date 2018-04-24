@@ -901,7 +901,7 @@ def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,pl
     plt.tight_layout()
     
     
-    def format_coord(x,y,binDistance,binCenter):
+    def format_coord(x,y,binDistance,binCenter):# pragma: no cover
         index = np.argmin(np.abs(binDistance-x))
         qx,qy,E = binCenter[index]
         return  "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:0.4e}".format(qx,qy,E,y)
@@ -1038,7 +1038,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         my_xticks.append('\n'.join(map(str,[np.round(binCenter[i,0],2),np.round(binCenter[i,1],2)])))
     
     
-    def format_coord(x,y,binDistance,centerPos,Int):
+    def format_coord(x,y,binDistance,centerPos,Int):# pragma: no cover
         Eindex = np.argmin(np.abs([x[0][2] for x in centerPos]-y))
         index = np.argmin(np.abs(binDistance[Eindex]-x))
         qx,qy,E = centerPos[Eindex][index]
@@ -1131,8 +1131,8 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,N
     qy = data.create_dataset('qy',shape=(fileLength,),dtype='float32',data=QY.flatten())
     qy.attrs['NX_class']=b'NX_FLOAT'
     
-    qz = data.create_dataset('qz',shape=(fileLength,),dtype='float32',data=np.zeros((fileLength,)))
-    qz.attrs['NX_class']=b'NX_FLOAT'
+    #qz = data.create_dataset('qz',shape=(fileLength,),dtype='float32',data=np.zeros((fileLength,)))
+    #qz.attrs['NX_class']=b'NX_FLOAT'
     
     en = data.create_dataset('en',shape=(fileLength,),dtype='float32',data=DeltaE.flatten())
     en.attrs['NX_class']=b'NX_FLOAT'
