@@ -637,7 +637,7 @@ class DataSet(object):
         
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins)
 
-    def plotCutQE(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,datafiles=None,**kwargs): # pragma: no cover
+    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,plotCoverage=False,datafiles=None,**kwargs): # pragma: no cover
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
         .. note::
@@ -707,7 +707,7 @@ class DataSet(object):
         Monitor = Monitor[goodPixels]
         positions = [qx,qy,energy]
 
-        return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,**kwargs)
+        return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,ax = None,**kwargs)
 
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
@@ -1003,8 +1003,8 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         ax = plt.gca()
     
     dirvec = np.array(q2)-np.array(q1)
-    leftEdgeBins = [np.dot(returnpositions[i][0][0,:2],dirvec) for i in range(len(returnpositions))]
-    rightEdgeBins = [np.dot(returnpositions[i][0][-1,:2],dirvec) for i in range(len(returnpositions))]
+    leftEdgeBins = np.array([np.dot(returnpositions[i][0][0,:2],dirvec) for i in range(len(returnpositions))])
+    rightEdgeBins = np.array([np.dot(returnpositions[i][0][-1,:2],dirvec) for i in range(len(returnpositions))])
 
     leftEdgeIndex = np.argmin(leftEdgeBins)
     rightEdgeIndex= np.argmax(rightEdgeBins)
@@ -1538,3 +1538,25 @@ def test_DataSet_binEdges():
     assert(Bins[-1]==X[-1]+0.5*tolerance)
     assert(len(Bins)<=3.0/tolerance)
     assert(np.all(np.diff(Bins)>tolerance))
+
+def test_DataSet_1Dcut():
+    q1 =  np.array([0,0.0])
+    q2 =  np.array([3.0, 0.0])
+    width = 0.1
+
+    plt.ioff()
+    convertedFiles = ['TestData/cameasim2018n000011.nxs']
+    Datset = DataSet(convertedfiles = convertedFiles)
+    ax,D,P,binCenter,binDistance = Datset.plotCut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,fmt='.')
+
+def test_DataSet_2Dcut():
+    q1 =  np.array([0,0.0])
+    q2 =  np.array([3.0, 0.0])
+    width = 0.1
+    minPixel=0.02
+    EnergyBins = np.linspace(4,7,4)
+    plt.ioff()
+    convertedFiles = ['TestData/cameasim2018n000011.nxs']
+    Datset = DataSet(convertedfiles = convertedFiles)
+    ax3,DD3,pos3,cpos3,distance3 = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins,vmin=0.0 , vmax= 5e-06)
+
