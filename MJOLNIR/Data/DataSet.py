@@ -1545,8 +1545,10 @@ def test_DataSet_1Dcut():
     width = 0.1
 
     plt.ioff()
-    convertedFiles = ['TestData/cameasim2018n000011.nxs']
-    Datset = DataSet(convertedfiles = convertedFiles)
+    convertFiles = ['TestData/cameasim2018n000011.h5']
+    
+    Datset = DataSet(datafiles = convertFiles)
+    Datset.convertDatafile()
     ax,D,P,binCenter,binDistance = Datset.plotCut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,fmt='.')
 
 def test_DataSet_2Dcut():
@@ -1556,7 +1558,9 @@ def test_DataSet_2Dcut():
     minPixel=0.02
     EnergyBins = np.linspace(4,7,4)
     plt.ioff()
-    convertedFiles = ['TestData/cameasim2018n000011.nxs']
-    Datset = DataSet(convertedfiles = convertedFiles)
+    convertFiles = ['TestData/cameasim2018n000011.h5']
+    
+    Datset = DataSet(datafiles = convertFiles)
+    Datset.convertDatafile()
     ax3,DD3,pos3,cpos3,distance3 = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins,vmin=0.0 , vmax= 5e-06)
 
