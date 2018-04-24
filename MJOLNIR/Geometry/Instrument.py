@@ -1318,7 +1318,7 @@ def test_Normalization_tables():
 
     
     Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Single']) 
-    Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
+    #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     
 
 
