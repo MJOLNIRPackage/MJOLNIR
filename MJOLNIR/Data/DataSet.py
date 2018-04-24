@@ -483,7 +483,7 @@ class DataSet(object):
         
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False)
 
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,datafiles=None,**kwargs):  # pragma: no cover
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,datafiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
     Adds the 3D position on the x axis with ticks.
     
@@ -558,7 +558,7 @@ class DataSet(object):
         return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax,plotCoverage,**kwargs)
 
 
-    def cutQE(self,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,datafiles=None):
+    def cutQE(self,q1,q2,width,minPixel,EnergyBins,plotCoverage=False,datafiles=None):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
         Args:
@@ -635,9 +635,9 @@ class DataSet(object):
         Monitor = Monitor[goodPixels]
         positions = [qx,qy,energy]
         
-        return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins)
+        return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins)
 
-    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,plotCoverage=False,datafiles=None,**kwargs): # pragma: no cover
+    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,plotCoverage=False,datafiles=None,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
         .. note::
@@ -1537,7 +1537,7 @@ def test_DataSet_binEdges():
     assert(Bins[0]==X[0]-0.5*tolerance)
     assert(Bins[-1]==X[-1]+0.5*tolerance)
     assert(len(Bins)<=3.0/tolerance)
-    assert(np.all(np.diff(Bins)>tolerance))
+    assert(np.all(np.diff(Bins[:-1])>tolerance))
 
 def test_DataSet_1Dcut():
     q1 =  np.array([0,0.0])
@@ -1550,6 +1550,9 @@ def test_DataSet_1Dcut():
     Datset = DataSet(datafiles = convertFiles)
     Datset.convertDatafile()
     ax,D,P,binCenter,binDistance = Datset.plotCut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,fmt='.')
+    D2,P2 = Datset.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0)
+    assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
+    assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
 
 def test_DataSet_2Dcut():
     q1 =  np.array([0,0.0])
@@ -1562,5 +1565,20 @@ def test_DataSet_2Dcut():
     
     Datset = DataSet(datafiles = convertFiles)
     Datset.convertDatafile()
-    ax3,DD3,pos3,cpos3,distance3 = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins,vmin=0.0 , vmax= 5e-06)
+    ax,Data,pos,cpos,distance = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins,vmin=0.0 , vmax= 5e-06)
+    Data2,pos2,cpos2,distance2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins)
+    for i in range(len(Data)):
+        for j in range(len(Data[i])):
+            assert(np.all(Data[i][j]==Data2[i][j]))
 
+    for i in range(len(pos)):
+        for j in range(len(pos[i])):
+            assert(np.all(pos[i][j]==pos2[i][j]))
+    
+    for i in range(len(cpos)):
+        for j in range(len(cpos[i])):
+            assert(np.all(cpos2[i][j]==cpos[i][j]))
+        
+    for i in range(len(distance)):
+        for j in range(len(distance[i])):
+            assert(np.all(distance2[i][j]==distance[i][j]))
