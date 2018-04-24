@@ -12,11 +12,17 @@ Data Module
 
     DataSet.DataSet
     DataSet.DataSet.convertDatafile
+    DataSet.DataSet.cut1D
+    DataSet.DataSet.plotCut1D
+    DataSet.DataSet.cutQE
+    DataSet.DataSet.plotCutQE
     DataSet.binData3D
     DataSet.calculateGrid3D
     DataSet.cut1D
     DataSet.plotCut1D
     DataSet.binEdges
+    DataSet.cutQE
+    DataSet.plotCutQE
 
 .. automodule:: Data
    :members: 
@@ -58,4 +64,10 @@ DataSet binEdges
 .. autofunction:: binEdges
 
 
+DataSet cutQE
+^^^^^^^^^^^^^
+.. autofunction:: cutQE
 
+DataSet plotCutQE
+^^^^^^^^^^^^^^^^^
+.. autofunction:: plotCutQE
