@@ -1,4 +1,6 @@
-from MJOLNIR.Data import DataSet,Viewer3D
+import sys
+sys.path.append('..')
+from MJOLNIR.Data import DataSet
 import numpy as np
 import matplotlib.pyplot as plt
 import h5py as hdf
@@ -13,8 +15,8 @@ hfend='.h5'
 for i in range(0,len(data)):
     DataFile.append(Datapath+data[i]+hfend)
     
-dataset = DataSet.DataSet(datafiles=DataFile)
-dataset.ConvertDatafile(binning=1)
+dataset = DataSet.DataSet(dataFiles=DataFile)
+dataset.convertDataFile(binning=1)
 
 ConvertedDataFile=[]
 nxsend='.nxs'
