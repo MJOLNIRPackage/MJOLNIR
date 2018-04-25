@@ -11,28 +11,25 @@ import h5py as hdf
 import scipy.optimize
 import datetime
 import warnings
+from MJOLNIR.Data import DataFile
 
 dataLocation = 'entry/data/intensity'#'entry/Detectors/Detectors'
 EiLocation = 'entry/data/incident_energy' # 'entry/Ei'
 monLocation = 'entry/control/data'#'entry/Monitor'
 
-
-
-
-
 class DataSet(object):
-    def __init__(self, datafiles=None, normalizationfiles=None, calibrationfiles=None, convertedfiles=None, **kwargs):
+    def __init__(self, dataFiles=None, normalizationfiles=None, calibrationfiles=None, convertedFiles=None, **kwargs):
         """DataSet object to hold all informations about data.
         
         Kwargs:
             
-            - datafiles (list of strings): List of datafiles to be used in conversion (default None).
+            - dataFiles (string, DataFile or list of strings or DataFiles): List of datafiles or DataFile objects to be used in conversion (default None).
 
             - normalizationfiles (string or list of strings): Location of Vanadium normalization file(s) (default None).
 
             - calibrationfiles (string or list of strings): Location of calibration normalization file(s) (default None).
 
-            - convertedfiles (string or list of strings): Location of converted data files (default None).
+            - convertedFiles (string, DataFile or list of strings): Location of converted data files (default None).
 
         Raises:
 
@@ -42,20 +39,21 @@ class DataSet(object):
         
         """
         
-        self._datafiles = []
+        self._dataFiles = []
         self._normalizationfiles = []
-        self._convertedfiles = []
+        self._convertedFiles = []
         self._calibrationfiles = []
 
 
-        if datafiles is not None:
-            self.datafiles = datafiles
+        if dataFiles is not None:
+            self.dataFiles = dataFiles
 
         if normalizationfiles is not None:
             self.normalizationfiles = normalizationfiles
         
-        if convertedfiles is not None:
-            self.convertedfiles = convertedfiles
+        if convertedFiles is not None:
+            self.convertedFiles = convertedFiles
+            self._getData()
 
         if calibrationfiles is not None:
             self.calibrationfiles = calibrationfiles
@@ -70,22 +68,19 @@ class DataSet(object):
             self.settings[key]=kwargs[key]
         
 
-
-
     @property
-    def datafiles(self):
-        return self._datafiles
+    def dataFiles(self):
+        return self._dataFiles
 
-    @datafiles.getter
-    def datafiles(self):
-        return self._datafiles
+    @dataFiles.getter
+    def dataFiles(self):
+        return self._dataFiles
 
-    @datafiles.setter
-    def datafiles(self,datafiles):
+    @dataFiles.setter
+    def dataFiles(self,dataFiles):
         try:
-            self._datafiles = isListOfStrings(datafiles)
+            self._dataFiles = isListOfDataFiles(dataFiles)
         except Exception as e:
-            #print('Error {} while parsing input.!'.format(e))
             raise(e)
 
 
@@ -102,24 +97,22 @@ class DataSet(object):
         try:
             self._normalizationfiles = isListOfStrings(normalizationfiles)
         except Exception as e:
-            #print('Error {} while parsing input.!'.format(e))
             raise(e)
 
 
     @property
-    def convertedfiles(self):
-        return self._convertedfiles
+    def convertedFiles(self):
+        return self._convertedFiles
 
-    @convertedfiles.getter
-    def convertedfiles(self):
-        return self._convertedfiles
+    @convertedFiles.getter
+    def convertedFiles(self):
+        return self._convertedFiles
 
-    @convertedfiles.setter
-    def convertedfiles(self,convertedfiles):
+    @convertedFiles.setter
+    def convertedFiles(self,convertedFiles):
         try:
-            self._convertedfiles = isListOfStrings(convertedfiles)
+            self._convertedFiles = isListOfDataFiles(convertedFiles)
         except Exception as e:
-            #print('Error {} while parsing input.!'.format(e))
             raise(e)
 
 
@@ -136,7 +129,6 @@ class DataSet(object):
         try:
             self._calibrationfiles = isListOfStrings(calibrationfiles)
         except Exception as e:
-            #print('Error {} while parsing input.!'.format(e))
             raise(e)
 
     @property
@@ -188,20 +180,17 @@ class DataSet(object):
         string+='\n'    
         return string
 
-
-
-
-    def convertDatafile(self,datafiles=None,binning=8,savelocation=None):
+    def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None):
         """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
         Kwargs:
 
-            - datafiles (string or list of): File path(s), file must be of hdf format (default DataSet.datafiles).
+            - dataFiles (DataFile, string or list of): File path(s), file must be of hdf format (default self.dataFiles).
 
             - binning (int): Binning to be used when converting files (default 8).
 
-            - savelocation (string): File path to save location of data file(s) (defaults to same as raw file).
+            - saveLocation (string): File path to save location of data file(s) (defaults to same as raw file).
 
         Raises:
 
@@ -212,17 +201,17 @@ class DataSet(object):
         """
 
 
-        if datafiles is None:
-            if len(self.datafiles)==0:
+        if dataFiles is None:
+            if len(self.dataFiles)==0:
                 raise AttributeError('No data files file provided either through input of in the DataSet object.')
-            datafiles = self.datafiles
+            dataFiles = self.dataFiles
 
-
-        if not isinstance(datafiles,list):
-            datafiles=[datafiles]
-        for datafile in datafiles:
+        dataFiles = isListOfDataFiles(dataFiles)
+        #if not isinstance(dataFiles,list):
+        #    dataFiles=[dataFiles]
+        for datafile in dataFiles:
             
-            file = hdf.File(datafile,mode='r+')             
+            file = hdf.File(datafile.fileLocation,mode='r+')             
             instrument = getInstrument(file)
             
             
@@ -323,18 +312,25 @@ class DataSet(object):
             Normalization = np.repeat(Normalization,Intensity.shape[2],axis=2)
             ## TODO: Don't let all things vary at the same time!!
             
-            if not savelocation is None:
-                if savelocation[-1]!='/':
-                    savelocation+='/'
-                saveloc = savelocation+datafile.replace('.h5','.nxs').split('/')[-1]
+            if not saveLocation is None:
+                if saveLocation[-1]!='/':
+                    saveLocation+='/'
+                saveloc = saveLocation+datafile.fileLocation.replace('.h5','.nxs').split('/')[-1]
             else:
-                saveloc = datafile.replace('.h5','.nxs')
+                saveloc = datafile.fileLocation.replace('.h5','.nxs')
             saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization)
             
             file.close()
-            self.convertedfiles.append(saveloc)
+            convFil = DataFile.DataFile(saveloc)
+            self.convertedFiles.append(convFil)
+        self._getData()
+            
+    def _getData(self): # Internal method to populate I,qx,qy,energy,Norm and Monitor
+        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor = DataFile.extractData(self.convertedFiles)
+        
 
-    def binData3D(self,dx,dy,dz,datafiles=None):
+
+    def binData3D(self,dx,dy,dz,dataFiles=None):
         """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
 
         Args:
@@ -360,50 +356,31 @@ class DataSet(object):
             - bins: 3 arrays containing edge positions in x, y, and z directions.
         """
         
-        if datafiles is None:
-            if len(self.convertedfiles)==0:
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                datafiles = self.convertedfiles
-        elif not isinstance(datafiles,list):
-            datafiles = [datafiles]
-        #else:
-            #raise AttributeError('datafiles attribute not understood.')
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
 
-        #returnData = []
-        I = []
-        posx = []
-        posy = []
-        energy = []
-        Norm = []
-        Monitor = []
-
-        for data in datafiles:
+        else: 
+            dataFiles = isListOfDataFiles(dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
             
-            file = hdf.File(data,'r')
+        
 
-            I.append(np.array(file.get('entry/data/intensity')))
-            posx.append(np.array(file.get('entry/data/qx')))
-            posy.append(np.array(file.get('entry/data/qy')))
-            energy.append(np.array(file.get('entry/data/en')))
-            Norm.append(np.array(file.get('entry/data/normalization')))
-            Monitor.append(np.array(file.get('entry/data/monitor')))
-            file.close()
-
-        I = np.concatenate(I)
-        posx = np.concatenate(posx)
-        posy = np.concatenate(posy)
-        energy = np.concatenate(energy)
-        Norm = np.concatenate(Norm)
-        Monitor = np.concatenate(Monitor)
-
-        pos=[posx,posy,energy]
+        pos=[qx,qy,energy]
 
         returnData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
 
         return returnData,bins
 
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,datafiles=None):
+    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,dataFiles=None):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -428,7 +405,7 @@ class DataSet(object):
             
             - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
 
-            - datafiles (list): List of datafiles to cut (default None). If none, the ones in the object will be used.
+            - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
         
         
         Returns:
@@ -438,52 +415,28 @@ class DataSet(object):
             - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
             
         """
-        if datafiles is None:
-            if len(self.convertedfiles)==0:
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                datafiles = self.convertedfiles
-        elif not isinstance(datafiles,list):
-            datafiles = [datafiles]
-        I = []
-        posx = []
-        posy = []
-        energy = []
-        Norm = []
-        Monitor = []
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
 
-        for data in datafiles:
+        else: 
+            dataFiles = isListOfDataFiles(dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
             
-            file = hdf.File(data,'r')
-
-            I.append(np.array(file.get('entry/data/intensity')))
-            posx.append(np.array(file.get('entry/data/qx')))
-            posy.append(np.array(file.get('entry/data/qy')))
-            energy.append(np.array(file.get('entry/data/en')))
-            Norm.append(np.array(file.get('entry/data/normalization')))
-            Monitor.append(np.array(file.get('entry/data/monitor')))
-            file.close()
-
-        I = np.concatenate(I)
-        posx = np.concatenate(posx)
-        posy = np.concatenate(posy)
-        energy = np.concatenate(energy)
-        Norm = np.concatenate(Norm)
-        Monitor = np.concatenate(Monitor)
-
-        goodPixels = np.logical_and((1- np.isnan(Norm)).astype(bool),Norm!=0)
-
-        I = I[goodPixels]
-        qx=posx[goodPixels]
-        qy=posy[goodPixels]
-        energy=energy[goodPixels]
-        Norm = Norm[goodPixels]
-        Monitor = Monitor[goodPixels]
+        positions = [qx,qy,energy]
         positions = [qx,qy,energy]
         
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False)
 
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,datafiles=None,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,dataFiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
     Adds the 3D position on the x axis with ticks.
     
@@ -496,7 +449,7 @@ class DataSet(object):
         
         - kwargs: All other keywords will be passed on to the ax.errorbar method.
 
-        - datafiles (list): List of datafiles to cut (default None). If none, the ones in the object will be used.
+        - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
     
     Returns:
         
@@ -512,53 +465,28 @@ class DataSet(object):
         """
         
         
-        if datafiles is None:
-            if len(self.convertedfiles)==0:
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                datafiles = self.convertedfiles
-        elif not isinstance(datafiles,list):
-            datafiles = [datafiles]
-        I = []
-        posx = []
-        posy = []
-        energy = []
-        Norm = []
-        Monitor = []
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
 
-        for data in datafiles:
+        else: 
+            dataFiles = isListOfDataFiles(dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
             
-            file = hdf.File(data,'r')
-
-            I.append(np.array(file.get('entry/data/intensity')))
-            posx.append(np.array(file.get('entry/data/qx')))
-            posy.append(np.array(file.get('entry/data/qy')))
-            energy.append(np.array(file.get('entry/data/en')))
-            Norm.append(np.array(file.get('entry/data/normalization')))
-            Monitor.append(np.array(file.get('entry/data/monitor')))
-            file.close()
-
-        I = np.concatenate(I)
-        posx = np.concatenate(posx)
-        posy = np.concatenate(posy)
-        energy = np.concatenate(energy)
-        Norm = np.concatenate(Norm)
-        Monitor = np.concatenate(Monitor)
-
-        goodPixels = np.logical_and((1- np.isnan(Norm)).astype(bool),Norm!=0)
-
-        I = I[goodPixels]
-        qx=posx[goodPixels]
-        qy=posy[goodPixels]
-        energy=energy[goodPixels]
-        Norm = Norm[goodPixels]
-        Monitor = Monitor[goodPixels]
         positions = [qx,qy,energy]
 
         return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax,plotCoverage,**kwargs)
 
 
-    def cutQE(self,q1,q2,width,minPixel,EnergyBins,plotCoverage=False,datafiles=None):
+    def cutQE(self,q1,q2,width,minPixel,EnergyBins,plotCoverage=False,dataFiles=None):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
         Args:
@@ -592,52 +520,27 @@ class DataSet(object):
             - binDistance (n arrays): n isntances of arrays holding the distance in q to q1.
 
         """
-        if datafiles is None:
-            if len(self.convertedfiles)==0:
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                datafiles = self.convertedfiles
-        elif not isinstance(datafiles,list):
-            datafiles = [datafiles]
-        I = []
-        posx = []
-        posy = []
-        energy = []
-        Norm = []
-        Monitor = []
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
 
-        for data in datafiles:
+        else: 
+            dataFiles = isListOfDataFiles(dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
             
-            file = hdf.File(data,'r')
-
-            I.append(np.array(file.get('entry/data/intensity')))
-            posx.append(np.array(file.get('entry/data/qx')))
-            posy.append(np.array(file.get('entry/data/qy')))
-            energy.append(np.array(file.get('entry/data/en')))
-            Norm.append(np.array(file.get('entry/data/normalization')))
-            Monitor.append(np.array(file.get('entry/data/monitor')))
-            file.close()
-
-        I = np.concatenate(I)
-        posx = np.concatenate(posx)
-        posy = np.concatenate(posy)
-        energy = np.concatenate(energy)
-        Norm = np.concatenate(Norm)
-        Monitor = np.concatenate(Monitor)
-
-        goodPixels = np.logical_and((1- np.isnan(Norm)).astype(bool),Norm>0)
-
-        I = I[goodPixels]
-        qx=posx[goodPixels]
-        qy=posy[goodPixels]
-        energy=energy[goodPixels]
-        Norm = Norm[goodPixels]
-        Monitor = Monitor[goodPixels]
         positions = [qx,qy,energy]
         
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins)
 
-    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,plotCoverage=False,datafiles=None,**kwargs): 
+    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,plotCoverage=False,dataFiles=None,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
         .. note::
@@ -664,47 +567,22 @@ class DataSet(object):
         """
         
         
-        if datafiles is None:
-            if len(self.convertedfiles)==0:
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                datafiles = self.convertedfiles
-        elif not isinstance(datafiles,list):
-            datafiles = [datafiles]
-        I = []
-        posx = []
-        posy = []
-        energy = []
-        Norm = []
-        Monitor = []
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
 
-        for data in datafiles:
+        else: 
+            dataFiles = isListOfDataFiles(dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
             
-            file = hdf.File(data,'r')
-
-            I.append(np.array(file.get('entry/data/intensity')))
-            posx.append(np.array(file.get('entry/data/qx')))
-            posy.append(np.array(file.get('entry/data/qy')))
-            energy.append(np.array(file.get('entry/data/en')))
-            Norm.append(np.array(file.get('entry/data/normalization')))
-            Monitor.append(np.array(file.get('entry/data/monitor')))
-            file.close()
-
-        I = np.concatenate(I)
-        posx = np.concatenate(posx)
-        posy = np.concatenate(posy)
-        energy = np.concatenate(energy)
-        Norm = np.concatenate(Norm)
-        Monitor = np.concatenate(Monitor)
-
-        goodPixels = np.logical_and((1- np.isnan(Norm)).astype(bool),Norm>0)
-
-        I = I[goodPixels]
-        qx=posx[goodPixels]
-        qy=posy[goodPixels]
-        energy=energy[goodPixels]
-        Norm = Norm[goodPixels]
-        Monitor = Monitor[goodPixels]
         positions = [qx,qy,energy]
 
         return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,ax = None,**kwargs)
@@ -1075,6 +953,21 @@ def isListOfStrings(object):
     else:
         raise AttributeError('Data files provided are not a list of strings or string!')
     
+def isListOfDataFiles(inputFiles):
+    returnList = []
+    if isinstance(inputFiles,list):
+        for file in inputFiles:
+            if isinstance(file,DataFile.DataFile):
+                returnList.append(file)
+            elif isinstance(file,str):
+                returnList.append(DataFile.DataFile(file))
+    elif isinstance(inputFiles,DataFile.DataFile):
+        returnList.append(inputFiles)
+    elif isinstance(inputFiles,str):
+        returnList.append(DataFile.DataFile(inputFiles))
+    else:
+        raise AttributeError('File provided is not of type string, list, or DataFile')
+    return returnList
 
 
 def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization):
@@ -1374,9 +1267,9 @@ def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
     del emptyDataset
-    dataset = DataSet(OhterSetting=10.0,datafiles='SomeFile',convertedfiles='Converted.nxs')
-    assert(dataset.datafiles[0]=='SomeFile')
-    assert(dataset.convertedfiles[0]=='Converted.nxs')
+    dataset = DataSet(OhterSetting=10.0,dataFiles='TestData/cameasim2018n000001.h5',convertedFiles='TestData/cameasim2018n000001.nxs')
+    assert(dataset.dataFiles[0].name=='cameasim2018n000001.h5')
+    assert(dataset.convertedFiles[0].name=='cameasim2018n000001.nxs')
 
 
 def test_DataSet_Error():
@@ -1385,7 +1278,7 @@ def test_DataSet_Error():
     ds = DataSet()
     
     try: # Wrong data file type
-        ds.datafiles = 100
+        ds.dataFiles = 100
         assert False
     except AttributeError:
         assert True
@@ -1398,22 +1291,22 @@ def test_DataSet_Error():
         assert True
 
     try:# Wrong data file type
-        ds.convertedfiles = 10
+        ds.convertedFiles = 10
         assert False
     except AttributeError:
         assert True
 
-    ds.datafiles = 'Here.h5'
+    ds.dataFiles = 'TestData/VanNormalization.h5'
 
 
 
 def test_DataSet_Equality():
-    D1 = DataSet(datafiles='Here',convertedfiles=['Van/1.nxs','Van/2.nxs'])
+    D1 = DataSet(dataFiles='TestData/VanNormalization.h5')#,convertedFiles=['TestData/VanNormalization.nxs'])
     assert(D1==D1)
 
 def test_DataSet_SaveLoad():
     
-    D1 = DataSet(datafiles='Here',convertedfiles = 'Van.nxs')
+    D1 = DataSet(dataFiles='TestData/VanNormalization.h5')#,convertedFiles = 'TestData/VanNormalization.nxs')
 
     temp = 'temporary.bin'
 
@@ -1424,24 +1317,27 @@ def test_DataSet_SaveLoad():
     assert(D1==D2) 
 
 def test_DataSet_str():
-    D1 = DataSet(datafiles='Here',normalizationfiles = 'Van.nxs')
+    D1 = DataSet(dataFiles='TestData/cameasim2018n000001.h5',normalizationfiles = 'TestData/VanNormalization.h5')
     string = str(D1)
     print(string)
 
 
 def test_DataSet_Convert_Data():
 
-    DataFiles = 'TestData/cameasim2018n000001.h5'
-    dataset = DataSet(datafiles=DataFiles)
+    dataFiles = 'TestData/cameasim2018n000001.h5'
+    dataset = DataSet(dataFiles=dataFiles)
     
 
     try:
-        dataset.convertDatafile(datafiles=DataFiles,binning=100)
+        dataset.convertDataFile(dataFiles=dataFiles,binning=100)
         assert False
     except AttributeError: # Cant find normalization table
         assert True
 
-    dataset.convertDatafile(datafiles=DataFiles,binning=8,savelocation='TestData/')
+    dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/')
+    convertedFile = dataset.convertedFiles[0]
+    otherFile = DataFile.DataFile(dataFiles.replace('.h5','.nxs'))
+    assert(convertedFile==otherFile)
     os.remove('TestData/cameasim2018n000001.nxs')
     
 
@@ -1497,8 +1393,8 @@ def test_DataSet_full_test():
     plt.ioff()
     DataFile = ['TestData/cameasim2018n000001.h5']
 
-    dataset = DataSet(datafiles=DataFile)
-    dataset.convertDatafile(savelocation='TestData/')
+    dataset = DataSet(dataFiles=DataFile)
+    dataset.convertDataFile(saveLocation='TestData/')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     
@@ -1515,8 +1411,8 @@ def test_DataSet_Visualization():
     from MJOLNIR.Data import Viewer3D
     DataFile = ['TestData/cameasim2018n000001.h5']
 
-    dataset = DataSet(datafiles=DataFile)
-    dataset.convertDatafile(savelocation='TestData/')
+    dataset = DataSet(dataFiles=DataFile)
+    dataset.convertDataFile(saveLocation='TestData/')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     plt.ioff()
@@ -1547,8 +1443,8 @@ def test_DataSet_1Dcut():
     plt.ioff()
     convertFiles = ['TestData/cameasim2018n000011.h5']
     
-    Datset = DataSet(datafiles = convertFiles)
-    Datset.convertDatafile()
+    Datset = DataSet(dataFiles = convertFiles)
+    Datset.convertDataFile()
     ax,D,P,binCenter,binDistance = Datset.plotCut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,fmt='.')
     D2,P2 = Datset.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
@@ -1563,8 +1459,8 @@ def test_DataSet_2Dcut():
     plt.ioff()
     convertFiles = ['TestData/cameasim2018n000011.h5']
     
-    Datset = DataSet(datafiles = convertFiles)
-    Datset.convertDatafile()
+    Datset = DataSet(dataFiles = convertFiles)
+    Datset.convertDataFile()
     ax,Data,pos,cpos,distance = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins,vmin=0.0 , vmax= 5e-06)
     Data2,pos2,cpos2,distance2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins)
     for i in range(len(Data)):
