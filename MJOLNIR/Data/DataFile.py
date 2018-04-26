@@ -91,6 +91,8 @@ class Sample(object):
             self.polarAngle = np.array(sample.get('polar_angle'))
             self.rotationAngle = np.array(sample.get('rotation_angle'))
             self.unitCell = np.array(sample.get('unit_cell'))
+            self.temperature = np.array(sample.get('temperature'))
+            self.field = np.array(sample.get('field'))
         elif np.all([a is not None,b is not None, c is not None]):
             self.unitCell = np.array([a,b,c,alpha,beta,gamma])
             self.orientationMatrix = np.array([[1,0,0],[0,1,0]])
@@ -98,6 +100,8 @@ class Sample(object):
             self.polarAngle = np.array(0)
             self.rotationAngle = np.array(0)
             self.name=name
+            self.temperature = None
+            self.field = None
         else:
             print(sample)
             raise AttributeError('Sample not understood')
@@ -114,12 +118,12 @@ class Sample(object):
     @unitCell.setter
     def unitCell(self,unitCell):
         self._unitCell = unitCell
-        self._a = unitCell[0]
-        self._b = unitCell[1]
-        self._c = unitCell[2]
-        self._alpha = unitCell[3]
-        self._beta  = unitCell[4]
-        self._gamma = unitCell[5]
+        self.a = unitCell[0]
+        self.b = unitCell[1]
+        self.c = unitCell[2]
+        self.alpha = unitCell[3]
+        self.beta  = unitCell[4]
+        self.gamma = unitCell[5]
         
     @property
     def a(self):
@@ -217,7 +221,8 @@ class Sample(object):
         if not isinstance(other,type(self)):
             return False
         return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell),\
-        np.all(self.orientationMatrix==other.orientationMatrix),self.polarAngle==other.polarAngle])
+        np.all(self.orientationMatrix==other.orientationMatrix),\
+        self.temperature==other.temperature,self.field==other.field])
 
     def calculateProjections(self):
         """Calculate projections and generate projection angles."""
@@ -235,10 +240,11 @@ class Sample(object):
         self.reciprocalVectorB = 2*np.pi*np.cross(self.realVectorC,self.realVectorA)/self.volume
         self.reciprocalVectorC = 2*np.pi*np.cross(self.realVectorA,self.realVectorB)/self.volume
         ## Ensure that aStar is along the x-axis
-        angle = vectorAngle(self.reciprocalVectorA,np.array([1,0,0])) # TODO: make general!!!
-        self.reciprocalVectorA=np.dot(self.reciprocalVectorA,rotationMatrix(0,0,-angle,format='rad'))
-        self.reciprocalVectorB=np.dot(self.reciprocalVectorB,rotationMatrix(0,0,-angle,format='rad'))
-        self.reciprocalVectorC=np.dot(self.reciprocalVectorC,rotationMatrix(0,0,-angle,format='rad'))
+        RotMatrix = rotate2X(self.reciprocalVectorA)
+        #angle = vectorAngle(self.reciprocalVectorA,np.array([1,0,0])) # TODO: make general!!!
+        self.reciprocalVectorA=np.dot(self.reciprocalVectorA,RotMatrix)
+        self.reciprocalVectorB=np.dot(self.reciprocalVectorB,RotMatrix)
+        self.reciprocalVectorC=np.dot(self.reciprocalVectorC,RotMatrix)
 
         reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC])
         self.projectionVector1 = np.array(np.dot(self.orientationMatrix[0],reciprocalMatrix))
@@ -331,6 +337,35 @@ def extractData(files):
     Norm = Norm[goodPixels]
     Monitor = Monitor[goodPixels]
     return I,qx,qy,energy,Norm,Monitor
+
+def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
+    v/=np.linalg.norm(v)
+    m11 = np.cos(theta)+v[0]**2*(1-np.cos(theta))
+    m12 = v[0]*v[1]*(1-np.cos(theta))-v[2]*np.sin(theta)
+    m13 = v[0]*v[2]*(1-np.cos(theta))+v[1]*np.sin(theta)
+    m21 = v[0]*v[1]*(1-np.cos(theta))+v[2]*np.sin(theta)
+    m22 = np.cos(theta)+v[1]**2*(1-np.cos(theta))
+    m23 = v[1]*v[2]*(1-np.cos(theta))-v[0]*np.sin(theta)
+    m31 = v[0]*v[2]*(1-np.cos(theta))-v[1]*np.sin(theta)
+    m32 = v[1]*v[2]*(1-np.cos(theta))+v[0]*np.sin(theta)
+    m33 = np.cos(theta)+v[2]**2*(1-np.cos(theta))
+    return np.array([[m11,m12,m13],[m21,m22,m23],[m31,m32,m33]])
+
+
+def rotate2X(v):
+    if np.isclose(v[2]/np.linalg.norm(v),1): # v is along z
+        return rotMatrix([0,1,0],np.pi/2)
+    # Find axis perp to v and proj v into x-y plane -> rotate 2 plane and then to x
+    vRotInPlane = np.array([-v[1],v[0],0])
+    vPlan = np.array([v[0],v[1],0])
+    theta = np.arccos(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)))
+    R = rotMatrix(vRotInPlane,theta)
+    v2 = np.dot(R,v)
+    theta2 = np.arccos(np.dot(v2,np.array([1,0,0]))/np.linalg.norm(v2))
+    R2 = rotMatrix(np.array([0,0,1.0]),-theta2)
+    
+    Rotation = np.dot(R2,R)
+    return Rotation
 # --------------------------- TESTS -------------------------
 
 def test_sample_exceptions():
@@ -440,3 +475,11 @@ def test_DataFile():
     DF2 = DataFile(files[1])
             
     assert(DF1.sample == DF2.sample)
+
+def test_DataFile_rotations():
+    vectors = [np.array([0,0,3.0]),np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0]),np.random.rand(3)]
+    rotations = [rotate2X(v) for v in vectors]
+    rotVector = [np.dot(rotations[i],vectors[i]) for i in range(len(vectors))]
+    for i in range(len(rotVector)):
+        assert(np.isclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i])))
+        assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
