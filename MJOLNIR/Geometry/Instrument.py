@@ -16,7 +16,7 @@ NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*si
 
 
 class Instrument(GeometryConcept.GeometryConcept):
-    def __init__(self, position=(0,0,0),wedges=[],filename='',**kwargs):
+    def __init__(self, position=(0,0,0),wedges=[],fileName='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
 
@@ -26,7 +26,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
 
-            - filename (string): Filename of xml file (ending in xml). To load binary files use self.load(filename).
+            - fileName (string): Filename of xml file (ending in xml). To load binary files use self.load(filename).
 
         Raises:
             
@@ -38,9 +38,9 @@ class Instrument(GeometryConcept.GeometryConcept):
 
         
         self._settings = {}
-        if filename !='':
-            if(filename.split('.')[-1]=='xml'):
-                parseXML(self,filename)
+        if fileName !='':
+            if(fileName.split('.')[-1]=='xml'):
+                parseXML(self,fileName)
             else:
                 raise ValueError('File not of type XML.')
         else:
@@ -181,8 +181,8 @@ class Instrument(GeometryConcept.GeometryConcept):
         raise NotImplementedError('Ef cannot be overwritten.')
 
     
-    def saveXML(self,filename):
-        """Method for saving current file as XML in filename."""
+    def saveXML(self,fileName):
+        """Method for saving current file as XML in fileName."""
         XMLString = '<?xml version="1.0"?>\n'
         XMLString+= '<Instrument '
         for attrib in self.settings:
@@ -215,16 +215,16 @@ class Instrument(GeometryConcept.GeometryConcept):
             XMLString+="\t</Wedge>\n"
         XMLString+="</Instrument>\n"
     
-        f = open(filename,'w')
+        f = open(fileName,'w')
         f.write(XMLString)
         f.close()
 
-    def generateCAMEAXML(self,filename):
+    def generateCAMEAXML(self,fileName):
         """Generate CAMEA XML file to be used as instrument file.
 
         Args:
 
-            - filename: Name of file to be saved (required)
+            - fileName: Name of file to be saved (required)
 
         """
         ang_1 = np.zeros((7,))
@@ -294,10 +294,10 @@ class Instrument(GeometryConcept.GeometryConcept):
             
         string+="</Instrument>"
 
-        if filename.split('.')[-1]!='xml':
-            filename+='.xml'
+        if fileName.split('.')[-1]!='xml':
+            fileName+='.xml'
 
-        with open(filename,'w') as f:
+        with open(fileName,'w') as f:
             f.write(string)
 
 
@@ -662,11 +662,11 @@ class Instrument(GeometryConcept.GeometryConcept):
         
 
 
-def parseXML(Instr,filename):
+def parseXML(Instr,fileName):
     import xml.etree.ElementTree as ET
 
 
-    tree = ET.parse(filename)
+    tree = ET.parse(fileName)
     instr_root = tree.getroot()
 
     
@@ -765,7 +765,7 @@ def findPeak(data):
 
 
 
-def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no cover
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no cover
     """Convert McStas simulation to h5 format"""
     def addMetaData(entry,title):
         dset = entry.create_dataset('start_time',(1,),dtype='<S70')
@@ -964,8 +964,8 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
         control.create_dataset('time',data=time,dtype='float32')
 
 
-    f = hdf.File(filename,'w')
-    f.attrs['file_name'] = np.string_(filename)
+    f = hdf.File(fileName,'w')
+    f.attrs['file_name'] = np.string_(fileName)
     f.attrs['file_time'] = np.string_(b'2018-03-22T16:44:02+01:00')
     
     entry = f.create_group('entry')
@@ -1023,7 +1023,7 @@ def test_Instrument_init():
 def test_Instrument_error():
     
     try:
-        Instr = Instrument(filename='wrongDummyFile.bin')
+        Instr = Instrument(fileName='wrongDummyFile.bin')
         assert False
     except ValueError:
         assert True
@@ -1215,7 +1215,7 @@ def test_parseXML(): # Improve this test!
     Instr.append(wedge)
     Instr.saveXML(tempFileName)
         
-    InstrLoaded = Instrument(filename=tempFileName)
+    InstrLoaded = Instrument(fileName=tempFileName)
     os.remove(tempFileName)
 
     assert(Instr==InstrLoaded)
@@ -1238,7 +1238,7 @@ def test_XML_errors():
     f.close()
 
     try:
-        Instr = Instrument(filename=temp_file)
+        Instr = Instrument(fileName=temp_file)
         del Instr
         assert False
     except ValueError:
@@ -1256,7 +1256,7 @@ def test_XML_errors():
     f.write(fileString)
     f.close()
     try:
-        Instr = Instrument(filename=temp_file)
+        Instr = Instrument(fileName=temp_file)
         assert False
     except AttributeError:
         assert True
@@ -1273,7 +1273,7 @@ def test_XML_errors():
     f.write(fileString)
     f.close()
     try:
-        Instr = Instrument(filename=temp_file)
+        Instr = Instrument(fileName=temp_file)
         assert False
     except ValueError:
         assert True
@@ -1292,13 +1292,13 @@ def test_instrument_create_xml():
     filename = 'temp'
     Instr.generateCAMEAXML(filename)
 
-    Instr2 = Instrument(filename=filename+'.xml')
+    Instr2 = Instrument(fileName=filename+'.xml')
     os.remove(filename+'.xml')
     assert(len(Instr2.wedges)==8)
 
 
 def test_Normalization_tables():
-    Instr = Instrument(filename='TestData/CAMEA_Full.xml')
+    Instr = Instrument(fileName='TestData/CAMEA_Full.xml')
     Instr.initialize()
 
     NF = 'TestData/VanNormalization.h5'
