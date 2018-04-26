@@ -16,6 +16,8 @@ Data Module
     DataSet.DataSet.plotCut1D
     DataSet.DataSet.cutQE
     DataSet.DataSet.plotCutQE
+    DataSet.DataSet.cutPowder
+    DataSet.DataSet.plotCutPowder
     DataSet.binData3D
     DataSet.calculateGrid3D
     DataSet.cut1D
@@ -23,6 +25,8 @@ Data Module
     DataSet.binEdges
     DataSet.cutQE
     DataSet.plotCutQE
+    DataSet.cutPowder
+    DataSet.plotCutPowder
 
 .. automodule:: Data
    :members: 
