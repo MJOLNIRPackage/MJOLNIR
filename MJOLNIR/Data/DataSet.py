@@ -488,7 +488,7 @@ class DataSet(object):
         return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax,plotCoverage,**kwargs)
 
 
-    def cutQE(self,q1,q2,width,minPixel,EnergyBins,plotCoverage=False,dataFiles=None):
+    def cutQE(self,q1,q2,width,minPixel,EnergyBins,dataFiles=None):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
         Args:
@@ -504,8 +504,6 @@ class DataSet(object):
             - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
 
         Kwargs:
-
-            - plotCoverage (bool): Whether or not to plot the coverage in separate plot (default False).
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
     
@@ -541,7 +539,7 @@ class DataSet(object):
         
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins)
 
-    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,plotCoverage=False,dataFiles=None,**kwargs): 
+    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,dataFiles=None,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
         .. note::
@@ -562,8 +560,6 @@ class DataSet(object):
         Kwargs:
             
             - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
-            
-            - plotCoverage (bool): Whether or not to plot the coverage in separate plot (default False).
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
         
@@ -734,7 +730,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
         - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
         
     """
-    dirvec = np.array(q2)-np.array(q1)
+    dirvec = np.array(q2,dtype=float)-np.array(q1,dtype=float)
     dirvec/=np.linalg.norm(dirvec)
     orthovec=np.array([dirvec[1],-dirvec[0]])
     
@@ -1122,8 +1118,9 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     warnings.simplefilter('ignore')
     Int = [np.divide(intensityArray[i]*normcountArray[i],monitorArray[i]*normalizationArray[i]) for i in range(len(intensityArray))]
     warnings.simplefilter('once')
+    pmeshs = []
     for i in range(len(Int)):
-        ax.pcolormesh(binedges[i],binenergies[i],Int[i].T,**kwargs)
+        pmeshs.append(ax.pcolormesh(binedges[i],binenergies[i],Int[i].T,**kwargs))
     
     ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
     
