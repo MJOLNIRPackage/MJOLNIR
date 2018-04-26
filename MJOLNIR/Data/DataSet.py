@@ -232,6 +232,10 @@ class DataSet(object):
 
             detectors = Data.shape[1]
             
+            liveDetectors = np.array(instrument.get('detector/online'),dtype=bool)
+            if liveDetectors is None:
+                liveDetectors = np.ones((detectors),dtype=bool)
+
             if instrument.name.split('/')[-1] == 'MULTIFLEXX':
                 Data.shape = (Data.shape[0],Data.shape[1],1)
 
@@ -285,12 +289,6 @@ class DataSet(object):
             
             QX = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))-Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))
             QY = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))+Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))
-            #print(QX.shape)
-            #print(QY)
-            #print(QX.shape.count(1))
-            
-            #if QX.shape.count(1)!=2:
-            #    raise ValueError('At least two parameters changed simulatneously!')
             
             EnergyShape = (1,len(Ei),1,EfMean.shape[0],EfMean.shape[1])
             DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
@@ -311,6 +309,10 @@ class DataSet(object):
             Normalization = np.repeat(Normalization,Intensity.shape[1],axis=1)
             Normalization = np.repeat(Normalization,Intensity.shape[2],axis=2)
             ## TODO: Don't let all things vary at the same time!!
+
+            # Filter out offline detectors
+            for attribute in [Intensity,Monitor,Normalization,QX,QY,DeltaE]:
+                attribute = attribute[:,:,:,liveDetectors,:]
             
             if not saveLocation is None:
                 if saveLocation[-1]!='/':
@@ -438,30 +440,30 @@ class DataSet(object):
 
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,dataFiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
-    Adds the 3D position on the x axis with ticks.
-    
-    .. note::
-        Can only perform cuts for a constant energy plane of definable width.
-    
-    Kwargs:
+        Adds the 3D position on the x axis with ticks.
         
-        - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
+        .. note::
+            Can only perform cuts for a constant energy plane of definable width.
         
-        - kwargs: All other keywords will be passed on to the ax.errorbar method.
+        Kwargs:
+            
+            - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
+            
+            - kwargs: All other keywords will be passed on to the ax.errorbar method.
 
-        - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
-    
-    Returns:
+            - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
         
-        - ax (matplotlib axis): Matplotlib axis into which the plot was put.
-        
-        - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
-        
-        - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
-        
-        - binCenter (3D array): Array containing the position of the bin centers of size (n,3)
-        
-        - binDistance (array): Distance from centre of bins to start position.
+        Returns:
+            
+            - ax (matplotlib axis): Matplotlib axis into which the plot was put.
+            
+            - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
+            
+            - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
+            
+            - binCenter (3D array): Array containing the position of the bin centers of size (n,3)
+            
+            - binDistance (array): Distance from centre of bins to start position.
         """
         
         
@@ -491,14 +493,6 @@ class DataSet(object):
 
         Args:
 
-            - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
-            
-            - I (array): Flatten intensity array
-            
-            - Norm (array): Flatten normalization array
-            
-            - Monitor (array): Flatten monitor array
-            
             - q1 (2D array): Start position of cut in format (qx,qy).
             
             - q2 (2D array): End position of cut in format (qx,qy).
@@ -508,6 +502,13 @@ class DataSet(object):
             - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
 
             - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
+
+        Kwargs:
+
+            - plotCoverage (bool): Whether or not to plot the coverage in separate plot (default False).
+
+            - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+    
 
         Returns:
             
@@ -546,11 +547,26 @@ class DataSet(object):
         .. note::
             Positions shown in tool tip reflect the closes bin center and are thus limited to the area where data is present.
         
+        Args:
+
+            - q1 (2D array): Start position of cut in format (qx,qy).
+            
+            - q2 (2D array): End position of cut in format (qx,qy).
+            
+            - width (float): Full width of cut in q-plane.
+            
+            - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+
+            - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
+
         Kwargs:
             
             - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
             
-            
+            - plotCoverage (bool): Whether or not to plot the coverage in separate plot (default False).
+
+            - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+        
             - kwargs: All other keywords will be passed on to the ax.errorbar method.
         
         Returns:
@@ -587,6 +603,96 @@ class DataSet(object):
 
         return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,ax = None,**kwargs)
 
+
+    def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None):
+        """Cut data powder map with intensity as function of the length of q and energy. 
+
+        Args:
+            
+            - EBinEdges (list): Bin edges between which the cuts are performed.
+
+        Kwargs:
+
+            - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+
+            - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+
+
+        Returns:
+            
+            - Data list (n * 4 arrays): n instances of [Intensity, monitor count, normalization and normalization counts].
+            
+            - qbins (n arrays): n arrays holding the bin edges along the lenght of q
+
+        """
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
+                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+            else:
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
+
+        else: 
+            dataFiles = isListOfDataFiles(dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            
+        positions = [qx,qy,energy]
+
+        return cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
+
+    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,**kwargs):
+        """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
+        
+        .. note::
+            Can only perform cuts for a constant energy plane of definable width.
+        
+        Args:
+
+            - EBinEdges (list): Bin edges between which the cuts are performed.
+
+        Kwargs:
+            
+            - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+            
+            - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
+            
+            - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+
+            - kwargs: All other keywords will be passed on to the ax.pcolormesh method.
+        
+        Returns:
+            
+            - ax (matplotlib axis): Matplotlib axis into which the plot was put.
+            
+            - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
+            
+            - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
+
+        """
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
+                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+            else:
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
+
+        else: 
+            dataFiles = isListOfDataFiles(dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            
+        positions = [qx,qy,energy]
+
+        return plotCutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin,ax,**kwargs)
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
@@ -717,7 +823,7 @@ def binEdges(values,tolerance):
         bin_edges.append((unique_values[current] + unique_values[current+add]) / 2)
         current+=add+1
     bin_edges.append(unique_values[-1] + tolerance / 2)
-    return bin_edges
+    return np.array(bin_edges)
 
 def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,**kwargs):
     """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
@@ -787,6 +893,127 @@ def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,pl
     ax.format_coord = lambda x,y: format_coord(x,y,binDistance,binCenter)
 
     return ax,D,P,binCenter,binDistance
+
+
+
+def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
+    """Cut data powder map with intensity as function of the length of q and energy. 
+
+    Args:
+
+        - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
+
+        - I (array): Flatten intensity array
+        
+        - Norm (array): Flatten normalization array
+        
+        - Monitor (array): Flatten monitor array
+        
+        - EBinEdges (list): Bin edges between which the cuts are performed.
+
+    Kwargs:
+
+        - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+
+    Returns:
+        
+        - Data list (n * 4 arrays): n instances of [Intensity, monitor count, normalization and normalization counts].
+        
+        - qbins (n arrays): n arrays holding the bin edges along the lenght of q
+
+    """
+    qx,qy,energy = positions
+    q = np.linalg.norm([qx,qy],axis=0)
+    intensity = []
+    monitorCount = []
+    Normalization = []
+    NormCount = []
+    qbins = []
+    
+    for i in range(len(EBinEdges)-1):
+        e_inside = np.logical_and(energy>EBinEdges[i],energy<=EBinEdges[i+1])
+        q_inside = q[e_inside]
+        qbins.append(np.array(binEdges(q_inside,tolerance=qMinBin)))
+            
+        intensity.append(np.histogram(q_inside,bins=qbins[-1],weights=I[e_inside].flatten())[0].astype(I.dtype))
+        monitorCount.append(np.histogram(q_inside,bins=qbins[-1],weights=Monitor[e_inside].flatten())[0].astype(Monitor.dtype))
+        Normalization.append(np.histogram(q_inside,bins=qbins[-1],weights=Norm[e_inside].flatten())[0].astype(Norm.dtype))
+        NormCount.append(np.histogram(q_inside,bins=qbins[-1],weights=np.ones_like(I[e_inside]).flatten())[0].astype(I.dtype))
+    
+    return [intensity,monitorCount,Normalization,NormCount],qbins
+
+
+
+def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwargs):
+    """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
+    
+    .. note::
+        Can only perform cuts for a constant energy plane of definable width.
+    
+     Args:
+
+        - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
+
+        - I (array): Flatten intensity array
+        
+        - Norm (array): Flatten normalization array
+        
+        - Monitor (array): Flatten monitor array
+        
+        - EBinEdges (list): Bin edges between which the cuts are performed.
+
+    Kwargs:
+        
+        - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+        
+        - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
+        
+        - kwargs: All other keywords will be passed on to the ax.pcolormesh method.
+    
+    Returns:
+        
+        - ax (matplotlib axis): Matplotlib axis into which the plot was put.
+        
+        - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
+        
+        - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
+
+    """
+    
+    [intensity,monitorCount,Normalization,NormCount],qbins = cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
+    Int = [np.divide(intensity[i]*NormCount[i],monitorCount[i]*Normalization[i]) for i in range(len(EBinEdges)-1)]
+    
+    eMean = 0.5*(EBinEdges[:-1]+EBinEdges[1:])
+    
+    if ax is None:
+        plt.figure()
+        ax = plt.gca()
+    pmeshs = []
+    
+    for i in range(len(EBinEdges)-1):
+        pmeshs.append(ax.pcolormesh(qbins[i],[EBinEdges[i],EBinEdges[i+1]],Int[i].reshape((len(qbins[i])-1,1)).T,**kwargs))
+    
+    
+    def format_coord(x,y,qBin,eMean,Int):# pragma: no cover
+            EIndex = np.argmin(np.abs(y-eMean))
+            qIndex = np.argmin(np.abs(x-0.5*(qBin[EIndex][:-1]+qBin[EIndex][1:])))
+            Intensity = Int[EIndex][qIndex] 
+            return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(qBin[EIndex][qIndex],eMean[EIndex],Intensity)
+        
+    ax.format_coord = lambda x,y: format_coord(x,y,qbins,eMean,Int)
+    ax.set_xlabel('|q| [1/A]')
+    ax.set_ylabel('E [meV]')
+    
+    ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
+    
+    if not 'vmin' in kwargs or not 'vmax' in kwargs:
+        minVal = np.min(np.concatenate(Int))
+        maxVal = np.max(np.concatenate(Int))
+        ax.set_clim(minVal,maxVal)
+    
+    return ax,[intensity,monitorCount,Normalization,NormCount],qbins
+ 
+
 
 
 
@@ -898,6 +1125,13 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     for i in range(len(Int)):
         ax.pcolormesh(binedges[i],binenergies[i],Int[i].T,**kwargs)
     
+    ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
+    
+    if not 'vmin' in kwargs or not 'vmax' in kwargs:
+        minVal = np.min(np.concatenate(Int))
+        maxVal = np.max(np.concatenate(Int))
+        ax.set_clim(minVal,maxVal)
+
     binCenter = centerPos[0]#np.concatenate(centerPos,axis=0)
     #binCenter.sort(axis=0)
     binDistanceAll = binDistance[0]#np.linalg.norm(binCenter[:,:2]-q1,axis=1)
@@ -967,6 +1201,10 @@ def isListOfDataFiles(inputFiles):
         returnList.append(DataFile.DataFile(inputFiles))
     else:
         raise AttributeError('File provided is not of type string, list, or DataFile')
+    if len(returnList)>1:
+        sameSample = [returnList[0].sample==file.sample for file in returnList]
+        if not np.all(sameSample):
+            raise AttributeError('Files does not have the same sample! Compared to first entry: {}'.format(sameSample))
     return returnList
 
 
@@ -1221,36 +1459,6 @@ def getInstrument(file):
     return file.get(location)
 
 
-# def binEdges(values,tolerance):
-#     """Generate bins for a value array and bin points within tolerance. If tolerance is set too high, only the outer bin edges are returned.
-#     Low tolerance results in all points having their own bin.
-
-#     Args:
-
-#         - values (array): Value array to be binned
-
-#         - tolerance (float): Tolerance in with points are binned togehter.
-
-#     returns:
-
-#         - binEdges (array): Edges starting tolerance*0.5 below lowest value and ends tolerance*0.5 above largest value.
-
-#     """
-#     values_array = np.array(values).ravel()
-#     unique_values = np.asarray(list(set(values_array)))
-#     unique_values.sort()
-#     if len(unique_values)==0: # If no values are given, return empty list
-#         return []
-#     bin_edges = [unique_values[0] - tolerance / 2]
-#     for i in range(len(unique_values) - 1):
-#         if unique_values[i+1] - unique_values[i] > tolerance:
-#             bin_edges.append((unique_values[i] + unique_values[i+1]) / 2)
-#         else:
-#             pass
-    
-#     bin_edges.append(unique_values[-1] + tolerance / 2)
-#     return bin_edges
-
 
 
 #________________________________________________TESTS_____________________________________________
@@ -1478,3 +1686,23 @@ def test_DataSet_2Dcut():
     for i in range(len(distance)):
         for j in range(len(distance[i])):
             assert(np.all(distance2[i][j]==distance[i][j]))
+
+def test_DataSet_cutPowder():
+    tolerence = 0.01
+
+    plt.ioff()
+    convertFiles = ['TestData/cameasim2018n000011.h5']
+    
+    Datset = DataSet(dataFiles = convertFiles)
+    Datset.convertDataFile()
+    eBins = binEdges(Datset.energy,0.25)
+
+    ax,D,q = Datset.plotCutPowder(eBins,tolerence,vmin=0,vmax=1e-6)
+    D2,q2 = Datset.cutPowder(eBins,tolerence)
+    for i in range(len(D)):
+        for j in range(len(D[i])):
+            assert(np.all(D[i][j]==D2[i][j]))
+
+    for i in range(len(q)):
+        for j in range(len(q[i])):
+            assert(np.all(q[i][j]==q2[i][j]))

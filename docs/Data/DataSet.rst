@@ -11,7 +11,7 @@ Data Module
    :nosignatures:
 
     DataSet.DataSet
-    DataSet.DataSet.convertDatafile
+    DataSet.DataSet.convertDataFile
     DataSet.DataSet.cut1D
     DataSet.DataSet.plotCut1D
     DataSet.DataSet.cutQE

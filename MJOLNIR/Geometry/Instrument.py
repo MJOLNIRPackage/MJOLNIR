@@ -913,6 +913,9 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         dset.attrs['target'] = np.string_('/entry/CAMEA/detector/data')
         nxdata['data'] = dset
 
+        online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
+        online.attrs['units']=np.string_('Boolean for detector state')
+
         sam = entry['sample']
         if isVaried(a3):
             dset = sam.create_dataset('rotation_angle',data=a3)
@@ -993,7 +996,6 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
     addSample(entry,np.string_(sample))
     import os
     Numpoints = sum(os.path.isdir(fname+i) for i in os.listdir(fname))
-    print(Numpoints)
     data,a3,a4,ei = readScanData(fname,Numpoints)
     storeScanData(entry,data,a3,a4,ei)
     makeMonitor(entry,Numpoints)
