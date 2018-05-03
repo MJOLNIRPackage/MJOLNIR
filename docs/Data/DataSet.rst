@@ -18,6 +18,7 @@ Data Module
     DataSet.DataSet.plotCutQE
     DataSet.DataSet.cutPowder
     DataSet.DataSet.plotCutPowder
+    DataSet.DataSet.createRLUAxes
     DataSet.binData3D
     DataSet.calculateGrid3D
     DataSet.cut1D
@@ -27,12 +28,13 @@ Data Module
     DataSet.plotCutQE
     DataSet.cutPowder
     DataSet.plotCutPowder
+    DataSet.createRLUAxes
 
 .. automodule:: Data
    :members: 
 
-Data Set Object
-^^^^^^^^^^^^^^^
+DataSet Object
+^^^^^^^^^^^^^^
 
 Object to take care of all data conversion and treatment taking it from raw hdf5 files obtained at the instrument into rebinned data sets converted to S(q,omega). 
 
@@ -46,7 +48,7 @@ Object to take care of all data conversion and treatment taking it from raw hdf5
 
 
 DataSet bin data
-^^^^^^^^^^^^^^^^
+----------------
 .. autofunction:: binData3D
 
 
@@ -75,3 +77,17 @@ DataSet cutQE
 DataSet plotCutQE
 ^^^^^^^^^^^^^^^^^
 .. autofunction:: plotCutQE
+
+DataSet cutPowder
+^^^^^^^^^^^^^^^^^
+.. autofunction:: cutPowder
+
+DataSet plotCutPowder
+^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: plotCutPowder
+
+
+DataSet createRLUAxes
+^^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: createRLUAxes
+

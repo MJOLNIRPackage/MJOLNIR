@@ -12,6 +12,9 @@ import scipy.optimize
 import datetime
 import warnings
 from MJOLNIR.Data import DataFile
+from mpl_toolkits.axisartist.grid_helper_curvelinear import \
+    GridHelperCurveLinear
+from mpl_toolkits.axisartist import Subplot
 
 dataLocation = 'entry/data/intensity'#'entry/Detectors/Detectors'
 EiLocation = 'entry/data/incident_energy' # 'entry/Ei'
@@ -311,8 +314,8 @@ class DataSet(object):
             ## TODO: Don't let all things vary at the same time!!
 
             # Filter out offline detectors
-            for attribute in [Intensity,Monitor,Normalization,QX,QY,DeltaE]:
-                attribute = attribute[:,:,:,liveDetectors,:]
+            #for attribute in [Intensity,Monitor,Normalization,QX,QY,DeltaE]:
+            #    attribute = attribute[:,:,:,liveDetectors,:]
             
             if not saveLocation is None:
                 if saveLocation[-1]!='/':
@@ -609,7 +612,7 @@ class DataSet(object):
 
         Kwargs:
 
-            - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+            - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
@@ -653,7 +656,7 @@ class DataSet(object):
 
         Kwargs:
             
-            - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+            - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
             
             - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
             
@@ -689,6 +692,19 @@ class DataSet(object):
         positions = [qx,qy,energy]
 
         return plotCutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin,ax,**kwargs)
+
+    def createRLUAxes(self): # pragma: no cover
+        """Wrapper for the createRLUAxes method.
+
+        Returns:
+
+            - ax (Matplotlib axes): Created reciprocal lattice axes.
+
+        .. note::
+           Uses sample from the first converted data file. However, this should be taken care of by the comparison of datafiles to ensure same sample and settings.
+
+        """
+        return createRLUAxes(self)
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
@@ -776,8 +792,8 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
 
-    
-    
+
+        
 def binEdges(values,tolerance):
     """Generate binning of values array with minimum bin size of tolerance. Binning starts at values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
     
@@ -879,8 +895,7 @@ def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,pl
     ax.xaxis.set_label_coords(1.15, -0.025)
     ax.set_ylabel('Int [arb]')
     plt.tight_layout()
-    
-    
+    # TODO: Incorporate RLU figure/axis
     def format_coord(x,y,binDistance,binCenter):# pragma: no cover
         index = np.argmin(np.abs(binDistance-x))
         qx,qy,E = binCenter[index]
@@ -909,7 +924,7 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
 
     Kwargs:
 
-        - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+        - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
 
     Returns:
         
@@ -944,9 +959,9 @@ def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwa
     """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
     
     .. note::
-        Can only perform cuts for a constant energy plane of definable width.
+       Can only perform cuts for a constant energy plane of definable width.
     
-     Args:
+    Args:
 
         - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
 
@@ -960,7 +975,7 @@ def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwa
 
     Kwargs:
         
-        - qMinBin (float): Minimal size of binning along |q| (default 0.01). Points will be binned if they are closer than qMinBin.
+        - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
         
         - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
         
@@ -1077,6 +1092,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     .. note::
         Positions shown in tool tip reflect the closes bin center and are thus limited to the area where data is present.
     
+
     Kwargs:
         
         - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
@@ -1166,7 +1182,36 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
 
     return ax,[intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-
+def createRLUAxes(Dataset): # pragma: no cover
+    """Create a reciprocal lattice plot for a given DataSet object.
+    
+    Args:
+        
+        - Dataset (DataSet): DataSet object for which the RLU plot is to be made.
+        
+    Returns:
+        
+        - ax (Matplotlib axes): Axes containing the RLU plot.
+    
+    """
+    fileObject = Dataset.convertedFiles[0]
+    
+    fig = plt.figure(figsize=(7, 4))
+    fig.clf()
+    grid_helper = GridHelperCurveLinear((fileObject.sample.tr, fileObject.sample.inv_tr))
+    
+    ax = Subplot(fig, 1, 1, 1, grid_helper=grid_helper)
+  
+    fig.add_subplot(ax)
+    ax.set_aspect(1.)
+    ax.grid(True, zorder=0)
+    
+    ax.format_coord = fileObject.sample.format_coord
+    projV1 = fileObject.sample.orientationMatrix[0].astype(int)
+    projV2 = fileObject.sample.orientationMatrix[1].astype(int)
+    ax.set_xlabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV1[0],projV1[1],projV1[2]))
+    ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
+    return ax
         
 def isListOfStrings(object):
     if isinstance(object, list):
@@ -1242,27 +1287,27 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,N
     #del data['data']
     
     
-    fileLength = Intensity.size
-    
-    Int = data.create_dataset('intensity',shape=(fileLength,),dtype='int32',data=Intensity.flatten())
+    fileLength = Intensity.shape
+    #print(Intensity.shape)
+    Int = data.create_dataset('intensity',shape=(fileLength),dtype='int32',data=Intensity)
     Int.attrs['NX_class']='NX_INT'
     
-    monitor = data.create_dataset('monitor',shape=(fileLength,),dtype='int32',data=Monitor.flatten())
+    monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
     monitor.attrs['NX_class']=b'NX_INT'
 
-    normalization = data.create_dataset('normalization',shape=(fileLength,),dtype='float32',data=Normalization.flatten())
+    normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
     normalization.attrs['NX_class']=b'NX_FLOAT'
     
-    qx = data.create_dataset('qx',shape=(fileLength,),dtype='float32',data=QX.flatten())
+    qx = data.create_dataset('qx',shape=(fileLength),dtype='float32',data=QX)
     qx.attrs['NX_class']=b'NX_FLOAT'
     
-    qy = data.create_dataset('qy',shape=(fileLength,),dtype='float32',data=QY.flatten())
+    qy = data.create_dataset('qy',shape=(fileLength),dtype='float32',data=QY)
     qy.attrs['NX_class']=b'NX_FLOAT'
     
     #qz = data.create_dataset('qz',shape=(fileLength,),dtype='float32',data=np.zeros((fileLength,)))
     #qz.attrs['NX_class']=b'NX_FLOAT'
     
-    en = data.create_dataset('en',shape=(fileLength,),dtype='float32',data=DeltaE.flatten())
+    en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
     en.attrs['NX_class']=b'NX_FLOAT'
 
     fd.close()
