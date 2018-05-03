@@ -92,7 +92,8 @@ class Sample(object):
             self.rotationAngle = np.array(sample.get('rotation_angle'))
             self.unitCell = np.array(sample.get('unit_cell'))
             self.temperature = np.array(sample.get('temperature'))
-            self.field = np.array(sample.get('field'))
+            self.magneticField = np.array(sample.get('magnetic_field'))
+            self.electricField = np.array(sample.get('electric_field'))
         elif np.all([a is not None,b is not None, c is not None]):
             self.unitCell = np.array([a,b,c,alpha,beta,gamma])
             self.orientationMatrix = np.array([[1,0,0],[0,1,0]])
@@ -101,7 +102,8 @@ class Sample(object):
             self.rotationAngle = np.array(0)
             self.name=name
             self.temperature = None
-            self.field = None
+            self.magneticField = None
+            self.electricField = None
         else:
             print(sample)
             raise AttributeError('Sample not understood')
@@ -222,7 +224,8 @@ class Sample(object):
             return False
         return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell),\
         np.all(self.orientationMatrix==other.orientationMatrix),\
-        self.temperature==other.temperature,self.field==other.field])
+        self.temperature==other.temperature,self.magneticField==other.magneticField,\
+        self.electricField==other.electricField])
 
     def calculateProjections(self):
         """Calculate projections and generate projection angles."""
@@ -322,20 +325,20 @@ def extractData(files):
         Monitor.append(datafile.Monitor)
 
     I = np.concatenate(I)
-    posx = np.concatenate(posx)
-    posy = np.concatenate(posy)
+    qx = np.concatenate(posx)
+    qy = np.concatenate(posy)
     energy = np.concatenate(energy)
     Norm = np.concatenate(Norm)
     Monitor = np.concatenate(Monitor)
 
-    goodPixels = np.logical_and((1- np.isnan(Norm)).astype(bool),Norm!=0)
+    #goodPixels = np.logical_and((1- np.isnan(Norm)).astype(bool),Norm!=0)
 
-    I = I[goodPixels]
-    qx=posx[goodPixels]
-    qy=posy[goodPixels]
-    energy=energy[goodPixels]
-    Norm = Norm[goodPixels]
-    Monitor = Monitor[goodPixels]
+    #I = I[goodPixels]
+    #qx=posx[goodPixels]
+    #qy=posy[goodPixels]
+    #energy=energy[goodPixels]
+    #Norm = Norm[goodPixels]
+    #Monitor = Monitor[goodPixels]
     return I,qx,qy,energy,Norm,Monitor
 
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
