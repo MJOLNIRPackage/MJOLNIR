@@ -5,8 +5,6 @@ from MJOLNIR.Data import DataSet
 import numpy as np
 file = '../TestData/cameasim2018n000011.nxs'
 
-DataObj = DataSet.DataSet(convertedFiles=file)
-
 Data = DataSet.DataSet(convertedFiles=file)
 EMin = np.min(Data.energy)
 EMax = EMin+0.75
