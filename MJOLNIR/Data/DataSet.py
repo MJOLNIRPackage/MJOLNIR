@@ -1385,7 +1385,7 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBin
     if log:
         Int = [np.log(1e-20+np.array(Int[i])) for i in range(len(Int))]
     for i in range(len(intensity)):
-        pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i].reshape((len(Int[i]),1)),**kwargs,zorder=10))
+        pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i].reshape((len(Int[i]),1)),zorder=10,**kwargs))
     ax.set_aspect('equal', 'datalim')
     ax.grid(True, zorder=0)
     ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
