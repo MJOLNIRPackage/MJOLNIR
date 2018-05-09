@@ -7,8 +7,8 @@ import h5py as hdf
 
 # Convert raw data to NXSqom
 
-Datapath='path_to_data/'
-data=['066274','066275','066276','066277','066278','066279','066280']
+Datapath='../TestData/'
+data=['cameasim2018n000001','cameasim2018n000011']
 
 DataFile=[]
 hfend='.h5'
@@ -55,7 +55,7 @@ r = np.linalg.norm([qx,qy],axis=0)
 theta = np.arctan2(qy,qx)
 
 [I_bin,Monitor_bin,Normalization_bin,NormCount_bin],[r_bin,theta_bin,energy_bin] = \
-DataSet.binData3D(0.04,np.deg2rad(2.0),0.5,[r,theta,energy],data=I,norm=Norm,mon=Monitor)
+DataSet.binData3D(0.04,np.deg2rad(2.0),0.5,[r.flatten(),theta.flatten(),energy.flatten()],data=I,norm=Norm,mon=Monitor)
 
 Qx = np.cos(theta_bin)*r_bin
 Qy = np.sin(theta_bin)*r_bin
