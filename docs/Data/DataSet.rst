@@ -19,6 +19,7 @@ Data Module
     DataSet.DataSet.cutPowder
     DataSet.DataSet.plotCutPowder
     DataSet.DataSet.createRLUAxes
+    DataSet.DataSet.plotQPlane
     DataSet.binData3D
     DataSet.calculateGrid3D
     DataSet.cut1D
@@ -29,6 +30,7 @@ Data Module
     DataSet.cutPowder
     DataSet.plotCutPowder
     DataSet.createRLUAxes
+    DataSet.plotQPlane
 
 .. automodule:: Data
    :members: 
@@ -91,3 +93,6 @@ DataSet createRLUAxes
 ^^^^^^^^^^^^^^^^^^^^^
 .. autofunction:: createRLUAxes
 
+DataSet plotQPlane
+^^^^^^^^^^^^^^^^^^
+.. autofunction:: plotQPlane
