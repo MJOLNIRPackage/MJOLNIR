@@ -801,7 +801,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
 
     def readDetSequence():
         detlist = []
-        fin = open('TestData/detsequence.dat','r')
+        fin = open('detsequence.dat','r')
         for line in fin:
             detlist.append(line.strip())
         fin.close()
@@ -887,8 +887,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         
 
     def isVaried(data):
-        test = data[0]
-        if test != data[1]:
+        
+        if len(data)>1 and data[0]!=data[1]:
             return True
         else:
             return False
@@ -921,22 +921,21 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             dset = sam.create_dataset('rotation_angle',data=a3)
             nxdata['rotation_angle'] = dset
         else:
-            dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
-            dset[0] = a3[0]
+            dset = sam.create_dataset('rotation_angle',dtype='float32',data=a3)
+            #dset[0] = a3
         dset.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
             dset = det.create_dataset('polar_angle',data=a4)
             nxdata['polar_angle'] = dset
         else:
-            dset = det.create_dataset('polar_angle',(1,),dtype='float32')
-            dset[0] = a4[0]
+            dset = det.create_dataset('polar_angle',data=a4,dtype='float32')
         dset.attrs['units'] = np.string_('degrees')
         
 
         mono = entry['CAMEA/monochromator']
         theta,tth = makeTheta(ei)
-
+        
         if isVaried(ei):
             dset = mono.create_dataset('energy',data=ei)
             nxdata['incident_energy'] = dset
