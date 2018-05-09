@@ -754,7 +754,7 @@ class DataSet(object):
             ax = self.createRLUAxes()
         
         pos = [qx,qy,energy]
-        return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=log,ax=ax,**kwargs)
+        return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerence=xBinTolerence,yBinTolerence=yBinTolerence,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
