@@ -379,7 +379,7 @@ class DataSet(object):
             
         
 
-        pos=[qx,qy,energy]
+        pos=[qx.flatten(),qy.flatten(),energy.flatten()]
 
         returnData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
 
@@ -705,6 +705,56 @@ class DataSet(object):
 
         """
         return createRLUAxes(self)
+
+
+    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,**kwargs):
+        """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
+        
+        Args:
+            
+            - EMin (float): Lower energy limit.
+            
+            - EMax (float): Upper energy limit.
+            
+        Kwargs:
+            
+            - binning (str): Binning scheme, either 'xy' or 'polar' (default 'xy').
+            
+            - xBinTolerence (float): bin sizes along x direction (default 0.05). If enlargen is true, this is the minimum bin size.
+
+            - yBinTolerence (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
+            
+            - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolereces are used as minimum bin sizes.
+
+            - log (bool): Plot intensities as the logarithm (defautl False).
+            
+            - ax (matplotlib axes): Axes in which the data is plotted (default None). If None, the function creates a new axes object.
+
+            - RLUPlot (bool): If true and axis is None, a new reciprocal lattice axis is created and used for plotting (default True).
+            
+            - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
+            
+        Returns:
+            
+            - ax (matplotlib axes)
+            
+        .. note::
+            The axes object gets a new method denoted 'set_clim' taking two parameters (VMin and VMax) used to change axes coloring.
+            
+            
+        """
+        I = self.I
+        qx = self.qx
+        qy = self.qy
+        energy = self.energy
+        Norm = self.Norm
+        Monitor = self.Monitor
+
+        if ax is None and RLUPlot is True:
+            ax = self.createRLUAxes()
+        
+        pos = [qx,qy,energy]
+        return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=log,ax=ax,**kwargs)
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
@@ -1212,7 +1262,138 @@ def createRLUAxes(Dataset): # pragma: no cover
     ax.set_xlabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV1[0],projV1[1],projV1[2]))
     ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
     return ax
+
+def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=False,ax=None,**kwargs):
+    """Plotting tool to show binned intensities in the Q plane between provided energies.
+    
+    Args:
         
+        - I (array): Intensity of data.
+        
+        - Monitor (array): Monitor of data.
+        
+        - Norm (array): Nornmalization of data.
+        
+        - pos (3 array): Position of data in qx, qy, and energy.
+        
+        - EMin (float): Lower energy limit.
+        
+        - EMax (float): Upper energy limit.
+        
+    Kwargs:
+        
+        - binning (str): Binning scheme, either 'xy' or 'polar' (default 'xy').
+        
+        - xBinTolerence (float): bin sizes along x direction (default 0.05). If enlargen is true, this is the minimum bin size.
+
+        - yBinTolerence (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
+        
+        - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolereces are used as minimum bin sizes.
+
+        - log (bool): Plot intensities as the logarithm (defautl False).
+        
+        - ax (matplotlib axes): Axes in which the data is plotted (default None). If None, the function creates a new axes object.
+        
+        - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
+        
+    Returns:
+        
+        - ax (matplotlib axes)
+        
+    .. note::
+        The axes object gets a new method denoted 'set_clim' taking two parameters (VMin and VMax) used to change axes coloring.
+        
+        
+    """
+    qx,qy,energy=pos
+
+
+    
+    if ax is None:
+    #        if RLUPlot:
+    #            ax = self.createRLUAxes()
+    #        else:
+        plt.figure()
+        ax = plt.gca()
+            
+    
+    
+    binnings = ['xy','polar']#,'rlu']
+    if not binning in binnings:
+        raise AttributeError('The provided binning is not understood, should be {}'.format(', '.join(binnings)))
+    if binning == 'polar':
+        x = np.arctan2(qy,qx)
+        y = np.linalg.norm([qx,qy],axis=0)  
+    
+    elif binning == 'xy':
+        x = qx
+        y = qy
+        
+    #elif binning == 'rlu':
+    #    raise NotImplementedError('Currently the RLU binning is not implimented')
+    
+    
+    EBinEdges = [EMin,EMax]
+
+    intensity = []
+    monitorCount = []
+    Normalization = []
+    NormCount = []
+    bins = []
+    
+    
+    for i in range(len(EBinEdges)-1):
+        e_inside = np.logical_and(energy>EBinEdges[i],energy<=EBinEdges[i+1])
+        if enlargen:
+            yBins = binEdges(y[e_inside],yBinTolerence)
+        else:
+            yBins = np.arange(np.min(y[e_inside]),np.max(y[e_inside]),yBinTolerence)
+        for j in range(len(yBins)-1):
+            ey_inside = np.logical_and(np.logical_and(e_inside,np.logical_and(y>yBins[j],y<yBins[j+1])),(1-np.isnan(Norm)).astype(bool))
+            
+            x_inside = x[ey_inside]
+            #y_inside = y[ey_inside]
+            
+            if enlargen:
+                xbins = binEdges(x_inside,tolerance=xBinTolerence)
+            else:
+                xbins = np.arange(np.min(x),np.max(x),xBinTolerence)
+                
+            if len(xbins)==0:
+                continue
+            bins.append(np.array([xbins,np.array([yBins[j],yBins[j+1]])]))
+            
+            intensity.append(np.histogram(x_inside,bins=bins[-1][0],weights=I[ey_inside].flatten())[0].astype(I.dtype))
+            monitorCount.append(np.histogram(x_inside,bins=bins[-1][0],weights=Monitor[ey_inside].flatten())[0].astype(Monitor.dtype))
+            Normalization.append(np.histogram(x_inside,bins=bins[-1][0],weights=Norm[ey_inside].flatten())[0].astype(Norm.dtype))
+            NormCount.append(np.histogram(x_inside,bins=bins[-1][0],weights=np.ones_like(I[ey_inside]).flatten())[0].astype(I.dtype))
+
+    warnings.simplefilter('ignore')
+    Int = [np.divide(intensity[i]*NormCount[i],monitorCount[i]*Normalization[i]) for i in range(len(intensity))]
+    warnings.simplefilter('once')
+    
+    if binning == 'polar':
+        Qx = [np.outer(bins[i][1],np.cos(bins[i][0])).T for i in range(len(intensity))]
+        Qy = [np.outer(bins[i][1],np.sin(bins[i][0])).T for i in range(len(intensity))]
+    
+    elif binning == 'xy':
+        Qx = [np.outer(bins[i][0],np.ones_like(bins[i][1])) for i in range(len(intensity))]
+        Qy = [np.outer(np.ones_like(bins[i][0]),bins[i][1]) for i in range(len(intensity))]
+        
+   
+    pmeshs = []
+    if log:
+        Int = [np.log(1e-20+np.array(Int[i])) for i in range(len(Int))]
+    for i in range(len(intensity)):
+        pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i].reshape((len(Int[i]),1)),**kwargs,zorder=10))
+    ax.set_aspect('equal', 'datalim')
+    ax.grid(True, zorder=0)
+    ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
+    
+    return ax
+
+
+
 def isListOfStrings(object):
     if isinstance(object, list):
         isListOfStr = True
@@ -1748,3 +1929,23 @@ def test_DataSet_cutPowder():
     for i in range(len(q)):
         for j in range(len(q[i])):
             assert(np.all(q[i][j]==q2[i][j]))
+
+
+def test_DataSet_plotQPlane():
+    plt.ioff()
+    convertFiles = ['TestData/cameasim2018n000011.h5']
+    
+    Datset = DataSet(dataFiles = convertFiles)
+    Datset.convertDataFile()
+    EMin = np.min(Datset.energy)
+    EMax = EMin+0.5
+    ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=True,log=False,ax=None,RLUPlot=True)
+    ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=True,ax=None,RLUPlot=True)
+
+    ax1.set_clim(-20,-15)
+
+    try:
+        Datset.plotQPlane(EMin,EMax,binning='notABinningMethod')
+        assert False
+    except:
+        assert True
