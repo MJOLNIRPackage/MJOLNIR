@@ -707,7 +707,7 @@ class DataSet(object):
         return createRLUAxes(self)
 
 
-    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,**kwargs):
+    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
         
         Args:
@@ -720,9 +720,9 @@ class DataSet(object):
             
             - binning (str): Binning scheme, either 'xy' or 'polar' (default 'xy').
             
-            - xBinTolerence (float): bin sizes along x direction (default 0.05). If enlargen is true, this is the minimum bin size.
+            - xBinTolerance (float): bin sizes along x direction (default 0.05). If enlargen is true, this is the minimum bin size.
 
-            - yBinTolerence (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
+            - yBinTolerance (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
             
             - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolereces are used as minimum bin sizes.
 
@@ -754,7 +754,7 @@ class DataSet(object):
             ax = self.createRLUAxes()
         
         pos = [qx,qy,energy]
-        return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerence=xBinTolerence,yBinTolerence=yBinTolerence,enlargen=enlargen,log=log,ax=ax,**kwargs)
+        return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
@@ -1263,7 +1263,7 @@ def createRLUAxes(Dataset): # pragma: no cover
     ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
     return ax
 
-def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=False,ax=None,**kwargs):
+def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,**kwargs):
     """Plotting tool to show binned intensities in the Q plane between provided energies.
     
     Args:
@@ -1284,9 +1284,9 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBin
         
         - binning (str): Binning scheme, either 'xy' or 'polar' (default 'xy').
         
-        - xBinTolerence (float): bin sizes along x direction (default 0.05). If enlargen is true, this is the minimum bin size.
+        - xBinTolerance (float): bin sizes along x direction (default 0.05). If enlargen is true, this is the minimum bin size.
 
-        - yBinTolerence (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
+        - yBinTolerance (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
         
         - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolereces are used as minimum bin sizes.
 
@@ -1345,9 +1345,9 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBin
     for i in range(len(EBinEdges)-1):
         e_inside = np.logical_and(energy>EBinEdges[i],energy<=EBinEdges[i+1])
         if enlargen:
-            yBins = binEdges(y[e_inside],yBinTolerence)
+            yBins = binEdges(y[e_inside],yBinTolerance)
         else:
-            yBins = np.arange(np.min(y[e_inside]),np.max(y[e_inside]),yBinTolerence)
+            yBins = np.arange(np.min(y[e_inside]),np.max(y[e_inside]),yBinTolerance)
         for j in range(len(yBins)-1):
             ey_inside = np.logical_and(np.logical_and(e_inside,np.logical_and(y>yBins[j],y<yBins[j+1])),(1-np.isnan(Norm)).astype(bool))
             
@@ -1355,9 +1355,9 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerence=0.05,yBin
             #y_inside = y[ey_inside]
             
             if enlargen:
-                xbins = binEdges(x_inside,tolerance=xBinTolerence)
+                xbins = binEdges(x_inside,tolerance=xBinTolerance)
             else:
-                xbins = np.arange(np.min(x),np.max(x),xBinTolerence)
+                xbins = np.arange(np.min(x),np.max(x),xBinTolerance)
                 
             if len(xbins)==0:
                 continue
@@ -1911,7 +1911,7 @@ def test_DataSet_2Dcut():
             assert(np.all(distance2[i][j]==distance[i][j]))
 
 def test_DataSet_cutPowder():
-    tolerence = 0.01
+    Tolerance = 0.01
 
     plt.ioff()
     convertFiles = ['TestData/cameasim2018n000011.h5']
@@ -1920,8 +1920,8 @@ def test_DataSet_cutPowder():
     Datset.convertDataFile()
     eBins = binEdges(Datset.energy,0.25)
 
-    ax,D,q = Datset.plotCutPowder(eBins,tolerence,vmin=0,vmax=1e-6)
-    D2,q2 = Datset.cutPowder(eBins,tolerence)
+    ax,D,q = Datset.plotCutPowder(eBins,Tolerance,vmin=0,vmax=1e-6)
+    D2,q2 = Datset.cutPowder(eBins,Tolerance)
     for i in range(len(D)):
         for j in range(len(D[i])):
             assert(np.all(D[i][j]==D2[i][j]))
@@ -1939,8 +1939,8 @@ def test_DataSet_plotQPlane():
     Datset.convertDataFile()
     EMin = np.min(Datset.energy)
     EMax = EMin+0.5
-    ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=True,log=False,ax=None,RLUPlot=True)
-    ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerence=0.05,yBinTolerence=0.05,enlargen=False,log=True,ax=None,RLUPlot=True)
+    ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,ax=None,RLUPlot=True)
+    ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,ax=None,RLUPlot=True)
 
     ax1.set_clim(-20,-15)
 
