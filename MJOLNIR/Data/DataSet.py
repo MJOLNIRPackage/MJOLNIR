@@ -839,6 +839,8 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
          plt.scatter(positions2D[0][insideWidth],positions2D[1][insideWidth],s=0.5)
          ax = plt.gca()
          ax.set_aspect('equal', 'datalim')
+         ax.set_xlabel('Qx [1/A]')
+         ax.set_ylabel('Qy [1/A]')
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
 
