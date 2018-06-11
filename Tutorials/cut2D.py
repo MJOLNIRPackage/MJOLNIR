@@ -18,7 +18,7 @@ minPixel = 0.01
 
 ax,DataList,qBnLit,centerPos,binDIstance = DataObj.plotCutQE(q1,q2,width,minPixel,EnergyBins)
 plt.colorbar(ax.pmeshs[0])
-h=kkk
+
 ax.set_clim(0,1e-6)
 plt.tight_layout()
 
