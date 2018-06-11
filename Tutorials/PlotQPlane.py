@@ -3,6 +3,7 @@ sys.path.append('../')
 
 from MJOLNIR.Data import DataSet
 import numpy as np
+import matplotlib.pyplot as plt
 file = '../TestData/cameasim2018n000011.nxs'
 
 Data = DataSet.DataSet(convertedFiles=file)
@@ -16,3 +17,5 @@ ax.set_clim(0,5e-7)
 
 ax = Data.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.025,yBinTolerance=0.025,
                      enlargen=False,log=False,ax=None,RLUPlot=True,vmin=0,vmax=1e-6)
+
+plt.colorbar(ax.pmeshs[0])

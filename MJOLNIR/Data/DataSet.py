@@ -331,7 +331,7 @@ class DataSet(object):
         self._getData()
             
     def _getData(self): # Internal method to populate I,qx,qy,energy,Norm and Monitor
-        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor = DataFile.extractData(self.convertedFiles)
+        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a4,self.instrumentCalibration,self.Ei = DataFile.extractData(self.convertedFiles)
         
 
 
@@ -687,7 +687,7 @@ class DataSet(object):
 
         else: 
             dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            I,qx,qy,energy,Norm,Monitor,Ei = DataFile.extractData()
             
         positions = [qx,qy,energy]
 
@@ -1391,7 +1391,7 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
     ax.set_aspect('equal', 'datalim')
     ax.grid(True, zorder=0)
     ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
-    
+    ax.pmeshs = pmeshs
     return ax
 
 

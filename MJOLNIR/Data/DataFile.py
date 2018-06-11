@@ -27,6 +27,8 @@ class DataFile(object):
                 self.A4 = np.array(instr.get('detector/polar_angle'))
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 self.A4Off = np.array(f.get('entry/zeros/A4'))
+                self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
+                self.instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(self.binning))))
 
         elif fileLocation.split('.')[-1]=='h5':
             self.type='h5'
@@ -315,6 +317,9 @@ def extractData(files):
     energy = []
     Norm = []
     Monitor = []
+    a3 = []
+    a4 = []
+    Ei = []
 
     for datafile in files:
         I.append(datafile.I)
@@ -323,23 +328,27 @@ def extractData(files):
         energy.append(datafile.energy)
         Norm.append(datafile.Norm)
         Monitor.append(datafile.Monitor)
+        if np.array(datafile.A3Off).shape is ():
+            datafile.A3Off = 0.0
+        a3.append(datafile.A3-datafile.A3Off)
 
+        if np.array(datafile.A4Off).shape is ():
+            datafile.A4Off = 0.0
+        a4.append(datafile.A4-datafile.A4Off)
+        Ei.append(datafile.Ei)
+        
+        
     I = np.concatenate(I)
     qx = np.concatenate(posx)
     qy = np.concatenate(posy)
     energy = np.concatenate(energy)
     Norm = np.concatenate(Norm)
     Monitor = np.concatenate(Monitor)
+    a3 = np.concatenate(a3)
+    a4 = np.concatenate(a4)
+    Ei = np.concatenate(Ei)
 
-    #goodPixels = np.logical_and((1- np.isnan(Norm)).astype(bool),Norm!=0)
-
-    #I = I[goodPixels]
-    #qx=posx[goodPixels]
-    #qy=posy[goodPixels]
-    #energy=energy[goodPixels]
-    #Norm = Norm[goodPixels]
-    #Monitor = Monitor[goodPixels]
-    return I,qx,qy,energy,Norm,Monitor
+    return I,qx,qy,energy,Norm,Monitor,a3,a4,files[-1].instrumentCalibration,Ei # FIXME: Might be a problem if combining dataset with different calibrations!
 
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
     v/=np.linalg.norm(v)
