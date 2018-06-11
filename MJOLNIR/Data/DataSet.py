@@ -1073,7 +1073,7 @@ def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwa
         minVal = np.min(np.concatenate(Int))
         maxVal = np.max(np.concatenate(Int))
         ax.set_clim(minVal,maxVal)
-    
+    ax.pmeshs = pmeshs
     return ax,[intensity,monitorCount,Normalization,NormCount],qbins
  
 
@@ -1231,7 +1231,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     ax.xaxis.set_label_coords(1.15, -0.025)
     ax.set_ylabel('E [meV]')
     plt.tight_layout()
-
+    ax.pmeshs = pmeshs
     return ax,[intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
 def createRLUAxes(Dataset): # pragma: no cover
