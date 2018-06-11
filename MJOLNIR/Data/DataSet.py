@@ -213,7 +213,8 @@ class DataSet(object):
         #if not isinstance(dataFiles,list):
         #    dataFiles=[dataFiles]
         for datafile in dataFiles:
-            
+            if not os.path.isfile(datafile.fileLocation):
+                raise AttributeError('Provided file does not exist, '+str(datafile))
             file = hdf.File(datafile.fileLocation,mode='r+')             
             instrument = getInstrument(file)
             
@@ -1766,6 +1767,13 @@ def test_DataSet_Convert_Data():
         assert False
     except AttributeError: # Cant find normalization table
         assert True
+
+    try:
+        dataset.convertDataFile(dataFiles='FileDoesNotExist',binning=1)
+        assert False
+    except AttributeError: # FileDoesNotExist
+        assert True
+
 
     dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/')
     convertedFile = dataset.convertedFiles[0]
