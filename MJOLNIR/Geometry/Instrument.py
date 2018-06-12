@@ -905,6 +905,9 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         return theta,tth
 
     def storeScanData(entry,data,a3,a4,ei):
+        
+        
+
         nxdata = entry.create_group('data')
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
@@ -917,9 +920,12 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         online.attrs['units']=np.string_('Boolean for detector state')
 
         sam = entry['sample']
+
+        scanType='Unknown'
         if isVaried(a3):
             dset = sam.create_dataset('rotation_angle',data=a3)
             nxdata['rotation_angle'] = dset
+            scanType = 'a3Scan'
         else:
             dset = sam.create_dataset('rotation_angle',dtype='float32',data=a3)
             #dset[0] = a3
@@ -928,6 +934,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         if isVaried(a4):
             dset = det.create_dataset('polar_angle',data=a4)
             nxdata['polar_angle'] = dset
+            scanType = 'a4Scan'
         else:
             dset = det.create_dataset('polar_angle',data=a4,dtype='float32')
         dset.attrs['units'] = np.string_('degrees')
@@ -941,6 +948,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             nxdata['incident_energy'] = dset
             mono.create_dataset('rotation_angle',data=theta);
             sam.create_dataset('polar_angle',data=tth)
+            scanType = 'EiScan'
         else:
             dset = mono.create_dataset('energy',(1,),dtype='float32')
             dset[0] = ei[0]
@@ -952,6 +960,9 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         dset.attrs['units'] = np.string_('degrees')
         dset = entry['sample/polar_angle']    
         dset.attrs['units'] = np.string_('degrees')
+
+        makeMonitor(entry,Numpoints)
+        entry['control'].create_dataset('scan_Type',data=scanType)
         
     def makeMonitor(entry,Numpoints):
         control = entry.create_group('control')
@@ -997,7 +1008,6 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
     Numpoints = sum(os.path.isdir(fname+i) for i in os.listdir(fname))
     data,a3,a4,ei = readScanData(fname,Numpoints)
     storeScanData(entry,data,a3,a4,ei)
-    makeMonitor(entry,Numpoints)
     f.close()
 
 
