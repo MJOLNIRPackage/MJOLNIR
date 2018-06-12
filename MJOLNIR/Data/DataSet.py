@@ -221,7 +221,7 @@ class DataSet(object):
             
             if instrument.name.split('/')[-1] == 'CAMEA':
                 EPrDetector = 8 # <----------_ REDO
-            elif instrument.name.split('/')[-1] == 'MULTIFLEXX':
+            elif instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
                 EPrDetector = 1
             
             
@@ -240,7 +240,7 @@ class DataSet(object):
             if liveDetectors is None:
                 liveDetectors = np.ones((detectors),dtype=bool)
 
-            if instrument.name.split('/')[-1] == 'MULTIFLEXX':
+            if instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
                 Data.shape = (Data.shape[0],Data.shape[1],1)
 
             A4Zero = file.get('entry/zeros/A4')
