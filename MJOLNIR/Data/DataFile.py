@@ -14,6 +14,7 @@ class DataFile(object):
         if fileLocation.split('.')[-1]=='nxs':
             self.type='nxs'
             with hdf.File(fileLocation) as f:
+                sample=f.get('/entry/sample')
                 self.sample = Sample(sample=f.get('/entry/sample'))
                 self.I=np.array(f.get('entry/data/intensity'))
                 self.qx=np.array(f.get('entry/data/qx'))
@@ -29,10 +30,14 @@ class DataFile(object):
                 self.A4Off = np.array(f.get('entry/zeros/A4'))
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
                 self.instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(self.binning))))
+                self.temperature = np.array(sample.get('temperature'))
+                self.magneticField = np.array(sample.get('magnetic_field'))
+                self.electricField = np.array(sample.get('electric_field'))
 
         elif fileLocation.split('.')[-1]=='h5':
             self.type='h5'
             with hdf.File(fileLocation) as f:
+                sample=f.get('/entry/sample')
                 self.sample = Sample(sample=f.get('/entry/sample'))
                 self.Norm=np.array(f.get('entry/data/normalization'))
                 self.Monitor=np.array(f.get('entry/data/monitor'))
@@ -42,6 +47,9 @@ class DataFile(object):
                 self.A4 = np.array(instr.get('detector/polar_angle'))
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 self.A4Off = np.array(f.get('entry/zeros/A4'))
+                self.temperature = np.array(sample.get('temperature'))
+                self.magneticField = np.array(sample.get('magnetic_field'))
+                self.electricField = np.array(sample.get('electric_field'))
         else:
             raise AttributeError('File is not of type nxs or h5.')
         self.name = fileLocation.split('/')[-1]
@@ -81,7 +89,15 @@ class DataFile(object):
 
     def __eq__(self,other):
         return(self.fileLocation==other.fileLocation)
+    
+    def __str__(self):
+        returnStr = 'Data file from the MJOLNIR software package of type {}\n'.format(self.type)
+        returnStr+= 'Ei: '+ str(self.Ei) + '\nA3: ' + ','.join([str(x) for x in self.A3])
+        returnStr+= '\nA4: ' + ','.join([str(x) for x in self.A4]) + '\nSample: '+str(self.sample)
+        return returnStr
 
+    def __add__(self,other):
+        pass
 
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
@@ -93,9 +109,7 @@ class Sample(object):
             self.polarAngle = np.array(sample.get('polar_angle'))
             self.rotationAngle = np.array(sample.get('rotation_angle'))
             self.unitCell = np.array(sample.get('unit_cell'))
-            self.temperature = np.array(sample.get('temperature'))
-            self.magneticField = np.array(sample.get('magnetic_field'))
-            self.electricField = np.array(sample.get('electric_field'))
+            
         elif np.all([a is not None,b is not None, c is not None]):
             self.unitCell = np.array([a,b,c,alpha,beta,gamma])
             self.orientationMatrix = np.array([[1,0,0],[0,1,0]])
@@ -103,9 +117,6 @@ class Sample(object):
             self.polarAngle = np.array(0)
             self.rotationAngle = np.array(0)
             self.name=name
-            self.temperature = None
-            self.magneticField = None
-            self.electricField = None
         else:
             print(sample)
             raise AttributeError('Sample not understood')
@@ -225,9 +236,7 @@ class Sample(object):
         if not isinstance(other,type(self)):
             return False
         return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell),\
-        np.all(self.orientationMatrix==other.orientationMatrix),\
-        self.temperature==other.temperature,self.magneticField==other.magneticField,\
-        self.electricField==other.electricField])
+        np.all(self.orientationMatrix==other.orientationMatrix)])
 
     def calculateProjections(self):
         """Calculate projections and generate projection angles."""
@@ -281,6 +290,15 @@ class Sample(object):
         rlu = self.orientationMatrix[0]*pos[0]+self.orientationMatrix[1]*pos[1]
         return "h = {0:.3f}, k = {1:.3f}, l = {2:.3f}".format(rlu[0],rlu[1],rlu[2])
 
+    def __str__(self):
+        returnStr = 'Sample ' + self.name + '\n'
+        #if not self.temperature is None: returnStr+= 'Temperatur: '+str(self.temperature)+'\n'
+        #if not self.magneticField is None: returnStr+= 'Magnetic Field: '+str(self.magneticField)+'\n'
+        #if not self.electricField is None: returnStr+= 'Electric Field: '+str(self.electricField)+'\n'
+        returnStr+= 'Unit cell: \n' + str(self.unitCell) + '\n'
+        returnStr+= 'Orientation matrix: \n' + str(self.orientationMatrix) +'\n'
+
+        return returnStr
 
 
 def rotationMatrix(alpha,beta,gamma,format='deg'):
