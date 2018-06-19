@@ -18,3 +18,4 @@ Contains a list of different tutorials in order to familiarize users with the ob
    Powder
    cut2D
    PlotQPlane
+   PlotA3A4
