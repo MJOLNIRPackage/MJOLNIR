@@ -770,6 +770,66 @@ class DataSet(object):
         pos = [qx,qy,energy]
         return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
+    def plotA3A4(self,files=None,ax=None,dimension='2D',planes=[],singleFigure=False,Ei_err = 0.1,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+        """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
+        This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
+        binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
+
+        Kwargs:
+            - files (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
+
+            - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
+
+            - planes (list (of lists)): Planes to be plotted and binned (default [])
+
+            - singleFigure (bool): If true, all planes are plotted in same figure (default False)
+
+            - dimension ('2D' or '3D'): Plot data in 2 or 3 dimensions (default '2D')
+
+            - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.1)
+
+            - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
+            
+            - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
+            
+            - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
+
+        Returns:
+            
+            - ax (matplotlib axis or list of): axis (list of) containing figures for plotted planes.
+
+        Raises:
+
+            - NotImplimentedError
+
+            - AttributeError
+
+        Examples:
+
+        The following example will combine the two files and plot all of the available planes in different figures.
+
+        >>> DS = DataSet.DataSet(convertedFiles=[--.nxs,---.nxs])
+        >>> plt.figure()
+        >>> ax = plt.gca()
+        >>>
+        >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax)
+
+        If only a subset of planes or different planes are to be combined the following will achieve this:
+
+        >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax,planes=[0,1,2,3,[4,5,6],[8,9]])
+
+        Here planes 0 through 3 are plotted separately while 4,5, and 6 as well as 8 and 9 are binned.
+
+        .. note::
+            Binning planes from different analysers might result in nonsensible binnings.
+
+        """
+        if files is None:
+            files = self.convertedFiles
+        
+        return plotA3A4(files,ax=ax,dimension=dimension,planes=planes,singleFigure=singleFigure,\
+        Ei_err=Ei_err,temperature_err=temperature_err,magneticField_err=magneticField_err,electricField_err=electricField_err)
+
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
     the minimum step sizes is given by minPixel.
@@ -2378,7 +2438,7 @@ def test_DataSet_plotA3A4():
         assert True
 
     plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
-    plotA3A4(files,planes=[19,[22,23,24,25]]) # Plot planes in new axes
+    DS.plotA3A4(planes=[19,[22,23,24,25]]) # Plot planes in new axes
     plt.close('all')
 
 def test_DataSet_fmt():
