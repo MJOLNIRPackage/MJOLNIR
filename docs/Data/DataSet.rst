@@ -31,6 +31,7 @@ Data Module
     DataSet.plotCutPowder
     DataSet.createRLUAxes
     DataSet.plotQPlane
+    DataSet.plotA3A4
 
 .. automodule:: Data
    :members: 
@@ -96,3 +97,7 @@ DataSet createRLUAxes
 DataSet plotQPlane
 ^^^^^^^^^^^^^^^^^^
 .. autofunction:: plotQPlane
+
+DataSet plotA3A4
+^^^^^^^^^^^^^^^^
+.. autofunction:: plotA3A4
