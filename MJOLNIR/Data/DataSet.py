@@ -2049,6 +2049,7 @@ def figureRowColumns(subplots):
         rows = 1
         cols = 1
     else:
+        subplots = float(subplots)
         startGuess = int(np.ceil(np.sqrt(subplots)))
         for i in np.arange(startGuess,subplots+1,dtype=int):
             if int(i*np.ceil(subplots/i))>=subplots:# and int(i*np.ceil(plots/i))-plots<startGuess:#np.mod(plots,i)==0:
@@ -2348,8 +2349,8 @@ def test_DataSet_plotQPlane():
 def test_DataSet_plotA3A4():
     plt.ioff()
 
-    File1 = '/home/lass/Dropbox/PhD/Software/MJOLNIR/TestData/T0Phonon10meV.nxs'
-    File2 = '/home/lass/Dropbox/PhD/Software/MJOLNIR/TestData/T0Phonon10meV93_5A4.nxs'
+    File1 = 'TestData/T0Phonon10meV.nxs'
+    File2 = 'TestData/T0Phonon10meV93_5A4.nxs'
 
     DS = DataSet(convertedFiles=[File1,File2])
 
@@ -2392,7 +2393,7 @@ def test_DataSet_figureRowColumns():
     assert(np.all(np.array([3,3])==np.array(figureRowColumns(9)))) # 9 -> 3,3
     assert(np.all(np.array([1,1])==np.array(figureRowColumns(1)))) # 1 -> 1,1
     try:
-        figureRowColumns(0) # 10 -> 3,4
+        figureRowColumns(0) # No figures
         assert False
     except AttributeError:
         assert True
@@ -2401,10 +2402,10 @@ def test_DataSet_figureRowColumns():
     
 
 def test_DataSet_centeroidnp():
-    pos = np.array([[0,0],[1,0],[0,1],[1,1]])
+    pos = np.array([[0,0],[1,0],[0,1],[1,1]],dtype=float)
     assert(np.all(np.isclose(np.array([0.5,0.5]),centeroidnp(pos))))
 
-    pos2 = np.array([[1.2,2.2],[7.5,1.0],[11.0,0.0],[4.0,-1.0],[2.0,2.0]])
+    pos2 = np.array([[1.2,2.2],[7.5,1.0],[11.0,0.0],[4.0,-1.0],[2.0,2.0]],dtype=float)
     assert(np.all(np.isclose(np.array([5.14,0.84]),centeroidnp(pos2))))
     
 def test_DataSet_compareNones():
