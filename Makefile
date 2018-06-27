@@ -1,6 +1,10 @@
 # Minimal makefile for Sphinx documentation
 #
 
+
+test:
+	pytest -vv MJOLNIR 
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
