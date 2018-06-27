@@ -2973,6 +2973,7 @@ def test_DataSet_plotA3A4():
 
     plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
     DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
+    DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
     plt.close('all')
 
 
@@ -3009,7 +3010,7 @@ def test_DataSet_plotQPatches():
 
     plotQPatches(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
     DS.plotQPatches(planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes
-    DS.plotQPatches(files=[files[0]],planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes and only one file
+    DS.plotQPatches(files=[files[0],files[0]],planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes and only one file
     plt.close('all')
 
 def test_DataSet_fmt():
