@@ -1,7 +1,8 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import sys
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
+
+import matplotlib.pyplot as plt
+import numpy as np
 from MJOLNIR.Data import DataSet
 File1 = '../TestData/T0Phonon10meV.nxs'
 File2 = '../TestData/T0Phonon10meV93_5A4.nxs'
@@ -9,6 +10,7 @@ File2 = '../TestData/T0Phonon10meV93_5A4.nxs'
 DS = DataSet.DataSet(convertedFiles=[File1,File2])
 
 files = DS.convertedFiles
+
 
 planes2 = list(np.arange(64).reshape(8,8)) # Plot all planes binned with 8 pixels together
 ax = [DS.createRLUAxes() for _ in range(len(planes2))] # Create custom axes for plotting
