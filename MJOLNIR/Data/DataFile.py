@@ -27,7 +27,10 @@ class DataFile(object):
                 self.A3 = np.array(f.get('entry/sample/rotation_angle'))
                 self.A4 = np.array(instr.get('detector/polar_angle'))
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
-                self.A4Off = np.array(f.get('entry/zeros/A4'))
+                if not f.get('entry/zeros/A4') is None:
+                        self.A4Off = np.array(f.get('entry/zeros/A4'))
+                else:
+                    self.A4Off = 0.0
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
                 self.instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
@@ -91,7 +94,7 @@ class DataFile(object):
         return(self.fileLocation==other.fileLocation)
     
     def __str__(self):
-        returnStr = 'Data file from the MJOLNIR software package of type {}\n'.format(self.type)
+        returnStr = 'Data file {} from the MJOLNIR software package of type {}\n'.format(self.name,self.type)
         returnStr+= 'Ei: '+ str(self.Ei) + '\nA3: ' + ','.join([str(x) for x in self.A3])
         returnStr+= '\nA4: ' + ','.join([str(x) for x in self.A4]) + '\nSample: '+str(self.sample)
         return returnStr
@@ -355,7 +358,7 @@ def extractData(files):
         a4.append(datafile.A4-datafile.A4Off)
         Ei.append(datafile.Ei)
         
-        
+    
     I = np.concatenate(I)
     qx = np.concatenate(posx)
     qy = np.concatenate(posy)
