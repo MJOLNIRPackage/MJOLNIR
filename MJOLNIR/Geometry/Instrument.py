@@ -801,7 +801,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
 
     def readDetSequence():
         detlist = []
-        fin = open('detsequence.dat','r')
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        fin = open(dir_path+'/'+'detsequence.dat','r')
         for line in fin:
             detlist.append(line.strip())
         fin.close()
@@ -876,12 +877,12 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         dset = sam.create_dataset('plane_normal',data=normal)
 
         cell = np.zeros((6,),dtype='float32')
-        cell[0] = 5.
-        cell[1] = 5.
-        cell[2] = 5.
+        cell[0] = 2.464
+        cell[1] = 2.464
+        cell[2] = 6.711
         cell[3] = 90.
         cell[4] = 90.
-        cell[5] = 90.
+        cell[5] = 120.
         dset = sam.create_dataset('unit_cell',data=cell)
 
         
@@ -927,8 +928,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             nxdata['rotation_angle'] = dset
             scanType = 'a3Scan'
         else:
-            dset = sam.create_dataset('rotation_angle',dtype='float32',data=a3)
-            #dset[0] = a3
+            dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
         dset.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
@@ -936,7 +936,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             nxdata['polar_angle'] = dset
             scanType = 'a4Scan'
         else:
-            dset = det.create_dataset('polar_angle',data=a4,dtype='float32')
+            dset = det.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
         dset.attrs['units'] = np.string_('degrees')
         
 
