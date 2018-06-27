@@ -32,6 +32,7 @@ Data Module
     DataSet.createRLUAxes
     DataSet.plotQPlane
     DataSet.plotA3A4
+    DataSet.plotQPatches
 
 .. automodule:: Data
    :members: 
@@ -101,3 +102,7 @@ DataSet plotQPlane
 DataSet plotA3A4
 ^^^^^^^^^^^^^^^^
 .. autofunction:: plotA3A4
+
+DataSet plotQPatches
+^^^^^^^^^^^^^^^^^^^^
+.. autofunction:: plotQPatches
