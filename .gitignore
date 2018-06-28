@@ -29,6 +29,5 @@ dist/*
 MJOLNIR.egg-info/*
 TestData/A4/*
 
-TestData/cameasim2018n000011.nxs
 Tutorials/*.nxs
 Report/
