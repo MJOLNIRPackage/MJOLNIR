@@ -10,6 +10,7 @@ DataFile = '/home/lass/Dropbox/PhD/Software/DataSimulation/BeFilterTestOut10.h5'
 dataset = DataSet.DataSet(dataFiles=DataFile)
 dataset.convertDataFile(saveLocation='/home/lass/Dropbox/PhD/Software/DataSimulation/')
 
+
 Data,bins = dataset.binData3D(0.08,0.08,0.25)
 
 warnings.simplefilter('ignore')

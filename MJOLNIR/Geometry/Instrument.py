@@ -628,7 +628,6 @@ class Instrument(GeometryConcept.GeometryConcept):
 
                 A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
 
-
                 if plot==True: # pragma: no cover
                     plt.clf()
                     plt.scatter(range(A4.shape[0]),A4FitValue)
@@ -658,9 +657,6 @@ class Instrument(GeometryConcept.GeometryConcept):
                 file.close()
         VanFile.close()
         A4File.close()
-
-        
-
 
 def parseXML(Instr,fileName):
     import xml.etree.ElementTree as ET
@@ -762,7 +758,6 @@ def Gaussian(x,A,mu,sigma,b):
 
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
-
 
 
 def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no cover
@@ -888,7 +883,6 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         
 
     def isVaried(data):
-        
         if len(data)>1 and data[0]!=data[1]:
             return True
         else:
@@ -906,9 +900,6 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         return theta,tth
 
     def storeScanData(entry,data,a3,a4,ei):
-        
-        
-
         nxdata = entry.create_group('data')
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
@@ -929,6 +920,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             scanType = 'a3Scan'
         else:
             dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
+
         dset.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
@@ -942,13 +934,14 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
 
         mono = entry['CAMEA/monochromator']
         theta,tth = makeTheta(ei)
-        
+
         if isVaried(ei):
             dset = mono.create_dataset('energy',data=ei)
             nxdata['incident_energy'] = dset
             mono.create_dataset('rotation_angle',data=theta);
             sam.create_dataset('polar_angle',data=tth)
             scanType = 'EiScan'
+
         else:
             dset = mono.create_dataset('energy',(1,),dtype='float32')
             dset[0] = ei[0]
@@ -1008,6 +1001,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
     Numpoints = sum(os.path.isdir(fname+i) for i in os.listdir(fname))
     data,a3,a4,ei = readScanData(fname,Numpoints)
     storeScanData(entry,data,a3,a4,ei)
+
     f.close()
 
 
@@ -1309,6 +1303,7 @@ def test_instrument_create_xml():
 
 
 def test_Normalization_tables():
+
     Instr = Instrument(fileName='TestData/CAMEA_Full.xml')
     Instr.initialize()
 
@@ -1327,7 +1322,6 @@ def test_Normalization_tables():
     except AttributeError:
         assert True
 
-    
     Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Single']) 
     #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     

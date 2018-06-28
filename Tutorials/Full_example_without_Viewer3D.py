@@ -7,7 +7,6 @@ import h5py as hdf
 
 # Convert raw data to NXSqom
 
-
 ConvertedDataFile=['/home/lass/Dropbox/PhD/Software/DataSimulation/T0Phonon10meV.nxs']
 DS = DataSet.DataSet(ConvertedDataFile=ConvertedDataFile)
 

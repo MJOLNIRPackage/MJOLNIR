@@ -84,7 +84,6 @@ class DataSet(object):
         for key in kwargs:
             self.settings[key]=kwargs[key]
         
-
     @property
     def dataFiles(self):
         return self._dataFiles
@@ -231,8 +230,7 @@ class DataSet(object):
                 raise AttributeError('Provided file does not exist, '+str(datafile))
             file = hdf.File(datafile.fileLocation,mode='r+')             
             instrument = getInstrument(file)
-            
-            
+           
             if instrument.name.split('/')[-1] == 'CAMEA':
                 EPrDetector = 8 
             elif instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
@@ -308,9 +306,9 @@ class DataSet(object):
             
             QX = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))-Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))
             QY = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))+Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))
-            
+
             EnergyShape = (1,len(Ei),1,EfMean.shape[0],EfMean.shape[1])
-            DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
+            DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape
             Intensity = DataMean.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
         
             DeltaE=DeltaE.repeat(QX.shape[0],axis=0)
@@ -2031,6 +2029,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
             QxAlive = Qx[alive,plane]
             QyAlive = Qy[alive,plane]
             
+
         t4 = time.time()
         points = np.array([QxAlive,QyAlive])
         unique,uindex = np.unique(np.round(points,binningDecimals),axis=1,return_index=True)
@@ -2047,7 +2046,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
 
             t43 = time.time()
             points = unique
-            
+           
             Isorted = IAlive[uindex]
             Normsorted = NormAlive[uindex]
             Monsorted = MonAlive[uindex]
@@ -2085,7 +2084,6 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
         kdtree = KDTree(X)
 
         A = kdtree.query(Y,distance_upper_bound=0.2)[1]
-
 
         t8 = time.time()
         SortUnique,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
@@ -2250,6 +2248,7 @@ def voronoiTesselation(points,plot=False,Boundary=False):
         voronoi_plot_2d(vor)
     if not len(pointsX)==len(Polygons):
         raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calulated edge\n - ??'.format(len(pointsX),len(Polygons)))
+
 
     return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
 
@@ -2666,7 +2665,6 @@ def compareNones(first,second,margin): # Function to compare
         else:
             return False
 
-
 #________________________________________________TESTS_____________________________________________
 
 def test_DataSet_Creation():
@@ -2684,8 +2682,7 @@ def test_Dataset_Initialization():
     dataset = DataSet(OhterSetting=10.0,dataFiles='TestData/cameasim2018n000001.h5',convertedFiles='TestData/cameasim2018n000001.nxs')
     assert(dataset.dataFiles[0].name=='cameasim2018n000001.h5')
     assert(dataset.convertedFiles[0].name=='cameasim2018n000001.nxs')
-
-
+                                                                                                                 
 def test_DataSet_Error():
     
 
@@ -2710,9 +2707,8 @@ def test_DataSet_Error():
     except AttributeError:
         assert True
 
+
     ds.dataFiles = 'TestData/VanNormalization.h5'
-
-
 
 def test_DataSet_Equality():
     D1 = DataSet(dataFiles='TestData/VanNormalization.h5')#,convertedFiles=['TestData/VanNormalization.nxs'])
@@ -2737,7 +2733,6 @@ def test_DataSet_str():
 
 
 def test_DataSet_Convert_Data():
-
     dataFiles = 'TestData/cameasim2018n000001.h5'
     dataset = DataSet(dataFiles=dataFiles)
     
@@ -2753,12 +2748,11 @@ def test_DataSet_Convert_Data():
         assert False
     except AttributeError: # FileDoesNotExist
         assert True
-
-
     dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/')
     convertedFile = dataset.convertedFiles[0]
     otherFile = DataFile.DataFile(dataFiles.replace('.h5','.nxs'))
     assert(convertedFile==otherFile)
+
     os.remove('TestData/cameasim2018n000001.nxs')
     
 
@@ -3049,3 +3043,39 @@ def test_DataSet_compareNones():
 
     assert(not np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.5]),0.001)))
     assert(np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.4,10.2,10.0]),0.001)))
+=======
+    import matplotlib.pyplot as plt
+    import os
+    plt.ioff()
+    DataFile = ['TestData/cameasim2018n000001.h5']
+
+    dataset = DataSet(datafiles=DataFile)
+    dataset.ConvertDatafile(savelocation='TestData/')
+
+    Data,bins = dataset.binData3D(0.08,0.08,0.25)
+    
+    warnings.simplefilter('ignore')
+    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+    warnings.simplefilter('once')
+    viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
+    
+    os.remove('TestData/cameasim2018n000001.nxs')
+    del viewer
+
+def test_DataSet_Visualization():
+    import warnings
+    from MJOLNIR.Data import Viewer3D
+    DataFile = ['TestData/cameasim2018n000001.h5']
+
+    dataset = DataSet(datafiles=DataFile)
+    dataset.ConvertDatafile(savelocation='TestData/')
+
+    Data,bins = dataset.binData3D(0.08,0.08,0.25)
+    plt.ioff()
+    warnings.simplefilter('ignore')
+    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+    warnings.simplefilter('once')
+    viewer = Viewer3D.Viewer3D(Intensity,bins)
+    viewer.caxis = (0,100)
+    plt.plot()
+    plt.close()
