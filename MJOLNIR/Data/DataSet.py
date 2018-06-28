@@ -308,7 +308,7 @@ class DataSet(object):
             QY = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))+Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))
 
             EnergyShape = (1,len(Ei),1,EfMean.shape[0],EfMean.shape[1])
-            DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape
+            DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
             Intensity = DataMean.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
         
             DeltaE=DeltaE.repeat(QX.shape[0],axis=0)
@@ -2679,9 +2679,9 @@ def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
     del emptyDataset
-    dataset = DataSet(OhterSetting=10.0,dataFiles='TestData/cameasim2018n000001.h5',convertedFiles='TestData/cameasim2018n000001.nxs')
-    assert(dataset.dataFiles[0].name=='cameasim2018n000001.h5')
-    assert(dataset.convertedFiles[0].name=='cameasim2018n000001.nxs')
+    dataset = DataSet(OhterSetting=10.0,dataFiles='TestData/cameasim2018n000011.h5',convertedFiles='TestData/cameasim2018n000011.nxs')
+    assert(dataset.dataFiles[0].name=='cameasim2018n000011.h5')
+    assert(dataset.convertedFiles[0].name=='cameasim2018n000011.nxs')
                                                                                                                  
 def test_DataSet_Error():
     
@@ -3043,33 +3043,16 @@ def test_DataSet_compareNones():
 
     assert(not np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.5]),0.001)))
     assert(np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.4,10.2,10.0]),0.001)))
-=======
-    import matplotlib.pyplot as plt
-    import os
-    plt.ioff()
-    DataFile = ['TestData/cameasim2018n000001.h5']
 
-    dataset = DataSet(datafiles=DataFile)
-    dataset.ConvertDatafile(savelocation='TestData/')
-
-    Data,bins = dataset.binData3D(0.08,0.08,0.25)
-    
-    warnings.simplefilter('ignore')
-    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
-    warnings.simplefilter('once')
-    viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
-    
-    os.remove('TestData/cameasim2018n000001.nxs')
-    del viewer
 
 def test_DataSet_Visualization():
     import warnings
     from MJOLNIR.Data import Viewer3D
     DataFile = ['TestData/cameasim2018n000001.h5']
 
-    dataset = DataSet(datafiles=DataFile)
-    dataset.ConvertDatafile(savelocation='TestData/')
-
+    dataset = DataSet(dataFiles=DataFile)
+    dataset.convertDataFile(saveLocation='TestData/')
+    
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     plt.ioff()
     warnings.simplefilter('ignore')

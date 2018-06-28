@@ -502,8 +502,8 @@ def test_DataFile():
         assert False
     except:
         assert True
-    files = ['TestData/cameasim2018n000001.h5',
-             'TestData/cameasim2018n000001.nxs']
+    files = ['TestData/cameasim2018n000011.h5',
+             'TestData/cameasim2018n000011.nxs']
     DF1 = DataFile(files[0])
     DF2 = DataFile(files[1])
             
