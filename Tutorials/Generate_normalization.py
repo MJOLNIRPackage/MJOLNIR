@@ -3,7 +3,7 @@ sys.path.append('..')
 
 from MJOLNIR.Geometry import Instrument
 
-Instr = Instrument.Instrument(filename='../TestData/CAMEA_Full.xml')
+Instr = Instrument.Instrument(fileName='../TestData/CAMEA_Full.xml')
 Instr.initialize()
 
 VanNormFile = '../TestData/VanNormalization.h5'

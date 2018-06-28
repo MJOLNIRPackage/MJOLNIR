@@ -75,7 +75,7 @@ class Viewer3D(object):
         #self.imcbaxes = self.figure.add_axes([0.0, 0.2, 0.2, 0.7])
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
         if self.shading=='flat':
-            self.im = self.ax.pcolormesh(self.X[:,0,0].T,self.Y[0,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+            self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
         elif self.shading=='gouraud':  # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
@@ -201,7 +201,7 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,0)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,0,0].T,self.Y[0,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
             elif self.shading=='gouraud':
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
             else:
@@ -216,7 +216,7 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,1)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,0,0].T,self.Y[0,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
             elif self.shading=='gouraud':
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
             else:
@@ -231,7 +231,7 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,2)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,0,0].T,self.Y[0,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
             elif self.shading=='gouraud':
                 XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
                 YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T

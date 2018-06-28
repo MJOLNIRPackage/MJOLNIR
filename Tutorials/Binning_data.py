@@ -5,11 +5,12 @@ from MJOLNIR.Data import DataSet,Viewer3D
 import numpy as np
 import h5py as hdf
 import matplotlib.pyplot as plt
-filename = '../../CAMEA_Test_Files/cameasim2018n000011.nxs'
+fileName = '../../CAMEA_Test_Files/cameasim2018n000011.nxs'
 
-file = hdf.File(filename,'r')
 
-I = np.array(file.get('entry/data/data'))
+file = hdf.File(fileName,'r')
+
+I = np.array(file.get('entry/data/intensity'))
 posx = np.array(file.get('entry/data/qx'))
 posy = np.array(file.get('entry/data/qy'))
 energy = np.array(file.get('entry/data/en'))

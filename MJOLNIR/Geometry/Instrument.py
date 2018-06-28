@@ -16,7 +16,7 @@ NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*si
 
 
 class Instrument(GeometryConcept.GeometryConcept):
-    def __init__(self, position=(0,0,0),wedges=[],filename='',**kwargs):
+    def __init__(self, position=(0,0,0),wedges=[],fileName='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
 
@@ -26,7 +26,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
 
-            - filename (string): Filename of xml file (ending in xml). To load binary files use self.load(filename).
+            - fileName (string): Filename of xml file (ending in xml). To load binary files use self.load(filename).
 
         Raises:
             
@@ -38,9 +38,9 @@ class Instrument(GeometryConcept.GeometryConcept):
 
         
         self._settings = {}
-        if filename !='':
-            if(filename.split('.')[-1]=='xml'):
-                parseXML(self,filename)
+        if fileName !='':
+            if(fileName.split('.')[-1]=='xml'):
+                parseXML(self,fileName)
             else:
                 raise ValueError('File not of type XML.')
         else:
@@ -181,8 +181,8 @@ class Instrument(GeometryConcept.GeometryConcept):
         raise NotImplementedError('Ef cannot be overwritten.')
 
     
-    def saveXML(self,filename):
-        """Method for saving current file as XML in filename."""
+    def saveXML(self,fileName):
+        """Method for saving current file as XML in fileName."""
         XMLString = '<?xml version="1.0"?>\n'
         XMLString+= '<Instrument '
         for attrib in self.settings:
@@ -215,16 +215,16 @@ class Instrument(GeometryConcept.GeometryConcept):
             XMLString+="\t</Wedge>\n"
         XMLString+="</Instrument>\n"
     
-        f = open(filename,'w')
+        f = open(fileName,'w')
         f.write(XMLString)
         f.close()
 
-    def generateCAMEAXML(self,filename):
+    def generateCAMEAXML(self,fileName):
         """Generate CAMEA XML file to be used as instrument file.
 
         Args:
 
-            - filename: Name of file to be saved (required)
+            - fileName: Name of file to be saved (required)
 
         """
         ang_1 = np.zeros((7,))
@@ -294,10 +294,10 @@ class Instrument(GeometryConcept.GeometryConcept):
             
         string+="</Instrument>"
 
-        if filename.split('.')[-1]!='xml':
-            filename+='.xml'
+        if fileName.split('.')[-1]!='xml':
+            fileName+='.xml'
 
-        with open(filename,'w') as f:
+        with open(fileName,'w') as f:
             f.write(string)
 
 
@@ -395,7 +395,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             
 
-            if plot:
+            if plot: # pragma: no cover
                 plt.ioff()
                 plt.figure(figsize=(16,11))
                 if not os.path.exists(savelocation+'Raw'):
@@ -425,7 +425,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     peak = y>peakVal[i,j]*0.05
                     dataSubtracted[i,peak]= 0
 
-            if plot:
+            if plot: # pragma: no cover
                 plt.clf()
                 plt.suptitle('Fits')
                 x = np.arange(pixels)
@@ -487,15 +487,15 @@ class Instrument(GeometryConcept.GeometryConcept):
             x=np.arange(pixels)
             activePixels = np.zeros((detectors,analysers,pixels),dtype=bool)
             for i in range(detectors):
-                if plot:
+                if plot: # pragma: no cover
                     plt.clf()
                     plt.title('Detector {} Active pixels'.format(i))
                     plt.scatter(x,ESummedData[i],s=4,color='black')
                 for j in range(analysers):
                     activePixels[i,j] = np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])
-                    if plot: plt.scatter(x[np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],
+                    if plot: plt.scatter(x[np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])], # pragma: no cover
                         ESummedData[i,np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],s=4,color='red')
-                if plot:
+                if plot: # pragma: no cover
                     plt.ylim(0,np.max(ESummedData[i])*1.1)
                     plt.xlabel('Pixel')
                     plt.ylabel('Intensity [arg]')
@@ -512,7 +512,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if detpixels*analysers*3>len(Ei):
                     warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3))
                     
-                if plot:
+                if plot: # pragma: no cover
                     EiX = np.linspace(Ei[0],Ei[-1],len(Ei))
                     if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
                         os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
@@ -529,7 +529,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 activePixelDetector=[]
                 for i in range(detectors):
                     activePixelAnalyser = []
-                    if plot:
+                    if plot: # pragma: no cover
                         plt.clf()
                         plt.title('Detector {}, {} pixels'.format(i,detpixels))
                         x =np.linspace(0,detpixels,len(Ei))
@@ -556,12 +556,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                                 plt.close()
 
                             fittedParameters[i,j,k]=res[0]
-                            if plot:
+                            if plot: # pragma: no cover
                                 plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
                                 plt.scatter(Ei,binPixelData,color=colors[:,k])
                         activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
                     activePixelDetector.append(activePixelAnalyser)
-                    if plot:
+                    if plot: # pragma: no cover
                         plt.grid('on')
                         plt.xlabel('Ei [meV]')
                         plt.ylabel('Weight [arb]')
@@ -621,15 +621,14 @@ class Instrument(GeometryConcept.GeometryConcept):
                     else:
                         A4FitValue[i] = fit[0][1]
 
-                if plot==True:
+                if plot==True: # pragma: no cover
                     if not os.path.exists(savelocation+'A4'):
                         os.makedirs(savelocation+'A4')
                     plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=300)
 
                 A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
 
-
-                if plot==True:
+                if plot==True: # pragma: no cover
                     plt.clf()
                     plt.scatter(range(A4.shape[0]),A4FitValue)
                     plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
@@ -659,14 +658,11 @@ class Instrument(GeometryConcept.GeometryConcept):
         VanFile.close()
         A4File.close()
 
-        
-
-
-def parseXML(Instr,filename):
+def parseXML(Instr,fileName):
     import xml.etree.ElementTree as ET
 
 
-    tree = ET.parse(filename)
+    tree = ET.parse(fileName)
     instr_root = tree.getroot()
 
     
@@ -764,8 +760,7 @@ def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
 
-
-def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no cover
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no cover
     """Convert McStas simulation to h5 format"""
     def addMetaData(entry,title):
         dset = entry.create_dataset('start_time',(1,),dtype='<S70')
@@ -801,7 +796,8 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
 
     def readDetSequence():
         detlist = []
-        fin = open('TestData/detsequence.dat','r')
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        fin = open(dir_path+'/'+'detsequence.dat','r')
         for line in fin:
             detlist.append(line.strip())
         fin.close()
@@ -876,19 +872,18 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
         dset = sam.create_dataset('plane_normal',data=normal)
 
         cell = np.zeros((6,),dtype='float32')
-        cell[0] = 5.
-        cell[1] = 5.
-        cell[2] = 5.
+        cell[0] = 2.464
+        cell[1] = 2.464
+        cell[2] = 6.711
         cell[3] = 90.
         cell[4] = 90.
-        cell[5] = 90.
+        cell[5] = 120.
         dset = sam.create_dataset('unit_cell',data=cell)
 
         
 
     def isVaried(data):
-        test = data[0]
-        if test != data[1]:
+        if len(data)>1 and data[0]!=data[1]:
             return True
         else:
             return False
@@ -913,21 +908,27 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
         dset.attrs['target'] = np.string_('/entry/CAMEA/detector/data')
         nxdata['data'] = dset
 
+        online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
+        online.attrs['units']=np.string_('Boolean for detector state')
+
         sam = entry['sample']
+
+        scanType='Unknown'
         if isVaried(a3):
             dset = sam.create_dataset('rotation_angle',data=a3)
             nxdata['rotation_angle'] = dset
+            scanType = 'a3Scan'
         else:
             dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
-            dset[0] = a3[0]
+
         dset.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
             dset = det.create_dataset('polar_angle',data=a4)
             nxdata['polar_angle'] = dset
+            scanType = 'a4Scan'
         else:
-            dset = det.create_dataset('polar_angle',(1,),dtype='float32')
-            dset[0] = a4[0]
+            dset = det.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
         dset.attrs['units'] = np.string_('degrees')
         
 
@@ -939,6 +940,8 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
             nxdata['incident_energy'] = dset
             mono.create_dataset('rotation_angle',data=theta);
             sam.create_dataset('polar_angle',data=tth)
+            scanType = 'EiScan'
+
         else:
             dset = mono.create_dataset('energy',(1,),dtype='float32')
             dset[0] = ei[0]
@@ -950,6 +953,9 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
         dset.attrs['units'] = np.string_('degrees')
         dset = entry['sample/polar_angle']    
         dset.attrs['units'] = np.string_('degrees')
+
+        makeMonitor(entry,Numpoints)
+        entry['control'].create_dataset('scan_Type',data=scanType)
         
     def makeMonitor(entry,Numpoints):
         control = entry.create_group('control')
@@ -964,8 +970,8 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
         control.create_dataset('time',data=time,dtype='float32')
 
 
-    f = hdf.File(filename,'w')
-    f.attrs['file_name'] = np.string_(filename)
+    f = hdf.File(fileName,'w')
+    f.attrs['file_name'] = np.string_(fileName)
     f.attrs['file_time'] = np.string_(b'2018-03-22T16:44:02+01:00')
     
     entry = f.create_group('entry')
@@ -993,10 +999,9 @@ def convertToHDF(filename,title,sample,fname,CalibrationFile=None): # pragma: no
     addSample(entry,np.string_(sample))
     import os
     Numpoints = sum(os.path.isdir(fname+i) for i in os.listdir(fname))
-    print(Numpoints)
     data,a3,a4,ei = readScanData(fname,Numpoints)
     storeScanData(entry,data,a3,a4,ei)
-    makeMonitor(entry,Numpoints)
+
     f.close()
 
 
@@ -1023,7 +1028,7 @@ def test_Instrument_init():
 def test_Instrument_error():
     
     try:
-        Instr = Instrument(filename='wrongDummyFile.bin')
+        Instr = Instrument(fileName='wrongDummyFile.bin')
         assert False
     except ValueError:
         assert True
@@ -1175,7 +1180,7 @@ def test_Instrument_Initialization():
 
 
 
-def test_Istrument_saveload():
+def test_Instrument_saveload():
     import os
     Instr = Instrument(position=(0,1,0))
     Instr2 = Instrument()
@@ -1215,7 +1220,7 @@ def test_parseXML(): # Improve this test!
     Instr.append(wedge)
     Instr.saveXML(tempFileName)
         
-    InstrLoaded = Instrument(filename=tempFileName)
+    InstrLoaded = Instrument(fileName=tempFileName)
     os.remove(tempFileName)
 
     assert(Instr==InstrLoaded)
@@ -1238,7 +1243,7 @@ def test_XML_errors():
     f.close()
 
     try:
-        Instr = Instrument(filename=temp_file)
+        Instr = Instrument(fileName=temp_file)
         del Instr
         assert False
     except ValueError:
@@ -1256,7 +1261,7 @@ def test_XML_errors():
     f.write(fileString)
     f.close()
     try:
-        Instr = Instrument(filename=temp_file)
+        Instr = Instrument(fileName=temp_file)
         assert False
     except AttributeError:
         assert True
@@ -1273,7 +1278,7 @@ def test_XML_errors():
     f.write(fileString)
     f.close()
     try:
-        Instr = Instrument(filename=temp_file)
+        Instr = Instrument(fileName=temp_file)
         assert False
     except ValueError:
         assert True
@@ -1292,13 +1297,14 @@ def test_instrument_create_xml():
     filename = 'temp'
     Instr.generateCAMEAXML(filename)
 
-    Instr2 = Instrument(filename=filename+'.xml')
+    Instr2 = Instrument(fileName=filename+'.xml')
     os.remove(filename+'.xml')
     assert(len(Instr2.wedges)==8)
 
 
 def test_Normalization_tables():
-    Instr = Instrument(filename='TestData/CAMEA_Full.xml')
+
+    Instr = Instrument(fileName='TestData/CAMEA_Full.xml')
     Instr.initialize()
 
     NF = 'TestData/VanNormalization.h5'
@@ -1316,9 +1322,8 @@ def test_Normalization_tables():
     except AttributeError:
         assert True
 
-    
-    Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=True,tables=['Single']) 
-    Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
+    Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Single']) 
+    #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     
 
 

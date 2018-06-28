@@ -25,3 +25,9 @@ The arguments vmin and vmax controls the colorbar and thus the colors correspond
 
 .. note::
     The way that Matplotlib currently has implimented the pcolormesh method for plotting 2D data requires the position matrices and data matrix to be transposed before plotting. Further, applying the 'gouraud' interpolation scheme provided by the method, one needs to give as arguments the centers of the binned data instead of the bin edges. This can simply be given by defining e.g. a new Qx by QX = 0.5*(Qx[:-1,:-1,Eslice]+Qx[1:,1:,Eslice])
+
+.. figure:: ../../Tutorials/Full_custom_plotting.png
+   :width: 45%
+
+Figure created in the above script showing the second energy (5.60 meV) transfer plane.
+

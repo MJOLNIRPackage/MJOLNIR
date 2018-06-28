@@ -21,11 +21,11 @@ Welcome to MJOLNIR's documentation!
 
 |travis| |coverall| |python27| |python34| |python35| |python36|
 
-.. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.4
+.. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.5
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
 
-.. |coverall| image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=0.4
-    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR?branch=0.4
+.. |coverall| image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=0.5
+    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR?branch=0.5
 
 .. |python27| image:: https://img.shields.io/badge/python-2.7-brightgreen.svg 
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR

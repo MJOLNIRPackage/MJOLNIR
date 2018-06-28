@@ -4,7 +4,7 @@ sys.path.append('..')
 from MJOLNIR.Geometry import Instrument,Detector,Analyser,Wedge
 import matplotlib.pyplot as plt
 import numpy as np
-Instr = Instrument.Instrument(filename='SimpleInstrument.xml') # Load XML file
+Instr = Instrument.Instrument(fileName='SimpleInstrument.xml') # Load XML file
 
 
 fig = plt.figure() # Create 3D figure
