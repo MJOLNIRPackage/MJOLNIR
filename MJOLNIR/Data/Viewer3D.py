@@ -62,7 +62,7 @@ class Viewer3D(object):
         zeroPoint = np.argmin(np.abs(self.Z))
         
     
-        self.Energy_slider_ax = self.figure.add_axes([0.15, 0.1, 0.7, 0.03], facecolor=axis_color)
+        self.Energy_slider_ax = self.figure.add_axes([0.15, 0.1, 0.7, 0.03])#, facecolor=axis_color)
         self.Energy_slider = Slider(self.Energy_slider_ax, label=self.label, valmin=self.lowerLim, valmax=self.upperLim, valinit=zeroPoint,valfmt='%0f')
         self.Energy_slider.valtext.set_visible(False)
         

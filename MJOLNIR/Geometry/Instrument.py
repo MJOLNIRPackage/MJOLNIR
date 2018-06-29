@@ -872,12 +872,12 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         dset = sam.create_dataset('plane_normal',data=normal)
 
         cell = np.zeros((6,),dtype='float32')
-        cell[0] = 2.464
-        cell[1] = 2.464
-        cell[2] = 6.711
+        cell[0] = 4.95
+        cell[1] = 4.95
+        cell[2] = 4.95
         cell[3] = 90.
         cell[4] = 90.
-        cell[5] = 120.
+        cell[5] = 90.
         dset = sam.create_dataset('unit_cell',data=cell)
 
         
