@@ -21,7 +21,7 @@ from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
 from mpl_toolkits.axisartist import Subplot
 from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
+from matplotlib.collections import PatchCollection,PolyCollection
 import matplotlib.ticker as ticker
 
 import datetime
@@ -1716,14 +1716,14 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
         
     else:
         BoundPoly = False
-
+        print('No binning')
         # Sort measured points first in y and then x direction
         index = np.lexsort((PosAll[1], PosAll[0]))
 
         shape = I.shape[2] #(64 or 8 depending on instrument and binning)
-        Isorted = I.reshape(-1,shape)[index,:]
-        Normsorted = Norm.reshape(-1,shape)[index,:]
-        Monsorted = Mon.reshape(-1,shape)[index,:]
+        Isorted =  np.concatenate(I,axis=0)[index,:] #.reshape(-1,shape)
+        Normsorted = np.concatenate(Norm,axis=0)[index,:]#Norm.reshape(-1,shape)[index,:]
+        Monsorted = np.concatenate(Mon,axis=0)[index,:]#Mon.reshape(-1,shape)[index,:]
     
 
     polygons,GoodPolyPoints = voronoiTesselation(points,plot = plotTesselation,Boundary = BoundPoly)
@@ -1735,17 +1735,29 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
         X = np.concatenate(points,axis=1).T
     else:
         X = points.T
+
     Y = centroids.T
-    def closest_node(node, nodes):
-        nodes = np.asarray(nodes)
-        deltas = nodes - node
-        dist_2 = np.einsum('ij,ij->i', deltas, deltas)
-        return np.argmin(dist_2)
+    #def closest_node(node, nodes):
+    #    nodes = np.asarray(nodes)
+    #    deltas = nodes - node
+    #    dist_2 = np.einsum('ij,ij->i', deltas, deltas)
+    #    return np.argmin(dist_2)
     
-    A = [closest_node(X,y) for y in Y]
-        
-        
+    #A = [closest_node(X,y) for y in Y]
+    #print(X.shape)
+    #print(Y.shape)
+
+    #plt.figure()
+    #plt.scatter(X[:,0],X[:,1],c='r')
+    #plt.scatter(Y[:,0],Y[:,1],c='b')
+
+    kdtree = KDTree(X)
+
+    dist,A = kdtree.query(Y,distance_upper_bound=0.5)
+    #print(A.shape)
+    #plt.scatter(X[A,0],X[A,1],c='k',s=5)
     _,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
+    #print(_.shape)
     if np.sum(SortCount>1)!=0:
         raise AttributeError('The number of points connecting the centroids from tesselation and points are not equal...')
     centInd = SortUindex
@@ -2079,21 +2091,33 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
 
         X = unique.T
         Y = Y = centroids.T
-        
+        #print(X.shape)
+        #print(Y.shape)
+
+        #plt.figure()
+        #plt.scatter(X[:,0],X[:,1],c='r')
+        #plt.scatter(Y[:,0],Y[:,1],c='b')
+
 
         kdtree = KDTree(X)
 
-        A = kdtree.query(Y,distance_upper_bound=0.2)[1]
+        A = kdtree.query(Y,distance_upper_bound=0.02)[1]
+        #print(A.shape)
+        #plt.scatter(X[A,0],X[A,1],c=np.linspace(0,1,len(A)),s=5)
+    
 
         t8 = time.time()
-        SortUnique,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
+        _,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
+        #print(_.shape)
         if np.sum(SortCount>1)!=0:
-            raise AttributeError('The number of points tieing the centroids and Q poinst together are not equal, difference is {}...'.format(np.sum(SortCount>1)))
+            plt.scatter(X[_,0][SortCount>1],X[_,1][SortCount>1],c='k')
+            raise AttributeError('The number of points tieing the centroids and Q poinst together are not equal, difference is {}. Try extending A3 and A4.'.format(np.sum(SortCount>1)))
         patchIndex = SortUindex
         t9 = time.time()
         E = files[0].energy
-        patches = [Polygon(np.array([np.array(x.boundary.coords)[:,0],np.array(x.boundary.coords)[:,1]]).T) for x in polygons[patchIndex]]
-        pcollection = PatchCollection(patches)
+        #patches = [Polygon(np.array([np.array(x.boundary.coords)[:,0],np.array(x.boundary.coords)[:,1]]).T) for x in polygons[patchIndex]]
+        pcollection = PolyCollection([np.array([np.array(x.boundary.coords)[:,0],np.array(x.boundary.coords)[:,1]]).T for x in polygons[patchIndex]])
+        #pcollection = PatchCollection(patches)
         
         try:
             bpoints = np.array(boundary[0].boundary.coords)
@@ -2108,11 +2132,11 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
         QXlim = np.max(np.abs([qxmin,qxmax]))
         QYlim = np.max(np.abs([qymin,qymax]))
         
-        pcollection.set_array(currentInt)
+        pcollection.set_array(np.log(currentInt+1e-20))
         pcollection.set_edgecolor('face')
         currIntMin = np.max([np.nanmin(currentInt),0.0])
         pcollection.set_clim(currIntMin,np.nanmax(currentInt))
-        
+        #return pcollection
         ax[counter].add_collection(pcollection)
         ax[counter].set_xlim(-QXlim,QXlim)
         ax[counter].set_ylim(-QYlim,QYlim)
@@ -2579,7 +2603,8 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
 
     if bins is None:
         bins = calculateBins(dx,dy,dz,pos)
-    
+    if len(pos[0].shape)>1: # Flatten positions
+        pos = np.array([x.flatten() for x in pos])
     #NonNaNs = 1-np.isnan(data.flatten())
 
     #pos = [np.array(x[NonNaNs]) for x in pos]
