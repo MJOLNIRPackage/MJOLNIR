@@ -19,7 +19,7 @@ As shown above one can provide an axis or a list of axes into which the plot is 
 +------------------------------------------------------------------+------------------------------------------------------------------+
 |.. _PlotA3A4_fig1:                                                |.. _PlotA3A4_fig2:                                                |
 |                                                                  |                                                                  |
-|.. figure:: ../../Tutorials/QPatches/00.png                       |.. figure:: ../../Tutorials/QPatches/000.png                      |
+|.. figure:: ../../Tutorials/QPatches/000.png                      |.. figure:: ../../Tutorials/QPatches/001.png                      |
 |   :width: 95%                                                    |   :width: 95%                                                    |
 |                                                                  |                                                                  |
 |Binning of planes 0 through 7 into one plot. This figure is       |Binning of planes 8 through 15 into one plot.                     |
@@ -27,7 +27,7 @@ As shown above one can provide an axis or a list of axes into which the plot is 
 +------------------------------------------------------------------+------------------------------------------------------------------+
 |.. _PlotA3A4_fig3:                                                |.. _PlotA3A4_fig4:                                                |
 |                                                                  |                                                                  |
-|.. figure:: ../../Tutorials/QPatches/001.png                      |.. figure:: ../../Tutorials/QPatches/002.png                      |
+|.. figure:: ../../Tutorials/QPatches/002.png                      |.. figure:: ../../Tutorials/QPatches/003.png                      |
 |   :width: 95%                                                    |   :width: 95%                                                    |
 |                                                                  |                                                                  |
 |Binning of planes 16 through 23 into one plot.                    |Binning of planes 24 through 31 into one plot.                    |
@@ -35,7 +35,7 @@ As shown above one can provide an axis or a list of axes into which the plot is 
 +------------------------------------------------------------------+------------------------------------------------------------------+
 |.. _PlotA3A4_fig5:                                                |.. _PlotA3A4_fig6:                                                |
 |                                                                  |                                                                  |
-|.. figure:: ../../Tutorials/QPatches/003.png                      |.. figure:: ../../Tutorials/QPatches/004.png                      |
+|.. figure:: ../../Tutorials/QPatches/004.png                      |.. figure:: ../../Tutorials/QPatches/005.png                      |
 |   :width: 95%                                                    |   :width: 95%                                                    |
 |                                                                  |                                                                  |
 |Binning of planes 32 through 39 into one plot.                    |Binning of planes 40 through 47 into one plot.                    |
@@ -43,7 +43,7 @@ As shown above one can provide an axis or a list of axes into which the plot is 
 +------------------------------------------------------------------+------------------------------------------------------------------+
 |.. _PlotA3A4_fig7:                                                |.. _PlotA3A4_fig8:                                                |
 |                                                                  |                                                                  |
-|.. figure:: ../../Tutorials/QPatches/005.png                      |.. figure:: ../../Tutorials/QPatches/006.png                      |
+|.. figure:: ../../Tutorials/QPatches/006.png                      |.. figure:: ../../Tutorials/QPatches/007.png                      |
 |   :width: 95%                                                    |   :width: 95%                                                    |
 |                                                                  |                                                                  |
 |Binning of planes 48 through 55 into one plot.                    |Binning of planes 56 through 63 into one plot.                    |
