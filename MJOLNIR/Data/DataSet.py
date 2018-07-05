@@ -769,7 +769,7 @@ class DataSet(object):
         pos = [qx,qy,energy]
         return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
-    def plotA3A4(self,files=None,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    def plotA3A4(self,files=None,ax=None,dimension='2D',planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
         This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
         binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -782,6 +782,10 @@ class DataSet(object):
             - dimension ('2D' or '3D'): Plot data in 2 or 3 dimensions (default '2D')
 
             - planes (list (of lists)): Planes to be plotted and binned (default [])
+
+            - log (bool): Whether or not to plot intensities as logarithm (default False)
+
+            - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
 
             - binningDecimals (int): Number of decimal places Q positions are rounded before binning (default 3)
 
@@ -830,11 +834,11 @@ class DataSet(object):
         if files is None:
             files = self.convertedFiles
         
-        return plotA3A4(files,ax=ax,dimension=dimension,planes=planes,binningDecimals=binningDecimals,
+        return plotA3A4(files,ax=ax,dimension=dimension,planes=planes,log=log, returnPatches=returnPatches,binningDecimals=binningDecimals,
         singleFigure=singleFigure,plotTesselation=plotTesselation,Ei_err=Ei_err,temperature_err=temperature_err,\
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
-    def plotQPatches(self,files=None,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    def plotQPatches(self,files=None,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in Q space. 
 
         .. warning::
@@ -852,6 +856,10 @@ class DataSet(object):
             - planes (list (of lists)): Planes to be plotted and binned (default [])
 
             - binningDecimals (int): Number of decimal places Q positions are rounded before binning (default 3)
+            
+            - log (bool): Whether or not to plot intensities as logarithm (default False)
+
+            - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
 
             - A4Extend (float): Angle value with which the boundary is extended away from points in A4 direction (default 0.2)
             
@@ -901,7 +909,7 @@ class DataSet(object):
         if files is None:
             files = self.convertedFiles
         
-        return plotQPatches(files,ax=ax,dimension=dimension,planes=planes,binningDecimals=binningDecimals,A4Extend=A4Extend,A3Extend=A3Extend,singleFigure=singleFigure,\
+        return plotQPatches(files,ax=ax,dimension=dimension,planes=planes,binningDecimals=binningDecimals,log=log,returnPatches=returnPatches,A4Extend=A4Extend,A3Extend=A3Extend,singleFigure=singleFigure,\
         plotTesselation=plotTesselation,Ei_err=Ei_err,temperature_err=temperature_err,\
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
@@ -1544,7 +1552,7 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
     ax.pmeshs = pmeshs
     return ax
 
-def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
     """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
     This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
     binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -1562,6 +1570,10 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
         - planes (list (of lists)): Planes to be plotted and binned (default [])
 
         - binningDecimals (int): Number of decimal places A3-A4 positions are rounded before binning (default 3)
+        
+        - log (bool): Whether or not to plot intensities as logarithm (default False)
+
+        - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
 
         - singleFigure (bool): If true, all planes are plotted in same figure (default False)
 
@@ -1716,10 +1728,9 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
         
     else:
         BoundPoly = False
-        print('No binning')
+        #print('No binning')
         # Sort measured points first in y and then x direction
-        index = np.lexsort((PosAll[1], PosAll[0]))
-
+        index = np.lexsort((unique[1], unique[0]))
         shape = I.shape[2] #(64 or 8 depending on instrument and binning)
         Isorted =  np.concatenate(I,axis=0)[index,:] #.reshape(-1,shape)
         Normsorted = np.concatenate(Norm,axis=0)[index,:]#Norm.reshape(-1,shape)[index,:]
@@ -1737,27 +1748,21 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
         X = points.T
 
     Y = centroids.T
-    #def closest_node(node, nodes):
-    #    nodes = np.asarray(nodes)
-    #    deltas = nodes - node
-    #    dist_2 = np.einsum('ij,ij->i', deltas, deltas)
-    #    return np.argmin(dist_2)
-    
-    #A = [closest_node(X,y) for y in Y]
-    #print(X.shape)
-    #print(Y.shape)
 
-    #plt.figure()
-    #plt.scatter(X[:,0],X[:,1],c='r')
-    #plt.scatter(Y[:,0],Y[:,1],c='b')
+    if False:
+        kdtree = KDTree(X)
 
-    kdtree = KDTree(X)
+        _,A = kdtree.query(Y,distance_upper_bound=0.5)
+    else:
+        def closest_node(node, nodes):
+            nodes = np.asarray(nodes)
+            deltas = nodes - node
+            dist_2 = np.einsum('ij,ij->i', deltas, deltas)
+            return np.argmin(dist_2)
+        
+        A = [closest_node(X,y) for y in Y]  
 
-    dist,A = kdtree.query(Y,distance_upper_bound=0.5)
-    #print(A.shape)
-    #plt.scatter(X[A,0],X[A,1],c='k',s=5)
     _,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
-    #print(_.shape)
     if np.sum(SortCount>1)!=0:
         raise AttributeError('The number of points connecting the centroids from tesselation and points are not equal...')
     centInd = SortUindex
@@ -1795,19 +1800,23 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
         planes = range(len(E))
         
     plots = len(planes)
-    if ax is None: # Create needed axes
-        if singleFigure: # create only one
-            rows,cols = figureRowColumns(plots)
-            fig,ax = plt.subplots(nrows=rows, ncols=cols)
-            ax = np.array(ax).flatten()
-    if singleFigure:
-        if ax is None:
-            ax = plt.figure().gca()
-    else:
-        if ax is None:
-            ax = [plt.figure().gca() for _ in range(plots)]
+    if not returnPatches:
+        if ax is None: # Create needed axes
+            if singleFigure: # create only one
+                rows,cols = figureRowColumns(plots)
+                fig,ax = plt.subplots(nrows=rows, ncols=cols)
+                ax = np.array(ax).flatten()
+        if singleFigure:
+            if ax is None:
+                ax = plt.figure().gca()
+        else:
+            if ax is None:
+                ax = [plt.figure().gca() for _ in range(plots)]
             
     counter = 0
+    if returnPatches:
+        ReturnPatches = []
+        Energies = []
     for plane in planes:
         
         subplanes = len(np.array([plane]).flatten())
@@ -1829,8 +1838,18 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
         
         currentInt = IntensityBin#
         
-        pcollection.set_array(currentInt)
-        pcollection.set_edgecolor('face')
+        if log==True:
+            pcollection.set_array(np.log(currentInt+1e-20))
+        else:
+            pcollection.set_array(currentInt)
+        if returnPatches:
+            pcollection.set_edgecolor('None')
+            ReturnPatches.append(pcollection)
+            counter +=1
+            Energies.append(np.mean(E[:,:,:,:,plane]))
+            continue
+        else:
+            pcollection.set_edgecolor('face')
         currIntMin = np.max([np.nanmin(currentInt),0.0])
         pcollection.set_clim(currIntMin,np.nanmax(currentInt))
         
@@ -1846,10 +1865,13 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,singleFigu
             ax[counter].set_title('Energy {0:.3f} meV - planes '.format(np.mean(E[plane]))+\
                   ','.join([str(x) for x in plane]))
         counter +=1
-    return ax
+    if returnPatches:
+        return ReturnPatches,Energies
+    else:
+        return ax
 
 
-def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
     """Plot data files together with pixels created around each point in Q space. 
 
     .. warning::
@@ -1870,7 +1892,11 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
         - planes (list (of lists)): Planes to be plotted and binned (default [])
 
         - binningDecimals (int): Number of decimal places Q positions are rounded before binning (default 3)
+        
+        - log (bool): Whether or not to plot intensities as logarithm (default False)
 
+        - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
+        
         - A4Extend (float): Angle value with which the boundary is extended away from points in A4 direction (default 0.2)
         
         - A3Extend (float): Angle value with which the boundary is extended away from points in A3 direction (default 0.5)
@@ -1916,7 +1942,6 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
         Binning planes from different analysers might result in nonsensible binnings.
 
     """
-    t1 = time.time()
     if dimension!='2D':
         raise NotImplementedError('Only 2D plotting is currently supported')
     
@@ -1975,19 +2000,23 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
         planes = range(len(I.shape[-1]))
     
     plots = len(planes)
-    if ax is None: # Create needed axes
-        if singleFigure: # create only one
-            rows,cols = figureRowColumns(plots)
-            fig,ax = plt.subplots(nrows=rows, ncols=cols)
-            ax = np.array(ax).flatten()
-    if singleFigure:
-        if ax is None:
-            ax = plt.figure().gca()
-    else:
-        if ax is None:
-            ax = [plt.figure().gca() for _ in range(plots)]
-    t2 = time.time()
+    if not returnPatches: # only check axes if the user wants to plot in these
+        if ax is None: # Create needed axes
+            if singleFigure: # create only one
+                rows,cols = figureRowColumns(plots)
+                fig,ax = plt.subplots(nrows=rows, ncols=cols)
+                ax = np.array(ax).flatten()
+        if singleFigure:
+            if ax is None:
+                ax = plt.figure().gca()
+        else:
+            if ax is None:
+                ax = [plt.figure().gca() for _ in range(plots)]
     counter = 0
+
+    if returnPatches:
+        ReturnPatches = []
+        Energies = []
     for plane in planes:
         mp = []
         for i in range(len(files)):
@@ -2012,8 +2041,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
             boundary = [boundary]
         else:
             boundary = mp
-        
-        t3 = time.time()
+
         if isinstance(plane,list) or isinstance(plane,np.ndarray):         
             IAlive = []
             NormAlive = []
@@ -2042,52 +2070,41 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
             QyAlive = Qy[alive,plane]
             
 
-        t4 = time.time()
         points = np.array([QxAlive,QyAlive])
         unique,uindex = np.unique(np.round(points,binningDecimals),axis=1,return_index=True)
-        t41 = time.time()
         if unique.shape[1]!=points.shape[1]:
             #print('BINNING!')
             mask = np.ones(points.shape[1],dtype=bool)
             mask[uindex] = False
             doublePoints = points[:,mask]
-            t42 = time.time()
             kdtree = KDTree(unique.T)
-            t425= time.time()
             doubleIndex = kdtree.query(np.round(doublePoints,binningDecimals).T,distance_upper_bound=np.power(10,-binningDecimals*1.0)*1.1)[1]
 
-            t43 = time.time()
             points = unique
            
             Isorted = IAlive[uindex]
             Normsorted = NormAlive[uindex]
             Monsorted = MonAlive[uindex]
 
-            t44 = time.time()
-
             IAliveDouble = IAlive[mask]
             NormAliveDouble = NormAlive[mask]
             MonAliveDouble = MonAlive[mask]
 
-            t45 = time.time()
-
             Isorted[doubleIndex]+=IAliveDouble
             Normsorted[doubleIndex]=np.mean([Normsorted[doubleIndex],NormAliveDouble],axis=0)
             Monsorted[doubleIndex]+=MonAliveDouble
-
-            t46 = time.time()
             currentInt = np.divide(Isorted,Normsorted*Monsorted)
-            t47 = time.time()
-        else:
 
-            pointIndex = np.lexsort((points[1], points[0]))
-            currentInt = np.divide(IAlive[pointIndex],NormAlive[pointIndex]*MonAlive[pointIndex])
+        else:
+            #print('BINNING! 2')
+            #pointIndex = np.lexsort((unique[1], unique[0]))
+            currentInt = np.divide(IAlive,NormAlive*MonAlive)[uindex]
             
-        t5 = time.time()    
-        polygons,GoodPolyPoints = voronoiTesselation([points],plot = plotTesselation,Boundary = boundary)
-        t6 = time.time()
+         
+        polygons,GoodPolyPoints = voronoiTesselation([unique],plot = plotTesselation,Boundary = boundary)
+        
         centroids = np.array([np.array(x.centroid.coords).reshape(2) for x in polygons]).T
-        t7 = time.time()
+        
 
         X = unique.T
         Y = Y = centroids.T
@@ -2101,19 +2118,17 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
 
         kdtree = KDTree(X)
 
-        A = kdtree.query(Y,distance_upper_bound=0.02)[1]
+        A = kdtree.query(Y)[1]#,distance_upper_bound=0.02)[1]
         #print(A.shape)
         #plt.scatter(X[A,0],X[A,1],c=np.linspace(0,1,len(A)),s=5)
     
 
-        t8 = time.time()
         _,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
         #print(_.shape)
         if np.sum(SortCount>1)!=0:
-            plt.scatter(X[_,0][SortCount>1],X[_,1][SortCount>1],c='k')
+            #plt.scatter(X[_,0][SortCount>1],X[_,1][SortCount>1],c='k')
             raise AttributeError('The number of points tieing the centroids and Q poinst together are not equal, difference is {}. Try extending A3 and A4.'.format(np.sum(SortCount>1)))
         patchIndex = SortUindex
-        t9 = time.time()
         E = files[0].energy
         #patches = [Polygon(np.array([np.array(x.boundary.coords)[:,0],np.array(x.boundary.coords)[:,1]]).T) for x in polygons[patchIndex]]
         pcollection = PolyCollection([np.array([np.array(x.boundary.coords)[:,0],np.array(x.boundary.coords)[:,1]]).T for x in polygons[patchIndex]])
@@ -2132,11 +2147,22 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
         QXlim = np.max(np.abs([qxmin,qxmax]))
         QYlim = np.max(np.abs([qymin,qymax]))
         
-        pcollection.set_array(np.log(currentInt+1e-20))
-        pcollection.set_edgecolor('face')
+        if log==True:
+            pcollection.set_array(np.log(currentInt+1e-20))
+        else:
+            pcollection.set_array(currentInt)
+        
         currIntMin = np.max([np.nanmin(currentInt),0.0])
         pcollection.set_clim(currIntMin,np.nanmax(currentInt))
         #return pcollection
+        if returnPatches:
+            pcollection.set_edgecolor('None')
+            ReturnPatches.append(pcollection)
+            counter +=1
+            Energies.append(np.mean(E[:,:,:,:,plane]))
+            continue
+        else:
+            pcollection.set_edgecolor('face')
         ax[counter].add_collection(pcollection)
         ax[counter].set_xlim(-QXlim,QXlim)
         ax[counter].set_ylim(-QYlim,QYlim)
@@ -2153,19 +2179,11 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,A4Exte
                 ax[counter].set_title('Energy {0:.3f} meV - planes '.format(np.mean(E[:,:,:,:,plane]))+\
                   ','.join([str(x) for x in plane]))
         counter +=1
-        t10 = time.time()
-    if False:
-        print('Initialization: {}s'.format(t2-t1))
-        print('Boundary: {}s'.format(t3-t2))
-        print('Alive sorting: {}s'.format(t4-t3))
-        print('Binning: {}s'.format(t5-t4))
-        print('\tUnique: {}\n\tMask: {}\n\tGenerate KDTree: {}\n\tDouble index: {}\n\tUnique Mat: {}\n\tApply mask: {}\n\tAdd together: {}\n\tCalculate I: {}'.format(t41-t4,t42-t41,t425-t42,t43-t425,t44-t43,t45-t44,t46-t45,t47-t46))
-        print('Voronoi: {}s'.format(t6-t5))
-        print('Centroid Calc: {}s'.format(t7-t6))
-        print('Sorting: {}s'.format(t8-t7))
-        print('Unique: {}s'.format(t9-t8))
-        print('Plot: {}s'.format(t10-t9))
-    return ax
+    
+    if returnPatches:
+        return ReturnPatches,Energies
+    else:
+        return ax
 
 
 
@@ -2227,33 +2245,17 @@ def voronoiTesselation(points,plot=False,Boundary=False):
     boolval = np.array([len(x)>2 and not -1 in x for x in regions]) # Check if region has at least 3 points and is not connected to infinity (-1))
         
     PolyPoints = np.array([vor.vertices[reg,:] for reg in regions[boolval]])
-
-    # Sort vertecies for the polygon generation
-    #GoodPolyPoints = PolyPoints[np.array([not np.any(x==-1) for x in PolyPoints],dtype=bool)]
-    
-       
     polygons = np.array([PolygonS(X) for X in PolyPoints])
 
     insidePolygonsBool = np.array([combiPoly.contains(P) for P in polygons])
-    #crosses = np.array([combiPoly.crosses(P) for P in polygons])
 
     edgePolygonsBool = np.logical_not(insidePolygonsBool)
     
-    intersectionPolygon = []#[poly.intersection(combiPoly) for poly in polygons[edgePolygonsBool]]
+    intersectionPolygon = []
     for poly in polygons[edgePolygonsBool]:
-        #try: # If polygon side coincides with boundary intersection fails and following is needed
         inter = poly.intersection(combiPoly)
         if not isinstance(inter,PolygonS): # Not a simple polygon
-            #print(inter)
-            #print(type(inter))
-            #[x.xy for x in inter]
             inter = inter[np.argmax([x.area for x in inter])] # Return the polygon with biggest area inside boundary
-            #inter.boundary.coords
-       # except:
-
-        #       diff = poly.difference(combiPoly)
-        #    inter = poly.difference(diff)
-    
         intersectionPolygon.append(inter)
     
     Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
