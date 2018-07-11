@@ -9,4 +9,4 @@ Below is a list of links to the documentation for individual core functionalitie
    Geometry
    EnergyNormalization
    FileConversion
-   VoronoiTesselation
+   VoronoiTessellation
