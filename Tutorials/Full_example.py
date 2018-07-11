@@ -1,27 +1,21 @@
 import sys
 sys.path.append('..')
 
-from MJOLNIR.Geometry import Instrument
 from MJOLNIR.Data import DataSet,Viewer3D
-import numpy as np
+import warnings
 import matplotlib.pyplot as plt
+import numpy as np
+DataFile = ['../TestData/cameasim2018n000011.h5']
 
-Instr = Instrument.Instrument(filename='../TestData/CAMEA_Full_2.xml')
-Instr.initialize()
-
-NF = '../TestData/VanNormalization.h5'
-DataFile='../TestData/cameasim2018n000005.h5'
+dataset = DataSet.DataSet(dataFiles=DataFile)
+dataset.convertDataFile(saveLocation='../TestData/')
 
 
-dataset = DataSet.DataSet(instrument=Instr,normalizationfiles=NF,datafiles=DataFile)
-dataset.EnergyCalibration(tables=[8],savelocation='./')
-dataset.ConvertDatafile(savelocation='./')
+Data,bins = dataset.binData3D(0.08,0.08,0.25)
 
-Data,bins = dataset.binData3D(0.05,0.05,0.2)
-
-BinnedData = Data[0]
-
-Intensity = np.divide(BinnedData[0]*BinnedData[3],BinnedData[1]*BinnedData[2])
-
+warnings.simplefilter('ignore')
+Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+warnings.simplefilter('once')
 viewer = Viewer3D.Viewer3D(Intensity,bins)
-plt.show()
+plt.plot()
+

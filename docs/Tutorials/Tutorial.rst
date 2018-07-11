@@ -1,17 +1,12 @@
 Tutorials
 =========
 
-Contains a list of different tutorials in order to familiarize users with the objects and methods used in MJOLNIR.
+Below is a list of different types tutorials in order to familiarize users with the objects and methods used in MJOLNIR.
 
 
 .. toctree::
    :maxdepth: 2
 
-   BuildSimpleInstrument
-   CalculateA4Ef
-   LoadInstrumentXML
-   GenerateNormalization
-   ConvertData
-   BinAndVisualize
-   Full
+   SpecificTutorials
+   WorflowTutorials
 

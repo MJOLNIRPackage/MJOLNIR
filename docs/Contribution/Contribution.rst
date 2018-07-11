@@ -1,6 +1,3 @@
-Contribtion
-------------
-
 After the initial upstart phase you are more than welcome to contribute to the software. This is best done by:
 
 * First create an issue on the GitHub page describing the scope of the contribution
@@ -29,8 +26,8 @@ _____________________
     with given priors. This is to be done by adding a subroutine to 
     the fit object.
 
-    Initial thoughts: It is believed that building upon the article [CIT2002]_, 
+    Initial thoughts: It is believed that building upon the article [CIT2012]_, 
     where this feature was incorporated in a C++ script.
 
 
-.. [CIT2002] Citation of relevant article or other document.
+.. [CIT2012] Citation of relevant article or other document.

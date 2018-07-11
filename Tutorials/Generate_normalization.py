@@ -2,12 +2,11 @@ import sys
 sys.path.append('..')
 
 from MJOLNIR.Geometry import Instrument
-from MJOLNIR.Data import DataSet
 
-Instr = Instrument.Instrument(filename='../TestData/CAMEA_Full.xml')
+Instr = Instrument.Instrument(fileName='../TestData/CAMEA_Full.xml')
 Instr.initialize()
 
-NF = '../TestData/VanNormalization.h5'
+VanNormFile = '../TestData/VanNormalization.h5'
+A4NormFile = '../TestData/A4Normalization.h5'
 
-dataset = DataSet.DataSet(instrument=Instr,normalizationfiles=NF)
-dataset.EnergyCalibration(NF,'../TestData/',plot=True,tables=['PrismaticHighDefinition',3]) 
+Instr.generateCalibration(Vanadiumdatafile=VanNormFile ,A4datafile=A4NormFile,savelocation='../TestData/',plot=True,tables=[8]) 

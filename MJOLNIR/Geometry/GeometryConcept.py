@@ -39,7 +39,7 @@ class GeometryConcept(object):
     @position.setter
     def position(self,position):
         
-        position  = np.array(position)
+        position  = np.array(position,dtype=float)
         if position.ndim !=1 or len(position)!=3:
             raise AttributeError('Position is to be a 3 vector, got {}.'.format(position))
         self._position = position

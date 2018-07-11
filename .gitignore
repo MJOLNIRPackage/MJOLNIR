@@ -23,8 +23,11 @@ TestData/*_pixels
 TestData/Raw
 
 *.calib
-*.nxs
 
 .*/
 dist/*
 MJOLNIR.egg-info/*
+TestData/A4/*
+
+Tutorials/*.nxs
+Report/
