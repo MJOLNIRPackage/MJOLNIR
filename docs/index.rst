@@ -8,7 +8,6 @@ Welcome to MJOLNIR's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
    Introduction
    Tutorials/Tutorial
