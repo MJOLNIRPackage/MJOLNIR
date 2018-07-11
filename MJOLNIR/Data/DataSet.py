@@ -452,7 +452,7 @@ class DataSet(object):
         positions = [qx,qy,energy]
         positions = [qx,qy,energy]
         
-        return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False)
+        return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage)
 
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,dataFiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
@@ -1000,6 +1000,81 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
          ax.set_xlabel('Qx [1/A]')
          ax.set_ylabel('Qy [1/A]')
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
+
+
+def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False):
+    """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
+    the width attribute.
+    
+    .. note::
+        Can only perform cuts for a constant energy plane of definable width.
+    
+    Args:
+        
+        - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
+        
+        - I (array): Flatten intensity array
+        
+        - Norm (array): Flatten normalization array
+        
+        - Monitor (array): Flatten monitor array
+        
+        - E1 (float): Start energy.
+        
+        - E2 (float): End energy.
+
+        - q (2d vector): Q point 
+        
+        - width (float): Full width of cut in q-plane.
+        
+        - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+        
+        - Emin (float): Minimal energy to include in cut.
+        
+        - Emax (float): Maximal energy to include in cut
+        
+#    Kwargs:
+#        
+#        - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
+#    
+    Returns:
+        
+        - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
+        
+        - Bin list (1 array): Bin edge positions in energy
+        
+    """
+    distToQ = np.linalg.norm(positions[:2]-q,axis=0)
+
+    inside = distToQ<width
+    
+   
+    
+    insideEnergy = np.logical_and(positions[2]<=E2,positions[2]>=E1)
+    if(len(insideEnergy)==0):
+        raise AttributeError('No points are within the provided energy limits.')
+    elif(len(inside)==0):
+        raise AttributeError('No points are inside selected q range.')
+
+    allInside = np.logical_and(inside,insideEnergy)
+    Energies = positions[2][allInside]
+    
+    
+    bins = np.array(binEdges(Energies,minPixel))
+    
+    if len(bins)==0:
+        return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[[E1,E2]]
+    
+    normcounts = np.histogram(Energies,bins=bins,weights=np.ones_like(Energies).flatten())[0]
+    intensity = np.histogram(Energies,bins=bins,weights=I[allInside].flatten())[0]
+    MonitorCount=  np.histogram(Energies,bins=bins,weights=Monitor[allInside].flatten())[0]
+    Normalization= np.histogram(Energies,bins=bins,weights=Norm[allInside].flatten())[0]
+    
+   
+    return [intensity,MonitorCount,Normalization,normcounts],[bins]
+
+
+
 
 
 
@@ -1872,7 +1947,7 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
 
 
 def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
-    """Plot data files together with pixels created around each point in Q space. 
+    """Plot data files together with pixels created around each point in Q space. See :doc:`Voronoi Tessellation<../../InDepthDocumentation/VoronoiTessellation>` for further information.
 
     .. warning::
         This method plots all measurement points unless they are literaly on top of each other and is thus really slow! Binning 8 planes for two files takes approximately
