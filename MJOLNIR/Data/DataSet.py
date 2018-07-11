@@ -769,7 +769,7 @@ class DataSet(object):
         pos = [qx,qy,energy]
         return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
-    def plotA3A4(self,files=None,ax=None,dimension='2D',planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    def plotA3A4(self,files=None,ax=None,dimension='2D',planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
         This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
         binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -791,7 +791,7 @@ class DataSet(object):
 
             - singleFigure (bool): If true, all planes are plotted in same figure (default False)
 
-            - plotTesselation (bool): Plot tesselation of points (default False)
+            - plotTessellation (bool): Plot Tessellation of points (default False)
 
             - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
 
@@ -835,10 +835,10 @@ class DataSet(object):
             files = self.convertedFiles
         
         return plotA3A4(files,ax=ax,dimension=dimension,planes=planes,log=log, returnPatches=returnPatches,binningDecimals=binningDecimals,
-        singleFigure=singleFigure,plotTesselation=plotTesselation,Ei_err=Ei_err,temperature_err=temperature_err,\
+        singleFigure=singleFigure,plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
-    def plotQPatches(self,files=None,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    def plotQPatches(self,files=None,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in Q space. 
 
         .. warning::
@@ -867,7 +867,7 @@ class DataSet(object):
 
             - singleFigure (bool): If true, all planes are plotted in same figure (default False)
 
-            - plotTesselation (bool): Plot tesselation of points (default False)
+            - plotTessellation (bool): Plot Tessellation of points (default False)
 
             - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
 
@@ -910,7 +910,7 @@ class DataSet(object):
             files = self.convertedFiles
         
         return plotQPatches(files,ax=ax,dimension=dimension,planes=planes,binningDecimals=binningDecimals,log=log,returnPatches=returnPatches,A4Extend=A4Extend,A3Extend=A3Extend,singleFigure=singleFigure,\
-        plotTesselation=plotTesselation,Ei_err=Ei_err,temperature_err=temperature_err,\
+        plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
 
@@ -1627,7 +1627,7 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
     ax.pmeshs = pmeshs
     return ax
 
-def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
     """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
     This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
     binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -1652,7 +1652,7 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
 
         - singleFigure (bool): If true, all planes are plotted in same figure (default False)
 
-        - plotTesselation (bool): Plot tesselation of points (default False)
+        - plotTessellation (bool): Plot Tessellation of points (default False)
 
         - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
 
@@ -1812,7 +1812,7 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
         Monsorted = np.concatenate(Mon,axis=0)[index,:]#Mon.reshape(-1,shape)[index,:]
     
 
-    polygons,GoodPolyPoints = voronoiTesselation(points,plot = plotTesselation,Boundary = BoundPoly)
+    polygons,GoodPolyPoints = voronoiTessellation(points,plot = plotTessellation,Boundary = BoundPoly)
 
     # Sort centroids (i.e. polygons) like measurement points
     centroids = np.array([centeroidnp(x) for x in GoodPolyPoints]).T
@@ -1839,7 +1839,7 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
 
     _,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
     if np.sum(SortCount>1)!=0:
-        raise AttributeError('The number of points connecting the centroids from tesselation and points are not equal...')
+        raise AttributeError('The number of points connecting the centroids from Tessellation and points are not equal...')
     centInd = SortUindex
     
     sortedPolyPoints = GoodPolyPoints[centInd]
@@ -1946,7 +1946,7 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
         return ax
 
 
-def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTesselation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
     """Plot data files together with pixels created around each point in Q space. See :doc:`Voronoi Tessellation<../../InDepthDocumentation/VoronoiTessellation>` for further information.
 
     .. warning::
@@ -1978,7 +1978,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
 
         - singleFigure (bool): If true, all planes are plotted in same figure (default False)
 
-        - plotTesselation (bool): Plot tesselation of points (default False)
+        - plotTessellation (bool): Plot Tessellation of points (default False)
 
         - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
 
@@ -2176,7 +2176,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
             currentInt = np.divide(IAlive,NormAlive*MonAlive)[uindex]
             
          
-        polygons,GoodPolyPoints = voronoiTesselation([unique],plot = plotTesselation,Boundary = boundary)
+        polygons,GoodPolyPoints = voronoiTessellation([unique],plot = plotTessellation,Boundary = boundary)
         
         centroids = np.array([np.array(x.centroid.coords).reshape(2) for x in polygons]).T
         
@@ -2262,7 +2262,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
 
 
 
-def voronoiTesselation(points,plot=False,Boundary=False):
+def voronoiTessellation(points,plot=False,Boundary=False):
     """Generate individual pixels around the given datapoints.
 
     Args:
