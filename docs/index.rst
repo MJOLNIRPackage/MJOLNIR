@@ -13,6 +13,7 @@ Welcome to MJOLNIR's documentation!
    Tutorials/Tutorial
    MJOLNIR
    InDepthDocumentation/Documentation
+   Optimizations/Optimization
 
 
 
