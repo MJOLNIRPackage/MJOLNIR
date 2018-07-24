@@ -8,28 +8,12 @@ import h5py as hdf
 # Convert raw data to NXSqom
 
 ConvertedDataFile=['/home/lass/Dropbox/PhD/Software/DataSimulation/T0Phonon10meV.nxs']
-DS = DataSet.DataSet(ConvertedDataFile=ConvertedDataFile)
+DS = DataSet.DataSet(convertedFiles=ConvertedDataFile)
 
+# Extract all the data
+I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
 
-# Extract intensities and positions from files
-I = []
-qx = []
-qy = []
-energy = []
-Norm = []
-Monitor = []
-
-for data in ConvertedDataFile:
-    file = hdf.File(data,'r')
-
-    I.append(np.array(file.get('entry/data/intensity')))
-    qx.append(np.array(file.get('entry/data/qx')))
-    qy.append(np.array(file.get('entry/data/qy')))
-    energy.append(np.array(file.get('entry/data/en')))
-    Norm.append(np.array(file.get('entry/data/normalization')))
-    Monitor.append(np.array(file.get('entry/data/monitor')))
-    file.close()
-    
+# Reshape it 
 I = np.concatenate(I)
 qx = np.concatenate(qx)
 qy = np.concatenate(qy)
