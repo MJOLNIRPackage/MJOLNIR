@@ -11,6 +11,7 @@ import os
 import scipy.optimize
 import h5py as hdf
 import datetime
+import pytest
 
 NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*sigma
 
@@ -1302,7 +1303,8 @@ def test_instrument_create_xml():
     assert(len(Instr2.wedges)==8)
 
 
-def test_Normalization_tables():
+@pytest.mark.unit
+def test_Normalization_tables(quick):
 
     Instr = Instrument(fileName='TestData/CAMEA_Full.xml')
     Instr.initialize()
@@ -1322,7 +1324,8 @@ def test_Normalization_tables():
     except AttributeError:
         assert True
 
-    Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Single']) 
+    if not quick==True:
+        Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Single']) 
     #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     
 
