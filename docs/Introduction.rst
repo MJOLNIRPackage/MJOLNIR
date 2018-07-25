@@ -65,6 +65,17 @@ Bug Report
 ^^^^^^^^^^
 If an un error or unexpected behaviour of the software is observed, of if a feature is needed, you are more than welcome to create an issue or feature request at the GitHub page (Issues_). Dealing and fixing the reported bugs will be most easily done if both operation system, software version, a minimal working example, and other relevant informations are provided. Further as time goes by, it is hoped that this page will also contain explanations and answers to the most frequently asked question of the software. 
 
+Currently there are the following open issues |open| and closed |closed|
+
+.. |open| image:: https://img.shields.io/github/issues/Jakob-Lass/MJOLNIR.svg?style=plastic 
+    :alt: Open GitHub issues
+    :target: https://github.com/Jakob-Lass/MJOLNIR/
+
+.. |closed| image:: https://img.shields.io/github/issues-closed/Jakob-Lass/MJOLNIR.svg?style=plastic
+   :alt: Closed GitHub issues
+   :target: https://github.com/Jakob-Lass/MJOLNIR/
+
+
 
 
 .. _Issues: https://github.com/Jakob-Lass/MJOLNIR/issues
