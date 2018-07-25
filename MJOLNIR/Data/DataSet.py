@@ -30,6 +30,7 @@ import warnings
 from MJOLNIR.Data import DataFile
 
 import time
+import pytest
 
 def my_timer_N(N=0):
     if N<0:
@@ -411,8 +412,8 @@ class DataSet(object):
                 Monitor = self.Monitor
 
         else: 
-            dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
             
         
 
@@ -422,7 +423,7 @@ class DataSet(object):
 
         return returnData,bins
 
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,dataFiles=None):
+    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True,dataFiles=None):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -447,6 +448,8 @@ class DataSet(object):
             
             - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
 
+            - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
+
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
         
         
@@ -470,15 +473,14 @@ class DataSet(object):
                 Monitor = self.Monitor
 
         else: 
-            dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
             
         positions = [qx,qy,energy]
-        positions = [qx,qy,energy]
-        
-        return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage)
+       
+        return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
 
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,dataFiles=None,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,dataFiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
         
@@ -520,15 +522,15 @@ class DataSet(object):
                 Monitor = self.Monitor
 
         else: 
-            dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
             
         positions = [qx,qy,energy]
 
-        return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax,plotCoverage,**kwargs)
+        return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax,plotCoverage,extend=extend,**kwargs)
 
 
-    def cutQE(self,q1,q2,width,minPixel,EnergyBins,dataFiles=None):
+    def cutQE(self,q1,q2,width,minPixel,EnergyBins,extend=True,dataFiles=None):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
         Args:
@@ -572,12 +574,13 @@ class DataSet(object):
                 Monitor = self.Monitor
 
         else: 
-            dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            #dataFiles = isListOfDataFiles(dataFiles)
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
             
         positions = [qx,qy,energy]
         
-        return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins)
+        return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend)
 
     def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,dataFiles=None,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
@@ -723,8 +726,8 @@ class DataSet(object):
                 Monitor = self.Monitor
 
         else: 
-            dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor,Ei = DataFile.extractData()
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
             
         positions = [qx,qy,energy]
 
@@ -910,8 +913,6 @@ class DataSet(object):
 
             - AttributeError
 
-        Examples: REDO!
-
         The following example will combine the two files and plot all of the available planes in different figures.
 
         >>> DS = DataSet.DataSet(convertedFiles=[--.nxs,---.nxs])
@@ -938,7 +939,9 @@ class DataSet(object):
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
 
-def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False):
+
+
+def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
     the minimum step sizes is given by minPixel.
     
@@ -961,7 +964,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
         
         - width (float): Full width of cut in q-plane.
         
-        - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+        - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
         
         - Emin (float): Minimal energy to include in cut.
         
@@ -970,6 +973,8 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     Kwargs:
         
         - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
+
+        - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
     
     Returns:
         
@@ -979,7 +984,8 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
         
     """
     dirvec = np.array(q2,dtype=float)-np.array(q1,dtype=float)
-    dirvec/=np.linalg.norm(dirvec)
+    dirLength = np.linalg.norm(dirvec)
+    dirvec/=dirLength
     orthovec=np.array([dirvec[1],-dirvec[0]])
     
     ProjectMatrix = np.array([dirvec,orthovec])
@@ -991,6 +997,11 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     positions2D = np.array([positions[0][insideEnergy], positions[1][insideEnergy]])
     propos = np.dot(ProjectMatrix,positions2D-q1.reshape(2,1))
     
+    if extend==False: # Only take points between the given q points
+        insideQ = np.logical_and(propos[0]>0,propos[0]<dirLength)
+        propos = propos[:,insideQ]
+
+
     orthobins = [-width/2.0,width/2.0]
     insideWidth = np.logical_and(propos[1]<orthobins[1],propos[1]>orthobins[0])
     
@@ -1002,27 +1013,36 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),orthopos,[Emin,Emax]]
     
     normcounts = np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=np.ones((propos.shape[1])).flatten())[0]
-    intensity = np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=I[insideEnergy].flatten())[0]
-    MonitorCount=  np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Monitor[insideEnergy].flatten())[0]
-    Normalization= np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Norm[insideEnergy].flatten())[0]
+
+    if extend==False: # Test both inside energy range AND inside q-limits
+        intensity = np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=I[insideEnergy][insideQ].flatten())[0]
+        MonitorCount=  np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Monitor[insideEnergy][insideQ].flatten())[0]
+        Normalization= np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Norm[insideEnergy][insideQ].flatten())[0]
+    else:
+        intensity = np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=I[insideEnergy].flatten())[0]
+        MonitorCount=  np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Monitor[insideEnergy].flatten())[0]
+        Normalization= np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Norm[insideEnergy].flatten())[0]
     
     EmeanVec = np.ones((len(binpositions),1))*(Emin+Emax)*0.5
     binpositionsTotal = np.concatenate((binpositions,EmeanVec),axis=1)
    
     if plotCoverage: # pragma: no cover
-         plt.figure()
-         plt.scatter(positions2D[0],positions2D[1],s=0.5)
-         plt.plot([binpositions[0][0]+orthopos[0][0],binpositions[-1][0]+orthopos[0][0]],[binpositions[0][1]+orthopos[0][1],binpositions[-1][1]+orthopos[0][1]],c='k')
-         plt.plot([binpositions[0][0]+orthopos[1][0],binpositions[-1][0]+orthopos[1][0]],[binpositions[0][1]+orthopos[1][1],binpositions[-1][1]+orthopos[1][1]],c='k')
-         for i in [0,-1]:
-             plt.plot([binpositions[i][0]+orthopos[0][0],binpositions[i][0]+orthopos[1][0]],[binpositions[i][1]+orthopos[0][1],binpositions[i][1]+orthopos[1][1]],c='k')
-         for i in range(len(binpositions)):
-             plt.plot([binpositions[i][0]+orthopos[0][0],binpositions[i][0]+orthopos[1][0]],[binpositions[i][1]+orthopos[0][1],binpositions[i][1]+orthopos[1][1]],c='k',linewidth=0.5)
-         plt.scatter(positions2D[0][insideWidth],positions2D[1][insideWidth],s=0.5)
-         ax = plt.gca()
-         ax.set_aspect('equal', 'datalim')
-         ax.set_xlabel('Qx [1/A]')
-         ax.set_ylabel('Qy [1/A]')
+        plt.figure()
+        plt.scatter(positions2D[0],positions2D[1],s=0.5)
+        plt.plot([binpositions[0][0]+orthopos[0][0],binpositions[-1][0]+orthopos[0][0]],[binpositions[0][1]+orthopos[0][1],binpositions[-1][1]+orthopos[0][1]],c='k')
+        plt.plot([binpositions[0][0]+orthopos[1][0],binpositions[-1][0]+orthopos[1][0]],[binpositions[0][1]+orthopos[1][1],binpositions[-1][1]+orthopos[1][1]],c='k')
+        for i in [0,-1]:
+            plt.plot([binpositions[i][0]+orthopos[0][0],binpositions[i][0]+orthopos[1][0]],[binpositions[i][1]+orthopos[0][1],binpositions[i][1]+orthopos[1][1]],c='k')
+        for i in range(len(binpositions)):
+            plt.plot([binpositions[i][0]+orthopos[0][0],binpositions[i][0]+orthopos[1][0]],[binpositions[i][1]+orthopos[0][1],binpositions[i][1]+orthopos[1][1]],c='k',linewidth=0.5)
+        if extend==False:
+            plt.scatter(positions2D[0][insideQ][insideWidth],positions2D[1][insideQ][insideWidth],s=0.5)
+        else:
+            plt.scatter(positions2D[0][insideWidth],positions2D[1][insideWidth],s=0.5)
+        ax = plt.gca()
+        ax.set_aspect('equal', 'datalim')
+        ax.set_xlabel('Qx [1/A]')
+        ax.set_ylabel('Qy [1/A]')
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
 
@@ -1146,7 +1166,7 @@ def binEdges(values,tolerance):
     bin_edges.append(unique_values[-1] + tolerance / 2)
     return np.array(bin_edges)
 
-def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,**kwargs):
+def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,**kwargs):
     """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
     Adds the 3D position on the x axis with ticks.
     
@@ -1177,7 +1197,7 @@ def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,pl
     q1 = np.array(q1)
     q2 = np.array(q2)
     
-    D,P = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage)
+    D,P = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage,extend=extend)
     INT = np.divide(D[0]*D[3],D[1]*D[2])
     INT_err = np.divide(np.sqrt(D[0])*D[3],D[1]*D[2])
     
@@ -1190,7 +1210,7 @@ def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,pl
     for i in xvalues:
         my_xticks.append('\n'.join(map(str,[np.round(binCenter[i,0],2),np.round(binCenter[i,1],2),np.round(binCenter[i,2],2)])))
     
-    binDistance = np.linalg.norm(binCenter-P[0][0],axis=1)
+    binDistance = np.linalg.norm(binCenter[:,:2]-P[0][0,:2],axis=1)
     
     if ax is None:
         plt.figure()
@@ -1337,7 +1357,7 @@ def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwa
 
 
 
-def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins):
+def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
     """Cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
     Args:
@@ -1360,6 +1380,10 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins):
 
         - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
 
+    Kwargs:
+
+        - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
+
     Returns:
         
         - Data list (n * 4 arrays): n instances of [Intensity, monitor count, normalization and normalization counts].
@@ -1380,7 +1404,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins):
     binDistance = []
     
     for i in np.arange(len(EnergyBins)-1):
-        [intensity,MonitorCount,Normalization,normcounts],position = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins[i],EnergyBins[i+1],plotCoverage=False)
+        [intensity,MonitorCount,Normalization,normcounts],position = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins[i],EnergyBins[i+1],plotCoverage=False,extend=extend)
         if len(intensity)==0:
             continue
         returnpositions.append(position)
@@ -1390,7 +1414,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins):
         normcountArray.append(normcounts)
         centerPos.append(0.5*(position[0][:-1]+position[0][1:]))
         binDistance.append(np.linalg.norm(centerPos[-1][:,:2]-position[0][0][:2],axis=1))#np.linalg.norm(centerPos[-1][:,:2]-q1,axis=1))
-    
+
     
     
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
@@ -1466,7 +1490,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     # diffVector = rightPoint-leftPoint
 
     xvalues = np.round(np.linspace(0,num-1,5)).astype(int)
-
+    
     my_xticks=[]
     for i in xvalues:
         my_xticks.append('\n'.join(map(str,[np.round(binCenter[i,0],2),np.round(binCenter[i,1],2)])))
@@ -1985,12 +2009,6 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
         
         plotPlane,IntensityBin,subplanes = binPlanes(plane,Isorted,Normsorted,Monsorted)
          # Generate polygons in Qspace
-        print(QRX.shape)
-        print(QRX[0].shape)
-        [print(x[:,0]) for x in QRX[:10]]
-        print(QRY.shape)
-        print(QRY[0].shape)
-        [print(x[:,0]) for x in QRY[:10]]
         
 
         @my_timer_N()
@@ -3155,8 +3173,8 @@ def test_DataSet_binEdges():
     assert(np.all(np.diff(Bins[:-1])>tolerance))
 
 def test_DataSet_1Dcut():
-    q1 =  np.array([0,0.0])
-    q2 =  np.array([3.0, 0.0])
+    q1 =  np.array([1.1,0.0])
+    q2 =  np.array([2.0, 0.0])
     width = 0.1
 
     plt.ioff()
@@ -3168,6 +3186,16 @@ def test_DataSet_1Dcut():
     D2,P2 = Datset.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
     assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
+
+    [intensity,MonitorCount,Normalization,normcounts],bins = Datset.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
+    assert(np.all(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1))) 
+    # x-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
+
+    q3 = np.array([1.1,1.1])
+    q4 = np.array([2.0,2.0])
+    [intensity,MonitorCount,Normalization,normcounts],bins = Datset.cut1D(q3,q4,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
+    assert(np.all(np.logical_and(np.logical_and(bins[0][:,0]>=q3[0]-0.1,bins[0][:,0]<=q4[0]+0.1),np.logical_and(bins[0][:,0]>=q3[1]-0.1,bins[0][:,0]<=q4[1]+0.1)))) 
+    # x and y-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
 
 def test_DataSet_1DcutE():
@@ -3260,7 +3288,8 @@ def test_DataSet_plotQPlane():
     except:
         assert True
 
-def test_DataSet_plotA3A4():
+@pytest.mark.unit
+def test_DataSet_plotA3A4(quick):
     plt.ioff()
 
     File1 = 'TestData/T0Phonon10meV.nxs'
@@ -3290,14 +3319,14 @@ def test_DataSet_plotA3A4():
         assert False
     except AttributeError:
         assert True
-
-    plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
-    DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
-    DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
+    if not quick==True:
+        plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
+        DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
+        DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
     plt.close('all')
 
-
-def test_DataSet_plotQPatches():
+@pytest.mark.unit
+def test_DataSet_plotQPatches(quick):
     plt.ioff()
 
     File1 = 'TestData/T0Phonon10meV.nxs'
@@ -3328,10 +3357,12 @@ def test_DataSet_plotQPatches():
     except AttributeError:
         assert True
 
-#    plotQPatches(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
-#    DS.plotQPatches(planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes
-#    DS.plotQPatches(files=[files[0],files[0]],planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes and only one file
+    if not quick==True:
+        plotQPatches(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
+        DS.plotQPatches(planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes
+        DS.plotQPatches(files=[files[0],files[0]],planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes and only one file
     plt.close('all')
+    
 
 def test_DataSet_fmt():
     assert('$1.00 \\times 10^{1}$' == fmt(10,'Unused'))
