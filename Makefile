@@ -5,6 +5,9 @@
 test:
 	python -m pytest -vv MJOLNIR 
 
+quicktest:
+	python -m pytest -vv MJOLNIR --quick
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
