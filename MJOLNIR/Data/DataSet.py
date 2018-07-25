@@ -32,7 +32,7 @@ from MJOLNIR.Data import DataFile
 import time
 import pytest
 
-def my_timer_N(N=0):
+def my_timer_N(N=0): # pragma: no cover
     if N<0:
         raise AttributeError('Number of runs need to be bigger or equal to 1 or equal to 0 for no timing, but {} given.'.format(N))
     def my_timer(func):
@@ -733,7 +733,7 @@ class DataSet(object):
 
         return plotCutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin,ax,**kwargs)
 
-    def createRLUAxes(self): # pragma: no cover
+    def createRLUAxes(self):
         """Wrapper for the createRLUAxes method.
 
         Returns:
@@ -3001,15 +3001,69 @@ def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
     del emptyDataset
-    dataset = DataSet(OhterSetting=10.0,dataFiles='TestData/cameasim2018n000011.h5',convertedFiles='TestData/cameasim2018n000011.nxs')
+    dataset = DataSet(OtherSetting=10.0,dataFiles='TestData/cameasim2018n000011.h5',convertedFiles='TestData/cameasim2018n000011.nxs',calibrationfiles=[])
     assert(dataset.dataFiles[0].name=='cameasim2018n000011.h5')
     assert(dataset.convertedFiles[0].name=='cameasim2018n000011.nxs')
+    assert(dataset.normalizationfiles == [])
+    Str = str(dataset)
+
                                                                                                                  
 def test_DataSet_Error():
     
 
     ds = DataSet()
     
+    try: # No data files
+        ds.convertDataFile()
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No data files
+        ds.binData3D(0.1,0.1,0.1)
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No data files
+        ds.cut1D([0,0],[1,1],0.1,0.01,5.5,6.0)
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No data files
+        ds.plotCut1D([0,0],[1,1],0.1,0.01,5.5,6.0)
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No data files
+        ds.cutQE([0,0],[1,1],0.1,0.01,5.5,6.0)
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No data files
+        ds.plotCutQE([0,0],[1,1],0.1,0.01,5.5,6.0)
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No data files
+        ds.cutPowder(np.linspace(0,4,5))
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No data files
+        ds.plotCutPowder(np.linspace(0,4,5))
+        assert False
+    except AttributeError:
+        assert True
+
+           
+    
+
     try: # Wrong data file type
         ds.dataFiles = 100
         assert False
@@ -3268,6 +3322,15 @@ def test_DataSet_cutPowder():
         for j in range(len(q[i])):
             assert(np.all(q[i][j]==q2[i][j]))
 
+def test_DataSet_createRLUAxes():
+    plt.ioff()
+    convertFiles = ['TestData/cameasim2018n000011.h5']
+    
+    ds = DataSet(dataFiles = convertFiles)
+    ds.convertDataFile()
+
+    ax = ds.createRLUAxes()
+
 
 def test_DataSet_plotQPlane():
     plt.ioff()
@@ -3401,22 +3464,4 @@ def test_DataSet_compareNones():
     assert(not np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.5]),0.001)))
     assert(np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.4,10.2,10.0]),0.001)))
 
-
-def test_DataSet_Visualization():
-    import warnings
-    from MJOLNIR.Data import Viewer3D
-    DataFile = ['TestData/cameasim2018n000001.h5']
-
-    dataset = DataSet(dataFiles=DataFile)
-    dataset.convertDataFile(saveLocation='TestData/')
-    
-    Data,bins = dataset.binData3D(0.08,0.08,0.25)
-    plt.ioff()
-    warnings.simplefilter('ignore')
-    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
-    warnings.simplefilter('once')
-    viewer = Viewer3D.Viewer3D(Intensity,bins)
-    viewer.caxis = (0,100)
-    plt.plot()
-    plt.close()
 
