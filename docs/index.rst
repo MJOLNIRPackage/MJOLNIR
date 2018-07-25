@@ -19,7 +19,9 @@ Welcome to MJOLNIR's documentation!
 
 | 
 
-|travis| |coverall| |python27| |python34| |python35| |python36|
+|travis| |coverall| |python27| |python34| * |python35| |python36|
+
+* Python 3.4 is believed to be compatible but is not tested due to updates in testing framework.
 
 .. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.6
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
@@ -30,7 +32,7 @@ Welcome to MJOLNIR's documentation!
 .. |python27| image:: https://img.shields.io/badge/python-2.7-brightgreen.svg 
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
  
-.. |python34| image:: https://img.shields.io/badge/python-3.4-brightgreen.svg
+.. |python34| image:: https://img.shields.io/badge/python-3.4-yellow.svg
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR   
 
 .. |python35| image:: https://img.shields.io/badge/python-3.5-brightgreen.svg
