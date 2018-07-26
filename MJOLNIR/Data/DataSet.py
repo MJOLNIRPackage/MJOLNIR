@@ -747,7 +747,7 @@ class DataSet(object):
         return createRLUAxes(self)
 
 
-    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,**kwargs):
+    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,dataFiles=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
         
         Args:
@@ -783,30 +783,36 @@ class DataSet(object):
             
             
         """
-        I = self.I
-        qx = self.qx
-        qy = self.qy
-        energy = self.energy
-        Norm = self.Norm
-        Monitor = self.Monitor
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
+                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+            else:
+                self._getData()#datafiles = self.convertedFiles
+                I = self.I
+                qx = self.qx
+                qy = self.qy
+                energy = self.energy
+                Norm = self.Norm
+                Monitor = self.Monitor
 
-        if ax is None and RLUPlot is True:
-            ax = self.createRLUAxes()
+        else: 
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+        #if ax is None and RLUPlot is True:
+        #    ax = self.createRLUAxes()
         
         pos = [qx,qy,energy]
         return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
-    def plotA3A4(self,files=None,ax=None,dimension='2D',planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
         This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
         binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
 
         Kwargs:
-            - files (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
+            - dataFiles (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
 
             - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
-
-            - dimension ('2D' or '3D'): Plot data in 2 or 3 dimensions (default '2D')
 
             - planes (list (of lists)): Planes to be plotted and binned (default [])
 
@@ -836,8 +842,6 @@ class DataSet(object):
 
             - NotImplimentedError
 
-            - AttributeError
-
         Examples:
 
         The following example will combine the two files and plot all of the available planes in different figures.
@@ -858,14 +862,14 @@ class DataSet(object):
             Binning planes from different analysers might result in nonsensible binnings.
 
         """
-        if files is None:
-            files = self.convertedFiles
+        if dataFiles is None: # TODO: Redo this to allow for external files
+            dataFiles = self.convertedFiles
         
-        return plotA3A4(files,ax=ax,dimension=dimension,planes=planes,log=log, returnPatches=returnPatches,binningDecimals=binningDecimals,
+        return plotA3A4(dataFiles,ax=ax,planes=planes,log=log, returnPatches=returnPatches,binningDecimals=binningDecimals,
         singleFigure=singleFigure,plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
-    def plotQPatches(self,files=None,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    def plotQPatches(self,dataFiles=None,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in Q space. 
 
         .. warning::
@@ -874,11 +878,9 @@ class DataSet(object):
 
         Kwargs:
 
-            - files (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
+            - dataFiles (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
 
             - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
-
-            - dimension ('2D' or '3D'): Plot data in 2 or 3 dimensions (default '2D')
 
             - planes (list (of lists)): Planes to be plotted and binned (default [])
 
@@ -910,7 +912,6 @@ class DataSet(object):
 
         Raises:
 
-
             - AttributeError
 
         The following example will combine the two files and plot all of the available planes in different figures.
@@ -931,10 +932,10 @@ class DataSet(object):
             Binning planes from different analysers might result in nonsensible binnings.
 
         """
-        if files is None:
-            files = self.convertedFiles
+        if dataFiles is None:
+            dataFiles = self.convertedFiles
         
-        return plotQPatches(files,ax=ax,dimension=dimension,planes=planes,binningDecimals=binningDecimals,log=log,returnPatches=returnPatches,A4Extend=A4Extend,A3Extend=A3Extend,singleFigure=singleFigure,\
+        return plotQPatches(dataFiles,ax=ax,planes=planes,binningDecimals=binningDecimals,log=log,returnPatches=returnPatches,A4Extend=A4Extend,A3Extend=A3Extend,singleFigure=singleFigure,\
         plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
@@ -991,7 +992,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     ProjectMatrix = np.array([dirvec,orthovec])
     
     insideEnergy = np.logical_and(positions[2]<=Emax,positions[2]>=Emin)
-    if(len(insideEnergy)==0):
+    if(np.sum(insideEnergy)==0):
         raise AttributeError('No points are within the provided energy limits.')
 
     positions2D = np.array([positions[0][insideEnergy], positions[1][insideEnergy]])
@@ -1095,9 +1096,9 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
    
     
     insideEnergy = np.logical_and(positions[2]<=E2,positions[2]>=E1)
-    if(len(insideEnergy)==0):
+    if(np.sum(insideEnergy)==0):
         raise AttributeError('No points are within the provided energy limits.')
-    elif(len(inside)==0):
+    elif(np.sum(inside)==0):
         raise AttributeError('No points are inside selected q range.')
 
     allInside = np.logical_and(inside,insideEnergy)
@@ -1675,7 +1676,7 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
     ax.pmeshs = pmeshs
     return ax
 
-def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
     """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
     This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
     binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -1687,8 +1688,6 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
     Kwargs:
 
         - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
-
-        - dimension ('2D' or '3D'): Plot data in 2 or 3 dimensions (default '2D')
 
         - planes (list (of lists)): Planes to be plotted and binned (default [])
 
@@ -1716,8 +1715,6 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
 
     Raises:
 
-        - NotImplimentedError
-
         - AttributeError
 
     Examples:
@@ -1740,8 +1737,8 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
         Binning planes from different analysers might result in nonsensible binnings.
 
     """
-    if dimension!='2D':
-        raise NotImplementedError('Only 2D plotting is currently supported')
+    #if dimension!='2D':
+    #    raise NotImplementedError('Only 2D plotting is currently supported')
     
     if not isinstance(ax, (list,)) and ax is not None:
         ax = np.array([ax])
@@ -1975,15 +1972,16 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
     plots = len(planes)
     if not returnPatches:
         if ax is None: # Create needed axes
-            if singleFigure: # create only one
+            if singleFigure: # pragma: no cover
+                # create only one
                 rows,cols = figureRowColumns(plots)
                 fig,ax = plt.subplots(nrows=rows, ncols=cols)
                 ax = np.array(ax).flatten()
-        if singleFigure:
+        if singleFigure: # pragma: no cover
             if ax is None:
                 ax = plt.figure().gca()
         else:
-            if ax is None:
+            if ax is None: # pragma: no cover
                 ax = [plt.figure().gca() for _ in range(plots)]
             
     counter = 0
@@ -2030,8 +2028,7 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
             if returnPatches:
                 pcollection.set_edgecolor('None')
                 ReturnPatches.append(pcollection)
-                counter +=1
-                Energies.append(np.mean(E[:,:,:,:,plane]))
+                Energies.append(np.mean(E[plane]))
                 #continue
             else:
                 pcollection.set_edgecolor('face')
@@ -2061,7 +2058,7 @@ def plotA3A4(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,
         return ax
 
 
-def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+def plotQPatches(dataFiles,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
     """Plot data files together with pixels created around each point in Q space. See :doc:`Voronoi Tessellation<../../InDepthDocumentation/VoronoiTessellation>` for further information.
 
     .. warning::
@@ -2071,13 +2068,11 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
 
     Args:
         
-        - files (DataFiles): single file or list of files to be binned together
+        - dataFiles (DataFiles): single file or list of files to be binned together
 
     Kwargs:
 
         - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
-
-        - dimension ('2D' or '3D'): Plot data in 2 or 3 dimensions (default '2D')
 
         - planes (list (of lists)): Planes to be plotted and binned (default [])
 
@@ -2109,7 +2104,6 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
 
     Raises:
 
-
         - AttributeError
 
     Examples: 
@@ -2132,8 +2126,8 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
         Binning planes from different analysers might result in nonsensible binnings.
 
     """
-    if dimension!='2D':
-        raise NotImplementedError('Only 2D plotting is currently supported')
+    #if dimension!='2D':
+    #    raise NotImplementedError('Only 2D plotting is currently supported')
     
     if not isinstance(ax, (list,)) and ax is not None:
         ax = np.array([ax])
@@ -2149,16 +2143,16 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
             raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,len(planes)))
             
     
-    files = np.asarray(files)
-    numFiles = len(files)
+    dataFiles = np.asarray(dataFiles)
+    numFiles = len(dataFiles)
 
     
     if numFiles>1:
-        comparison = np.array([np.all([np.isclose(files[0].Ei,files[i+1].Ei,atol=Ei_err) for i in range(numFiles-1)]),\
-                  np.all([compareNones(files[0].temperature,files[i+1].temperature,temperature_err) for i in range(numFiles-1)]),\
-                  np.all([compareNones(files[0].magneticField,files[i+1].magneticField,magneticField_err) for i in range(numFiles-1)]),\
-                  np.all([compareNones(files[0].electricField,files[i+1].electricField,electricField_err) for i in range(numFiles-1)]),\
-                  np.all([files[0].binning==files[i+1].binning for i in range(numFiles-1)])])
+        comparison = np.array([np.all([np.isclose(dataFiles[0].Ei,dataFiles[i+1].Ei,atol=Ei_err) for i in range(numFiles-1)]),\
+                  np.all([compareNones(dataFiles[0].temperature,dataFiles[i+1].temperature,temperature_err) for i in range(numFiles-1)]),\
+                  np.all([compareNones(dataFiles[0].magneticField,dataFiles[i+1].magneticField,magneticField_err) for i in range(numFiles-1)]),\
+                  np.all([compareNones(dataFiles[0].electricField,dataFiles[i+1].electricField,electricField_err) for i in range(numFiles-1)]),\
+                  np.all([dataFiles[0].binning==dataFiles[i+1].binning for i in range(numFiles-1)])])
         
         tests = np.array(['Ei','Temperature','Magnetic Field','Electric Field','Binning'])
         
@@ -2166,22 +2160,22 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
             errors = np.array(1-comparison,dtype=bool)
             raise AttributeError('Attributes for the datafiles are not the same! Difference is in :\n'+','.join([x for x in tests[errors]])+'\nIf the files are to be binned anyway change the tolerence limits.')
     
-    Ishape = files[0].I.shape
+    Ishape = dataFiles[0].I.shape
     if not ax is None:
         if not singleFigure and len(ax) != Ishape[4] and len(planes) == 0: # Plot all planes in provided axes
             raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,Ishape[4]))
 
     
-    IAll = np.array([files[i].I[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA
-    NormAll = np.array([files[i].Norm[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
-    MonitorAll = np.array([files[i].Monitor[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    IAll = np.array([dataFiles[i].I[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA
+    NormAll = np.array([dataFiles[i].Norm[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    MonitorAll = np.array([dataFiles[i].Monitor[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
   
     I = np.concatenate(IAll,axis=0)
     Norm = np.concatenate(NormAll,axis=0)
     Mon = np.concatenate(MonitorAll,axis=0)
     
-    QxAll = np.array([files[i].qx[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
-    QyAll = np.array([files[i].qy[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    QxAll = np.array([dataFiles[i].qx[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    QyAll = np.array([dataFiles[i].qy[:,0,0,:,:].reshape((-1,Ishape[3],Ishape[4])) for i in range(numFiles)])
     Qx = np.concatenate(QxAll,axis=0)
     Qy = np.concatenate(QyAll,axis=0)
 
@@ -2209,8 +2203,8 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
         Energies = []
     for plane in planes:
         mp = []
-        for i in range(len(files)):
-            xx = boundaryQ(files[i],plane,A4Extend=A4Extend,A3Extend=A3Extend)
+        for i in range(len(dataFiles)):
+            xx = boundaryQ(dataFiles[i],plane,A4Extend=A4Extend,A3Extend=A3Extend)
             polygons = [PolygonS(x.T) for x in xx.transpose(1,0,2)]
             if isinstance(plane,list):
                 if len(plane)>1:
@@ -2319,7 +2313,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
             #plt.scatter(X[_,0][SortCount>1],X[_,1][SortCount>1],c='k')
             raise AttributeError('The number of points tieing the centroids and Q poinst together are not equal, difference is {}. Try extending A3 and A4.'.format(np.sum(SortCount>1)))
         patchIndex = SortUindex
-        E = files[0].energy
+        E = dataFiles[0].energy
         #patches = [Polygon(np.array([np.array(x.boundary.coords)[:,0],np.array(x.boundary.coords)[:,1]]).T) for x in polygons[patchIndex]]
         pcollection = PolyCollection([np.array([np.array(x.boundary.coords)[:,0],np.array(x.boundary.coords)[:,1]]).T for x in polygons[patchIndex]])
         #pcollection = PatchCollection(patches)
@@ -2356,7 +2350,7 @@ def plotQPatches(files,ax=None,dimension='2D',planes=[],binningDecimals=3,log=Fa
         ax[counter].add_collection(pcollection)
         ax[counter].set_xlim(-QXlim,QXlim)
         ax[counter].set_ylim(-QYlim,QYlim)
-        ax[counter].axes.grid('on')
+        ax[counter].axes.grid(True)
         ax[counter].get_figure().colorbar(ax[counter].collections[0], ax=ax[counter],format=ticker.FuncFormatter(fmt))
         
         ax[counter].collections[0].set_clim(currIntMin,np.max(currentInt))
@@ -2472,7 +2466,7 @@ def voronoiTessellation(points,plot=False,Boundary=False):
 
 
 @my_timer_N(N=0)
-def voronoiTessellationOPTIMIZED2(points,plot=False,Boundary=False):
+def voronoiTessellationOPTIMIZED2(points,plot=False,Boundary=False): # pragma: no cover
     """Generate individual pixels around the given datapoints.
 
     Args:
@@ -3234,20 +3228,29 @@ def test_DataSet_1Dcut():
     plt.ioff()
     convertFiles = ['TestData/cameasim2018n000011.h5']
     
-    Datset = DataSet(dataFiles = convertFiles)
-    Datset.convertDataFile()
-    ax,D,P,binCenter,binDistance = Datset.plotCut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,fmt='.')
-    D2,P2 = Datset.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0)
+    ds = DataSet(dataFiles = convertFiles)
+    ds.convertDataFile()
+
+    try: # No points inside energy interval
+        ds.cut1D(q1,q2,width,minPixel=0.01,Emin=205.5,Emax=206.0)
+        assert False
+    except AttributeError:
+        assert True
+
+
+
+    ax,D,P,binCenter,binDistance = ds.plotCut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,fmt='.')
+    D2,P2 = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
     assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
 
-    [intensity,MonitorCount,Normalization,normcounts],bins = Datset.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
     assert(np.all(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1))) 
     # x-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
     q3 = np.array([1.1,1.1])
     q4 = np.array([2.0,2.0])
-    [intensity,MonitorCount,Normalization,normcounts],bins = Datset.cut1D(q3,q4,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q3,q4,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
     assert(np.all(np.logical_and(np.logical_and(bins[0][:,0]>=q3[0]-0.1,bins[0][:,0]<=q4[0]+0.1),np.logical_and(bins[0][:,0]>=q3[1]-0.1,bins[0][:,0]<=q4[1]+0.1)))) 
     # x and y-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
@@ -3273,6 +3276,18 @@ def test_DataSet_1DcutE():
     assert(intensity.shape==Normalization.shape)
     assert(intensity.shape==normcounts.shape)
 
+    try: # no points inside energy interval
+        cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=500,E2=700,q=q,width=width,minPixel=0.01)
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # no points inside q
+        cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=5,E2=7,q=np.array([20.0,0]).reshape(2,1),width=width,minPixel=0.01)
+        assert False
+    except AttributeError:
+        assert True
+
 def test_DataSet_2Dcut():
     q1 =  np.array([0,0.0])
     q2 =  np.array([3.0, 0.0])
@@ -3284,7 +3299,7 @@ def test_DataSet_2Dcut():
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
-    ax,Data,pos,cpos,distance = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins,vmin=0.0 , vmax= 5e-06)
+    ax,Data,pos,cpos,distance = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins)# Remove to improve test coverage ,vmin=0.0 , vmax= 5e-06)
     Data2,pos2,cpos2,distance2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins)
     for i in range(len(Data)):
         for j in range(len(Data[i])):
@@ -3312,7 +3327,7 @@ def test_DataSet_cutPowder():
     Datset.convertDataFile()
     eBins = binEdges(Datset.energy,0.25)
 
-    ax,D,q = Datset.plotCutPowder(eBins,Tolerance,vmin=0,vmax=1e-6)
+    ax,D,q = Datset.plotCutPowder(eBins,Tolerance)# Remove to improve test ,vmin=0,vmax=1e-6)
     D2,q2 = Datset.cutPowder(eBins,Tolerance)
     for i in range(len(D)):
         for j in range(len(D[i])):
@@ -3370,7 +3385,13 @@ def test_DataSet_plotA3A4(quick):
         assert False
     except AttributeError:
         assert True
-        
+
+    try:
+        plotA3A4(files,planes=None,ax=[]) # 64 planes and only 2 axes
+        assert False
+    except AttributeError:
+        assert True 
+
     try:
         plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
         assert False
@@ -3386,6 +3407,9 @@ def test_DataSet_plotA3A4(quick):
         plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
         DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
         DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
+        patches,energies=DS.plotA3A4([F1],planes=[10,25],returnPatches=True)
+        assert(len(patches)==2)
+        assert(len(energies)==2)
     plt.close('all')
 
 @pytest.mark.unit
@@ -3423,7 +3447,7 @@ def test_DataSet_plotQPatches(quick):
     if not quick==True:
         plotQPatches(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
         DS.plotQPatches(planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes
-        DS.plotQPatches(files=[files[0],files[0]],planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes and only one file
+        DS.plotQPatches(dataFiles=[files[0],files[0]],planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes and only one file
     plt.close('all')
     
 
