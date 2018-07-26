@@ -940,6 +940,74 @@ class DataSet(object):
         magneticField_err=magneticField_err,electricField_err=electricField_err)
 
 
+    def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,format='qxqy',dataFiles=None):
+        """
+        Method to perform Q-energy cuts from a variable number of points. The function takes both qx/qy or hkl positions. In the case of using only two Q points,
+        the method is equivalent to cutQE.
+        
+        Args:
+            
+            - QPoints (list of points): Q positions between which cuts are performed. Can be specified with both qx, qy or hkl positions dependent on the choice of format.
+            
+            - EnergyBins (list of floats): Energy bins for which the cuts are performed
+            
+        Kwargs:
+        
+            - width (float): Width of the cut in 1/A (default 0.1).
+            
+            - minPixel (float): Minial size of binning along the cutting directions. Points will be binned if they arecloser than minPixel (default=0.01)
+        
+            - format (string): Format of QPoints, can be either 'qxqy' for instrument coordinates or 'rlu' or 'hkl' for sample coordinates (default 'hkl')
+        
+            - dataFiles (list): List of dataFiles to cut. If none, the ones in the object will be used (default None).
+        
+        .. warning::
+            The way the binning works is by extending the end points with 0.5*minPixel, but the method sorts away points not between the two Q points given and thus the start and end
+            bins are only half filled. This might result in descripancies between a single cut and the same cut split into different steps. Further, splitting lines into sub-cuts 
+            forces a new binning to be done and the bin positions can then differ from the case where only one cut is performed.
+
+        
+        Returns: m = Q points, n = energy bins
+                
+            - Data list (m * n * 4 arrays): n instances of [Intensity, monitor count, normalization and normalization counts].
+            
+            - Bin list (m * n * 3 arrays): n instances of bin edge positions in plane of size (m+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
+            
+            - center position (m * n * 3D arrays): n instances of center positions for the bins.
+
+            - binDistance (m * n arrays): n isntances of arrays holding the distance in q to q1.
+
+        .. note::
+            If an HKL point outside of the scattering plane is given, the program will just take the projection onto the scattering plane.
+            
+        """
+        if(len(QPoints)<2):
+            raise AttributeError('Number of Q points given is less than 2.')
+        if format.lower() in ['rlu','hkl']: # Recalculate q points into qx and qy points
+
+            sample =self.convertedFiles[0].sample
+            projectOrientation = np.array([np.dot(sample.orientationMatrix,Q) for Q in QPoints])
+            positions = np.array([sample.tr(pos[0],pos[1]) for pos in projectOrientation])[:,:2]
+            
+        elif format.lower()=='qxqy': # Do nothing
+            positions = QPoints
+        
+        else:
+            raise AttributeError('Provided format not understood ({}). Should be either "rlu" or "qxqy"'.format(format))
+        DataList = []
+        BinList = []
+        centerPosition = []
+        binDistance = []
+        for i in range(len(QPoints)-1):
+            _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(positions[i],positions[i+1],width,minPixel,EnergyBins,dataFiles=dataFiles,extend=False)
+            DataList.append(_DataList)
+            BinList.append(_BinList)
+            centerPosition.append(_centerPosition)
+            binDistance.append(_binDistance)
+            
+        return np.array(DataList),np.array(BinList),np.array(centerPosition),np.array(binDistance)
+
+
 
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True):
@@ -3489,3 +3557,35 @@ def test_DataSet_compareNones():
     assert(np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.4,10.2,10.0]),0.001)))
 
 
+def test_DataSet_cutQELine():
+    QPoints = np.array([[0.6,0,0],[0.9,0,0],[1.0,0,0],[1.25,0,0],[1.5,0,0]])
+    EnergyBins = np.linspace(5,6,11)
+    minPixel = 0.001
+    width=0.1
+    DataFile = ['/home/lass/Dropbox/PhD/Software/MJOLNIR/TestData/cameasim2018n000011.nxs']
+
+    dataset = DataSet(convertedFiles=DataFile)
+    
+    try:
+        dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='WRONG')
+        assert False
+    except AttributeError:
+        assert True
+
+    try: # No Q-points
+        dataset.cutQELine([],EnergyBins,width=width,minPixel=minPixel,format='RLU')
+        assert False
+    except AttributeError:
+        assert True
+        
+    DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU')
+    for i in range(len(DataList)): # Check each segment
+        print("i="+str(i))
+        assert(DataList[i].shape==(4,len(EnergyBins)-1)) # Must be of size (4,len(E)-1)
+        for j in range(DataList[i].shape[1]): # Loop through energies
+            print("j="+str(j))   
+            assert(np.all([DataList[i][k,j].shape == DataList[i][-1,j].shape for k in range(len(DataList[i])-1)])) # All list are of same size
+            assert(centerPosition[i,j].shape == (DataList[i][0,j].shape[0],3))
+            assert(centerPosition[i][j].shape[0] == binDistance[i][j].shape[0])
+            
+    assert(BinList.shape==(len(QPoints)-1,len(EnergyBins)-1,3))
