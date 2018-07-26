@@ -43,9 +43,12 @@ Both of the above methods installs the software to the specified environment. If
 
 License
 ^^^^^^^
-The software package is released under the software lincense Mozilla Public License Version 2.0 to allow for redistribution and usage of the code. If this linces file has not been shipped with your distribution of the code, please find it here: licence_.
+The software package is released under the software lincense Mozilla Public License Version 2.0 |licence| to allow for redistribution and usage of the code. If this linces file has not been shipped with your distribution of the code, please find it here: licence_.
 
 
+.. |licence| image:: https://img.shields.io/github/license/Jakob-Lass/MJOLNIR.svg   
+   :alt: GitHub
+   :target: https://github.com/Jakob-Lass/MJOLNIR/
 
 
 .. _Licence: https://choosealicense.com/licenses/
