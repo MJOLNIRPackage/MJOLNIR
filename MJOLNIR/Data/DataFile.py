@@ -506,6 +506,8 @@ def test_DataFile():
              'TestData/cameasim2018n000011.nxs']
     DF1 = DataFile(files[0])
     DF2 = DataFile(files[1])
+    s = str(DF2)
+    sampleS = str(DF2.sample)
             
     assert(DF1.sample == DF2.sample)
 
