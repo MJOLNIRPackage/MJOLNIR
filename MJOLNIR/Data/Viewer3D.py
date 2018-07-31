@@ -17,7 +17,7 @@ class Viewer3D(object):
 
         Args:
 
-            - Data (3D array): Three dimensional numpy array with Qx, Qy, and E along the first, second, and third directions respectively.
+            - Data (3D array): Intensity array in three dimensions. Assumed to have Qx, Qy, and E along the first, second, and third directions respectively.
 
             - bins (List of 1D arrays): Coordinates of the three directions as returned by the BinData3D functionality of DataSet.
 
@@ -27,6 +27,15 @@ class Viewer3D(object):
 
         Example:
 
+        >>> from MJOLNIR.Data import DataSet,Viewer3D
+        >>> import matplotlib.pyplot as plt
+        >>> import numpy as np
+        >>> 
+        >>> DataFile = ['../TestData/cameasim2018n000011.nxs']
+        >>> Data,bins = dataset.binData3D(0.08,0.08,0.25)
+        >>> 
+        >>> Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+        >>> 
         >>> Viewer = Viewer3D.Viewer3D(Intensity,bins,axis=2)
         >>> Viewer.ax.set_title(str(title)[2:-1])
         >>> plt.show()
