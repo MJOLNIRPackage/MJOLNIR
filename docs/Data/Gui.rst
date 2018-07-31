@@ -1,9 +1,10 @@
 
 
-Data viewing tool
-^^^^^^^^^^^^^^^^^
+Viewer3D
+^^^^^^^^
 
-Visualization tool designed to deal with the difficulties of handling 3D data. 
+Quick visualization tool designed to deal with the difficulties of handling 3D data. Through simple keybord inputs one can look through the data along the principal axis.
+
 
 
 .. automodule:: Viewer3D

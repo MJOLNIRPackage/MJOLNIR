@@ -16,7 +16,6 @@ Welcome to MJOLNIR's documentation!
    Optimizations/Optimization
 
 
-
 | 
 
 |travis| |coverall| |python27| |python34| * |python35| |python36|

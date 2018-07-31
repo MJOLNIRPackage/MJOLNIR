@@ -18,6 +18,7 @@
 import sys
 import os
 
+
 sys.path.insert(0, os.path.abspath('../MJOLNIR/'))
 sys.path.insert(0, os.path.abspath('../MJOLNIR/Geometry'))
 sys.path.insert(0, os.path.abspath('../MJOLNIR/Statistics'))
@@ -98,7 +99,7 @@ html_theme = 'classic'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {'body_max_width': None}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -182,4 +183,11 @@ todo_include_todos = True
 autoclass_content = "both"
 
 autodoc_mock_imports = ['numpy', 'matplotlib', 'matplotlib.pyplot','shapely']
+
+
+
+
+
+
+
 

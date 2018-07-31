@@ -20,25 +20,34 @@ Data Module
     DataSet.DataSet.plotCutPowder
     DataSet.DataSet.createRLUAxes
     DataSet.DataSet.plotQPlane
+
+    DataSet.DataSet.cutQELine
+    DataSet.DataSet.plotCutQELine
     DataSet.binData3D
-    DataSet.calculateGrid3D
-    DataSet.cut1D
-    DataSet.plotCut1D
     DataSet.binEdges
-    DataSet.cutQE
-    DataSet.plotCutQE
-    DataSet.cutPowder
-    DataSet.plotCutPowder
+    DataSet.boundaryQ
+    DataSet.calculateGrid3D
     DataSet.createRLUAxes
+    DataSet.cut1D
+    DataSet.cut1DE
+    DataSet.cutPowder
+    DataSet.cutQE
+
+    DataSet.plotCut1D
+    DataSet.plotCutPowder
+    DataSet.plotCutQE
+
     DataSet.plotQPlane
-    DataSet.plotA3A4
-    DataSet.plotQPatches
+
+
 
 .. automodule:: Data
-   :members: 
+   :members:
 
-DataSet Object
-^^^^^^^^^^^^^^
+
+
+DataSet Object and Methods
+--------------------------
 
 Object to take care of all data conversion and treatment taking it from raw hdf5 files obtained at the instrument into rebinned data sets converted to S(q,omega). 
 
@@ -51,58 +60,11 @@ Object to take care of all data conversion and treatment taking it from raw hdf5
 
 
 
-DataSet bin data
+Module Functions
 ----------------
-.. autofunction:: binData3D
 
+The following is a list of the available functions in the DataSet module. Some of them have wrappers in the DataSet-object methods.
 
-DataSet calculated 3D grid
-^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: calculateGrid3D
+.. automodule:: DataSet
+   :members:
 
-
-DataSet cut1D
-^^^^^^^^^^^^^
-.. autofunction:: cut1D
-
-DataSet plotCut1D
-^^^^^^^^^^^^^^^^^
-.. autofunction:: plotCut1D
-
-DataSet binEdges
-^^^^^^^^^^^^^^^^
-.. autofunction:: binEdges
-
-
-DataSet cutQE
-^^^^^^^^^^^^^
-.. autofunction:: cutQE
-
-DataSet plotCutQE
-^^^^^^^^^^^^^^^^^
-.. autofunction:: plotCutQE
-
-DataSet cutPowder
-^^^^^^^^^^^^^^^^^
-.. autofunction:: cutPowder
-
-DataSet plotCutPowder
-^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: plotCutPowder
-
-
-DataSet createRLUAxes
-^^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: createRLUAxes
-
-DataSet plotQPlane
-^^^^^^^^^^^^^^^^^^
-.. autofunction:: plotQPlane
-
-DataSet plotA3A4
-^^^^^^^^^^^^^^^^
-.. autofunction:: plotA3A4
-
-DataSet plotQPatches
-^^^^^^^^^^^^^^^^^^^^
-.. autofunction:: plotQPatches
