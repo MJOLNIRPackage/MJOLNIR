@@ -140,7 +140,7 @@ class Instrument(GeometryConcept.GeometryConcept):
             detectorPixelPositions,analyserPixelPositions = wedge.calculateDetectorAnalyserPositions()
 
             A4 = [-np.arccos(np.divide(np.dot(AnalyserPos,beamDirection),
-                np.linalg.norm(AnalyserPos,axis=1))) for AnalyserPos in analyserPixelPositions]
+                np.linalg.norm(AnalyserPos,axis=1)))*np.sign(np.cross(AnalyserPos,beamDirection)[:,-1]) for AnalyserPos in analyserPixelPositions]
 
                 
             relPos = [detectorPixelPositions[i]-analyserPixelPositions[i] for i in range(len(analyserPixelPositions))]
@@ -231,20 +231,20 @@ class Instrument(GeometryConcept.GeometryConcept):
         ang_1 = np.zeros((7,))
         ang_2 = np.zeros((6,))
 
-        ang_1[0]=-3.33
-        ang_1[1]=-2.22
-        ang_1[2]=-1.11
+        ang_1[6]=-3.33
+        ang_1[5]=-2.22
+        ang_1[4]=-1.11
         ang_1[3]=0
-        ang_1[4]=1.11
-        ang_1[5]=2.22
-        ang_1[6]=3.33
+        ang_1[2]=1.11
+        ang_1[1]=2.22
+        ang_1[0]=3.33
 
-        ang_2[0]=-2.775
-        ang_2[1]=-1.665
-        ang_2[2]=-0.555
-        ang_2[3]=0.555
-        ang_2[4]=1.665
-        ang_2[5]=2.775
+        ang_2[5]=-2.775
+        ang_2[4]=-1.665
+        ang_2[3]=-0.555
+        ang_2[2]=0.555
+        ang_2[1]=1.665
+        ang_2[0]=2.775
 
 
         z_an = np.zeros((8,))
@@ -265,7 +265,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         det_cen = 1.2
         wedges=8
 
-        offset = -np.max(ang_1) # offset needed
+        offset = -4.835960288880082# offset such that last pixel of detector 0 is at 0
 
 
         string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>\n"
@@ -288,9 +288,8 @@ class Instrument(GeometryConcept.GeometryConcept):
             detz_2 = np.cos((ang_2+W*7.5+offset)*np.pi/180)*det_cen
             for i in range(7):
                 string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
-            for i in range(6):
-                string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
-                
+                if i<6:
+                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
             string+="\t</Wedge>\n"
             
         string+="</Instrument>"
@@ -999,7 +998,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
     
     addSample(entry,np.string_(sample))
     import os
-    Numpoints = sum(os.path.isdir(fname+i) for i in os.listdir(fname))
+    Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
     data,a3,a4,ei = readScanData(fname,Numpoints)
     storeScanData(entry,data,a3,a4,ei)
 
