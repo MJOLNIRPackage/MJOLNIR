@@ -8,5 +8,5 @@ Below is a list of different types tutorials in order to familiarize users with 
    :maxdepth: 2
 
    SpecificTutorials
-   WorflowTutorials
+   CommandLineTutorials
 
