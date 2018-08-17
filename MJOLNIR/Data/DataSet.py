@@ -54,10 +54,6 @@ def my_timer_N(N=0): # pragma: no cover
             return returnval
         return newFunc
     return my_timer
-    
-dataLocation = 'entry/data/intensity'#'entry/Detectors/Detectors'
-EiLocation = 'entry/data/incident_energy' # 'entry/Ei'
-monLocation = 'entry/control/data'#'entry/Monitor'
 
 class DataSet(object):
     def __init__(self, dataFiles=None, normalizationfiles=None, calibrationfiles=None, convertedFiles=None, **kwargs):
@@ -804,70 +800,70 @@ class DataSet(object):
         pos = [qx,qy,energy]
         return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
-#    def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
-#        """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
-#        This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
-#        binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
-#
-#        Kwargs:
-#            - dataFiles (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
-#
-#            - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
-#
-#            - planes (list (of lists)): Planes to be plotted and binned (default [])
-#
-#            - log (bool): Whether or not to plot intensities as logarithm (default False)
-#
-#            - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
-#
-#            - binningDecimals (int): Number of decimal places Q positions are rounded before binning (default 3)
-#
-#            - singleFigure (bool): If true, all planes are plotted in same figure (default False)
-#
-#            - plotTessellation (bool): Plot Tessellation of points (default False)
-#
-#            - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
-#
-#            - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
-#            
-#            - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
-#            
-#            - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
-#
-#        Returns:
-#            
-#            - ax (matplotlib axis or list of): axis (list of) containing figures for plotted planes.
-#
-#        Raises:
-#
-#            - NotImplimentedError
-#
-#        Examples:
-#
-#        The following example will combine the two files and plot all of the available planes in different figures.
-#
-#        >>> DS = DataSet.DataSet(convertedFiles=[--.nxs,---.nxs])
-#        >>> plt.figure()
-#        >>> ax = plt.gca()
-#        >>>
-#        >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax)
-#
-#        If only a subset of planes or different planes are to be combined the following will achieve this:
-#
-#        >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax,planes=[0,1,2,3,[4,5,6],[8,9]])
-#
-#        Here planes 0 through 3 are plotted separately while 4,5, and 6 as well as 8 and 9 are binned.
-#
-#        .. note::
-#            Binning planes from different analysers might result in nonsensible binnings.
-#
-#        """
-#        if dataFiles is None: # TODO: Redo this to allow for external files
-#            dataFiles = self.convertedFiles
-#        
-#        return plotA3A4(dataFiles,ax=ax,planes=planes,log=log, returnPatches=returnPatches,binningDecimals=binningDecimals,
-#        singleFigure=singleFigure,plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
-#        magneticField_err=magneticField_err,electricField_err=electricField_err)
+    def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+        """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
+        This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
+        binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
+
+        Kwargs:
+            - dataFiles (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
+
+            - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
+
+            - planes (list (of lists)): Planes to be plotted and binned (default [])
+
+            - log (bool): Whether or not to plot intensities as logarithm (default False)
+
+            - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
+
+            - binningDecimals (int): Number of decimal places Q positions are rounded before binning (default 3)
+
+            - singleFigure (bool): If true, all planes are plotted in same figure (default False)
+
+            - plotTessellation (bool): Plot Tessellation of points (default False)
+
+            - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
+
+            - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
+            
+            - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
+            
+            - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
+
+        Returns:
+            
+            - ax (matplotlib axis or list of): axis (list of) containing figures for plotted planes.
+
+        Raises:
+
+            - NotImplimentedError
+
+        Examples:
+
+        The following example will combine the two files and plot all of the available planes in different figures.
+
+        >>> DS = DataSet.DataSet(convertedFiles=[--.nxs,---.nxs])
+        >>> plt.figure()
+        >>> ax = plt.gca()
+        >>>
+        >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax)
+
+        If only a subset of planes or different planes are to be combined the following will achieve this:
+
+        >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax,planes=[0,1,2,3,[4,5,6],[8,9]])
+
+        Here planes 0 through 3 are plotted separately while 4,5, and 6 as well as 8 and 9 are binned.
+
+        .. note::
+            Binning planes from different analysers might result in nonsensible binnings.
+
+        """
+        if dataFiles is None: # TODO: Redo this to allow for external files
+            dataFiles = self.convertedFiles
+        
+        return plotA3A4(dataFiles,ax=ax,planes=planes,log=log, returnPatches=returnPatches,binningDecimals=binningDecimals,
+        singleFigure=singleFigure,plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
+        magneticField_err=magneticField_err,electricField_err=electricField_err)
 #
 #    def plotQPatches(self,dataFiles=None,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
 #        """Plot data files together with pixels created around each point in Q space. 
@@ -2022,388 +2018,388 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
     ax.pmeshs = pmeshs
     return ax
 
-#def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
-#    """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
-#    This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
-#    binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
-#
-#    Args:
-#        
-#        - files (DataFiles): single file or list of files to be binned together
-#
-#    Kwargs:
-#
-#        - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
-#
-#        - planes (list (of lists)): Planes to be plotted and binned (default [])
-#
-#        - binningDecimals (int): Number of decimal places A3-A4 positions are rounded before binning (default 3)
-#        
-#        - log (bool): Whether or not to plot intensities as logarithm (default False)
-#
-#        - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
-#
-#        - singleFigure (bool): If true, all planes are plotted in same figure (default False)
-#
-#        - plotTessellation (bool): Plot Tessellation of points (default False)
-#
-#        - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
-#
-#        - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
-#        
-#        - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
-#        
-#        - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
-#
-#    Returns:
-#        
-#        - ax (matplotlib axis or list of): axis (list of) containing figures for plotted planes.
-#
-#    Raises:
-#
-#        - AttributeError
-#
-#    Examples:
-#
-#    The following example will combine the two files and plot all of the available planes in different figures.
-#
-#    >>> DS = DataSet.DataSet(convertedFiles=[--.nxs,---.nxs])
-#    >>> plt.figure()
-#    >>> ax = plt.gca()
-#    >>>
-#    >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax)
-#
-#    If only a subset of planes or different planes are to be combined the following will achieve this:
-#
-#    >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax,planes=[0,1,2,3,[4,5,6],[8,9]])
-#
-#    Here planes 0 through 3 are plotted separately while 4,5, and 6 as well as 8 and 9 are binned.
-#
-#    .. note::
-#        Binning planes from different analysers might result in nonsensible binnings.
-#
-#    """
-#    #if dimension!='2D':
-#    #    raise NotImplementedError('Only 2D plotting is currently supported')
-#    
-#    if not isinstance(ax, (list,)) and ax is not None:
-#        ax = np.array([ax])
-#    
-#    if not isinstance(planes, (list,)):
-#        planes = np.array([planes])
-#        
-#    if not ax is None:
-#        if singleFigure and np.array([ax]).size != 1:
-#            raise AttributeError('Single figure chosen but multiple axes given ({}).'.format(np.array([ax]).size))
-#        
-#        elif not singleFigure and len(ax) != len(planes) and not len(planes)==0:
-#            raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,len(planes)))
-#            
-#    
-#    files = np.asarray(files)
-#    
-#    numFiles = len(files)
-#    @my_timer_N()
-#    def testFiles(files,numFiles):
-#        
-#        if numFiles>1:
-#            comparison = np.array([np.all([np.isclose(files[0].Ei,files[i+1].Ei,atol=Ei_err) for i in range(numFiles-1)]),\
-#                    np.all([compareNones(files[0].temperature,files[i+1].temperature,temperature_err) for i in range(numFiles-1)]),\
-#                    np.all([compareNones(files[0].magneticField,files[i+1].magneticField,magneticField_err) for i in range(numFiles-1)]),\
-#                    np.all([compareNones(files[0].electricField,files[i+1].electricField,electricField_err) for i in range(numFiles-1)]),\
-#                    np.all([files[0].binning==files[i+1].binning for i in range(numFiles-1)])])
-#            
-#            tests = np.array(['Ei','Temperature','Magnetic Field','Electric Field','Binning'])
-#            
-#            if not np.all(comparison):
-#                errors = np.array(1-comparison,dtype=bool)
-#                raise AttributeError('Attributes for the datafiles are not the same! Difference is in :\n'+','.join([x for x in tests[errors]])+'\nIf the files are to be binned anyway change the tolerence limits.')
-#    testFiles(files,numFiles)
-#
-#    @my_timer_N()
-#    def getA3A4(files,numFiles):
-#        A4All = np.array([files[i].A4 for i in range(numFiles)]) # +files[i].A4Off Already taken care of in the file
-#        A3All = np.array([files[i].A3 for i in range(numFiles)]) # +files[i].A3Off 
-#        return A3All,A4All
-#
-#    
-#    A3All,A4All = getA3A4(files,numFiles)
-#
-#    @my_timer_N()
-#    def getData(files,numFiles):
-#        Ishape = files[0].I.shape
-#        IAll = np.array([files[i].I[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA
-#        NormAll = np.array([files[i].Norm[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
-#        MonitorAll = np.array([files[i].Monitor[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
-#        return Ishape, IAll, NormAll,MonitorAll    
-#
-#    Ishape, IAll, NormAll,MonitorAll = getData(files,numFiles)
-#
-#    
-#    if not ax is None:
-#        if not singleFigure and len(ax) != Ishape[4] and len(planes) == 0: # Plot all planes in provided axes
-#            raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,Ishape[4]))
-#
-#    @my_timer_N()
-#    def concatINormMon(IAll, NormAll,MonitorAll):
-#        I = np.concatenate(IAll,axis=0)
-#        Norm = np.concatenate(NormAll,axis=0)
-#        Mon = np.concatenate(MonitorAll,axis=0)
-#        return I,Norm,Mon
-#    I,Norm,Mon = concatINormMon(IAll, NormAll,MonitorAll)
-#
-#
-#    @my_timer_N()
-#    def A4Instr(files,numFiles):
-#        A4InstrAll = np.array([files[i].instrumentCalibration[:,9]-A4All[i] for i in range(numFiles)])
-#        
-#        # Find binning (All are equal through testing)
-#        binning = files[0].binning
-#        if binning==1:
-#            if A4InstrAll.shape[1]==155: #MULTIFLEXX
-#                A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,5,binning))
-#            else: # FLATCONE
-#                A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,1,binning))  
-#        else:
-#            A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,8,binning))
-#
-#            A4InstrAll[:,92]-=0.1 # TODO: Change this!!
-#        return binning,A4InstrAll
-#
-#    binning,A4InstrAll = A4Instr(files,numFiles)
-#    
-#    ####################################################################### Assume that all energies have same A4
-#    A4InstrAll = A4InstrAll.reshape(numFiles,A4InstrAll[0].shape[0],-1)[:,:,0]
-#
-#    # Generate measured points in A3-A4 space
-#
-#    @my_timer_N()
-#    def genPointsAndBoundary(A3All,A4InstrAll,numFiles,I,Norm,Mon):
-#        
-#        points = []
-#
-#        for i in range(numFiles):
-#            X,Y = [x.flatten() for x in np.meshgrid(A3All[i],A4InstrAll[i],indexing='ij')]
-#            points.append([X,Y])
-#        
-#        PosAll = np.concatenate(points,axis=1)
-#        unique,uindex,count = np.unique(PosAll,axis=1,return_index=True,return_counts=True)
-#        
-#        if np.sum(count>1)>0: # If there is any duplicate points
-#            #print('Binning!')
-#            BoundPoly= [convexHullPoints(points[i][0].flatten(),points[i][1].flatten()) for i in range(numFiles)]
-#
-#            mask = np.ones(PosAll.shape[1],dtype=bool)
-#            mask[uindex] = False
-#            doublePoints = PosAll[:,mask]
-#            kdtree = KDTree(unique.T)
-#            
-#            doubleIndex = kdtree.query(np.round(doublePoints,binningDecimals).T,distance_upper_bound=np.power(10,-binningDecimals*1.0)*1.1)[1]
-#            #doubleIndex = np.concatenate([np.where(np.all(x==unique.T,axis=1)) for x in doublePoints.T]).reshape(-1)
-#            
-#            points = unique
-#            shape = I.shape[2]
-#
-#            IReshape = I.reshape(-1,shape)
-#            NormReshape = Norm.reshape(-1,shape)
-#            MonReshape = Mon.reshape(-1,shape)
-#
-#            doubleI = IReshape[mask,:]
-#            doubleNorm = NormReshape[mask,:]
-#            doubleMon = MonReshape[mask,:]
-#
-#            Isorted = IReshape[uindex,:]
-#            Normsorted = NormReshape[uindex,:]
-#            Monsorted = MonReshape[uindex,:]
-#
-#            Isorted[doubleIndex,:]+=doubleI
-#            Normsorted[doubleIndex,:]=np.nanmean([Normsorted[doubleIndex,:],doubleNorm],axis=0)
-#            Monsorted[doubleIndex,:]+=doubleMon
-#            
-#        else:
-#            BoundPoly = False
-#            #print('No binning')
-#            # Sort measured points first in y and then x direction
-#            index = np.lexsort((unique[1], unique[0]))
-#            shape = I.shape[2] #(64 or 8 depending on instrument and binning)
-#            Isorted =  np.concatenate(I,axis=0)[index,:] #.reshape(-1,shape)
-#            Normsorted = np.concatenate(Norm,axis=0)[index,:]#Norm.reshape(-1,shape)[index,:]
-#            Monsorted = np.concatenate(Mon,axis=0)[index,:]#Mon.reshape(-1,shape)[index,:]
-#
-#        return points,BoundPoly,Isorted,Normsorted,Monsorted
-#
-#    points,BoundPoly,Isorted,Normsorted,Monsorted = genPointsAndBoundary(A3All,A4InstrAll,numFiles,I,Norm,Mon)
-#
-#
-#    polygons,GoodPolyPoints = voronoiTessellation(points,plot = plotTessellation,Boundary = BoundPoly)
-#
-#
-#    # Sort centroids (i.e. polygons) like measurement points
-#    @my_timer_N()
-#    def calcCentroids(GoodPolyPoints):
-#        centroids = np.array([centeroidnp(x) for x in GoodPolyPoints]).T
-#        return centroids
-#
-#    centroids = calcCentroids(GoodPolyPoints)  
-#
-#
-#    @my_timer_N()
-#    def sortPoints(points,centroids):
-#        if isinstance(points,list):
-#            X = np.concatenate(points,axis=1).T
-#        else:
-#            X = points.T
-#
-#        Y = centroids.T
-#
-#        if True:
-#            kdtree = KDTree(X)
-#
-#            _,A = kdtree.query(Y)#,distance_upper_bound=0.5)
-#        else:
-#            def closest_node(node, nodes):
-#                nodes = np.asarray(nodes)
-#                deltas = nodes - node
-#                dist_2 = np.einsum('ij,ij->i', deltas, deltas)
-#                return np.argmin(dist_2)
-#            
-#            A = [closest_node(X,y) for y in Y]  
-#
-#        _,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
-#        if np.sum(SortCount>1)!=0:
-#            raise AttributeError('The number of points connecting the centroids from Tessellation and points are not equal...')
-#        centInd = SortUindex
-#        return centInd
-#    
-#    centInd = sortPoints(points,centroids)
-#
-#
-#    @my_timer_N()
-#    def calculateQ(GoodPolyPoints,centInd,files):
-#        sortedPolyPoints = GoodPolyPoints[centInd]
-#        factorsqrtEK = 0.694692
-#        
-#        # Calcualte k vectors
-#        Ei = files[0].Ei
-#        ki = np.sqrt(Ei)*factorsqrtEK
-#        kf = np.sqrt(Ei-files[0].energy[0,0,0,:,:].mean(axis=0))*factorsqrtEK
-#        
-#        
-#        # Convert to Q-space
-#        ## Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
-#        QX = np.array([ki-np.outer(np.cos(np.deg2rad(p[:,1])),kf) for p in sortedPolyPoints])
-#        QY = np.array([-np.outer(np.sin(np.deg2rad(p[:,1])),kf) for p in sortedPolyPoints])
-#            
-#        Theta = np.array([p[:,0].reshape((-1,1))*np.pi/180.0 for p in sortedPolyPoints])
-#        
-#        QRX = np.array([QX[i]*np.cos(Theta[i])-QY[i]*np.sin(Theta[i]) for i in range(QX.shape[0])])
-#        QRY = np.array([QY[i]*np.cos(Theta[i])+QX[i]*np.sin(Theta[i]) for i in range(QX.shape[0])])
-#        
-#        # Find common axis limits
-#        qxmin = np.min([np.min(val) for val in QRX])
-#        qymin = np.min([np.min(val) for val in QRY])
-#        qxmax = np.max([np.max(val) for val in QRX])
-#        qymax = np.max([np.max(val) for val in QRY])
-#        
-#        QXlim = np.max(np.abs([qxmin,qxmax]))
-#        QYlim = np.max(np.abs([qymin,qymax]))
-#        E = np.mean(files[0].energy,axis=(0,1,2,3))
-#        return QRX,QRY,E,QXlim,QYlim
-#
-#    QRX,QRY,E,QXlim,QYlim = calculateQ(GoodPolyPoints,centInd,files)
-#    
-#    if len(planes)==0:
-#        planes = range(len(E))
-#        
-#    plots = len(planes)
-#    if not returnPatches:
-#        if ax is None: # Create needed axes
-#            if singleFigure: # pragma: no cover
-#                # create only one
-#                rows,cols = figureRowColumns(plots)
-#                fig,ax = plt.subplots(nrows=rows, ncols=cols)
-#                ax = np.array(ax).flatten()
-#        if singleFigure: # pragma: no cover
-#            if ax is None:
-#                ax = plt.figure().gca()
-#        else:
-#            if ax is None: # pragma: no cover
-#                ax = [plt.figure().gca() for _ in range(plots)]
-#            
-#    counter = 0
-#    if returnPatches:
-#        ReturnPatches = []
-#        Energies = []
-#    for plane in planes:
-#        
-#        @my_timer_N()
-#        def binPlanes(plane,Isorted,Normsorted,Monsorted):
-#            subplanes = len(np.array([plane]).flatten())
-#            # Check if plane inpu is single plane
-#            if subplanes==1:
-#                plotPlane = plane
-#                IntensityBin = np.divide(Isorted[:,plane],Normsorted[:,plane]*Monsorted[:,plane])+1e-20
-#                IntensityBin = np.ma.masked_invalid(IntensityBin)
-#
-#            else:
-#                plotPlane = int(np.mean(plane))
-#                IntensityBin = np.divide(np.nansum(Isorted[:,plane],axis=1),np.nanmean(Normsorted[:,plane],axis=1)*np.nansum(Monsorted[:,plane],axis=1))+1e-20
-#                IntensityBin = np.ma.masked_invalid(IntensityBin)
-#            return plotPlane,IntensityBin,subplanes
-#        
-#        plotPlane,IntensityBin,subplanes = binPlanes(plane,Isorted,Normsorted,Monsorted)
-#         # Generate polygons in Qspace
-#        
-#
-#        @my_timer_N()
-#        def genPatchesAndCollection(QRX,QRY,plotPlane):
-#            patches = [Polygon(np.array([QRX[i][:,plotPlane],QRY[i][:,plotPlane]]).T) for i in range(len(QRX))]
-#            pcollection = PatchCollection(patches)
-#            return pcollection
-#
-#        pcollection = genPatchesAndCollection(QRX,QRY,plotPlane)
-#        currentInt = IntensityBin#
-#        
-#
-#        @my_timer_N()
-#        def plotter(pcollection,currentInt,counter,ax,QXlim,QYlim,E,plotPlane,plane,subplanes):
-#            if log==True:
-#                pcollection.set_array(np.log(currentInt+1e-20))
-#            else:
-#                pcollection.set_array(currentInt)
-#            if returnPatches:
-#                pcollection.set_edgecolor('None')
-#                ReturnPatches.append(pcollection)
-#                Energies.append(np.mean(E[plane]))
-#                #continue
-#            else:
-#                pcollection.set_edgecolor('face')
-#                currIntMin = np.max([np.nanmin(currentInt),0.0])
-#                pcollection.set_clim(currIntMin,np.nanmax(currentInt))
-#                
-#                ax[counter].add_collection(pcollection)
-#                ax[counter].set_xlim(-QXlim,QXlim)
-#                ax[counter].set_ylim(-QYlim,QYlim)
-#                ax[counter].get_figure().colorbar(ax[counter].collections[0], ax=ax[counter],format=ticker.FuncFormatter(fmt))
-#                
-#                ax[counter].collections[0].set_clim(currIntMin,np.max(currentInt))
-#                if subplanes==1:
-#                    ax[counter].set_title('Energy {0:.3f} meV - plane {1}'.format(E[plotPlane],plane))
-#                else:
-#                    ax[counter].set_title('Energy {0:.3f} meV - planes '.format(np.mean(E[plane]))+\
-#                        ','.join([str(x) for x in plane]))
-#                counter +=1
-#
-#            return ax,counter
-#        
-#        ax,counter = plotter(pcollection,currentInt,counter,ax,QXlim,QYlim,E,plotPlane,plane,subplanes)
-#
-#    if returnPatches:
-#        return ReturnPatches,Energies
-#    else:
-#        return ax
-#
-#
+def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
+    This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
+    binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
+
+    Args:
+        
+        - files (DataFiles): single file or list of files to be binned together
+
+    Kwargs:
+
+        - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
+
+        - planes (list (of lists)): Planes to be plotted and binned (default [])
+
+        - binningDecimals (int): Number of decimal places A3-A4 positions are rounded before binning (default 3)
+        
+        - log (bool): Whether or not to plot intensities as logarithm (default False)
+
+        - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
+
+        - singleFigure (bool): If true, all planes are plotted in same figure (default False)
+
+        - plotTessellation (bool): Plot Tessellation of points (default False)
+
+        - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
+
+        - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
+        
+        - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
+        
+        - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
+
+    Returns:
+        
+        - ax (matplotlib axis or list of): axis (list of) containing figures for plotted planes.
+
+    Raises:
+
+        - AttributeError
+
+    Examples:
+
+    The following example will combine the two files and plot all of the available planes in different figures.
+
+    >>> DS = DataSet.DataSet(convertedFiles=[--.nxs,---.nxs])
+    >>> plt.figure()
+    >>> ax = plt.gca()
+    >>>
+    >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax)
+
+    If only a subset of planes or different planes are to be combined the following will achieve this:
+
+    >>> DataSet.plotA3A4(DS.convertedFiles,ax=ax,planes=[0,1,2,3,[4,5,6],[8,9]])
+
+    Here planes 0 through 3 are plotted separately while 4,5, and 6 as well as 8 and 9 are binned.
+
+    .. note::
+        Binning planes from different analysers might result in nonsensible binnings.
+
+    """
+   
+    if not isinstance(ax, (list,)) and ax is not None:
+        ax = np.array([ax])
+    
+    if not isinstance(planes, (list,)):
+        planes = np.array([planes])
+        
+    if not ax is None:
+        if singleFigure and np.array([ax]).size != 1:
+            raise AttributeError('Single figure chosen but multiple axes given ({}).'.format(np.array([ax]).size))
+        
+        elif not singleFigure and len(ax) != len(planes) and not len(planes)==0:
+            raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,len(planes)))
+            
+    
+    #files = np.array(files)
+    #print(files)
+    try:
+        numFiles = len(files)
+    except:
+        numFiles = 1
+        files = [files]
+
+    @my_timer_N()
+    def testFiles(files,numFiles):
+        
+        if numFiles>1:
+            comparison = np.array([np.all([np.isclose(files[0].Ei,files[i+1].Ei,atol=Ei_err) for i in range(numFiles-1)]),\
+                    np.all([compareNones(files[0].temperature,files[i+1].temperature,temperature_err) for i in range(numFiles-1)]),\
+                    np.all([compareNones(files[0].magneticField,files[i+1].magneticField,magneticField_err) for i in range(numFiles-1)]),\
+                    np.all([compareNones(files[0].electricField,files[i+1].electricField,electricField_err) for i in range(numFiles-1)]),\
+                    np.all([files[0].binning==files[i+1].binning for i in range(numFiles-1)])])
+            
+            tests = np.array(['Ei','Temperature','Magnetic Field','Electric Field','Binning'])
+            
+            if not np.all(comparison):
+                errors = np.array(1-comparison,dtype=bool)
+                raise AttributeError('Attributes for the datafiles are not the same! Difference is in :\n'+','.join([x for x in tests[errors]])+'\nIf the files are to be binned anyway change the tolerence limits.')
+    testFiles(files,numFiles)
+
+    #@my_timer_N()
+    #def getA3A4(files,numFiles):
+    #print(numFiles)
+    #type(files)
+    #for i in range(numFiles):
+       # print(type(files[i]))
+
+    #print('_____************_____')
+    A4All = np.array([files[i].A4 for i in range(numFiles)])
+    A3All = np.array([files[i].A3 for i in range(numFiles)])
+    #    return A3All,A4All
+
+    
+    #A3All,A4All = getA3A4(files,numFiles)
+
+    #@my_timer_N()
+    #def getData(files,numFiles):
+    Ishape = files[0].I.shape
+    IAll = np.array([files[i].I[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA
+    NormAll = np.array([files[i].Norm[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    MonitorAll = np.array([files[i].Monitor[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
+        #return Ishape, IAll, NormAll,MonitorAll    
+
+    #Ishape, IAll, NormAll,MonitorAll = getData(files,numFiles)
+
+    
+    if not ax is None:
+        if not singleFigure and len(ax) != Ishape[4] and len(planes) == 0: # Plot all planes in provided axes
+            raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,Ishape[4]))
+
+    #@my_timer_N()
+    #def concatINormMon(IAll, NormAll,MonitorAll):
+    I = np.concatenate(IAll,axis=0)
+    Norm = np.concatenate(NormAll,axis=0)
+    Mon = np.concatenate(MonitorAll,axis=0)
+    #    return I,Norm,Mon
+    #I,Norm,Mon = concatINormMon(IAll, NormAll,MonitorAll)
+
+
+    #@my_timer_N()
+    #def A4Instr(files,numFiles):
+    A4InstrAll = np.array([files[i].instrumentCalibration[:,9]-A4All[i] for i in range(numFiles)])
+    
+    # Find binning (All are equal through testing)
+    binning = files[0].binning
+    if binning==1:
+        if A4InstrAll.shape[1]==155: #MULTIFLEXX
+            A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,5,binning))
+        else: # FLATCONE
+            A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,1,binning))  
+    else:
+        A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,8,binning))
+
+        #A4InstrAll[:,92]-=0.1 # TODO: Change this!!
+    #    return binning,A4InstrAll
+
+    #binning,A4InstrAll = A4Instr(files,numFiles)
+    
+    ####################################################################### Assume that all energies have same A4
+    A4InstrAll = A4InstrAll.reshape(numFiles,A4InstrAll[0].shape[0],-1)[:,:,0]
+
+    # Generate measured points in A3-A4 space
+
+    #@my_timer_N()
+    #def genPointsAndBoundary(A3All,A4InstrAll,numFiles,I,Norm,Mon):
+    points = []
+
+    for i in range(numFiles):
+        X,Y = [x.flatten() for x in np.meshgrid(A3All[i],A4InstrAll[i],indexing='ij')]
+        points.append([X,Y])
+    
+    PosAll = np.concatenate(points,axis=1)
+    unique,uindex,count = np.unique(PosAll,axis=1,return_index=True,return_counts=True)
+    
+    if np.sum(count>1)>0: # If there is any duplicate points
+        #print('Binning!')
+        BoundPoly= [convexHullPoints(points[i][0].flatten(),points[i][1].flatten()) for i in range(numFiles)]
+
+        mask = np.ones(PosAll.shape[1],dtype=bool)
+        mask[uindex] = False
+        doublePoints = PosAll[:,mask]
+        kdtree = KDTree(unique.T)
+        
+        doubleIndex = kdtree.query(np.round(doublePoints,binningDecimals).T,distance_upper_bound=np.power(10,-binningDecimals*1.0)*1.1)[1]
+        #doubleIndex = np.concatenate([np.where(np.all(x==unique.T,axis=1)) for x in doublePoints.T]).reshape(-1)
+        
+        points = unique
+        shape = I.shape[2]
+
+        IReshape = I.reshape(-1,shape)
+        NormReshape = Norm.reshape(-1,shape)
+        MonReshape = Mon.reshape(-1,shape)
+
+        doubleI = IReshape[mask,:]
+        doubleNorm = NormReshape[mask,:]
+        doubleMon = MonReshape[mask,:]
+
+        Isorted = IReshape[uindex,:]
+        Normsorted = NormReshape[uindex,:]
+        Monsorted = MonReshape[uindex,:]
+
+        Isorted[doubleIndex,:]+=doubleI
+        Normsorted[doubleIndex,:]=np.nanmean([Normsorted[doubleIndex,:],doubleNorm],axis=0)
+        Monsorted[doubleIndex,:]+=doubleMon
+        
+    else:
+        BoundPoly = False
+        #print('No binning')
+        # Sort measured points first in y and then x direction
+        index = np.lexsort((unique[1], unique[0]))
+        shape = I.shape[2] #(64 or 8 depending on instrument and binning)
+        Isorted =  np.concatenate(I,axis=0)[index,:] #.reshape(-1,shape)
+        Normsorted = np.concatenate(Norm,axis=0)[index,:]#Norm.reshape(-1,shape)[index,:]
+        Monsorted = np.concatenate(Mon,axis=0)[index,:]#Mon.reshape(-1,shape)[index,:]
+
+    #   return points,BoundPoly,Isorted,Normsorted,Monsorted
+
+    #points,BoundPoly,Isorted,Normsorted,Monsorted = genPointsAndBoundary(A3All,A4InstrAll,numFiles,I,Norm,Mon)
+
+    #print(type(BoundPoly))
+    if numFiles==1:
+        points = [points]
+        numGroups = 1
+    else:
+        numGroups = False
+    polygons,GoodPolyPoints = voronoiTessellation(points,plot = plotTessellation,Boundary = BoundPoly, numGroups=numGroups)
+
+
+    # Sort centroids (i.e. polygons) like measurement points
+    #@my_timer_N()
+    #def calcCentroids(GoodPolyPoints):
+    centroids = np.array([centeroidnp(x) for x in GoodPolyPoints]).T
+    #    return centroids
+
+    #centroids = calcCentroids(GoodPolyPoints)  
+
+
+    #@my_timer_N()
+    #def sortPoints(points,centroids):
+    if isinstance(points,list):
+        X = np.concatenate(points,axis=1).T
+    else:
+        X = points.T
+
+    Y = centroids.T
+
+    kdtree = KDTree(X)
+    _,A = kdtree.query(Y)
+
+    _,SortUindex,SortCount = np.unique(A,return_index=True,return_counts=True)
+
+    if np.sum(SortCount>1)!=0:
+        raise AttributeError('The number of points connecting the centroids from Tessellation and points are not equal...')
+    centInd = SortUindex
+
+    #@my_timer_N()
+    #def calculateQ(GoodPolyPoints,centInd,files):
+    sortedPolyPoints = GoodPolyPoints[centInd]
+    factorsqrtEK = 0.694692
+    
+    # Calcualte k vectors
+    Ei = files[0].Ei
+    ki = np.sqrt(Ei)*factorsqrtEK
+    kf = np.sqrt(Ei-files[0].energy[0,0,0,:,:].mean(axis=0))*factorsqrtEK
+    
+    
+    # Convert to Q-space
+    ## Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
+    QX = np.array([ki-np.outer(np.cos(np.deg2rad(p[:,1])),kf) for p in sortedPolyPoints])
+    QY = np.array([-np.outer(np.sin(np.deg2rad(p[:,1])),kf) for p in sortedPolyPoints])
+        
+    Theta = np.array([p[:,0].reshape((-1,1))*np.pi/180.0 for p in sortedPolyPoints])
+    
+    QRX = np.array([QX[i]*np.cos(Theta[i])-QY[i]*np.sin(Theta[i]) for i in range(QX.shape[0])])
+    QRY = np.array([QY[i]*np.cos(Theta[i])+QX[i]*np.sin(Theta[i]) for i in range(QX.shape[0])])
+    
+    # Find common axis limits
+    qxmin = np.min([np.min(val) for val in QRX])
+    qymin = np.min([np.min(val) for val in QRY])
+    qxmax = np.max([np.max(val) for val in QRX])
+    qymax = np.max([np.max(val) for val in QRY])
+    
+    QXlim = np.max(np.abs([qxmin,qxmax]))
+    QYlim = np.max(np.abs([qymin,qymax]))
+    E = np.mean(files[0].energy,axis=(0,1,2,3))
+    #    return QRX,QRY,E,QXlim,QYlim
+
+    #QRX,QRY,E,QXlim,QYlim = calculateQ(GoodPolyPoints,centInd,files)
+    
+    if len(planes)==0:
+        planes = range(len(E))
+        
+    plots = len(planes)
+    if not returnPatches:
+        if ax is None: # Create needed axes
+            if singleFigure: # pragma: no cover
+                # create only one
+                rows,cols = figureRowColumns(plots)
+                fig,ax = plt.subplots(nrows=rows, ncols=cols)
+                ax = np.array(ax).flatten()
+        if singleFigure: # pragma: no cover
+            if ax is None:
+                ax = plt.figure().gca()
+        else:
+            if ax is None: # pragma: no cover
+                ax = [plt.figure().gca() for _ in range(plots)]
+            
+    counter = 0
+    if returnPatches:
+        ReturnPatches = []
+        Energies = []
+    for plane in planes:
+        
+        #@my_timer_N()
+        #def binPlanes(plane,Isorted,Normsorted,Monsorted):
+        subplanes = len(np.array([plane]).flatten())
+        # Check if plane inpu is single plane
+        if subplanes==1:
+            plotPlane = plane
+            IntensityBin = np.divide(Isorted[:,plane],Normsorted[:,plane]*Monsorted[:,plane])+1e-20
+            IntensityBin = np.ma.masked_invalid(IntensityBin)
+
+        else:
+            plotPlane = int(np.mean(plane))
+            IntensityBin = np.divide(np.nansum(Isorted[:,plane],axis=1),np.nanmean(Normsorted[:,plane],axis=1)*np.nansum(Monsorted[:,plane],axis=1))+1e-20
+            IntensityBin = np.ma.masked_invalid(IntensityBin)
+        #    return plotPlane,IntensityBin,subplanes
+        
+        #plotPlane,IntensityBin,subplanes = binPlanes(plane,Isorted,Normsorted,Monsorted)
+         # Generate polygons in Qspace
+        
+
+        #@my_timer_N()
+        #def genPatchesAndCollection(QRX,QRY,plotPlane):
+        patches = [Polygon(np.array([QRX[i][:,plotPlane],QRY[i][:,plotPlane]]).T) for i in range(len(QRX))]
+        pcollection = PatchCollection(patches)
+        #    return pcollection
+
+        #pcollection = genPatchesAndCollection(QRX,QRY,plotPlane)
+        currentInt = IntensityBin
+        
+
+        #@my_timer_N()
+        #def plotter(pcollection,currentInt,counter,ax,QXlim,QYlim,E,plotPlane,plane,subplanes):
+        if log==True:
+            pcollection.set_array(np.log(currentInt+1e-20))
+        else:
+            pcollection.set_array(currentInt)
+        if returnPatches:
+            pcollection.set_edgecolor('None')
+            ReturnPatches.append(pcollection)
+            Energies.append(np.mean(E[plane]))
+            #continue
+        else:
+            pcollection.set_edgecolor('face')
+            currIntMin = np.max([np.nanmin(currentInt),0.0])
+            pcollection.set_clim(currIntMin,np.nanmax(currentInt))
+            
+            ax[counter].add_collection(pcollection)
+            ax[counter].set_xlim(-QXlim,QXlim)
+            ax[counter].set_ylim(-QYlim,QYlim)
+            ax[counter].get_figure().colorbar(ax[counter].collections[0], ax=ax[counter],format=ticker.FuncFormatter(fmt))
+            
+            ax[counter].collections[0].set_clim(currIntMin,np.max(currentInt))
+            if subplanes==1:
+                ax[counter].set_title('Energy {0:.3f} meV - plane {1}'.format(E[plotPlane],plane))
+            else:
+                ax[counter].set_title('Energy {0:.3f} meV - planes '.format(np.mean(E[plane]))+\
+                    ','.join([str(x) for x in plane]))
+            counter +=1
+
+            #return ax,counter
+        
+        #ax,counter = plotter(pcollection,currentInt,counter,ax,QXlim,QYlim,E,plotPlane,plane,subplanes)
+
+    if returnPatches:
+        return ReturnPatches,Energies
+    else:
+        return ax
+
+
 #def plotQPatches(dataFiles,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
 #    """Plot data files together with pixels created around each point in Q space. See :doc:`Voronoi Tessellation<../../InDepthDocumentation/VoronoiTessellation>` for further information.
 #
@@ -2717,96 +2713,104 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
 #
 #
 #@my_timer_N()
-#def voronoiTessellation(points,plot=False,Boundary=False):
-#    """Generate individual pixels around the given datapoints.
-#
-#    Args:
-#
-#        - points (list of list of points): Data points to generate pixels in shape [files,XY,N] i.e. [1,2,N] for one file with N points
-#
-#    Kwargs:
-#
-#        - plot (bool): If True, method plots pixels created with green as edge bins and red as internal (default False)
-#
-#        - Boundary (lost of Polygons): List of Shapely polygons constituting the boundaries (Default False)
-#
-#
-#    """
-#    numGroups = len(points)
-#    
-#    if Boundary==False:
-#        BoundPoly= [convexHullPoints(points[i][0].flatten(),points[i][1].flatten()) for i in range(numGroups)]
-#    else:
-#        BoundPoly = Boundary#[PolygonS(x.T) for x in Boundary]
-#
-#    if numGroups == 1:
-#        combiPoly = BoundPoly[0]
-#        pointsX = np.array([points[0][0].flatten()])[0]
-#        pointsY = np.array([points[0][1].flatten()])[0]
-#    else: # Combine all files
-#        combiPoly = BoundPoly[0].union(BoundPoly[1])
-#        for i in range(len(BoundPoly)-2):
-#            combiPoly = combiPoly.union(BoundPoly[i+2])
-#        if Boundary==False:
-#            pointsX = np.concatenate([points[i][0].flatten() for i in range(numGroups)])
-#            pointsY = np.concatenate([points[i][1].flatten() for i in range(numGroups)])
-#        else:
-#            pointsX = points[0]
-#            pointsY = points[1]
-#        
-#    containsAllPoints=np.all([combiPoly.contains(PointS(pointsX[i],pointsY[i])) for i in range(len(pointsX))])
-#    if not containsAllPoints:
-#        plt.figure()
-#        plt.scatter(pointsX,pointsY,c='b')
-#        boundaryXY = np.array(combiPoly.boundary.coords)
-#        plt.plot(boundaryXY[:,0],boundaryXY[:,1],c='r')
-#        raise AttributeError('The provided boundary does not contain all points')
-#    # Add extra points to ensure that area is finite
-#    extraPoints = np.array([[np.mean(pointsX),np.max(pointsY)+50],[np.mean(pointsX),np.min(pointsY)-50],\
-#                             [np.min(pointsX)-50,np.mean(pointsY)],[np.max(pointsX)+50,np.mean(pointsY)],\
-#                             [np.min(pointsX)-50,np.max(pointsY)+50],[np.min(pointsX)-50,np.min(pointsY)-50],\
-#                             [np.max(pointsX)+50,np.max(pointsY)+50],[np.max(pointsX)+50,np.min(pointsY)-50]])
-#
-#    AllPoints = np.array([np.concatenate([pointsX,extraPoints[:,0]]),np.concatenate([pointsY,extraPoints[:,1]])])
-#    
-#
-#    vor = Voronoi(AllPoints.T)
-#    regions = np.array([reg for reg in vor.regions])
-#    boolval = np.array([len(x)>2 and not -1 in x for x in regions]) # Check if region has at least 3 points and is not connected to infinity (-1))
-#        
-#    PolyPoints = np.array([vor.vertices[reg,:] for reg in regions[boolval]])
-#    polygons = np.array([PolygonS(X) for X in PolyPoints])
-#
-#    insidePolygonsBool = np.array([combiPoly.contains(P) for P in polygons])
-#
-#    edgePolygonsBool = np.logical_not(insidePolygonsBool)
-#    
-#    intersectionPolygon = []
-#    for poly in polygons[edgePolygonsBool]:
-#        inter = poly.intersection(combiPoly)
-#        if not isinstance(inter,PolygonS): # Not a simple polygon
-#            inter = inter[np.argmax([x.area for x in inter])] # Return the polygon with biggest area inside boundary
-#        intersectionPolygon.append(inter)
-#    
-#    Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
-#    
-#    
-#    if plot or len(pointsX)!=len(Polygons):
-#        plt.figure()
-#        insiders = np.logical_not(edgePolygonsBool)
-#        
-#        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='r') for inter in polygons[insiders]]
-#        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='g') for inter in intersectionPolygon]
-#        [plt.plot(np.array(bound.boundary.coords)[:,0],np.array(bound.boundary.coords)[:,1],'-.',c='r') for bound in BoundPoly]
-#        plt.scatter(extraPoints[:,0],extraPoints[:,1])
-#
-#        from scipy.spatial import voronoi_plot_2d
-#        voronoi_plot_2d(vor)
-#    if not len(pointsX)==len(Polygons):
-#        raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calulated edge\n - ??'.format(len(pointsX),len(Polygons)))
-#
-#
-#    return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
+def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
+    """Generate individual pixels around the given datapoints.
+
+    Args:
+
+        - points (list of list of points): Data points to generate pixels in shape [files,XY,N] i.e. [1,2,N] for one file with N points
+
+    Kwargs:
+
+        - plot (bool): If True, method plots pixels created with green as edge bins and red as internal (default False)
+
+        - Boundary (lost of Polygons): List of Shapely polygons constituting the boundaries (Default False)
+
+
+    """
+    if numGroups == False:
+        numGroups = len(points)
+    
+    if Boundary==False:
+        BoundPoly= [convexHullPoints(points[i][0].flatten(),points[i][1].flatten()) for i in range(numGroups)]
+    else:
+        BoundPoly = Boundary#[PolygonS(x.T) for x in Boundary]
+
+    if numGroups == 1:
+        #print('here')
+        #print(len(BoundPoly))
+        #print(BoundPoly)
+        #print(len(BoundPoly[0]))
+        #print(BoundPoly[0])
+        combiPoly = BoundPoly[0]
+        pointsX = np.array([points[0][0].flatten()])[0]
+        pointsY = np.array([points[0][1].flatten()])[0]
+    else: # Combine all files
+        #print(numGroups)
+        combiPoly = BoundPoly[0].union(BoundPoly[1])
+        for i in range(len(BoundPoly)-2):
+            combiPoly = combiPoly.union(BoundPoly[i+2])
+        if Boundary==False:
+            pointsX = np.concatenate([points[i][0].flatten() for i in range(numGroups)])
+            pointsY = np.concatenate([points[i][1].flatten() for i in range(numGroups)])
+        else:
+            pointsX = points[0]
+            pointsY = points[1]
+        
+    print(type(combiPoly))
+    containsAllPoints=np.all([combiPoly.contains(PointS(pointsX[i],pointsY[i])) for i in range(len(pointsX))])
+    if not containsAllPoints:
+        plt.figure()
+        plt.scatter(pointsX,pointsY,c='b')
+        boundaryXY = np.array(combiPoly.boundary.coords)
+        plt.plot(boundaryXY[:,0],boundaryXY[:,1],c='r')
+        raise AttributeError('The provided boundary does not contain all points')
+    # Add extra points to ensure that area is finite
+    extraPoints = np.array([[np.mean(pointsX),np.max(pointsY)+50],[np.mean(pointsX),np.min(pointsY)-50],\
+                             [np.min(pointsX)-50,np.mean(pointsY)],[np.max(pointsX)+50,np.mean(pointsY)],\
+                             [np.min(pointsX)-50,np.max(pointsY)+50],[np.min(pointsX)-50,np.min(pointsY)-50],\
+                             [np.max(pointsX)+50,np.max(pointsY)+50],[np.max(pointsX)+50,np.min(pointsY)-50]])
+
+    AllPoints = np.array([np.concatenate([pointsX,extraPoints[:,0]]),np.concatenate([pointsY,extraPoints[:,1]])])
+    
+
+    vor = Voronoi(AllPoints.T)
+    regions = np.array([reg for reg in vor.regions])
+    boolval = np.array([len(x)>2 and not -1 in x for x in regions]) # Check if region has at least 3 points and is not connected to infinity (-1))
+        
+    PolyPoints = np.array([vor.vertices[reg,:] for reg in regions[boolval]])
+    polygons = np.array([PolygonS(X) for X in PolyPoints])
+
+    insidePolygonsBool = np.array([combiPoly.contains(P) for P in polygons])
+
+    edgePolygonsBool = np.logical_not(insidePolygonsBool)
+    
+    intersectionPolygon = []
+    for poly in polygons[edgePolygonsBool]:
+        inter = poly.intersection(combiPoly)
+        if not isinstance(inter,PolygonS): # Not a simple polygon
+            inter = inter[np.argmax([x.area for x in inter])] # Return the polygon with biggest area inside boundary
+        intersectionPolygon.append(inter)
+    
+    Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
+    
+    
+    if plot or len(pointsX)!=len(Polygons):
+        plt.figure()
+        insiders = np.logical_not(edgePolygonsBool)
+        
+        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='r') for inter in polygons[insiders]]
+        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='g') for inter in intersectionPolygon]
+        [plt.plot(np.array(bound.boundary.coords)[:,0],np.array(bound.boundary.coords)[:,1],'-.',c='r') for bound in BoundPoly]
+        plt.scatter(extraPoints[:,0],extraPoints[:,1])
+
+        from scipy.spatial import voronoi_plot_2d
+        voronoi_plot_2d(vor)
+    if not len(pointsX)==len(Polygons):
+        raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calulated edge\n - ??'.format(len(pointsX),len(Polygons)))
+
+
+    return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
 #
 #
 #
@@ -3715,50 +3719,49 @@ def test_DataSet_plotQPlane():
 
 @pytest.mark.unit
 def test_DataSet_plotA3A4(quick):
-    assert True
-#     plt.ioff()
+    plt.ioff()
 
-#     File1 = 'TestData/T0Phonon10meV.nxs'
-#     File2 = 'TestData/T0Phonon10meV93_5A4.nxs'
+    File1 = 'TestData/T0Phonon10meV.nxs'
+    File2 = 'TestData/T0Phonon10meV93_5A4.nxs'
 
-#     DS = DataSet(convertedFiles=[File1,File2])
+    DS = DataSet(convertedFiles=[File1,File2])
 
-#     F1 = DS.convertedFiles[0]
-#     F2 = DS.convertedFiles[1]
+    F1 = DS.convertedFiles[0]
+    F2 = DS.convertedFiles[1]
 
-#     files = [F1,F2]
-#     axes = [plt.figure().gca(),plt.figure().gca()]
-#     try:
-#         plotA3A4(files,planes=[],ax=axes) # 64 planes and only 2 axes
-#         assert False
-#     except AttributeError:
-#         assert True
+    files = [F1,F2]
+    axes = [plt.figure().gca(),plt.figure().gca()]
+    try:
+        plotA3A4(files,planes=[],ax=axes) # 64 planes and only 2 axes
+        assert False
+    except AttributeError:
+        assert True
 
-#     try:
-#         plotA3A4(files,planes=None,ax=[]) # 64 planes and only 2 axes
-#         assert False
-#     except AttributeError:
-#         assert True 
+    try:
+        plotA3A4(files,planes=None,ax=[]) # 64 planes and only 2 axes
+        assert False
+    except AttributeError:
+        assert True 
 
-#     try:
-#         plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
-#         assert False
-#     except AttributeError:
-#         assert True
+    try:
+        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
+        assert False
+    except AttributeError:
+        assert True
 
-#     try:
-#         plotA3A4(files,planes=[10,[22]],ax=axes,singleFigure=True) # 2 axes and singleFigure true
-#         assert False
-#     except AttributeError:
-#         assert True
-#     if not quick==True:
-#         plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
-#         DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
-#         DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
-#         patches,energies=DS.plotA3A4([F1],planes=[10,25],returnPatches=True)
-#         assert(len(patches)==2)
-#         assert(len(energies)==2)
-#     plt.close('all')
+    try:
+        plotA3A4(files,planes=[10,[22]],ax=axes,singleFigure=True) # 2 axes and singleFigure true
+        assert False
+    except AttributeError:
+        assert True
+    if not quick==True:
+        plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
+        DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
+        DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
+        patches,energies=DS.plotA3A4(F1,planes=[10,25],returnPatches=True)
+        assert(len(patches)==2)
+        assert(len(energies)==2)
+    plt.close('all')
 
 @pytest.mark.unit
 def test_DataSet_plotQPatches(quick):
