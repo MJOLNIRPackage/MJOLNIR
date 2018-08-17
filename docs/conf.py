@@ -31,10 +31,10 @@ copyright = u'2018, Jakob Lass'
 author = u'Jakob Lass'
 
 # The short X.Y version
-version = u'0.5.1'
+version = u'0.5.2'
 # The full version, including alpha/beta/rc tags
 
-release = u'0.5.1'
+release = u'0.5.2'
 
 
 
@@ -43,7 +43,7 @@ release = u'0.5.1'
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-needs_sphinx = '1.0'
+needs_sphinx = '1.4'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
