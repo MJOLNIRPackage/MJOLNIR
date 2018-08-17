@@ -102,6 +102,170 @@ class DataFile(object):
     def __add__(self,other):
         pass
 
+    def plotA4(self,binning=None):
+        """Method to plot the fitted A4 values of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the A4 values are plotted
+
+        """
+        if self.type == 'h5':
+            if binning is None:
+                binning = 8
+            with hdf.File(self.fileLocation) as f:
+                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                if instrumentCalibration.shape == ():
+                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+
+        else:
+            if binning is None or binning == self.binning:
+                binning = self.binning
+            else:
+                with hdf.File(self.fileLocation) as f:
+                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                    if instrumentCalibration.shape == ():
+                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+        
+
+        InstrA4 = instrumentCalibration[:,9]
+        Norm = (instrumentCalibration[:,3]*instrumentCalibration[:,5]*np.sqrt(2*np.pi)).reshape((104,8*binning))
+
+        A4 = np.reshape(InstrA4,(104,8*binning))
+        fig = plt.figure()
+        for i in range(104):
+            plt.scatter(-A4[i],np.arange(len(A4[i])),c=Norm[i])
+        
+        plt.title('Instrument calibration')
+        plt.ylabel('Pixel')
+        plt.xlabel('-A4 [deg]')
+
+        return fig
+
+    def plotEf(self,binning=None):
+        """Method to plot the fitted Ef values of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the Ef values are plotted
+
+        """
+        if self.type == 'h5':
+            if binning is None:
+                binning = 8
+            with hdf.File(self.fileLocation) as f:
+                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                if instrumentCalibration.shape == ():
+                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+
+        else:
+            if binning is None or binning == self.binning:
+                binning = self.binning
+            else:
+                with hdf.File(self.fileLocation) as f:
+                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                    if instrumentCalibration.shape == ():
+                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+        
+
+        Ef = instrumentCalibration[:,4].reshape(104,8*binning)
+        fig = plt.figure()
+        for i in range(104):
+            plt.scatter(i*np.ones_like(Ef[i]),Ef[i],zorder=10)
+        plt.xlabel('Detector number')
+        plt.ylabel('Ef [meV]')
+        plt.title('Final Energy Individual')
+        plt.grid(True)
+
+        return fig
+
+    def plotEfOverview(self,binning=None):
+        """Method to plot the fitted Ef values of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the Ef values are plotted
+
+        """
+        if self.type == 'h5':
+            if binning is None:
+                binning = 8
+            with hdf.File(self.fileLocation) as f:
+                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                if instrumentCalibration.shape == ():
+                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+
+        else:
+            if binning is None or binning == self.binning:
+                binning = self.binning
+            else:
+                with hdf.File(self.fileLocation) as f:
+                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                    if instrumentCalibration.shape == ():
+                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+
+        Ef = instrumentCalibration[:,4].reshape(104,8*binning)
+        fig = plt.figure()
+        plt.imshow(Ef.T,origin='lower')
+        plt.xlabel('Detector number')
+        plt.ylabel('Pixel number')
+        plt.colorbar()
+        plt.title('Final Energy Overview')
+
+        return fig
+
+    def plotNormalization(self,binning=None):
+        """Method to plot the fitted integrated intensities of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the Ef values are plotted
+
+        """
+        if self.type == 'h5':
+            if binning is None:
+                binning = 8
+            with hdf.File(self.fileLocation) as f:
+                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                if instrumentCalibration.shape == ():
+                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+
+        else:
+            if binning is None or binning == self.binning:
+                binning = self.binning
+            else:
+                with hdf.File(self.fileLocation) as f:
+                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
+                    if instrumentCalibration.shape == ():
+                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+        
+
+        Norm = (instrumentCalibration[:,3]*instrumentCalibration[:,5]*np.sqrt(2*np.pi)).reshape((104,8*binning))
+
+        fig = plt.figure()
+        plt.imshow(Norm.T,origin='lower')
+        plt.xlabel('Detector number')
+        plt.ylabel('Pixel number')
+        plt.title('Normalization')
+
+        return fig
+
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
     def __init__(self,a=None,b=None,c=None,alpha=90,beta=90,gamma=90,sample=None,name='Unknown'):
@@ -518,3 +682,104 @@ def test_DataFile_rotations():
     for i in range(len(rotVector)):
         assert(np.isclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i])))
         assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
+
+def test_DataFile_plotA4():
+    plt.ioff()
+    fileName = 'TestData/cameasim2018n000011.h5'
+    fileName2= 'TestData/cameasim2018n000011.nxs'
+    file = DataFile(fileName)
+
+    try:
+        file.plotA4(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotA4(1)
+    fig2 = file.plotA4()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotA4(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    file2.plotA4(binning=1)
+    plt.close('all')
+
+    
+def test_DataFile_plotEf():
+    plt.ioff()
+    fileName = 'TestData/cameasim2018n000011.h5'
+    fileName2= 'TestData/cameasim2018n000011.nxs'
+    file = DataFile(fileName)
+
+    try:
+        file.plotEf(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotEf(1)
+    fig2 = file.plotEf()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotEf(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    file2.plotEf(binning=1)
+    plt.close('all')
+
+def test_DataFile_plotEfOverview():
+    plt.ioff()
+    fileName = 'TestData/cameasim2018n000011.h5'
+    fileName2= 'TestData/cameasim2018n000011.nxs'
+    file = DataFile(fileName)
+
+    try:
+        file.plotEfOverview(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotEfOverview(1)
+    fig2 = file.plotEfOverview()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotEfOverview(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    file2.plotEfOverview(binning=1)
+    plt.close('all')
+
+def test_DataFile_plotNormalization():
+    plt.ioff()
+    fileName = 'TestData/cameasim2018n000011.h5'
+    fileName2= 'TestData/cameasim2018n000011.nxs'
+    file = DataFile(fileName)
+
+    try:
+        file.plotNormalization(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotNormalization(1)
+    fig2 = file.plotNormalization()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotNormalization(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    file2.plotNormalization(binning=1)
+    plt.close('all')
