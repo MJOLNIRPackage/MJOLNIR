@@ -3541,6 +3541,7 @@ def test_DataSet_full_test():
     
     os.remove('TestData/cameasim2018n000001.nxs')
     del viewer
+    plt.close('all')
 
 def test_DataSet_Visualization():
     import warnings
@@ -3558,7 +3559,7 @@ def test_DataSet_Visualization():
     viewer = Viewer3D.Viewer3D(Intensity,bins)
     viewer.caxis = (0,100)
     plt.plot()
-    plt.close()
+    plt.close('all')
 
 def test_DataSet_binEdges():
     X = np.random.rand(100)*3 # array between 0 and 3 -ish
@@ -3696,6 +3697,7 @@ def test_DataSet_createRLUAxes():
     ds.convertDataFile()
 
     ax = ds.createRLUAxes()
+    plt.close('all')
 
 
 def test_DataSet_plotQPlane():
@@ -3716,6 +3718,7 @@ def test_DataSet_plotQPlane():
         assert False
     except:
         assert True
+    plt.close('all')
 
 @pytest.mark.unit
 def test_DataSet_plotA3A4(quick):
@@ -3914,3 +3917,5 @@ def test_DataSet_plotCutQELine():
 
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
         QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU',vmin=0.0,vmax=1.5e-6,ticks=10,plotSeperator = False,tickRound=1)
+
+    plt.close('all')
