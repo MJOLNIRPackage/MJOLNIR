@@ -13,6 +13,77 @@ Most often, one would rotate the back-end into a suitable :math:`A4` and :math:`
 
 .. Having the raw data in the H5 format, converting the data files into :math:`S(\vec{q},\omega)` is rather strraihgt forward. 
 
+HdF file format
+---------------
+
+The raw data from the instrument is expected to be provided in an HdF 5 format with the following structure::
+
+    cameasim2018n0000xx.h5
+        └── entry
+            ├── CAMEA
+            │    ├── detector
+            │    │    ├── data
+            │    │    ├── online
+            │    │    └── polar_angle
+            │    ├── monochromator
+            │    │    ├── curvature_horizontal
+            │    │    ├── curvature_horizontal_zero
+            │    │    ├── curvature_vertical
+            │    │    ├── curvature_vertical_zero
+            │    │    ├── d_spacing
+            │    │    ├── energy
+            │    │    ├── gm
+            │    │    ├── gm_zero
+            │    │    ├── rotation_angle
+            │    │    ├── rotation_angle_zero (!!!)
+            │    │    ├── summed_counts
+            │    │    ├── tlm
+            │    │    ├── tlm_zero
+            │    │    ├── tum
+            │    │    ├── tum_zero
+            │    │    └── type
+            │    └── monochromator_slit
+            │         ├── bottom
+            │         ├── bottom_zero
+            │         ├── left
+            │         ├── left_zero
+            │         ├── right
+            │         ├── right_zero
+            │         ├── top
+            │         └── top_zero
+            ├── calibration
+            │    ├── 1_pixels
+            │    ├── 3_pixels
+            │    └── 8_pixels
+            ├── control
+            │    ├── data
+            │    ├── mode
+            │    ├── preset
+            │    └── time
+            ├── data
+            │    ├── data
+            │    └── rotation_angle
+            ├── end_time
+            ├── proposal_id
+            ├── proposal_user
+            │    └── name
+            ├── sample
+            │    ├── name
+            │    ├── orientation_matrix
+            │    ├── plane_normal
+            │    ├── polar_angle
+            │    ├── polar_angle_zero
+            │    ├── rotation_angle
+            │    ├── rotation_angle_zero
+            │    ├── rotation_angle_zero
+            │    ├── temperature
+            │    └── unit_cell
+            ├── scancommand
+            ├── start_time
+            └── title
+
+From this file, raw plotting and a conversion algorithm is possible. Raw plotting is further explained in  :ref:`Command Line Tutorial<Command-Line-Tutorials>`.
+
 
 
 NXsqom file format
@@ -30,21 +101,43 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
             ├── CAMEA
             │    ├── detector
             │    │    ├── data
-            │    │    ├── polar_angle
-            │    └── monochromator
-            │         ├── d_spacing
-            │         ├── energy
-            │         ├── rotation_angle
-            │         └── type
+            │    │    ├── online
+            │    │    └── polar_angle
+            │    ├── monochromator
+            │    │    ├── curvature_horizontal
+            │    │    ├── curvature_horizontal_zero
+            │    │    ├── curvature_vertical
+            │    │    ├── curvature_vertical_zero
+            │    │    ├── d_spacing
+            │    │    ├── energy
+            │    │    ├── gm
+            │    │    ├── gm_zero
+            │    │    ├── rotation_angle
+            │    │    ├── rotation_angle_zero (!!!)
+            │    │    ├── summed_counts
+            │    │    ├── tlm
+            │    │    ├── tlm_zero
+            │    │    ├── tum
+            │    │    ├── tum_zero
+            │    │    └── type
+            │    └── monochromator_slit
+            │         ├── bottom
+            │         ├── bottom_zero
+            │         ├── left
+            │         ├── left_zero
+            │         ├── right
+            │         ├── right_zero
+            │         ├── top
+            │         └── top_zero
             ├── calibration
             │    ├── 1_pixels
             │    ├── 3_pixels
-            │    ├── 8_pixels
+            │    └── 8_pixels
             ├── control
             │    ├── data
             │    ├── mode
             │    ├── preset
-            │    ├── time
+            │    └── time
             ├── data
             │    ├── data
             │    ├── en
@@ -71,7 +164,12 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
             │    ├── orientation_matrix
             │    ├── plane_normal
             │    ├── polar_angle
+            │    ├── polar_angle_zero
+            │    ├── rotation_angle
+            │    ├── rotation_angle_zero
+            │    ├── rotation_angle_zero
+            │    ├── temperature
             │    └── unit_cell
+            ├── scancommand
             ├── start_time
             └── title
-
