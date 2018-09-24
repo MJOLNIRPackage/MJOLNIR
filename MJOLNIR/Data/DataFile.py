@@ -125,6 +125,7 @@ class DataFile(object):
         else:
             if binning is None or binning == self.binning:
                 binning = self.binning
+                instrumentCalibration = self.instrumentCalibration
             else:
                 with hdf.File(self.fileLocation) as f:
                     instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
@@ -169,6 +170,7 @@ class DataFile(object):
         else:
             if binning is None or binning == self.binning:
                 binning = self.binning
+                instrumentCalibration = self.instrumentCalibration
             else:
                 with hdf.File(self.fileLocation) as f:
                     instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
@@ -210,6 +212,7 @@ class DataFile(object):
         else:
             if binning is None or binning == self.binning:
                 binning = self.binning
+                instrumentCalibration = self.instrumentCalibration
             else:
                 with hdf.File(self.fileLocation) as f:
                     instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
@@ -249,6 +252,7 @@ class DataFile(object):
         else:
             if binning is None or binning == self.binning:
                 binning = self.binning
+                instrumentCalibration = self.instrumentCalibration
             else:
                 with hdf.File(self.fileLocation) as f:
                     instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
@@ -263,7 +267,7 @@ class DataFile(object):
         plt.xlabel('Detector number')
         plt.ylabel('Pixel number')
         plt.title('Normalization')
-
+        plt.colorbar()
         return fig
 
 class Sample(object):
@@ -522,7 +526,6 @@ def extractData(files):
         a4.append(datafile.A4-datafile.A4Off)
         Ei.append(datafile.Ei)
         
-    
     I = np.concatenate(I)
     qx = np.concatenate(posx)
     qy = np.concatenate(posy)
