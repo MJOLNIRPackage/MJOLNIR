@@ -1040,10 +1040,6 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         dset.attrs['units'] = np.string_('counts')
         
         
-
-
-
-
         makeMonitor(entry,Numpoints)
         entry.create_dataset('scancommand',data=scanType)
         
