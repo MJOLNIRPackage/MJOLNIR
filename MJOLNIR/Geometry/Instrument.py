@@ -761,7 +761,23 @@ def findPeak(data):
 
 
 def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no cover
-    """Convert McStas simulation to h5 format"""
+    """Convert McStas simulation to h5 format.
+    
+    Args:
+
+        - fileName (str): File name of created file ('*.hdf')
+
+        - title (str): Title of HdF file
+
+        - sample (str): Name of sample
+
+        - fname (str): Location folder of McStas Data (must end with '/')
+
+    Kwargs:
+
+        - CalibrationFile (str or list of str): Location of calibration file(s) wanted in HdF file (defailt None)
+
+    """
     def addMetaData(entry,title):
         dset = entry.create_dataset('start_time',(1,),dtype='<S70')
         dset[0] = b'2018-03-22T16:44:02+01:00'
@@ -789,6 +805,60 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         
         dset = mono.create_dataset('d_spacing',(1,),'float32')
         dset[0] = 3.354
+        dset.attrs['units'] = 'anstrom'
+
+        dset = mono.create_dataset('curvature_horizontal',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'meter'
+
+        dset = mono.create_dataset('curvature_vertical',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'meter'
+
+        dset = mono.create_dataset('curvature_horizontal_zero',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'meter'
+
+        dset = mono.create_dataset('curvature_vertical_zero',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'meter'
+
+        dset = mono.create_dataset('gm',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'degree'
+
+        dset = mono.create_dataset('gm_zero',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'degree'
+
+        dset = mono.create_dataset('tlm',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'degree'
+
+        dset = mono.create_dataset('tlm_zero',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'degree'
+
+        dset = mono.create_dataset('tum',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'degree'
+
+        dset = mono.create_dataset('tum_zero',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'degree'
+
+        monoSlit = inst.create_group('monochromator_slit')
+        monoSlit.attrs['NX_class'] = np.string_('NXmonochromatorslit')
+
+        for x in ['bottom','left','right','top']:
+            dset = monoSlit.create_dataset(x,(1,),'float32')
+            dset[0] = 0.0
+            dset.attrs['units'] = 'mm'
+
+            dset = monoSlit.create_dataset(x+'_zero',(1,),'float32')
+            dset[0] = 0.0
+            dset.attrs['units'] = 'mm'
+
 
     def addDetector(inst):
         det = inst.create_group('detector')
@@ -880,6 +950,9 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         cell[5] = 90.
         dset = sam.create_dataset('unit_cell',data=cell)
 
+        dset = sam.create_dataset('temperature',data=0.0)
+
+
         
 
     def isVaried(data):
@@ -916,19 +989,25 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         scanType='Unknown'
         if isVaried(a3):
             dset = sam.create_dataset('rotation_angle',data=a3)
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=0.0)
             nxdata['rotation_angle'] = dset
-            scanType = 'a3Scan'
+            nxdata['rotation_angle_zero'] = dset_zero
+            scanType = 'cscan a3 {} da3 {} n {}'.format(np.mean(a3),np.mean(np.diff(a3)),len(a3))
         else:
             dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
+            dset = sam.create_dataset('rotation_angle_zero',data=0.0)
 
         dset.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
             dset = det.create_dataset('polar_angle',data=a4)
             nxdata['polar_angle'] = dset
-            scanType = 'a4Scan'
+            dset = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
+            nxdata['polar_angle_zero'] = dset
+            scanType = 'cscan a4 {} da4 {} n {}'.format(np.mean(a4),np.mean(np.diff(a4)),len(a4))
         else:
             dset = det.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
+            dset = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
         dset.attrs['units'] = np.string_('degrees')
         
 
@@ -940,7 +1019,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             nxdata['incident_energy'] = dset
             mono.create_dataset('rotation_angle',data=theta);
             sam.create_dataset('polar_angle',data=tth)
-            scanType = 'EiScan'
+            scanType = 'cscan ei {} dei {} n {}'.format(np.mean(ei),np.mean(np.diff(ei)),len(ei))
 
         else:
             dset = mono.create_dataset('energy',(1,),dtype='float32')
@@ -953,9 +1032,20 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         dset.attrs['units'] = np.string_('degrees')
         dset = entry['sample/polar_angle']    
         dset.attrs['units'] = np.string_('degrees')
+        dset = sam.create_dataset('polar_angle_zero',data=0.0);
+
+        dset.attrs['units'] = np.string_('degrees')
+
+        dset = mono.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)));
+        dset.attrs['units'] = np.string_('counts')
+        
+        
+
+
+
 
         makeMonitor(entry,Numpoints)
-        entry['control'].create_dataset('scan_Type',data=scanType)
+        entry.create_dataset('scancommand',data=scanType)
         
     def makeMonitor(entry,Numpoints):
         control = entry.create_group('control')
