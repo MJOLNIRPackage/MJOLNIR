@@ -3028,15 +3028,13 @@ def isListOfStrings(object):
 def isListOfDataFiles(inputFiles):
     returnList = []
     if isinstance(inputFiles,list):
-        # Check if files exists
-        exists = [os.path.exists(file) for file in inputFiles]
-        inputFilesNP = np.array(inputFiles)
-        if not np.all(exists):
-            raise AttributeError('Following file(s) do not exist:\n{}'.format('\n'.join([x for x in inputFilesNP[np.logical_not(exists)]])))
         for file in inputFiles:
             if isinstance(file,DataFile.DataFile):
                 returnList.append(file)
             elif isinstance(file,str):
+                # Check if file exists
+                if not os.path.isfile(file):
+                    raise AttributeError('Following file do not exist:\n{}'.format(file))
                 returnList.append(DataFile.DataFile(file))
     elif isinstance(inputFiles,DataFile.DataFile):
         returnList.append(inputFiles)

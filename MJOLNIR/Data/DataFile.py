@@ -11,6 +11,9 @@ import warnings
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
     def __init__(self,fileLocation):
+        # Check if file exists
+        if not os.path.isfile(fileLocation):
+            raise AttributeError('File location does not exist({}).'.format(fileLocation))
         if fileLocation.split('.')[-1]=='nxs':
             self.type='nxs'
             with hdf.File(fileLocation) as f:
