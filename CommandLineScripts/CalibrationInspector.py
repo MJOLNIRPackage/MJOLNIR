@@ -13,8 +13,11 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib._pylab_helpers
-#import sys
-#sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
+import os
+import sys
+settingsFile = '.settings'
+
+sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 
 from MJOLNIR.Data import DataFile
 
@@ -36,15 +39,60 @@ def switch(argument):
 
 
 parser = argparse.ArgumentParser(description="Inspection tool to visialize calibration tables in a data file.")
-parser.add_argument("DataFile", type=str,help="Data file from which calibration table is to be plotted.")
+parser.add_argument("DataFile", nargs ='?', default=argparse.SUPPRESS, type=str,help="Data file from which calibration table is to be plotted. If none provided file dialog will appear.")
 parser.add_argument("-s", "--save", type=str, default= '',help="Location to which the generated file will be saved.")
-parser.add_argument('-p', "--plot", nargs = '*', dest = 'plotList', help = 'List of wanted plots to be generated. Should be "{}". Default "A4".'.format('","'.join([str(x) for x in list(PlotType.values())])), default = ['A4'])
+parser.add_argument('-p', "--plot", nargs = '*', dest = 'plotList', help = 'List of wanted plots to be generated. Should be "{}". Default all of them.'.format('","'.join([str(x) for x in list(PlotType.values())])), default = PlotType.values())
 parser.add_argument("-b", "--binning", type=int, default= '8',help="Binning to be inspected. Default '8'")
 
 args = parser.parse_args()
 
 
-file = args.DataFile
+if not 'DataFile' in args:
+    startingPath = None
+    try:
+        with open(os.path.realpath(settingsFile),'r') as f:
+            lines = f.readlines()
+            for l in lines:
+                if 'CalibrationInspectorDir:' in l:
+                    startingPath = l.split(':')[-1].strip()
+    except:
+        pass
+
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+    except:
+        import Tkinter as tk
+        import tkFileDialog as filedialog
+    
+    root = tk.Tk()
+    root.withdraw()
+    
+    
+    file = filedialog.askopenfilename(initialdir=startingPath, title = 'Select file for calibration plotting',filetypes=(('CAMEA Data files',('*.h5','*.nxs')),('Calibration Files','*.calib'),('All Files','*')))
+    
+    if len(file)==0: # No file chosen
+        sys.exit()
+    directory = os.path.split(file)[0]
+    
+    if os.path.isfile(settingsFile):
+        if not startingPath == directory: # If directory of new file is different from olde one, save the new to settings
+            os.rename(settingsFile,settingsFile+'Old')
+            with open(settingsFile,'w') as newF:
+                with open(settingsFile+'Old','r') as oldF:
+                    for line in oldF:
+                        if 'CalibrationInspectorDir:' in line:
+                            newF.write('CalibrationInspectorDir:'+directory+'\n')
+                        else:
+                            newF.write(line)
+            os.remove(settingsFile+'Old')
+    else:
+        with open(settingsFile,'w') as f:
+            f.write('CalibrationInspectorDir:'+directory+'\n')
+
+
+else:
+    file = args.DataFile
 plot = args.plotList
 binning = args.binning
 
@@ -62,10 +110,6 @@ booleanList[np.array(argsIdx)]=True
 
 
 
-
-
-
-
 if not args.save is '':
     saveFile = True
     saveLocation = args.save
@@ -73,9 +117,6 @@ else:
     saveFile = False
 
 File = DataFile.DataFile(file)
-
-
-
 
 
 for id in argsIdx:
@@ -97,7 +138,6 @@ for id in argsIdx:
 if saveFile==True:
     figures=[manager.canvas.figure
          for manager in matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
-    import os
     if len(argsIdx)>1:
         #print('__________________')
         #print(saveLocation)
@@ -108,13 +148,16 @@ if saveFile==True:
             for f in figures:
                 title = f.get_axes()[0].get_title().replace(' ','_')
                 print('Save figure as '+saveLocation+title+'.png')
+                f.savefig(saveLocation+title+'.png')
     else:
         title = figures[0].get_axes()[0].get_title().replace(' ','_')
         if '.' in saveLocation:
             if saveLocation.split('.')[-1]=='png':
                 print('Save figure as '+saveLocation)
+                f.savefig(saveLocation)
         else:
             print('Save figure as '+saveLocation+title+'.png')
+            f.savefig(saveLocation+title+'.png')
             
 
 
