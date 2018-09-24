@@ -276,7 +276,7 @@ class DataSet(object):
             if instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
                 Data.shape = (Data.shape[0],Data.shape[1],-1)
 
-            A4Zero = file.get('entry/zeros/A4')
+            A4Zero = file.get('entry/sample/polar_angle_zero')
             
             if A4Zero is None:
                 A4Zero=0.0
@@ -284,7 +284,7 @@ class DataSet(object):
                 A4Zero = np.deg2rad(np.array(A4Zero))
 
             
-            A3Zero = file.get('entry/zeros/A3')
+            A3Zero = file.get('entry/sample/rotation_angle_zero')
             if A3Zero is None:
                 A3Zero=0.0
             else:
@@ -292,8 +292,8 @@ class DataSet(object):
 
             A4 = np.deg2rad(np.array(normalization[:,9]))+A4Zero
             A4=A4.reshape(detectors,binning*EPrDetector,order='C')
-            Ef = np.array(normalization[:,4])
-            Ef=Ef.reshape(detectors,binning*EPrDetector,order='C')
+            #Ef = np.array(normalization[:,4])
+            #Ef=Ef.reshape(detectors,binning*EPrDetector,order='C')
 
             PixelEdge = normalization[:,7:9].reshape(detectors,EPrDetector,binning,2).astype(int)
 
@@ -304,11 +304,11 @@ class DataSet(object):
             A4Shape = A4.shape
             A4Mean = A4.reshape((1,A4Shape[0],A4Shape[1]))-np.deg2rad(A4File).reshape((A4File.shape[0],1,1))
 
-            DataMean=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
+            DataSum=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
             for i in range(detectors): # for each detector
                 for j in range(EPrDetector):
                     for k in range(binning):
-                        DataMean[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
+                        DataSum[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
 
             EfMean = normalization[:,4].reshape(A4.shape[0],EPrDetector*binning)
             Normalization = (normalization[:,3]*np.sqrt(2*np.pi)*normalization[:,5]).reshape(A4.shape[0],EPrDetector*binning)
@@ -330,7 +330,7 @@ class DataSet(object):
 
             EnergyShape = (1,len(Ei),1,EfMean.shape[0],EfMean.shape[1])
             DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
-            Intensity = DataMean.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
+            Intensity = DataSum.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
         
             DeltaE=DeltaE.repeat(QX.shape[0],axis=0)
             DeltaE=DeltaE.repeat(QX.shape[2],axis=2)
@@ -3028,6 +3028,11 @@ def isListOfStrings(object):
 def isListOfDataFiles(inputFiles):
     returnList = []
     if isinstance(inputFiles,list):
+        # Check if files exists
+        exists = [os.path.exists(file) for file in inputFiles]
+        inputFilesNP = np.array(inputFiles)
+        if not np.all(exists):
+            raise AttributeError('Following file(s) do not exist:\n{}'.format('\n'.join([x for x in inputFilesNP[np.logical_not(exists)]])))
         for file in inputFiles:
             if isinstance(file,DataFile.DataFile):
                 returnList.append(file)
