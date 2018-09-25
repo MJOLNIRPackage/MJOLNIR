@@ -31,11 +31,13 @@ class DataFile(object):
                 self.A4 = np.array(instr.get('detector/polar_angle'))
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 if not f.get('entry/zeros/A4') is None:
-                        self.A4Off = np.array(f.get('entry/zeros/A4'))
+                    self.A4Off = np.array(f.get('entry/zeros/A4'))
                 else:
                     self.A4Off = 0.0
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                self.instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(self.binning))))
+                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/Ef'.format(str(self.binning))))
+                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/A4'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/Edges'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
@@ -53,6 +55,10 @@ class DataFile(object):
                 self.A4 = np.array(instr.get('detector/polar_angle'))
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 self.A4Off = np.array(f.get('entry/zeros/A4'))
+                self.binning=1 # Choose standard binning 1
+                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/Ef'.format(str(self.binning))))
+                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/A4'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/Edges'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
@@ -117,29 +123,11 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the A4 values are plotted
 
         """
-        if self.type == 'h5':
-            if binning is None:
-                binning = 8
-            with hdf.File(self.fileLocation) as f:
-                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                if instrumentCalibration.shape == ():
-                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+        self = loadBinning(self,binning)
+        binning = self.binning
+        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
 
-        else:
-            if binning is None or binning == self.binning:
-                binning = self.binning
-                instrumentCalibration = self.instrumentCalibration
-            else:
-                with hdf.File(self.fileLocation) as f:
-                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                    if instrumentCalibration.shape == ():
-                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
-        
-
-        InstrA4 = instrumentCalibration[:,9]
-        Norm = (instrumentCalibration[:,3]*instrumentCalibration[:,5]*np.sqrt(2*np.pi)).reshape((104,8*binning))
-
-        A4 = np.reshape(InstrA4,(104,8*binning))
+        A4 = np.reshape(self.instrumentCalibrationA4,(104,8*binning))
         fig = plt.figure()
         for i in range(104):
             plt.scatter(-A4[i],np.arange(len(A4[i])),c=Norm[i])
@@ -162,26 +150,10 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the Ef values are plotted
 
         """
-        if self.type == 'h5':
-            if binning is None:
-                binning = 8
-            with hdf.File(self.fileLocation) as f:
-                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                if instrumentCalibration.shape == ():
-                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
-
-        else:
-            if binning is None or binning == self.binning:
-                binning = self.binning
-                instrumentCalibration = self.instrumentCalibration
-            else:
-                with hdf.File(self.fileLocation) as f:
-                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                    if instrumentCalibration.shape == ():
-                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+        self = loadBinning(self,binning)
         
-
-        Ef = instrumentCalibration[:,4].reshape(104,8*binning)
+        binning = self.binning
+        Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
         fig = plt.figure()
         for i in range(104):
             plt.scatter(i*np.ones_like(Ef[i]),Ef[i],zorder=10)
@@ -204,25 +176,9 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the Ef values are plotted
 
         """
-        if self.type == 'h5':
-            if binning is None:
-                binning = 8
-            with hdf.File(self.fileLocation) as f:
-                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                if instrumentCalibration.shape == ():
-                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
-
-        else:
-            if binning is None or binning == self.binning:
-                binning = self.binning
-                instrumentCalibration = self.instrumentCalibration
-            else:
-                with hdf.File(self.fileLocation) as f:
-                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                    if instrumentCalibration.shape == ():
-                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
-
-        Ef = instrumentCalibration[:,4].reshape(104,8*binning)
+        self = loadBinning(self,binning)
+        binning = self.binning
+        Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
         fig = plt.figure()
         plt.imshow(Ef.T,origin='lower')
         plt.xlabel('Detector number')
@@ -244,26 +200,10 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the Ef values are plotted
 
         """
-        if self.type == 'h5':
-            if binning is None:
-                binning = 8
-            with hdf.File(self.fileLocation) as f:
-                instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                if instrumentCalibration.shape == ():
-                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
-
-        else:
-            if binning is None or binning == self.binning:
-                binning = self.binning
-                instrumentCalibration = self.instrumentCalibration
-            else:
-                with hdf.File(self.fileLocation) as f:
-                    instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(binning))))
-                    if instrumentCalibration.shape == ():
-                        raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+        self = loadBinning(self,binning)
         
-
-        Norm = (instrumentCalibration[:,3]*instrumentCalibration[:,5]*np.sqrt(2*np.pi)).reshape((104,8*binning))
+        binning = self.binning
+        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
 
         fig = plt.figure()
         plt.imshow(Norm.T,origin='lower')
@@ -272,6 +212,27 @@ class DataFile(object):
         plt.title('Normalization')
         plt.colorbar()
         return fig
+
+def loadBinning(self,binning):
+    """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
+
+
+    if binning is None or binning == self.binning:
+        binning = self.binning
+    else:
+        with hdf.File(self.fileLocation) as f:
+            # Check if binning is in file
+            binningsPossible = np.array([int(x.split('_')[0]) for x in np.array(f.get('entry/calibration'))])
+            if not binning in binningsPossible:
+                raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+            
+            self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/Ef'.format(str(binning))))
+            self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/A4'.format(str(binning))))
+            self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/Edges'.format(str(binning))))
+            self.binning = binning 
+    return self
+            
+
 
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
@@ -539,7 +500,7 @@ def extractData(files):
     a4 = np.concatenate(a4)
     Ei = np.concatenate(Ei)
 
-    return I,qx,qy,energy,Norm,Monitor,a3,a4,files[-1].instrumentCalibration,Ei # FIXME: Might be a problem if combining dataset with different calibrations!
+    return I,qx,qy,energy,Norm,Monitor,a3,a4,files[-1].instrumentCalibrationEf,files[-1].instrumentCalibrationA4,files[-1].instrumentCalibrationEdges,Ei # FIXME: Might be a problem if combining dataset with different calibrations!
 
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
     v/=np.linalg.norm(v)
@@ -672,8 +633,8 @@ def test_DataFile():
         assert False
     except:
         assert True
-    files = ['TestData/cameasim2018n000011.h5',
-             'TestData/cameasim2018n000011.nxs']
+    files = ['TestData/ManuallyChangedData/A3.h5',
+             'TestData/ManuallyChangedData/A3.nxs']
     DF1 = DataFile(files[0])
     DF2 = DataFile(files[1])
     s = str(DF2)
@@ -691,8 +652,8 @@ def test_DataFile_rotations():
 
 def test_DataFile_plotA4():
     plt.ioff()
-    fileName = 'TestData/cameasim2018n000011.h5'
-    fileName2= 'TestData/cameasim2018n000011.nxs'
+    fileName = 'TestData/ManuallyChangedData/A3.h5'
+    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
     file = DataFile(fileName)
 
     try:
@@ -710,15 +671,15 @@ def test_DataFile_plotA4():
         assert False
     except AttributeError:
         assert True
-
+    
     file2.plotA4(binning=1)
     plt.close('all')
 
     
 def test_DataFile_plotEf():
     plt.ioff()
-    fileName = 'TestData/cameasim2018n000011.h5'
-    fileName2= 'TestData/cameasim2018n000011.nxs'
+    fileName = 'TestData/ManuallyChangedData/A3.h5'
+    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
     file = DataFile(fileName)
 
     try:
@@ -742,8 +703,8 @@ def test_DataFile_plotEf():
 
 def test_DataFile_plotEfOverview():
     plt.ioff()
-    fileName = 'TestData/cameasim2018n000011.h5'
-    fileName2= 'TestData/cameasim2018n000011.nxs'
+    fileName = 'TestData/ManuallyChangedData/A3.h5'
+    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
     file = DataFile(fileName)
 
     try:
@@ -767,8 +728,8 @@ def test_DataFile_plotEfOverview():
 
 def test_DataFile_plotNormalization():
     plt.ioff()
-    fileName = 'TestData/cameasim2018n000011.h5'
-    fileName2= 'TestData/cameasim2018n000011.nxs'
+    fileName = 'TestData/ManuallyChangedData/A3.h5'
+    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
     file = DataFile(fileName)
 
     try:
