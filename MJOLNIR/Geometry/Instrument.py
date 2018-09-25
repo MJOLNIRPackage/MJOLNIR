@@ -1076,7 +1076,11 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         for i in range(len(CalibrationFile)):
             calibrationData = np.genfromtxt(CalibrationFile[i],skip_header=3,delimiter=',')
             binning = CalibrationFile[i].split('/')[-1].split('_')[-1].split('.')[0]
-            calib.create_dataset('{}_pixels'.format(binning),data=calibrationData,dtype='float32')
+            pixelCalib = calib.create_group('{}_pixels'.format(binning))
+            pixelCalib.create_dataset('Ef'.format(binning),data=calibrationData[:,3:7],dtype='float32')
+            pixelCalib.create_dataset('Edges'.format(binning),data=calibrationData[:,7:9],dtype='int')
+            pixelCalib.create_dataset('A4'.format(binning),data=calibrationData[:,9],dtype='float32')
+            
     
     addMono(inst)
     
