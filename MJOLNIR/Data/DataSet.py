@@ -244,128 +244,124 @@ class DataSet(object):
             dataFiles = self.dataFiles
 
         dataFiles = isListOfDataFiles(dataFiles)
-        #if not isinstance(dataFiles,list):
-        #    dataFiles=[dataFiles]
         for datafile in dataFiles:
             if not os.path.isfile(datafile.fileLocation):
                 raise AttributeError('Provided file does not exist, '+str(datafile))
-            file = hdf.File(datafile.fileLocation,mode='r+')             
-            instrument = getInstrument(file)
-           
-            if instrument.name.split('/')[-1] == 'CAMEA':
-                EPrDetector = 8 
-            elif instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
-                EPrDetector = 1
+            with hdf.File(datafile.fileLocation,mode='r+') as file:
+                #file = hdf.File(datafile.fileLocation,mode='r+')             
+                instrument = getInstrument(file)
+                ScanParam = []
             
-            
-            
-            normalization = np.array(file.get('entry/calibration/{}_pixels'.format(binning)))
-            if(normalization.shape==()):
-                raise AttributeError('Binning not found in data file ({})'.format(binning))
+                if instrument.name.split('/')[-1] == 'CAMEA':
+                    EPrDetector = 8 
+                elif instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
+                    EPrDetector = 1
+                
+                
+                if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
+                    raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([x.split('_')[0] for x in np.array(file.get('entry/calibration'))])))
+                EfNormalization = np.array(file.get('entry/calibration/{}_pixels/Ef'.format(binning)))
+                A4Normalization = np.array(file.get('entry/calibration/{}_pixels/A4'.format(binning)))
+                EdgesNormalization = np.array(file.get('entry/calibration/{}_pixels/Edges'.format(binning)))
 
-            
-            
-            Data = np.array(instrument.get('detector/data'))
+                Data = np.array(instrument.get('detector/data'))
 
-            detectors = Data.shape[1]
-            
-            liveDetectors = np.array(instrument.get('detector/online'),dtype=bool)
-            if liveDetectors is None:
-                liveDetectors = np.ones((detectors),dtype=bool)
+                detectors = Data.shape[1]
+                steps = Data.shape[0]
+                
+                liveDetectors = np.array(instrument.get('detector/online'),dtype=bool)
+                if liveDetectors is None:
+                    liveDetectors = np.ones((detectors),dtype=bool)
+                
+                if instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
+                    Data.shape = (Data.shape[0],Data.shape[1],-1)
 
-            if instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
-                Data.shape = (Data.shape[0],Data.shape[1],-1)
+                A4Zero = file.get('entry/sample/polar_angle_zero')
+                
+                if A4Zero is None:
+                    A4Zero=0.0
+                else:
+                    A4Zero = np.deg2rad(np.array(A4Zero))
 
-            A4Zero = file.get('entry/sample/polar_angle_zero')
-            
-            if A4Zero is None:
-                A4Zero=0.0
-            else:
-                A4Zero = np.deg2rad(np.array(A4Zero))
+                
+                A3Zero = file.get('entry/sample/rotation_angle_zero')
+                if A3Zero is None:
+                    A3Zero=0.0
+                else:
+                    A3Zero = np.deg2rad(np.array(A3Zero))
 
-            
-            A3Zero = file.get('entry/sample/rotation_angle_zero')
-            if A3Zero is None:
-                A3Zero=0.0
-            else:
-                A3Zero = np.deg2rad(np.array(A3Zero))
+                A4 = np.deg2rad(A4Normalization)+A4Zero
+                A4=A4.reshape(detectors,binning*EPrDetector,order='C')
 
-            A4 = np.deg2rad(np.array(normalization[:,9]))+A4Zero
-            A4=A4.reshape(detectors,binning*EPrDetector,order='C')
-            #Ef = np.array(normalization[:,4])
-            #Ef=Ef.reshape(detectors,binning*EPrDetector,order='C')
+                PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
+                factorsqrtEK = 0.694692
+                
+                A4File = np.array(instrument.get('detector/polar_angle'))
+                if A4File.shape[0]==steps:
+                    ScanParam.append('A4')
+                A4File = A4File.reshape((-1,1,1))
 
-            PixelEdge = normalization[:,7:9].reshape(detectors,EPrDetector,binning,2).astype(int)
+                A4Mean = A4.reshape((1,detectors,binning*EPrDetector))-np.deg2rad(A4File)
 
-            factorsqrtEK = 0.694692
-            
-            A4File = np.array(instrument.get('detector/polar_angle'))
-            A4File = A4File.reshape((-1))
-            A4Shape = A4.shape
-            A4Mean = A4.reshape((1,A4Shape[0],A4Shape[1]))-np.deg2rad(A4File).reshape((A4File.shape[0],1,1))
+                Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
+                for i in range(detectors): # for each detector
+                    for j in range(EPrDetector):
+                        for k in range(binning):
+                            Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
 
-            DataSum=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
-            for i in range(detectors): # for each detector
-                for j in range(EPrDetector):
-                    for k in range(binning):
-                        DataSum[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
+                EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
+                EfNormalization = (EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
 
-            EfMean = normalization[:,4].reshape(A4.shape[0],EPrDetector*binning)
-            Normalization = (normalization[:,3]*np.sqrt(2*np.pi)*normalization[:,5]).reshape(A4.shape[0],EPrDetector*binning)
+                
 
-            kf = factorsqrtEK*np.sqrt(EfMean)
-            Ei = np.array(instrument.get('monochromator/energy'))
-            
-            ki = factorsqrtEK*np.sqrt(Ei)
-            
-            A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))+A3Zero
-            
-            #### Qx = ki-kf*cos(A4), Qy = -kf*sin(A4)
+                kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
+                Ei = np.array(instrument.get('monochromator/energy'))
+                if Ei.shape[0]==steps:
+                    ScanParam.append('Ei')
+                
+                ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
 
-            Qx = ki.reshape((ki.shape[0],1,1,1))-(kf.reshape((1,1,EfMean.shape[0],EfMean.shape[1]))*np.cos(A4Mean)).reshape((1,A4Mean.shape[0],A4Mean.shape[1],A4Mean.shape[2]))
-            Qy = np.zeros((ki.shape[0],1,1,1))-kf.reshape((1,1,EfMean.shape[0],EfMean.shape[1]))*np.sin(A4Mean.reshape((1,A4Mean.shape[0],A4Mean.shape[1],A4Mean.shape[2])))
-            
-            QX = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))-Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))
-            QY = Qx.reshape((1,Qx.shape[0],Qx.shape[1],Qx.shape[2],Qx.shape[3]))*np.sin(A3.reshape((A3.shape[0],1,1,1,1)))+Qy.reshape((1,Qy.shape[0],Qy.shape[1],Qy.shape[2],Qy.shape[3]))*np.cos(A3.reshape((A3.shape[0],1,1,1,1)))
+                
+                A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))+A3Zero
+                
+                if A3.shape[0]==1:
+                    A3 = A3*np.ones((steps))
+                elif A3.shape[0]==steps:
+                    ScanParam.append('A3')
+                A3.resize((steps,1,1))
 
-            EnergyShape = (1,len(Ei),1,EfMean.shape[0],EfMean.shape[1])
-            DeltaE = (Ei.reshape((Ei.shape[0],1,1))-EfMean.reshape((1,EfMean.shape[0],EfMean.shape[1]))).reshape(EnergyShape)
-            Intensity = DataSum.reshape((QX.shape[0],QX.shape[1],QX.shape[2],QX.shape[3],QX.shape[4]))
-        
-            DeltaE=DeltaE.repeat(QX.shape[0],axis=0)
-            DeltaE=DeltaE.repeat(QX.shape[2],axis=2)
-            
-            Monitor = np.array(file.get('/entry/control/data'),dtype=int)
-            Monitor.shape = (len(Monitor),1,1)
-            Monitor = np.repeat(Monitor,Intensity.shape[3],axis=1)
-            Monitor = np.repeat(Monitor,Intensity.shape[4],axis=2)
-            Monitor.shape = Intensity.shape
+                # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
+                Qx = ki-kf*np.cos(A4Mean)
+                Qy = -kf*np.sin(A4Mean)
+                QX = Qx*np.cos(A3)-Qy*np.sin(A3)
+                QY = Qx*np.sin(A3)+Qy*np.cos(A3)
+                DeltaE = Ei-EfMean
+                if DeltaE.shape[0]==1:
+                    DeltaE = DeltaE*np.ones((steps,1,1))
+                Monitor = np.array(file.get('/entry/control/data'),dtype=int).reshape((steps,1,1))
+                Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
+                Normalization = EfNormalization*np.ones((steps,1,1))
 
-            Normalization.shape = (1,1,1,Normalization.shape[0],Normalization.shape[1])
-            Normalization = np.repeat(Normalization,Intensity.shape[0],axis=0)
-            Normalization = np.repeat(Normalization,Intensity.shape[1],axis=1)
-            Normalization = np.repeat(Normalization,Intensity.shape[2],axis=2)
-            ## TODO: Don't let all things vary at the same time!!
+                if len(ScanParam)==0:
+                    # TODO: Figure out what parameter changed
+                    ScanParam.append('External Param')
 
-            # Filter out offline detectors
-            #for attribute in [Intensity,Monitor,Normalization,QX,QY,DeltaE]:
-            #    attribute = attribute[:,:,:,liveDetectors,:]
-            
-            if not saveLocation is None:
-                if saveLocation[-1]!='/':
-                    saveLocation+='/'
-                saveloc = saveLocation+datafile.fileLocation.replace('.h5','.nxs').split('/')[-1]
-            else:
-                saveloc = datafile.fileLocation.replace('.h5','.nxs')
-            saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization)
-            
-            file.close()
-            convFil = DataFile.DataFile(saveloc)
-            self.convertedFiles.append(convFil)
+                if not saveLocation is None:
+                    if saveLocation[-1]!='/':
+                        saveLocation+='/'
+                    saveloc = saveLocation+datafile.fileLocation.replace('.h5','.nxs').split('/')[-1]
+                else:
+                    saveloc = datafile.fileLocation.replace('.h5','.nxs')
+                saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,ScanParam)
+                
+                #file.close()
+                convFil = DataFile.DataFile(saveloc)
+                self.convertedFiles.append(convFil)
         self._getData()
             
     def _getData(self): # Internal method to populate I,qx,qy,energy,Norm and Monitor
-        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a4,self.instrumentCalibration,self.Ei = DataFile.extractData(self.convertedFiles)
+        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a4,self.instrumentCalibrationEf, \
+        self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei = DataFile.extractData(self.convertedFiles)
         
 
 
@@ -2137,17 +2133,17 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     #@my_timer_N()
     #def getData(files,numFiles):
     Ishape = files[0].I.shape
-    IAll = np.array([files[i].I[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA
-    NormAll = np.array([files[i].Norm[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
-    MonitorAll = np.array([files[i].Monitor[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    IAll = np.array([files[i].I for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA ## np.array([files[i].I[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    NormAll = np.array([files[i].Norm for i in range(numFiles)]) ## np.array([files[i].Norm[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
+    MonitorAll = np.array([files[i].Monitor for i in range(numFiles)]) ## np.array([files[i].Monitor[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
         #return Ishape, IAll, NormAll,MonitorAll    
 
     #Ishape, IAll, NormAll,MonitorAll = getData(files,numFiles)
 
     
     if not ax is None:
-        if not singleFigure and len(ax) != Ishape[4] and len(planes) == 0: # Plot all planes in provided axes
-            raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,Ishape[4]))
+        if not singleFigure and len(ax) != Ishape[2] and len(planes) == 0: # Plot all planes in provided axes
+            raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,Ishape[2]))
 
     #@my_timer_N()
     #def concatINormMon(IAll, NormAll,MonitorAll):
@@ -2160,15 +2156,18 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
     #@my_timer_N()
     #def A4Instr(files,numFiles):
-    A4InstrAll = np.array([files[i].instrumentCalibration[:,9]-A4All[i] for i in range(numFiles)])
+    A4InstrAll = np.array([files[i].instrumentCalibrationA4-A4All[i] for i in range(numFiles)])
     
     # Find binning (All are equal through testing)
     binning = files[0].binning
+    
     if binning==1:
         if A4InstrAll.shape[1]==155: #MULTIFLEXX
             A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,5,binning))
-        else: # FLATCONE
-            A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,1,binning))  
+        elif A4InstrAll.shape[1]==32: # FLATCONE
+            A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,1,binning))
+        else:
+            A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,8,binning))
     else:
         A4InstrAll = np.reshape(A4InstrAll,(numFiles,-1,8,binning))
 
@@ -2282,7 +2281,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     # Calcualte k vectors
     Ei = files[0].Ei
     ki = np.sqrt(Ei)*factorsqrtEK
-    kf = np.sqrt(Ei-files[0].energy[0,0,0,:,:].mean(axis=0))*factorsqrtEK
+    kf = np.sqrt(Ei-files[0].energy[0,:,:].mean(axis=0))*factorsqrtEK
     
     
     # Convert to Q-space
@@ -2303,7 +2302,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     
     QXlim = np.max(np.abs([qxmin,qxmax]))
     QYlim = np.max(np.abs([qymin,qymax]))
-    E = np.mean(files[0].energy,axis=(0,1,2,3))
+    E = np.mean(files[0].energy,axis=(0,1))
     #    return QRX,QRY,E,QXlim,QYlim
 
     #QRX,QRY,E,QXlim,QYlim = calculateQ(GoodPolyPoints,centInd,files)
@@ -2928,9 +2927,8 @@ def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0):
     
     A4 = file.A4-file.A4Off
     Ei = file.Ei
-    IC = file.instrumentCalibration
         
-    InstrumentA4 = IC[:,-1].reshape(energy.shape[1],-1)[:,plane]
+    InstrumentA4 = file.instrumentCalibrationA4.reshape(energy.shape[1],-1)[:,plane]
     
     factorsqrtEK = 0.694692
     InstA4 = (InstrumentA4-A4)*np.pi/180.0 
@@ -3049,7 +3047,7 @@ def isListOfDataFiles(inputFiles):
     return returnList
 
 
-def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization):
+def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,ScanParam):
     
     fd = hdf.File(savefilename,'w')
     group_path = fs['/entry'].parent.name
@@ -3108,6 +3106,25 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,N
     
     en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
     en.attrs['NX_class']=b'NX_FLOAT'
+
+    sp = fd.create_group('entry/scanParameter')
+    counter = 0
+    for SP in ScanParam:
+        if SP == 'A3': # link to A3 values
+            sp['ScanParameter{}'.format(counter)] = fd['entry/sample/rotation_angle']
+            sp.attrs['ScanParameter{}'.format(counter)]=SP
+            counter+=1
+        elif SP == 'A4': # link to A4 values
+            Instr = getInstrument(fd)
+            sp['ScanParameter{}'.format(counter)] = Instr['detector/polar_angle']
+            sp.attrs['ScanParameter{}'.format(counter)]=SP
+            counter+=1
+        elif SP == 'Ei': # link to Ei values
+            Instr = getInstrument(fd)
+            sp['ScanParameter{}'.format(counter)] = Instr['monochromator/energy']
+            sp.attrs['ScanParameter{}'.format(counter)]=SP
+            counter+=1
+
 
     fd.close()
 
@@ -3335,6 +3352,14 @@ def compareNones(first,second,margin): # Function to compare
         else:
             return False
 
+def OxfordList(list):
+    """Create a comma seperated string from the strings provided with last comma trailed by 'and'."""
+    if len(list)==0:
+        return None
+    elif len(list)==1:
+        return str(list[0])
+    else:
+        return ', '.join([str(x) for x in list[:-1]])+', and ' +str(list[-1])
 #________________________________________________TESTS_____________________________________________
 
 def test_DataSet_Creation():
@@ -3457,7 +3482,7 @@ def test_DataSet_str():
 
 
 def test_DataSet_Convert_Data():
-    dataFiles = 'TestData/cameasim2018n000001.h5'
+    dataFiles = 'TestData/ManuallyChangedData/A3A4.h5'
     dataset = DataSet(dataFiles=dataFiles)
     
 
@@ -3472,12 +3497,12 @@ def test_DataSet_Convert_Data():
         assert False
     except AttributeError: # FileDoesNotExist
         assert True
-    dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/')
+    dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/ManuallyChangedData/')
     convertedFile = dataset.convertedFiles[0]
     otherFile = DataFile.DataFile(dataFiles.replace('.h5','.nxs'))
     assert(convertedFile==otherFile)
 
-    os.remove('TestData/cameasim2018n000001.nxs')
+    os.remove('TestData/ManuallyChangedData/A3A4.nxs')
     
 
 
@@ -3530,10 +3555,10 @@ def test_DataSet_full_test():
     import matplotlib.pyplot as plt
     import os
     plt.ioff()
-    DataFile = ['TestData/cameasim2018n000001.h5']
+    DataFile = ['TestData/ManuallyChangedData/A3A4.h5']
 
     dataset = DataSet(dataFiles=DataFile)
-    dataset.convertDataFile(saveLocation='TestData/')
+    dataset.convertDataFile(saveLocation='TestData/ManuallyChangedData/')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     
@@ -3542,17 +3567,17 @@ def test_DataSet_full_test():
     warnings.simplefilter('once')
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
     
-    os.remove('TestData/cameasim2018n000001.nxs')
+    os.remove('TestData/ManuallyChangedData/A3A4.nxs')
     del viewer
     plt.close('all')
 
 def test_DataSet_Visualization():
     import warnings
     from MJOLNIR.Data import Viewer3D
-    DataFile = ['TestData/cameasim2018n000001.h5']
+    DataFile = ['TestData/ManuallyChangedData/A3.h5']
 
     dataset = DataSet(dataFiles=DataFile)
-    dataset.convertDataFile(saveLocation='TestData/')
+    dataset.convertDataFile(saveLocation='TestData/ManuallyChangedData')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     plt.ioff()
@@ -3576,12 +3601,12 @@ def test_DataSet_binEdges():
     assert(np.all(np.diff(Bins[:-1])>tolerance))
 
 def test_DataSet_1Dcut():
-    q1 =  np.array([1.1,0.0])
-    q2 =  np.array([2.0, 0.0])
+    q1 =  np.array([1.0,0.0])
+    q2 =  np.array([1.0, 0.5])
     width = 0.1
 
     plt.ioff()
-    convertFiles = ['TestData/cameasim2018n000011.h5']
+    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -3594,40 +3619,43 @@ def test_DataSet_1Dcut():
 
 
 
-    ax,D,P,binCenter,binDistance = ds.plotCut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,fmt='.')
-    D2,P2 = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0)
+    ax,D,P,binCenter,binDistance = ds.plotCut1D(q1,q2,width,minPixel=0.01,Emin=3.0,Emax=4.0,fmt='.')
+    D2,P2 = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=3.0,Emax=4.0)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
     assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
 
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=3.0,Emax=4.0,extend=False)
+    #print(bins[0].shape)
+    #print(q1[0]-0.1)
+    #print(q2[0]+0.1)
     assert(np.all(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1))) 
     # x-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
     q3 = np.array([1.1,1.1])
     q4 = np.array([2.0,2.0])
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q3,q4,width,minPixel=0.01,Emin=5.5,Emax=6.0,extend=False)
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q3,q4,width,minPixel=0.01,Emin=3.0,Emax=4.0,extend=False)
     assert(np.all(np.logical_and(np.logical_and(bins[0][:,0]>=q3[0]-0.1,bins[0][:,0]<=q4[0]+0.1),np.logical_and(bins[0][:,0]>=q3[1]-0.1,bins[0][:,0]<=q4[1]+0.1)))) 
     # x and y-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
 
 def test_DataSet_1DcutE():
-    q =  np.array([2.0,0]).reshape(2,1)
+    q =  np.array([1.0,1.0]).reshape(2,1)
     width = 0.1
 
     plt.ioff()
-    convertFiles = ['TestData/cameasim2018n000011.h5']
+    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
     Datset._getData()
     I,qx,qy,energy,Norm,Monitor = Datset.I.flatten(),Datset.qx.flatten(),Datset.qy.flatten(),Datset.energy.flatten(),Datset.Norm.flatten(),Datset.Monitor.flatten()
 
-    [intensity,MonitorCount,Normalization,normcounts],[bins] = cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=5,E2=7,q=q,width=width,minPixel=0.01)
+    [intensity,MonitorCount,Normalization,normcounts],[bins] = cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=3,E2=4,q=q,width=width,minPixel=0.01)
 
-    assert(np.min(bins)>=5)
-    assert(np.max(bins)<=7)
-    assert(len(bins)==len(intensity)+1)
+    assert(np.min(bins)>=3) # Check that bins do not include data outside of cut
+    assert(np.max(bins)<=4)
+    assert(len(bins)==len(intensity)+1)# Bins denotes edges and must then be 1 more than intensity
 
-    assert(intensity.shape==MonitorCount.shape)
+    assert(intensity.shape==MonitorCount.shape) # Check that all matrices are cut equally
     assert(intensity.shape==Normalization.shape)
     assert(intensity.shape==normcounts.shape)
 
@@ -3650,7 +3678,7 @@ def test_DataSet_2Dcut():
     minPixel=0.02
     EnergyBins = np.linspace(4,7,4)
     plt.ioff()
-    convertFiles = ['TestData/cameasim2018n000011.h5']
+    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3676,7 +3704,7 @@ def test_DataSet_cutPowder():
     Tolerance = 0.01
 
     plt.ioff()
-    convertFiles = ['TestData/cameasim2018n000011.h5']
+    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3694,7 +3722,7 @@ def test_DataSet_cutPowder():
 
 def test_DataSet_createRLUAxes():
     plt.ioff()
-    convertFiles = ['TestData/cameasim2018n000011.h5']
+    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -3705,7 +3733,7 @@ def test_DataSet_createRLUAxes():
 
 def test_DataSet_plotQPlane():
     plt.ioff()
-    convertFiles = ['TestData/cameasim2018n000011.h5']
+    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3727,10 +3755,11 @@ def test_DataSet_plotQPlane():
 def test_DataSet_plotA3A4(quick):
     plt.ioff()
 
-    File1 = 'TestData/T0Phonon10meV.nxs'
-    File2 = 'TestData/T0Phonon10meV93_5A4.nxs'
+    File1 = 'TestData/ManuallyChangedData/A3.h5'
+    File2 = 'TestData/ManuallyChangedData/A3_2.h5'
 
-    DS = DataSet(convertedFiles=[File1,File2])
+    DS = DataSet(dataFiles=[File1,File2])
+    DS.convertDataFile()
 
     F1 = DS.convertedFiles[0]
     F2 = DS.convertedFiles[1]
@@ -3849,10 +3878,10 @@ def test_DataSet_compareNones():
 
 def test_DataSet_cutQELine():
     QPoints = np.array([[0.6,0,0],[0.9,0,0],[1.0,0,0],[1.25,0,0],[1.5,0,0]])
-    EnergyBins = np.linspace(5,6,11)
+    EnergyBins = np.linspace(3,4,5)
     minPixel = 0.001
     width=0.1
-    DataFile = ['TestData/cameasim2018n000011.nxs']
+    DataFile = ['TestData/ManuallyChangedData/A3.nxs']
 
     dataset = DataSet(convertedFiles=DataFile)
     
@@ -3883,10 +3912,10 @@ def test_DataSet_cutQELine():
 
 def test_DataSet_plotCutQELine():
     QPoints = np.array([[0.0,0,0],[0.9,0,0],[10.0,0,0],[1.0,0,0],[1.5,1.0,0],[0,0,0]])
-    EnergyBins = np.linspace(5,6,11)
+    EnergyBins = np.linspace(2,3,11)
     minPixel = 0.001
     width=0.1
-    DataFile = ['TestData/cameasim2018n000011.nxs']
+    DataFile = ['TestData/ManuallyChangedData/A3.nxs']
     dataset = DataSet(convertedFiles=DataFile)
     
     try: # No Q-points
