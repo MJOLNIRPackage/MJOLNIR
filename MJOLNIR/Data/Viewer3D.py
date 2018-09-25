@@ -47,7 +47,7 @@ class Viewer3D(object):
         """
         self.Data = Data
         self.bins = bins
-
+        self.dataLimits = [np.nanmin(Data),np.nanmax(Data)]
 
         gs = matplotlib.gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
         
@@ -106,7 +106,8 @@ class Viewer3D(object):
         self.Energy_slider.set_val(self.value)
 
         self.cid = self.figure.canvas.mpl_connect('button_press_event', onclick)
-
+        
+        self.caxis = self.dataLimits
 
     @property 
     def caxis(self):
