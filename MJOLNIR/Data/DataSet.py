@@ -85,6 +85,7 @@ class DataSet(object):
 
         if dataFiles is not None:
             self.dataFiles = dataFiles
+            self._getData()
 
         if normalizationfiles is not None:
             self.normalizationfiles = normalizationfiles
@@ -151,6 +152,7 @@ class DataSet(object):
             self._convertedFiles = isListOfDataFiles(convertedFiles)
         except Exception as e:
             raise(e)
+        self._getData()
 
 
     @property
@@ -180,18 +182,7 @@ class DataSet(object):
     def settings(self,*args,**kwargs):
         raise NotImplementedError('Settings cannot be overwritten.')    
 
-    def load(self,filename):
-        """Method to load an object from a pickled file."""
-        try:                                # Opening the given file with an error catch
-            fileObject = open(filename, 'rb')
-        except IOError as e:                        # Catch all IO-errors
-            print("Error in opening file:\n{}".format(e))
-        else:
-            tmp_dict = pickle.load(fileObject)
-            
-            fileObject.close()
-            # TODO: Make checks that the object loaded is of correct format?
-            self=tmp_dict
+
 
     def save(self, filename):
         try:                                # Opening the given file with an error catch
@@ -244,6 +235,8 @@ class DataSet(object):
             dataFiles = self.dataFiles
 
         dataFiles = isListOfDataFiles(dataFiles)
+        self.dataFiles = dataFiles
+        convertedFiles = []
         for datafile in dataFiles:
             if not os.path.isfile(datafile.fileLocation):
                 raise AttributeError('Provided file does not exist, '+str(datafile))
@@ -356,13 +349,18 @@ class DataSet(object):
                 
                 #file.close()
                 convFil = DataFile.DataFile(saveloc)
-                self.convertedFiles.append(convFil)
+                convertedFiles.append(convFil)
+        self.convertedFiles = convertedFiles    
         self._getData()
             
     def _getData(self): # Internal method to populate I,qx,qy,energy,Norm and Monitor
-        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
-        self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei = DataFile.extractData(self.convertedFiles)
         
+        if len(self.convertedFiles)!=0:
+            self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
+            self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei = DataFile.extractData(self.convertedFiles)
+        else:
+            self.I,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
+            self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei = DataFile.extractData(self.dataFiles)
 
 
     def binData3D(self,dx,dy,dz,dataFiles=None):
@@ -1354,7 +1352,22 @@ class DataSet(object):
         return totalData
 
 
-
+def load(filename):
+    """Function to load an object from a pickled file.
+    ..Note::
+        It is not possible to unpickle an object created in python 3 in python 2 or vice versa.
+        
+    """
+    try:                                # Opening the given file with an error catch
+        fileObject = open(filename, 'rb')
+    except IOError as e:                        # Catch all IO-errors
+        print("Error in opening file:\n{}".format(e))
+    else:
+        tmp_dict = pickle.load(fileObject)
+        
+        fileObject.close()
+        # TODO: Make checks that the object loaded is of correct format?
+        return tmp_dict
 
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
@@ -3447,9 +3460,9 @@ def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
     del emptyDataset
-    dataset = DataSet(OtherSetting=10.0,dataFiles='TestData/cameasim2018n000011.h5',convertedFiles='TestData/cameasim2018n000011.nxs',calibrationfiles=[])
-    assert(dataset.dataFiles[0].name=='cameasim2018n000011.h5')
-    assert(dataset.convertedFiles[0].name=='cameasim2018n000011.nxs')
+    dataset = DataSet(OtherSetting=10.0,dataFiles='TestData/ManuallyChangedData/A3.h5',convertedFiles='TestData/ManuallyChangedData/A3.nxs',calibrationfiles=[])
+    assert(dataset.dataFiles[0].name=='A3.h5')
+    assert(dataset.convertedFiles[0].name=='A3.nxs')
     assert(dataset.normalizationfiles == [])
     Str = str(dataset)
 
@@ -3530,21 +3543,20 @@ def test_DataSet_Error():
         assert True
 
 
-    ds.dataFiles = 'TestData/VanNormalization.h5'
+    ds.dataFiles = 'TestData/ManuallyChangedData/A3.h5'
 
 def test_DataSet_Equality():
-    D1 = DataSet(dataFiles='TestData/VanNormalization.h5')#,convertedFiles=['TestData/VanNormalization.nxs'])
+    D1 = DataSet(dataFiles='TestData/ManuallyChangedData/A3A4.h5')#,convertedFiles=['TestData/VanNormalization.nxs'])
     assert(D1==D1)
 
 def test_DataSet_SaveLoad():
     
-    D1 = DataSet(dataFiles='TestData/VanNormalization.h5')#,convertedFiles = 'TestData/VanNormalization.nxs')
+    D1 = DataSet(dataFiles='TestData/ManuallyChangedData/A3A4.h5')#,convertedFiles = 'TestData/VanNormalization.nxs')
 
     temp = 'temporary.bin'
 
     D1.save(temp)
-    D2 = DataSet()
-    D2.load(temp)
+    D2 = load(temp)
     os.remove(temp)
     assert(D1==D2) 
 
