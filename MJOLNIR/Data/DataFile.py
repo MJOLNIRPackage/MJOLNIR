@@ -27,8 +27,8 @@ class DataFile(object):
                 self.Monitor=np.array(f.get('entry/data/monitor'))
                 instr = getInstrument(f)
                 self.Ei = np.array(instr.get('monochromator/energy'))
-                self.A3 = np.array(f.get('entry/sample/rotation_angle'))
-                self.A4 = np.array(instr.get('detector/polar_angle'))
+                self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
+                self.A4 = np.array(instr.get('detector/polar_angle')).reshape(-1)
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 if not f.get('entry/zeros/A4') is None:
                     self.A4Off = np.array(f.get('entry/zeros/A4'))
@@ -465,42 +465,58 @@ def extractData(files):
     if not isinstance(files,list):
         files = [files]
     I = []
-    posx = []
-    posy = []
+    qx = []
+    qy = []
     energy = []
     Norm = []
     Monitor = []
     a3 = []
     a4 = []
+    a3Off = []
+    a4Off = []
     Ei = []
+    instrumentCalibrationEf = []
+    instrumentCalibrationA4 = []
+    instrumentCalibrationEdges = []
 
     for datafile in files:
         I.append(datafile.I)
-        posx.append(datafile.qx)
-        posy.append(datafile.qy)
+        qx.append(datafile.qx)
+        qy.append(datafile.qy)
         energy.append(datafile.energy)
         Norm.append(datafile.Norm)
         Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape is ():
             datafile.A3Off = 0.0
         a3.append(datafile.A3-datafile.A3Off)
-
+        a3Off.append(datafile.A3Off)
         if np.array(datafile.A4Off).shape is ():
-            datafile.A4Off = 0.0
+            datafile.A4Off = [0.0]
         a4.append(datafile.A4-datafile.A4Off)
+        a4Off.append(datafile.A3Off)
         Ei.append(datafile.Ei)
+        instrumentCalibrationEf.append(datafile.instrumentCalibrationEf)
+        instrumentCalibrationA4.append(datafile.instrumentCalibrationA4)
+        instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
         
-    I = np.concatenate(I)
-    qx = np.concatenate(posx)
-    qy = np.concatenate(posy)
-    energy = np.concatenate(energy)
-    Norm = np.concatenate(Norm)
-    Monitor = np.concatenate(Monitor)
-    a3 = np.concatenate(a3)
-    a4 = np.concatenate(a4)
-    Ei = np.concatenate(Ei)
+    I = np.array(I)
+    qx = np.array(qx)
+    qy = np.array(qy)
+    energy = np.array(energy)
+    Norm = np.array(Norm)
+    Monitor = np.array(Monitor)
 
-    return I,qx,qy,energy,Norm,Monitor,a3,a4,files[-1].instrumentCalibrationEf,files[-1].instrumentCalibrationA4,files[-1].instrumentCalibrationEdges,Ei # FIXME: Might be a problem if combining dataset with different calibrations!
+    a3 = np.array(a3)
+    a4 = np.array(a4)
+
+    a3Off = np.array(a3Off)
+    a4Off = np.array(a4Off)
+    instrumentCalibrationEf = np.array(instrumentCalibrationEf)
+    instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
+    instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
+    Ei = np.array(Ei)
+
+    return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,instrumentCalibrationA4,instrumentCalibrationEdges,Ei 
 
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
     v/=np.linalg.norm(v)
