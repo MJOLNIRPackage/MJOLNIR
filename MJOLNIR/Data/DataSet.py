@@ -360,7 +360,7 @@ class DataSet(object):
         self._getData()
             
     def _getData(self): # Internal method to populate I,qx,qy,energy,Norm and Monitor
-        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a4,self.instrumentCalibrationEf, \
+        self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
         self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei = DataFile.extractData(self.convertedFiles)
         
 
@@ -670,7 +670,7 @@ class DataSet(object):
 
         else: 
             dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData()
             
         positions = [qx,qy,energy]
 
@@ -1280,6 +1280,79 @@ class DataSet(object):
         
         
         return ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal
+
+    def extractDetectorData(self, Id=None, A4=None, Ef=None, returnId=False, A4Tolerence=1.0, EfTolerence=0.1):
+        """Method to extract data from DataSet-object. Depending on the provided arguments the method returns data from the detector best fulfilling the requirenments.
+        
+        Kwargs:
+
+            - Id (int): Detector tube number as described in TODO:  ????
+
+            - A4 (float): Real space A4 value in degrees
+
+            - Ef (float): Final neutron energy in meV
+
+            - ReturnId (Bool): If true also the actual ID of the found tube is returned
+
+            - A4Tolerence (float): Tolerence between found and wanted A4 value in degrees (default 1.0)
+
+            - EfTolerence (float): Tolerence between found and wanted Ef value in meV (default 0.1)
+
+        Return:
+
+            - ScanParam (list): Values of scan parameter(s), if mutiple a matrix is returned
+
+            - label (list): List of label(s)
+
+        Raises:
+
+            - AttributeError, NotImplementedError
+
+        """
+        totalData = []
+        totalID = []
+        if not Id is None and not A4 is None: # ??????
+            raise AttributeError('Both the detector ID and A4 value has been provided. Only one of these is allowed at a time.')
+        for i in range(len(self.I)):
+            
+            
+            if not A4 is None: # If Id is not given
+                RawId = np.unravel_index(np.argmin(np.abs(self.instrumentCalibrationA4[i]-self.a4Off[i]-A4)),self.instrumentCalibrationA4[i].shape)
+                if np.abs(self.instrumentCalibrationA4[i][RawId]-A4)>A4Tolerence: # If the best found A4 value is more than (default) 1 degree away from wanted 
+                    raise AttributeError('Difference between wanted and found A4 value is {} for file {}.. Maybe the sign of A4 should be changed.'.format(self.instrumentCalibrationA4[i][RawId]-A4,self.convertedFiles[i].name))
+                binning = int(self.instrumentCalibrationA4[i].shape[0]/(104*8))
+                Id = int(np.floor(RawId[0]/(8*binning)))
+                returnData = self.I[i][:,Id,:]
+            elif Id is None: # If neither Id or A4 is given, extract all
+                returnData = self.I[i]
+                Id = None
+            else:
+                returnData = self.I[i][:,Id,:]
+
+            if not Ef is None:
+                if self.Ei[i].shape!=(1,):
+                    raise NotImplementedError('It is not possible to find the E-index during an energy scan due to energies chaging on every step.')
+                EfRawId = np.unravel_index(np.argmin(np.abs(self.Ei[i][0]-self.instrumentCalibrationEf[i][:,1]-Ef)),self.instrumentCalibrationEf[i][:,1].shape)
+                if np.abs(self.Ei[i][0]-self.instrumentCalibrationEf[i][EfRawId,1]-Ef)>EfTolerence: # If the best found Ef value is more than (default) 0.1 meV away from wanted 
+                    raise AttributeError('Difference between wanted and found Ef value is {} for file {}.'.format(self.instrumentCalibrationEf[i][EfRawId,1]-Ef,self.convertedFiles[i].name))
+                binning = int(self.instrumentCalibrationEf[i].shape[0]/(104*8))
+                EfId = int(np.mod(EfRawId[0],binning*8))
+                if len(returnData.shape)==2:
+                    returnData = returnData[:,EfId]
+                else:
+                    returnData = returnData[:,:,EfId]
+                Id = Id,EfId
+            if returnId:
+                totalID.append(Id)
+            totalData.append(returnData)
+        if returnId:
+            #print(len(totalData))
+            #print(len(totalID))
+            totalData = [totalData,totalID]
+        else:
+            totalData = totalData
+        return totalData
+
 
 
 
@@ -3915,7 +3988,7 @@ def test_DataSet_plotCutQELine():
     EnergyBins = np.linspace(2,3,11)
     minPixel = 0.001
     width=0.1
-    DataFile = ['TestData/ManuallyChangedData/A3.nxs']
+    DataFile = ['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
     dataset = DataSet(convertedFiles=DataFile)
     
     try: # No Q-points
@@ -3951,3 +4024,38 @@ def test_DataSet_plotCutQELine():
         QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU',vmin=0.0,vmax=1.5e-6,ticks=10,plotSeperator = False,tickRound=1)
 
     plt.close('all')
+
+
+def test_DataSet_extractDetectorData():
+    DataFile = ['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
+    dataset = DataSet(convertedFiles=DataFile)
+
+    try:
+        dataset.extractDetectorData(Id=10,A4=1.1) # Providing both Id and A4
+        assert False
+    except AttributeError:
+        assert True
+    
+    try:
+        dataset.extractDetectorData(A4=10000.0) # A4 outside of detector
+        assert False
+    except AttributeError:
+        assert True
+
+    try:
+        dataset.extractDetectorData(Ef=10000.0) # Ef outside of detector
+        assert False
+    except AttributeError:
+        assert True
+    
+    AllData = dataset.extractDetectorData()
+    AllData2,Id = dataset.extractDetectorData(returnId=True)
+    assert(np.all([Id[i] is None for i in range(len(DataFile))]))
+    assert(np.all([AllData[i]==AllData2[i] for i in range(len(DataFile))]))
+
+    data,singleId = dataset.extractDetectorData(Id = 10,returnId=True)
+    assert(np.all([data[i]==AllData2[i][:,singleId[i],:] for i in range(len(DataFile))]))
+
+    data2,singleId2= dataset.extractDetectorData(Id = 15, Ef= 3.3, returnId=True)
+
+    assert(np.all([np.all(data2[i]==AllData[i][:,singleId2[i][0],singleId2[i][1]]) for i in range(len(DataFile))]))
