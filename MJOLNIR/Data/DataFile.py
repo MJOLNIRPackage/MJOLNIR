@@ -51,6 +51,7 @@ class DataFile(object):
                 self.Monitor=np.array(f.get('entry/data/monitor'))
                 instr = getInstrument(f)
                 self.Ei = np.array(instr.get('monochromator/energy'))
+                self.I = np.array(instr.get('detector/data'))
                 self.A3 = np.array(f.get('entry/sample/rotation_angle'))
                 self.A4 = np.array(instr.get('detector/polar_angle'))
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
@@ -465,9 +466,8 @@ def extractData(files):
     if not isinstance(files,list):
         files = [files]
     I = []
-    qx = []
-    qy = []
-    energy = []
+    
+    
     Norm = []
     Monitor = []
     a3 = []
@@ -479,11 +479,16 @@ def extractData(files):
     instrumentCalibrationA4 = []
     instrumentCalibrationEdges = []
 
+    if(files[0].type!='h5'):
+        qx = []
+        qy = []
+        energy = []
     for datafile in files:
         I.append(datafile.I)
-        qx.append(datafile.qx)
-        qy.append(datafile.qy)
-        energy.append(datafile.energy)
+        if(files[0].type!='h5'):
+            qx.append(datafile.qx)
+            qy.append(datafile.qy)
+            energy.append(datafile.energy)
         Norm.append(datafile.Norm)
         Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape is ():
@@ -500,9 +505,10 @@ def extractData(files):
         instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
         
     I = np.array(I)
-    qx = np.array(qx)
-    qy = np.array(qy)
-    energy = np.array(energy)
+    if(files[0].type!='h5'):
+        qx = np.array(qx)
+        qy = np.array(qy)
+        energy = np.array(energy)
     Norm = np.array(Norm)
     Monitor = np.array(Monitor)
 
@@ -515,9 +521,10 @@ def extractData(files):
     instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
     instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
     Ei = np.array(Ei)
-
-    return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,instrumentCalibrationA4,instrumentCalibrationEdges,Ei 
-
+    if(files[0].type!='h5'):
+        return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,instrumentCalibrationA4,instrumentCalibrationEdges,Ei 
+    else:
+        return I,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,instrumentCalibrationA4,instrumentCalibrationEdges,Ei 
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
     v/=np.linalg.norm(v)
     m11 = np.cos(theta)+v[0]**2*(1-np.cos(theta))
