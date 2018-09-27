@@ -1354,7 +1354,8 @@ class DataSet(object):
 
 def load(filename):
     """Function to load an object from a pickled file.
-    ..Note::
+
+    .. note::
         It is not possible to unpickle an object created in python 3 in python 2 or vice versa.
         
     """
