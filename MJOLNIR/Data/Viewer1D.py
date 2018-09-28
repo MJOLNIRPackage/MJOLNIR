@@ -9,14 +9,20 @@ import matplotlib.gridspec
 import warnings
 
 from matplotlib import rc
-rc('text', usetex=True)
-plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+
+from distutils.spawn import find_executable
+if find_executable('latex'):
+    
+    rc('text', usetex=True)
+    plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+    USETEX = True
+else:
+    rc('text', usetex=False)
+    USETEX = False
 import scipy.optimize
 import pyperclip
 from MJOLNIR.Statistics.FittingFunction import Gaussian, Lorentz
 
-
-    
 
 class State:
     def __init__(self,parent):
@@ -43,7 +49,10 @@ class Initial(State):
 class FitInitialization(State):
     def __init__(self,parent):
         super(FitInitialization,self).__init__(parent)
-        self.__name__ = 'Fit\ Initialization\ -\ Click\ to\ choose\ bold\ parameter(s)\ or\ number\ for\ other\ models.'
+        
+        self.__name__ = 'Fit Initialization - Click to choose bold parameter(s) or number for other models.'
+        if USETEX:
+            self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
         self.fitParameterIndex = 0 # Index of current fit parameter
         
         self.ps=' '.join(['{}: {}'.format(i,self.parent.fitObjects[i].__name__) for i in range(len(self.parent.fitObjects))])
@@ -80,8 +89,9 @@ class FitInitialization(State):
 class Execute(State):
     def __init__(self,parent):
         super(Execute,self).__init__(parent)
-        self.__name__='\mathrm{Fit\ Executed\ - Press\ "i"\ for\ new\ fit\ or\ "ctrl+c"\ to\ copy\ parameters}'
-        
+        self.__name__='Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters}' 
+        if USETEX:
+            self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
         ## Perform fit
         f = lambda *args: self.parent.fitFunction.func.__func__(None,*args)
         xdata = self.parent.xData
@@ -332,13 +342,19 @@ class Viewer1D:
         self.currentState = self.currentState.mouse(event)    
         
     def updateText(self,highlight=None,title=None,ps=None):
-        text = '$\mathbf{'+'{}'.format(title)+'}$'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
+        if USETEX:
+            text = '$\mathbf{'+'{}'.format(title)+'}$'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
+        else:
+            text = '{}'.format(title)+'}'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
         for i in range(self.fitFunction.parameterLength):
             if np.isnan(self.fitFunction.parameters[i]):
                 val = '   '
             else:
                 val = '{:.3e}'.format(self.fitFunction.parameters[i])
-            text+='${}$:    {}     '.format(self.fitFunction.variableNames[i],val)
+            if USETEX:
+                text+='${}$:    {}     '.format(self.fitFunction.variableNames[i],val)
+            else:
+                text+='{}:    {}     '.format(self.fitFunction.variableNames[i],val)
         if not self.fitFunction.fitError is False:
             text+='\n'
             for i in range(self.fitFunction.parameterLength):
@@ -346,7 +362,10 @@ class Viewer1D:
                     val = '   '
                 else:
                     val = '{:.3e}'.format(np.sqrt(self.fitFunction.fitError[i,i]))
-                text+='${}{}{}$:  {}    '.format('\sigma_{',self.fitFunction.variableNames[i],'}',val)
+                if USETEX:
+                    text+='${}{}{}$:  {}    '.format('\sigma_{',self.fitFunction.variableNames[i],'}',val)
+                else:
+                    text+='{}{}{}:  {}    '.format('sigma_',self.fitFunction.variableNames[i],'',val)
         if not ps is None:
             text+='\n'+ps
         self.text = text

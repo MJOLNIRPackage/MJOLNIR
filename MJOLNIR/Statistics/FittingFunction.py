@@ -1,6 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from distutils.spawn import find_executable
+if find_executable('latex'):
+    USETEX = True
+else:
+    USETEX = False
+
 
 class FittingFunction(object):
     def __init__(self,function):
@@ -50,8 +56,12 @@ class FittingFunction(object):
     def setParameter(self,event,index):
         raise NotImplementedError('The setParameter()-method is not yet implemented!')
     
-highlighter = '\\boldsymbol{'
-ender= '}'
+if USETEX == True:
+    highlighter = '\\boldsymbol{'
+    ender= '}'
+else:
+    highlighter = '|'
+    ender = '|'
 def executable(func):
     def newFunc(self,*args,**kwargs):
         returnval = func(self,*args,**kwargs)
@@ -69,7 +79,10 @@ class Gaussian(FittingFunction):
     def __init__(self):
         super(Gaussian,self).__init__(self.func)
         self.format=['','\\','\\','']
-        self.variableNames = [self.format[i]+self.parameterNames[i] for i in range(len(self.format))]
+        if USETEX == True:
+            self.variableNames = [self.format[i]+self.parameterNames[i] for i in range(len(self.format))]
+        else:
+            self.variableNames = [self.parameterNames[i] for i in range(len(self.format))]
     @executable
     def setParameter(self,event,index):
         if index == 0:
@@ -101,10 +114,16 @@ class Gaussian(FittingFunction):
             highlight = np.array(highlight).reshape(-1)
             for i in highlight:
                 self.variableNames[i] = highlighter+self.variableNames[i]+ender
-        string = '$f(x, '
-        string+=', '.join([x for x in self.variableNames])+') = '
-        string+='{}'.format(self.variableNames[0])+'\\cdot \mathrm{exp}^{\left(-\\frac{\left(x-'+'{}'.format(self.variableNames[1])\
-        +'\\right)^2}{2\\cdot '+'{}'.format(self.variableNames[2])+'^2}\\right)}+'+'{}'.format(self.variableNames[3])+'$'
+        if USETEX==True:
+            string = '$f(x, '
+            string+=', '.join([x for x in self.variableNames])+') = '
+            string+='{}'.format(self.variableNames[0])+'\\cdot \mathrm{exp}^{\left(-\\frac{\left(x-'+'{}'.format(self.variableNames[1])\
+            +'\\right)^2}{2\\cdot '+'{}'.format(self.variableNames[2])+'^2}\\right)}+'+'{}'.format(self.variableNames[3])+'$'
+        else:
+            string = 'f(x, '
+            string+=', '.join([x for x in self.variableNames])+') = '
+            string+='{}'.format(self.variableNames[0])+'*exp(-[x-'+'{}'.format(self.variableNames[1])\
+            +']^2/[2*'+'{}'.format(self.variableNames[2])+'^2])+'+'{}'.format(self.variableNames[3])
         if not highlight is None:
             for i in highlight:
                 self.variableNames[i] = self.variableNames[i][len(highlighter):-len(ender)]
@@ -118,7 +137,10 @@ class Lorentz(FittingFunction):
     def __init__(self):
         super(Lorentz,self).__init__(self.func)
         self.format = ['','','\\','']    
-        self.variableNames = [self.format[i]+self.parameterNames[i] for i in range(len(self.format))]
+        if USETEX == True:
+            self.variableNames = [self.format[i]+self.parameterNames[i] for i in range(len(self.format))]
+        else:
+            self.variableNames = [self.parameterNames[i] for i in range(len(self.format))]
         self.currentFitParameter = 0
     @executable
     def setParameter(self,event,index):
@@ -147,12 +169,18 @@ class Lorentz(FittingFunction):
             highlight = np.array(highlight).reshape(-1)
             for i in highlight:
                 self.variableNames[i] = highlighter+self.variableNames[i]+ender
-        string = '$f(x, '
-        string+=', '.join([x for x in self.variableNames])+') = '
-        string+='{}'.format(self.variableNames[0])+'\\cdot\\frac{'+'{}'.format(self.variableNames[2])\
-        +'^2}{\left(x-'+'{}'.format(self.variableNames[1])+'\\right)^2+'+'{}'.format(self.variableNames[2])+'^2}+'\
-        +'{}'.format(self.variableNames[3])+'$'
-        
+        if USETEX == True:
+            string = '$f(x, '
+            string+=', '.join([x for x in self.variableNames])+') = '
+            string+='{}'.format(self.variableNames[0])+'\\cdot\\frac{'+'{}'.format(self.variableNames[2])\
+            +'^2}{\left(x-'+'{}'.format(self.variableNames[1])+'\\right)^2+'+'{}'.format(self.variableNames[2])+'^2}+'\
+            +'{}'.format(self.variableNames[3])+'$'
+        else:
+            string = 'f(x, '
+            string+=', '.join([x for x in self.variableNames])+') = '
+            string+='{}'.format(self.variableNames[0])+'*('+'{}'.format(self.variableNames[2])\
+            +'^2)/([x-'+'{}'.format(self.variableNames[1])+']^2+'+'{}'.format(self.variableNames[2])+'^2)+'\
+            +'{}'.format(self.variableNames[3])
         if not highlight is None:
             for i in highlight:
                 self.variableNames[i] = self.variableNames[i][len(highlighter):-len(ender)]
