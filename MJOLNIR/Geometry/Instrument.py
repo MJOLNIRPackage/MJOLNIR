@@ -995,20 +995,22 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             scanType = 'cscan a3 {} da3 {} n {}'.format(np.mean(a3),np.mean(np.diff(a3)),len(a3))
         else:
             dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
-            dset = sam.create_dataset('rotation_angle_zero',data=0.0)
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=0.0)
 
         dset.attrs['units'] = np.string_('degrees')
+        dset_zero.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
             dset = det.create_dataset('polar_angle',data=a4)
             nxdata['polar_angle'] = dset
-            dset = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
-            nxdata['polar_angle_zero'] = dset
+            dset_zero = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
+            nxdata['polar_angle_zero'] = dset_zero
             scanType = 'cscan a4 {} da4 {} n {}'.format(np.mean(a4),np.mean(np.diff(a4)),len(a4))
         else:
             dset = det.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
-            dset = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
+            dset_zero = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
         dset.attrs['units'] = np.string_('degrees')
+        dset_zero.attrs['units'] = np.string_('degrees')
         
 
         mono = entry['CAMEA/monochromator']
