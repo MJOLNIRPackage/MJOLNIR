@@ -41,6 +41,24 @@ class DataFile(object):
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
+                scanParam = list(f.get('entry/scanParameter/'))
+                if not scanParam is None:
+                    scanParameters = scanParam
+                    params = []
+                    vals = []
+                    unit = []
+                    for SC in scanParameters:
+                        SCP = f.get('entry/scanParameter/{}'.format(SC))
+                        params.append(SC)
+                        vals.append(np.array(SCP).reshape(-1))
+                        if 'units' in list(SCP.attrs.keys()):
+                            unit.append(SCP.attrs['units'])
+                        else:
+                            unit.append('Unknown')
+                    self.scanParameters = np.array(params)
+                    self.scanValues = np.array(vals)
+                    self.scanUnits = np.array(unit)
+
 
         elif fileLocation.split('.')[-1]=='h5':
             self.type='h5'
@@ -483,12 +501,19 @@ def extractData(files):
         qx = []
         qy = []
         energy = []
+        scanParameters = []
+        scanParamValue = []
+        scanParamUnit = []
     for datafile in files:
         I.append(datafile.I)
         if(files[0].type!='h5'):
             qx.append(datafile.qx)
             qy.append(datafile.qy)
             energy.append(datafile.energy)
+            scanParameters = [datafile.scanParameters]
+            scanParamValue = [datafile.scanValues]
+            scanParamUnit = [datafile.scanUnits]
+            
         Norm.append(datafile.Norm)
         Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape is ():
@@ -509,6 +534,10 @@ def extractData(files):
         qx = np.array(qx)
         qy = np.array(qy)
         energy = np.array(energy)
+        scanParameters = np.array(scanParameters)
+        scanParamValue = np.array(scanParamValue)
+        scanParamUnit = np.array(scanParamUnit)
+
     Norm = np.array(Norm)
     Monitor = np.array(Monitor)
 
@@ -521,10 +550,12 @@ def extractData(files):
     instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
     instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
     Ei = np.array(Ei)
-    if(files[0].type!='h5'):
-        return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,instrumentCalibrationA4,instrumentCalibrationEdges,Ei 
+    if files[0].type!='h5':
+        return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
     else:
-        return I,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,instrumentCalibrationA4,instrumentCalibrationEdges,Ei 
+        return I,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
     v/=np.linalg.norm(v)
     m11 = np.cos(theta)+v[0]**2*(1-np.cos(theta))
