@@ -182,7 +182,7 @@ texinfo_documents = [
 todo_include_todos = True
 autoclass_content = "both"
 
-autodoc_mock_imports = ['numpy', 'matplotlib', 'matplotlib.pyplot','shapely']
+autodoc_mock_imports = ['matplotlib', 'matplotlib.pyplot','shapely']
 
 
 
