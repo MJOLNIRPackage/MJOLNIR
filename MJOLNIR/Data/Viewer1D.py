@@ -416,9 +416,10 @@ class Viewer1D:
         except:
             pass
         self.ax.clear()
+        self.ax.set_ylabel('Int [arb]')
         if self.plotAll==False:
             self.dataPlot = self.ax.errorbar(self.xData,self.yData,yerr=self.yErr,fmt='.')
-            self.ax.set_ylabel('Int [arb]')
+            
             
             if not self.dataLabel is '':
                 self.ax.legend([self.dataLabel[self.yID]])
