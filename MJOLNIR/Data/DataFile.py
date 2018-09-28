@@ -52,7 +52,7 @@ class DataFile(object):
                         params.append(SC)
                         vals.append(np.array(SCP).reshape(-1))
                         if 'units' in list(SCP.attrs.keys()):
-                            unit.append(SCP.attrs['units'])
+                            unit.append(decodeStr(SCP.attrs['units']))
                         else:
                             unit.append('Unknown')
                     self.scanParameters = np.array(params)
@@ -251,7 +251,11 @@ def loadBinning(self,binning):
             self.binning = binning 
     return self
             
-
+def decodeStr(string):
+    if type(string)==type(b''):
+        return string.decode('utf8')
+    else:
+        return string
 
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
@@ -804,3 +808,9 @@ def test_DataFile_plotNormalization():
 
     file2.plotNormalization(binning=1)
     plt.close('all')
+
+def test_DataFile_decodeString():
+    a = b'String'
+    b = 'String'
+
+    assert(decodeStr(a)==decodeStr(b))
