@@ -20,9 +20,7 @@ before_script: # configure a headless display to test plot generation
   - sleep 3 # give xvfb some time to start
 
 install:
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
-    then pip install pytest pycodestyle pytest-cov python-coveralls
-    fi
+  - pip install pytest pycodestyle pytest-cov python-coveralls
   - pip install .
 #  - pip install -r requirements.txt
 
