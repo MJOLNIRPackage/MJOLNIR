@@ -9,8 +9,8 @@ import matplotlib.gridspec
 import warnings
 
 from matplotlib import rc
-#rc('text', usetex=True)
-#plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
+rc('text', usetex=True)
+plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
 import scipy.optimize
 import pyperclip
 from MJOLNIR.Statistics.FittingFunction import Gaussian, Lorentz
