@@ -1,4 +1,5 @@
-sudo: false
+sudo: required
+dist: trusty
 
 language: python
 
@@ -8,6 +9,11 @@ python:
   - "3.6"
 #  - "3.7"
 
+
+before_install:
+- sudo apt-get -qq update && sudo apt-get install -y --no-install-recommends texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
+
+
 before_script: # configure a headless display to test plot generation
   - "export DISPLAY=:99.0"
   - "sh -e /etc/init.d/xvfb start"
@@ -15,7 +21,7 @@ before_script: # configure a headless display to test plot generation
 
 install:
   - pip install .
-  - pip install -r requirements.txt
+#  - pip install -r requirements.txt
 
 script: 
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
