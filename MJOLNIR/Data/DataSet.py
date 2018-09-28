@@ -3198,18 +3198,18 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,N
     counter = 0
     for SP in ScanParam:
         if SP == 'A3': # link to A3 values
-            sp['ScanParameter{}'.format(counter)] = fd['entry/sample/rotation_angle']
-            sp.attrs['ScanParameter{}'.format(counter)]=SP
+            sp[SP] = fd['entry/sample/rotation_angle']
+            #sp.attrs['ScanParameter{}'.format(counter)]=SP
             counter+=1
         elif SP == 'A4': # link to A4 values
             Instr = getInstrument(fd)
-            sp['ScanParameter{}'.format(counter)] = Instr['detector/polar_angle']
-            sp.attrs['ScanParameter{}'.format(counter)]=SP
+            sp[SP] = Instr['detector/polar_angle']
+            #sp.attrs['ScanParameter{}'.format(counter)]=SP
             counter+=1
         elif SP == 'Ei': # link to Ei values
             Instr = getInstrument(fd)
-            sp['ScanParameter{}'.format(counter)] = Instr['monochromator/energy']
-            sp.attrs['ScanParameter{}'.format(counter)]=SP
+            sp[SP] = Instr['monochromator/energy']
+            #sp.attrs['ScanParameter{}'.format(counter)]=SP
             counter+=1
 
 
