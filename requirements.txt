@@ -8,3 +8,4 @@ h5py
 scipy
 datetime
 shapely
+pyperclip
