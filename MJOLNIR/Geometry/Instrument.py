@@ -4,6 +4,7 @@ sys.path.append('..')
 sys.path.append('../..')
 import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
+from MJOLNIR import _tools
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -16,7 +17,9 @@ import pytest
 NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*sigma
 
 
+
 class Instrument(GeometryConcept.GeometryConcept):
+    #@_tools.KwargChecker # Not used as excess kwargs are put into settings
     def __init__(self, position=(0,0,0),wedges=[],fileName='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
@@ -36,7 +39,6 @@ class Instrument(GeometryConcept.GeometryConcept):
         """
         
         self._wedges = []
-
         
         self._settings = {}
         if fileName !='':
@@ -63,7 +65,7 @@ class Instrument(GeometryConcept.GeometryConcept):
     @wedges.setter
     def wedges(self,wedges):
         if len(self.wedges)!=0:
-            warnings.warn('The list of wedges is not empty! Appending new wedges(s)')
+            warnings.warn('The list of wedges is not empty! Appending new wedges(s)',stacklevel=2)
         if isinstance(wedges, list):
             for ana in wedges:
                 if not issubclass(type(ana),Wedge.Wedge):
@@ -300,8 +302,8 @@ class Instrument(GeometryConcept.GeometryConcept):
         with open(fileName,'w') as f:
             f.write(string)
 
-
-    def generateCalibration(self,Vanadiumdatafile,A4datafile,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False):
+    @_tools.KwargChecker
+    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False,**kwargs):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
         Generates 4 different tables:
@@ -313,12 +315,14 @@ class Instrument(GeometryConcept.GeometryConcept):
             - Single (1 pixel/energy or 8 pixels/detector)
 
             - Number (integer)
-
-        Kwargs:
+        
+        Args:
 
             - Vanadiumdatafile (string): String to single data file used for normalization, Vanadium Ei scan (required).
 
-            - A4datafile (string): String to single data file used for normalization, AlO A4 scan (required).
+        Kwargs:
+
+            - A4datafile (string): String to single data file used for normalization, AlO A4 scan (default False).
 
             - savelocation (string): String to save location folder (calibration)
 
@@ -331,27 +335,27 @@ class Instrument(GeometryConcept.GeometryConcept):
             At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Guassian width of Vanadium peaks.
 
         """
-        #if self.settings['Initialized']==False:
         self.initialize()
-            
-
+        
         VanFile = hdf.File(Vanadiumdatafile,'r')
-        A4File = hdf.File(A4datafile,'r')
+        if not A4datafile == False:
+            A4File = hdf.File(A4datafile,'r')
+            A4FileInstrument = getInstrument(A4File)
+            A4FileInstrumentType = A4FileInstrument.name.split('/')[-1]
+
 
         VanFileInstrument = getInstrument(VanFile)
-        A4FileInstrument = getInstrument(A4File)
+        
 
         VanFileInstrumentType = VanFileInstrument.name.split('/')[-1]
-        A4FileInstrumentType = A4FileInstrument.name.split('/')[-1]
-
-        if VanFileInstrumentType == A4FileInstrumentType:
-            InstrumentType = VanFileInstrumentType
-        else:
-            raise AttributeError('The provided Vanadium and Powder files does not have the same instrument type ({} and {} respectively).'.format(VanFileInstrumentType,A4FileInstrumentType))        
-
+        
+        if not A4datafile == False:
+            if VanFileInstrumentType == A4FileInstrumentType:
+                InstrumentType = VanFileInstrumentType
+            else:
+                raise AttributeError('The provided Vanadium and Powder files does not have the same instrument type ({} and {} respectively).'.format(VanFileInstrumentType,A4FileInstrumentType))        
+        InstrumentType = VanFileInstrumentType
         if InstrumentType=='CAMEA':
-
-            
 
             if savelocation[-1]!='/':
                 savelocation+='/'
@@ -510,7 +514,7 @@ class Instrument(GeometryConcept.GeometryConcept):
             activePixelRanges = []
             for detpixels in bins:
                 if detpixels*analysers*3>len(Ei):
-                    warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3))
+                    warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3),category=RuntimeWarning,stacklevel=2)
                     
                 if plot: # pragma: no cover
                     EiX = np.linspace(Ei[0],Ei[-1],len(Ei))
@@ -569,76 +573,84 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=300)
                         print('Saving: {}'.format(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i)))
 
+                if not A4datafile is False:
                 # Perform A4 calibration
-                A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
-                EiFile = np.array(A4FileInstrument.get('monochromator/energy'))[0]
-                A4FileIntensity = np.array(A4FileInstrument.get('detector/data'))
+                    A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
+                    EiFile = np.array(A4FileInstrument.get('monochromator/energy'))[0]
+                    A4FileIntensity = np.array(A4FileInstrument.get('detector/data'))
 
-                factorsqrtEK = 0.694692
-                ki = np.sqrt(EiFile)*factorsqrtEK
+                    factorsqrtEK = 0.694692
+                    ki = np.sqrt(EiFile)*factorsqrtEK
 
-                Qvec = 1.8049 # Angstrom <----------------------CHANGE!
+                    Qvec = 1.8049 # Angstrom <----------------------CHANGE!
 
-                # q = 2 k sin(theta)
-                theta = np.arcsin(Qvec/(2*ki))
- 
-                A4 = np.array(self.A4)
-                A4=A4.reshape(A4.shape[0]*A4.shape[1],A4.shape[2],order='C')
-                EPrDetector = len(self.wedges[0].detectors[0].split)+1
+                    # q = 2 k sin(theta)
+                    theta = np.arcsin(Qvec/(2*ki))
+    
+                    A4 = np.array(self.A4)
+                    A4=A4.reshape(A4.shape[0]*A4.shape[1],A4.shape[2],order='C')
+                    EPrDetector = len(self.wedges[0].detectors[0].split)+1
 
-                
-                pixelList = np.array(activePixelDetector).reshape(A4.shape[0],EPrDetector,detpixels+1).astype(int)
-                PixelEdge = np.array([[pixelList[:,:,i],pixelList[:,:,i+1]] for i in range(detpixels)]).transpose((2,3,0,1))
-                PixelEnergy = fittedParameters[:,:,:,1].reshape(A4.shape[0],EPrDetector*detpixels)
-
-                ## Find detector analyser combi corresponding to energy
-                SoftwarePixel = np.array([np.argmin(np.abs(x-EiFile)) for x in PixelEnergy])
-
-                MeanA4Instr = np.zeros((A4.shape[0],EPrDetector*detpixels))
-                MeanIntensity = np.zeros((len(A4FileValue),A4.shape[0],EPrDetector*detpixels))
-                for i in range(A4.shape[0]): # For each detector
-                    for j in range(EPrDetector):
-                        for k in range(detpixels):
-                            MeanIntensity[:,i,j*detpixels+k] = np.sum(A4FileIntensity[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
-                            MeanA4Instr[i,j*detpixels+k] = np.mean(A4[i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]])
-                            
-                x = A4FileValue
-                A4FitValue = np.zeros((A4.shape[0]))
-
-                
-                if plot==True:
-                    plt.clf()
-                for i in range(104):
-                    y = MeanIntensity[:,i,SoftwarePixel[i]]
-                    if plot==True:
-                        plt.scatter(x,y)
                     
-                    guess=[np.max(y),x[np.argmax(y)],3,0]
-                    try:
-                        fit = scipy.optimize.curve_fit(Gaussian,x,y,p0=[guess])
-                    except:
-                        A4FitValue[i]=guess[1]
-                    else:
-                        A4FitValue[i] = fit[0][1]
+                    pixelList = np.array(activePixelDetector).reshape(A4.shape[0],EPrDetector,detpixels+1).astype(int)
+                    PixelEdge = np.array([[pixelList[:,:,i],pixelList[:,:,i+1]] for i in range(detpixels)]).transpose((2,3,0,1))
+                    PixelEnergy = fittedParameters[:,:,:,1].reshape(A4.shape[0],EPrDetector*detpixels)
 
-                if plot==True: # pragma: no cover
-                    if not os.path.exists(savelocation+'A4'):
-                        os.makedirs(savelocation+'A4')
-                    plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=300)
+                    ## Find detector analyser combi corresponding to energy
+                    SoftwarePixel = np.array([np.argmin(np.abs(x-EiFile)) for x in PixelEnergy])
 
-                A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
+                    MeanA4Instr = np.zeros((A4.shape[0],EPrDetector*detpixels))
+                    MeanIntensity = np.zeros((len(A4FileValue),A4.shape[0],EPrDetector*detpixels))
+                    for i in range(A4.shape[0]): # For each detector
+                        for j in range(EPrDetector):
+                            for k in range(detpixels):
+                                MeanIntensity[:,i,j*detpixels+k] = np.sum(A4FileIntensity[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
+                                MeanA4Instr[i,j*detpixels+k] = np.mean(A4[i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]])
+                                
+                    x = A4FileValue
+                    A4FitValue = np.zeros((A4.shape[0]))
 
-                if plot==True: # pragma: no cover
-                    plt.clf()
-                    plt.scatter(range(A4.shape[0]),A4FitValue)
-                    plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
-                    plt.legend(['File','Geometry'])
-                    plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=300)
+                    
+                    if plot==True:
+                        plt.clf()
+                    for i in range(104):
+                        y = MeanIntensity[:,i,SoftwarePixel[i]]
+                        if plot==True:
+                            plt.scatter(x,y)
+                        
+                        guess=[np.max(y),x[np.argmax(y)],3,0]
+                        try:
+                            fit = scipy.optimize.curve_fit(Gaussian,x,y,p0=[guess])
+                        except:
+                            A4FitValue[i]=guess[1]
+                        else:
+                            A4FitValue[i] = fit[0][1]
 
-                    diff = A4FitValue-MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi#+2*theta*180.0/np.pi
-                    plt.clf()
-                    plt.scatter(range(A4.shape[0]),diff)
-                    plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=300)
+                    if plot==True: # pragma: no cover
+                        if not os.path.exists(savelocation+'A4'):
+                            os.makedirs(savelocation+'A4')
+                        plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=300)
+
+                    A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
+
+                    if plot==True: # pragma: no cover
+                        plt.clf()
+                        plt.scatter(range(A4.shape[0]),A4FitValue)
+                        plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
+                        plt.legend(['File','Geometry'])
+                        plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=300)
+
+                        diff = A4FitValue-MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi#+2*theta*180.0/np.pi
+                        plt.clf()
+                        plt.scatter(range(A4.shape[0]),diff)
+                        plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=300)
+
+                else: # Use nominal A4 values
+                    A4FitValue = []
+                    for i in range(8):
+                        for j in range(13):
+                            A4FitValue.append(i*8+j*0.55)
+                    A4FitValue = np.array(A4FitValue)
 
                 fitParameters.append(fittedParameters)
                 activePixelRanges.append(np.array(activePixelDetector))
@@ -656,11 +668,11 @@ class Instrument(GeometryConcept.GeometryConcept):
                 file.write(tableString)
                 file.close()
         VanFile.close()
-        A4File.close()
+        if not A4datafile is False:
+            A4File.close()
 
 def parseXML(Instr,fileName):
     import xml.etree.ElementTree as ET
-
 
     tree = ET.parse(fileName)
     instr_root = tree.getroot()
@@ -736,6 +748,7 @@ def parseXML(Instr,fileName):
         #print(str(temp_wedge))
         Instr.append(temp_wedge)
     #print(str(Instr))
+    
    
 
 def getNX_class(x,y,attribute):
@@ -759,8 +772,8 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-
-def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no cover
+@_tools.KwargChecker
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -873,8 +886,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
         fin.close()
         return detlist
 
-    def readDetFile(fname):
-        detdata = np.zeros((452),dtype='int32')
+    def readDetFile(fname,pixels=1024):
+        detdata = np.zeros((pixels),dtype='int32')
         f = open(fname,'r')
         psddata = f.readlines()
         f.close()
@@ -895,15 +908,15 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             idx = idx + 1
         detind = 0
 
-        for i in range(idx+1,452+idx-1):
+        for i in range(idx+1,pixels+idx-1):
             l = psddata[i].split()
 
             detdata[detind] = int(round(10000.*float(l[1])))
             detind = detind + 1
         return detdata,a3,a4,ei
 
-    def readScanPointData(dir,detlist,Numpoints):
-        frame = np.zeros((104,452),dtype='int32')
+    def readScanPointData(dir,detlist,Numpoints,pixels=1024):
+        frame = np.zeros((104,pixels),dtype='int32')
         i = 0
         for detfile in detlist:
             detdata, a3, a4, ei = readDetFile(dir +'/' + str(Numpoints) + '/' + detfile)
@@ -911,9 +924,9 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None): # pragma: no
             i = i + 1
         return frame,a3,a4,ei
 
-    def readScanData(dir,Numpoints):
+    def readScanData(dir,Numpoints,pixels=1024):
         detlist = readDetSequence()
-        data = np.zeros((Numpoints,104,452),dtype='int32')
+        data = np.zeros((Numpoints,104,pixels),dtype='int32')
         a3 = []
         a4 = []
         ei = []
@@ -1315,7 +1328,7 @@ def test_parseXML(): # Improve this test!
     InstrLoaded = Instrument(fileName=tempFileName)
     os.remove(tempFileName)
 
-    assert(Instr==InstrLoaded)
+    assert(Instr==InstrLoaded) 
 
 
 def test_XML_errors():
