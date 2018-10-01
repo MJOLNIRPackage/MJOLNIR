@@ -4,13 +4,15 @@ sys.path.append('..')
 sys.path.append('../..')
 import math,numpy as np
 from MJOLNIR.Geometry import GeometryConcept
+from MJOLNIR import _tools
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 class Analyser(GeometryConcept.GeometryObject):
     """Generic analyser object. Base class from which all analysers must inherit."""
-    def __init__(self,position,direction,d_spacing=3.35,mosaicity=60):
+    @_tools.KwargChecker
+    def __init__(self,position,direction,d_spacing=3.35,mosaicity=60,**kwargs):
         """
         Args:
 
@@ -140,7 +142,8 @@ def test_Generic_errors():
 
 class FlatAnalyser(Analyser):
     """Simple flat analyser. """
-    def __init__(self,position,direction,d_spacing=3.35,mosaicity=60,width=0.05,height=0.1):
+    @_tools.KwargChecker
+    def __init__(self,position,direction,d_spacing=3.35,mosaicity=60,width=0.05,height=0.1,**kwargs):
         """
         Args:
 
@@ -202,8 +205,8 @@ class FlatAnalyser(Analyser):
         self._height = height
 
 
-
-    def plot(self,ax,offset=np.array([0,0,0]),n=100):
+    @_tools.KwargChecker
+    def plot(self,ax,offset=np.array([0,0,0]),n=100,**kwargs):
         """
         Args:
 

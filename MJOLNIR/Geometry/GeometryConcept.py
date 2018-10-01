@@ -7,10 +7,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import pickle as pickle
+from MJOLNIR import _tools
 
 class GeometryConcept(object):
     """Abstract geometry concept. Used as base class for Wedge and Instrument."""
-    def __init__(self,position=(0,0,0)):
+
+    @_tools.KwargChecker
+    def __init__(self,position=(0,0,0),**kwargs):
         self.position = position
         """
         Kwargs:
@@ -113,8 +116,8 @@ class GeometryObject(GeometryConcept):
     """Physical geometry object on which other physical MJOLNIR components are build. All of the components needed to create an instrument should
     inherit from this class in order enforce a uniform interface."""
     
-
-    def __init__(self, position=(0.0,0.0,0.0), direction=(0,0,1)):
+    @_tools.KwargChecker
+    def __init__(self, position=(0.0,0.0,0.0), direction=(0,0,1),**kwargs):
         """
         Kwargs:
 

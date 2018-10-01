@@ -4,6 +4,7 @@ sys.path.append('..')
 sys.path.append('../..')
 import math,numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector
+from MJOLNIR import _tools
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -121,7 +122,8 @@ class Wedge(GeometryConcept.GeometryConcept):
             else:
                 raise AttributeError('Object not analyser or detector or a simple list of these')
 
-    def plot(self,ax,offset=(0,0,0)):
+    @_tools.KwargChecker
+    def plot(self,ax,offset=(0,0,0),**kwargs):
         """Recursive plotting routine."""
         for obj in self.analysers+self.detectors:
             obj.plot(ax,offset=np.array(self.position,dtype=float)+np.array(offset,dtype=float))

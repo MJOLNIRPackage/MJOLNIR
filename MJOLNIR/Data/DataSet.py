@@ -28,6 +28,7 @@ import matplotlib.ticker as ticker
 import datetime
 import warnings
 from MJOLNIR.Data import DataFile
+from MJOLNIR import _tools
 
 import time
 import pytest
@@ -56,6 +57,7 @@ def my_timer_N(N=0): # pragma: no cover
     return my_timer
 
 class DataSet(object):
+    #@_tools.KwargChecker # Not used as excess kwargs are input as settings
     def __init__(self, dataFiles=None, normalizationfiles=None, calibrationfiles=None, convertedFiles=None, **kwargs):
         """DataSet object to hold all informations about data.
         
@@ -182,7 +184,24 @@ class DataSet(object):
     def settings(self,*args,**kwargs):
         raise NotImplementedError('Settings cannot be overwritten.')    
 
+    @property
+    def scanParameterValues(self):
+        return self._scanParameterValues
 
+    @scanParameterValues.getter
+    def scanParameterValues(self):
+        try:
+            self._scanParameters
+        except:
+            #print('No Scan parameters in the H5 file')
+            raise AttributeError("'DataSet' object ha no attribute 'ScanParameterValues'" )
+        else:
+            return self._scanParameterValues
+
+    @scanParameterValues.setter
+    def scanParameterValues(self,scanParameterValues):
+        self._scanParameterValues = scanParameterValues
+        #raise NotImplementedError('Settings cannot be overwritten.')  
 
     def save(self, filename):
         try:                                # Opening the given file with an error catch
@@ -208,7 +227,8 @@ class DataSet(object):
         string+='\n'    
         return string
 
-    def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None):
+    @_tools.KwargChecker
+    def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None,**kwargs):
         """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
@@ -363,8 +383,8 @@ class DataSet(object):
             self.I,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei = DataFile.extractData(self.dataFiles)
 
-
-    def binData3D(self,dx,dy,dz,dataFiles=None):
+    @_tools.KwargChecker
+    def binData3D(self,dx,dy,dz,dataFiles=None,**kwargs):
         """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
 
         Args:
@@ -414,7 +434,8 @@ class DataSet(object):
 
         return returnData,bins
 
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True,dataFiles=None):
+    @_tools.KwargChecker
+    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True,dataFiles=None,**kwargs):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -471,6 +492,7 @@ class DataSet(object):
        
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
 
+    # @_tools.KwargChecker TODO:Advanced KWargs checker for figures!
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,dataFiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
@@ -520,8 +542,8 @@ class DataSet(object):
 
         return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax,plotCoverage,extend=extend,**kwargs)
 
-
-    def cutQE(self,q1,q2,width,minPixel,EnergyBins,extend=True,dataFiles=None):
+    @_tools.KwargChecker
+    def cutQE(self,q1,q2,width,minPixel,EnergyBins,extend=True,dataFiles=None,**kwargs):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
         Args:
@@ -573,6 +595,7 @@ class DataSet(object):
         
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend)
 
+    # TODO: Advanced Kwarg checker for figures!
     def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,dataFiles=None,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
@@ -633,8 +656,8 @@ class DataSet(object):
 
         return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,ax = None,**kwargs)
 
-
-    def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None):
+    @_tools.KwargChecker
+    def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,**kwargs):
         """Cut data powder map with intensity as function of the length of q and energy. 
 
         Args:
@@ -675,6 +698,7 @@ class DataSet(object):
 
         return cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
 
+    # TODO: Advanced Kwargs checker for figure
     def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
@@ -737,7 +761,7 @@ class DataSet(object):
         """
         return createRLUAxes(self)
 
-
+    # TODO: Advanced Kwarg checker for figure
     def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,dataFiles=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
         
@@ -795,7 +819,8 @@ class DataSet(object):
         pos = [qx,qy,energy]
         return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
-    def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+    @_tools.KwargChecker
+    def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2,**kwargs):
         """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
         This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
         binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -930,8 +955,8 @@ class DataSet(object):
 #        plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
 #        magneticField_err=magneticField_err,electricField_err=electricField_err)
 
-
-    def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,format='qxqy',dataFiles=None):
+    @_tools.KwargChecker
+    def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,format='qxqy',dataFiles=None,**kwargs):
         """
         Method to perform Q-energy cuts from a variable number of points. The function takes both qx/qy or hkl positions. In the case of using only two Q points,
         the method is equivalent to cutQE.
@@ -1004,7 +1029,7 @@ class DataSet(object):
         return np.array(DataList),np.array(BinList),np.array(centerPosition),np.array(binDistance)
 
 
-
+    # TODO: Advanced Kwargs checker for figures
     def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,format='RLU',ax=None,dataFiles=None,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
@@ -1280,7 +1305,8 @@ class DataSet(object):
         
         return ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal
 
-    def extractDetectorData(self, Id=None, A4=None, Ef=None, returnId=False, A4Tolerence=1.0, EfTolerence=0.1):
+    @_tools.KwargChecker
+    def extractDetectorData(self, Id=None, A4=None, Ef=None, returnId=False, A4Tolerence=1.0, EfTolerence=0.1, **kwargs):
         """Method to extract data from DataSet-object. Depending on the provided arguments the method returns data from the detector best fulfilling the requirenments.
         
         Kwargs:
@@ -1371,7 +1397,8 @@ def load(filename):
         # TODO: Make checks that the object loaded is of correct format?
         return tmp_dict
 
-def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True):
+@_tools.KwargChecker
+def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True,**kwargs):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
     the minimum step sizes is given by minPixel.
     
@@ -1593,6 +1620,7 @@ def binEdges(values,tolerance):
     bin_edges.append(unique_values[-1] + tolerance / 2)
     return np.array(bin_edges)
 
+# TODO: Advance Kwargs checker for figures
 def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,**kwargs):
     """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
     Adds the 3D position on the x axis with ticks.
@@ -1662,8 +1690,8 @@ def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,pl
     return ax,D,P,binCenter,binDistance
 
 
-
-def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
+@_tools.KwargChecker
+def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,**kwargs):
     """Cut data powder map with intensity as function of the length of q and energy. 
 
     Args:
@@ -1710,7 +1738,7 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
     return [intensity,monitorCount,Normalization,NormCount],qbins
 
 
-
+# TODO: Advanced Kwargs checker for figures
 def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwargs):
     """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
     
@@ -1781,10 +1809,8 @@ def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwa
     return ax,[intensity,monitorCount,Normalization,NormCount],qbins
  
 
-
-
-
-def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
+@_tools.KwargChecker
+def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True,**kwargs):
     """Cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
     Args:
@@ -1846,6 +1872,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
     
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
+#TODO: Advanced Kwargs checker for figures
 def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,**kwargs):
     """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
@@ -1973,6 +2000,7 @@ def createRLUAxes(Dataset): # pragma: no cover
     ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
     return ax
 
+#TODO: Advanced Kwargs checker for figures
 def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,**kwargs):
     """Plotting tool to show binned intensities in the Q plane between provided energies.
     
@@ -2102,7 +2130,8 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
     ax.pmeshs = pmeshs
     return ax
 
-def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+@_tools.KwargChecker
+def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2,**kwargs):
     """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
     This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
     binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -2800,7 +2829,9 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 #
 #
 #@my_timer_N()
-def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
+
+@_tools.KwargChecker
+def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False,**kwargs):
     """Generate individual pixels around the given datapoints.
 
     Args:
@@ -3004,8 +3035,8 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
 
 
 
-
-def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0):
+@_tools.KwargChecker
+def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0,**kwargs):
     """Calculate the boundary of a given scan in Q space
     A4Extend: in degrees
     A3Extend: in degrees
@@ -3315,8 +3346,8 @@ def calculateGrid3D(X,Y,Z):
 
 
 
-
-def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
+@_tools.KwargChecker
+def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None,**kwargs):
     """ 3D binning of data.
 
     Args:

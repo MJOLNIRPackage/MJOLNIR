@@ -7,11 +7,12 @@ import matplotlib.cm as cm
 import numpy as np
 from matplotlib.widgets import Slider
 import matplotlib.gridspec
-
+from MJOLNIR import _tools
 import warnings
 
 class Viewer3D(object):  
-    def __init__(self,Data,bins,axis=2):
+    @_tools.KwargChecker
+    def __init__(self,Data,bins,axis=2,**kwargs):
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 

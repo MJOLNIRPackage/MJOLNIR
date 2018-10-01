@@ -22,7 +22,7 @@ else:
 import scipy.optimize
 import pyperclip
 from MJOLNIR.Statistics.FittingFunction import Gaussian, Lorentz
-
+from MJOLNIR import _tools
 
 class State:
     def __init__(self,parent):
@@ -123,7 +123,9 @@ class Execute(State):
 class Viewer1D:
     initialText = 'Press "i" to initialize fitting procedure.'    
     fitObjects = [Gaussian,Lorentz]
-    def __init__(self, XData,YData,YErr,fitFunction=fitObjects[0](),xLabel='',dataLabel='',xID = 0, yID = 0, plotAll = False):
+
+    @_tools.KwargChecker
+    def __init__(self, XData,YData,YErr,fitFunction=fitObjects[0](),xLabel='',dataLabel='',xID = 0, yID = 0, plotAll = False,**kwargs):
         """Interactive visualization of 1D data with fitting cababilities.
         
         Args:
@@ -223,7 +225,7 @@ class Viewer1D:
         self.ax = plt.subplot(gs[1])
         
         if self.yDataAll.shape[1]>10 and plotAll==True:
-            warnings.warn('More than 10 plots are being plotted. This may take some time...')
+            warnings.warn('More than 10 plots are being plotted. This may take some time...',category=RuntimeWarning,stacklevel=2)
         self.plotAll = plotAll
         
         self.text = self.initialText
