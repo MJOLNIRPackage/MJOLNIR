@@ -89,7 +89,7 @@ class FitInitialization(State):
 class Execute(State):
     def __init__(self,parent):
         super(Execute,self).__init__(parent)
-        self.__name__='Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters}' 
+        self.__name__='Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters' 
         if USETEX:
             self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
         ## Perform fit
@@ -211,7 +211,8 @@ class Viewer1D:
             raise AttributeError('Provided yId ({}) is outside of y values provided ({})'.format(yID,self.yDataAll.shape[1]))
         self.yID = yID
         
-        
+        if dataLabel == '': # If no label is given, generate them as [0,1,2,3,...]
+            dataLabel = [str(x) for x in np.arange(len(self.yDataAll))]
         
         self.xLabel = xLabel
         self.dataLabel = dataLabel
