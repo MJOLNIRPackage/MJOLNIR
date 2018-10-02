@@ -11,7 +11,7 @@ import warnings
 from matplotlib import rc
 
 from distutils.spawn import find_executable
-if find_executable('latex'):
+if find_executable('latex'): # pragma: no cover
     
     rc('text', usetex=True)
     plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
