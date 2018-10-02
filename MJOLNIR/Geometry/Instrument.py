@@ -772,7 +772,7 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-@_tools.KwargChecker
+#@_tools.KwargChecker
 def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
@@ -1092,9 +1092,9 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
             calibrationData = np.genfromtxt(CalibrationFile[i],skip_header=3,delimiter=',')
             binning = CalibrationFile[i].split('/')[-1].split('_')[-1].split('.')[0]
             pixelCalib = calib.create_group('{}_pixels'.format(binning))
-            pixelCalib.create_dataset('Ef'.format(binning),data=calibrationData[:,3:7],dtype='float32')
-            pixelCalib.create_dataset('Edges'.format(binning),data=calibrationData[:,7:9],dtype='int')
-            pixelCalib.create_dataset('A4'.format(binning),data=calibrationData[:,9],dtype='float32')
+            pixelCalib.create_dataset('ef'.format(binning),data=calibrationData[:,3:7],dtype='float32')
+            pixelCalib.create_dataset('edges'.format(binning),data=calibrationData[:,7:9],dtype='int')
+            pixelCalib.create_dataset('a4'.format(binning),data=calibrationData[:,9],dtype='float32')
             
     
     addMono(inst)
