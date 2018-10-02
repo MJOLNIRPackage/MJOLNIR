@@ -62,7 +62,7 @@ if USETEX == True:
 else:
     highlighter = '|'
     ender = '|'
-def executable(func):
+def executable(func): # pragma: no cover
     def newFunc(self,*args,**kwargs):
         returnval = func(self,*args,**kwargs)
         if np.sum(np.isnan(self.parameters))==0:
