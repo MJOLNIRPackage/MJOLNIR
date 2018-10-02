@@ -139,16 +139,13 @@ if saveFile==True:
     figures=[manager.canvas.figure
          for manager in matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
     if len(argsIdx)>1:
-        #print('__________________')
-        #print(saveLocation)
-        #print('__________________')
         if not os.path.isdir(saveLocation):
             raise AttributeError('Provided save location is not a directory. This is needed when multiple figures are created.')
         else:
             for f in figures:
                 title = f.get_axes()[0].get_title().replace(' ','_')
-                print('Save figure as '+saveLocation+title+'.png')
-                f.savefig(saveLocation+title+'.png')
+                print('Save figure as '+saveLocation+title+'_'+str(binning)+'.png')
+                f.savefig(saveLocation+title+'_'+str(binning)+'.png')
     else:
         title = figures[0].get_axes()[0].get_title().replace(' ','_')
         if '.' in saveLocation:
@@ -156,7 +153,7 @@ if saveFile==True:
                 print('Save figure as '+saveLocation)
                 f.savefig(saveLocation)
         else:
-            print('Save figure as '+saveLocation+title+'.png')
+            print('Save figure as '+saveLocation+title+'_'+str(binning)+'.png')
             f.savefig(saveLocation+title+'.png')
             
 
