@@ -126,7 +126,7 @@ class Viewer1D:
 
     @_tools.KwargChecker
     def __init__(self, XData,YData,YErr,fitFunction=fitObjects[0](),xLabel='',dataLabel='',xID = 0, yID = 0, plotAll = False,**kwargs):
-        """Interactive visualization of 1D data with fitting cababilities.
+        """Interactive visualization of 1D data with fitting capabilities. Currently only inteded for 1 scan file.
         
         Args:
             
@@ -292,7 +292,7 @@ class Viewer1D:
                 self.ax.legend_.draggable(True)
                 
         if not self.xLabel is '':
-                self.ax.set_xlabel(self.xLabel[self.xID])
+            self.ax.set_xlabel(self.xLabel[self.xID])
         
     def plotFit(self):
         """Plot current guess or fit"""
