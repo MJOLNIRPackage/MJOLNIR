@@ -33,28 +33,7 @@ from MJOLNIR import _tools
 import time
 import pytest
 
-def my_timer_N(N=0): # pragma: no cover
-    if N<0:
-        raise AttributeError('Number of runs need to be bigger or equal to 1 or equal to 0 for no timing, but {} given.'.format(N))
-    def my_timer(func):
-        import time
-        def newFunc(*args,**kwargs):
-            Time = []
-            if N ==0:
-                returnval = func(*args,**kwargs)
-            else:
-                for i in range(N):
-                    startT = time.time()
-                    returnval = func(*args,**kwargs)
-                    stopT = time.time()
-                    Time.append(stopT-startT)
-                if N>1:
-                    print('Function "{}" took: {}s (±{}s)'.format(func.__name__,np.mean(Time),np.std(Time)/np.sqrt(N)))
-                else:
-                    print('Function "{}" took: {}s'.format(func.__name__,Time[0]))
-            return returnval
-        return newFunc
-    return my_timer
+
 
 class DataSet(object):
     #@_tools.KwargChecker # Not used as excess kwargs are input as settings
@@ -273,9 +252,9 @@ class DataSet(object):
                 
                 if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
                     raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([x.split('_')[0] for x in np.array(file.get('entry/calibration'))])))
-                EfNormalization = np.array(file.get('entry/calibration/{}_pixels/Ef'.format(binning)))
-                A4Normalization = np.array(file.get('entry/calibration/{}_pixels/A4'.format(binning)))
-                EdgesNormalization = np.array(file.get('entry/calibration/{}_pixels/Edges'.format(binning)))
+                EfNormalization = np.array(file.get('entry/calibration/{}_pixels/ef'.format(binning)))
+                A4Normalization = np.array(file.get('entry/calibration/{}_pixels/a4'.format(binning)))
+                EdgesNormalization = np.array(file.get('entry/calibration/{}_pixels/edges'.format(binning)))
 
                 Data = np.array(instrument.get('detector/data'))
 
@@ -2215,7 +2194,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         numFiles = 1
         files = [files]
 
-    @my_timer_N()
+    @_tools.my_timer_N()
     def testFiles(files,numFiles):
         
         if numFiles>1:
@@ -2232,7 +2211,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
                 raise AttributeError('Attributes for the datafiles are not the same! Difference is in :\n'+','.join([x for x in tests[errors]])+'\nIf the files are to be binned anyway change the tolerence limits.')
     testFiles(files,numFiles)
 
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def getA3A4(files,numFiles):
     #print(numFiles)
     #type(files)
@@ -2247,7 +2226,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     
     #A3All,A4All = getA3A4(files,numFiles)
 
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def getData(files,numFiles):
     Ishape = files[0].I.shape
     IAll = np.array([files[i].I for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA ## np.array([files[i].I[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
@@ -2262,7 +2241,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         if not singleFigure and len(ax) != Ishape[2] and len(planes) == 0: # Plot all planes in provided axes
             raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,Ishape[2]))
 
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def concatINormMon(IAll, NormAll,MonitorAll):
     I = np.concatenate(IAll,axis=0)
     Norm = np.concatenate(NormAll,axis=0)
@@ -2271,7 +2250,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     #I,Norm,Mon = concatINormMon(IAll, NormAll,MonitorAll)
 
 
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def A4Instr(files,numFiles):
     A4InstrAll = np.array([files[i].instrumentCalibrationA4-A4All[i] for i in range(numFiles)])
     
@@ -2298,7 +2277,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
     # Generate measured points in A3-A4 space
 
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def genPointsAndBoundary(A3All,A4InstrAll,numFiles,I,Norm,Mon):
     points = []
 
@@ -2364,7 +2343,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
 
     # Sort centroids (i.e. polygons) like measurement points
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def calcCentroids(GoodPolyPoints):
     centroids = np.array([centeroidnp(x) for x in GoodPolyPoints]).T
     #    return centroids
@@ -2372,7 +2351,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     #centroids = calcCentroids(GoodPolyPoints)  
 
 
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def sortPoints(points,centroids):
     if isinstance(points,list):
         X = np.concatenate(points,axis=1).T
@@ -2390,7 +2369,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         raise AttributeError('The number of points connecting the centroids from Tessellation and points are not equal...')
     centInd = SortUindex
 
-    #@my_timer_N()
+    #@_tools.my_timer_N()
     #def calculateQ(GoodPolyPoints,centInd,files):
     sortedPolyPoints = GoodPolyPoints[centInd]
     factorsqrtEK = 0.694692
@@ -2448,7 +2427,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         Energies = []
     for plane in planes:
         
-        #@my_timer_N()
+        #@_tools.my_timer_N()
         #def binPlanes(plane,Isorted,Normsorted,Monsorted):
         subplanes = len(np.array([plane]).flatten())
         # Check if plane inpu is single plane
@@ -2467,7 +2446,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
          # Generate polygons in Qspace
         
 
-        #@my_timer_N()
+        #@_tools.my_timer_N()
         #def genPatchesAndCollection(QRX,QRY,plotPlane):
         patches = [Polygon(np.array([QRX[i][:,plotPlane],QRY[i][:,plotPlane]]).T) for i in range(len(QRX))]
         pcollection = PatchCollection(patches)
@@ -2477,7 +2456,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         currentInt = IntensityBin
         
 
-        #@my_timer_N()
+        #@_tools.my_timer_N()
         #def plotter(pcollection,currentInt,counter,ax,QXlim,QYlim,E,plotPlane,plane,subplanes):
         if log==True:
             pcollection.set_array(np.log(currentInt+1e-20))
@@ -2828,7 +2807,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 #        return ax
 #
 #
-#@my_timer_N()
+#@_tools.my_timer_N()
 
 @_tools.KwargChecker
 def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False,**kwargs):
@@ -2933,7 +2912,7 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False,**kwarg
 #
 #
 #
-#@my_timer_N(N=0)
+#@_tools.my_timer_N(N=0)
 #def voronoiTessellationOPTIMIZED2(points,plot=False,Boundary=False): # pragma: no cover
 #    """Generate individual pixels around the given datapoints.
 #
