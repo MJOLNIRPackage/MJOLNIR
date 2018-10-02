@@ -84,7 +84,7 @@ class Gaussian(FittingFunction):
         else:
             self.variableNames = [self.parameterNames[i] for i in range(len(self.format))]
     @executable
-    def setParameter(self,event,index):
+    def setParameter(self,event,index): # pragma: no cover
         if index == 0:
             if not np.isnan(self.parameters[3]):
                 self.parameters[0] = event.ydata-self.parameters[3]
@@ -143,7 +143,7 @@ class Lorentz(FittingFunction):
             self.variableNames = [self.parameterNames[i] for i in range(len(self.format))]
         self.currentFitParameter = 0
     @executable
-    def setParameter(self,event,index):
+    def setParameter(self,event,index): # pragma: no cover
         if index == 0:
             self.parameters[0] = event.ydata
             self.parameters[1] = event.xdata
@@ -186,3 +186,19 @@ class Lorentz(FittingFunction):
                 self.variableNames[i] = self.variableNames[i][len(highlighter):-len(ender)]
 
         return string
+
+
+def test_FittingFunction_Call():
+    for f in FittingFunction.__subclasses__():
+        fun = Lorentz()
+        parameters = np.random.rand(fun.parameterLength)
+        fun.parameters = parameters
+        assert(fun.executable==True)
+
+        x = np.linspace(-5,5,201)
+        y = fun(x)
+
+        text = fun.latex(highlight=0)
+        USETEX = False
+        text = fun.latex(highlight=0)
+        UseTex = True
