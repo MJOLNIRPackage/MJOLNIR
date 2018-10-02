@@ -189,16 +189,14 @@ class Lorentz(FittingFunction):
 
 
 def test_FittingFunction_Call():
-    for f in FittingFunction.__subclasses__():
-        fun = Lorentz()
-        parameters = np.random.rand(fun.parameterLength)
-        fun.parameters = parameters
-        assert(fun.executable==True)
+    for USETEX in [True,False]:
+        for f in FittingFunction.__subclasses__():
+            fun = f()
+            parameters = np.random.rand(fun.parameterLength)
+            fun.parameters = parameters
+            assert(fun.executable==True)
 
-        x = np.linspace(-5,5,201)
-        y = fun(x)
+            x = np.linspace(-5,5,201)
+            y = fun(x)
 
-        text = fun.latex(highlight=0)
-        USETEX = False
-        text = fun.latex(highlight=0)
-        UseTex = True
+            text = fun.latex(highlight=0)
