@@ -5,7 +5,7 @@ Data Module
 
 .. currentmodule:: Data
 
-
+The DataSet object is the interface between the data files and the data treatment and visualziation. It is both responsible for the conversion of raw '.h5'-files into '.nxs'-files as well as plotting these. Extracting values from this object results in a list of values where the first dimension is determined from the number of data files provided.
 
 .. autosummary::
    :nosignatures:
