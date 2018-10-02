@@ -24,7 +24,7 @@ import pyperclip
 from MJOLNIR.Statistics.FittingFunction import Gaussian, Lorentz
 from MJOLNIR import _tools
 
-class State:
+class State:#pragma: no cover
     def __init__(self,parent):
         self.parent = parent
 
@@ -34,7 +34,7 @@ class State:
         assert 0, "mouse not implemented"
 
 
-class Initial(State):
+class Initial(State):#pragma: no cover
     def __init__(self,parent):
         super(Initial,self).__init__(parent)
         self.__name__ = 'Initial'
@@ -46,7 +46,7 @@ class Initial(State):
         return self
         
             
-class FitInitialization(State):
+class FitInitialization(State):#pragma: no cover
     def __init__(self,parent):
         super(FitInitialization,self).__init__(parent)
         
@@ -86,7 +86,7 @@ class FitInitialization(State):
         return self
 
                 
-class Execute(State):
+class Execute(State):#pragma: no cover
     def __init__(self,parent):
         super(Execute,self).__init__(parent)
         self.__name__='Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters' 
@@ -120,7 +120,7 @@ class Execute(State):
         
 
     
-class Viewer1D:
+class Viewer1D: # pragma: no cover
     initialText = 'Press "i" to initialize fitting procedure.'    
     fitObjects = [Gaussian,Lorentz]
 
