@@ -163,25 +163,6 @@ class DataSet(object):
     def settings(self,*args,**kwargs):
         raise NotImplementedError('Settings cannot be overwritten.')    
 
-    @property
-    def scanParameterValues(self):
-        return self._scanParameterValues
-
-    @scanParameterValues.getter
-    def scanParameterValues(self):
-        try:
-            self._scanParameters
-        except:
-            #print('No Scan parameters in the H5 file')
-            raise AttributeError("'DataSet' object ha no attribute 'ScanParameterValues'" )
-        else:
-            return self._scanParameterValues
-
-    @scanParameterValues.setter
-    def scanParameterValues(self,scanParameterValues):
-        self._scanParameterValues = scanParameterValues
-        #raise NotImplementedError('Settings cannot be overwritten.')  
-
     def save(self, filename):
         try:                                # Opening the given file with an error catch
             fileObject = open(filename, 'wb')
@@ -360,7 +341,8 @@ class DataSet(object):
             self.scanParameterValues,self.scanParameterUnits = DataFile.extractData(self.convertedFiles)
         else:
             self.I,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
-            self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei = DataFile.extractData(self.dataFiles)
+            self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
+            self.scanParameterValues,self.scanParameterUnits = DataFile.extractData(self.dataFiles)
 
     @_tools.KwargChecker
     def binData3D(self,dx,dy,dz,dataFiles=None,**kwargs):
