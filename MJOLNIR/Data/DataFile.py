@@ -41,24 +41,7 @@ class DataFile(object):
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
-                scanParam = list(f.get('entry/scanParameter/'))
-                if not scanParam is None:
-                    scanParameters = scanParam
-                    params = []
-                    vals = []
-                    unit = []
-                    for SC in scanParameters:
-                        SCP = f.get('entry/scanParameter/{}'.format(SC))
-                        params.append(SC)
-                        vals.append(np.array(SCP).reshape(-1))
-                        if 'units' in list(SCP.attrs.keys()):
-                            unit.append(decodeStr(SCP.attrs['units']))
-                        else:
-                            unit.append('Unknown')
-                    self.scanParameters = np.array(params)
-                    self.scanValues = np.array(vals)
-                    self.scanUnits = np.array(unit)
-
+                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
 
         elif fileLocation.split('.')[-1]=='h5':
             self.type='h5'
@@ -81,6 +64,7 @@ class DataFile(object):
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
+                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
         else:
             raise AttributeError('File is not of type nxs or h5.')
         self.name = fileLocation.split('/')[-1]
@@ -252,10 +236,49 @@ def loadBinning(self,binning):
     return self
             
 def decodeStr(string):
-    if type(string)==type(b''):
-        return string.decode('utf8')
-    else:
+    try:
+        if 'decode' in string.__dir__():
+            return string.decode('utf8')
+        else:
+            return string
+    except:
         return string
+
+def getScanParameter(f,exclude=['data','qx','qy','en','normalization','intensity','monitor']):
+    """Extract scan parameter from hdf file.
+
+    Args:
+
+        - f (hdf): Open HDF5 file object from which parameters are extracted.
+
+    Kwargs:
+
+        - exclude (list): List of string arguments to not be considered as scanning parameter
+
+    """
+    scanParameters = []
+    scanValues = []
+    scanUnits = []
+    
+    dataGroup = f.get('/entry/data')
+    for d in dataGroup:
+        if not str(d) in exclude and str(d).split('_')[-1]!='zero':
+            SCP = dataGroup[d]
+            scanValues.append(np.array(SCP))
+            scanParameters.append(str(d))
+            if 'units' in list(SCP.attrs.keys()):
+                scanUnits.append(decodeStr(SCP.attrs['units']))
+            else:
+                scanUnits.append('Unknown')
+            
+            
+    scanParameters = np.array(scanParameters)
+    scanValues = np.array(scanValues)
+    scanUnits = np.array(scanUnits)
+
+
+    return scanParameters,scanValues,scanUnits
+
 
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
@@ -814,3 +837,16 @@ def test_DataFile_decodeString():
     b = 'String'
 
     assert(decodeStr(a)==decodeStr(b))
+
+
+def test_DataFile_ScanParameter():
+
+    files = ['TestData/ManuallyChangedData/A3.h5','TestData/ManuallyChangedData/A3.nxs']
+    for file in files:
+        dfile = DataFile(file)
+        assert(dfile.scanParameters[0]=='rotation_angle')
+        assert(len(dfile.scanParameters)==len(dfile.scanUnits))
+        assert(len(dfile.scanParameters)==len(dfile.scanValues))
+        assert(len(dfile.scanParameters)==1)
+        assert(dfile.scanUnits[0]=='degrees')
+        assert(np.all(dfile.scanValues==np.arange(0,181,5)))
