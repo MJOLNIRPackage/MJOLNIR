@@ -10,6 +10,7 @@ Following is a list of scripting tutorials covering a given method but does not 
    CalculateA4Ef
    LoadInstrumentXML
    GenerateNormalization
+   Raw
    ConvertData
    BinAndVisualize
    Full
