@@ -284,3 +284,18 @@ def test_FlatAnalyser_plot():
 def test_FlatAnalyser_str():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     assert(str(Analyser)=='FlatAnalyser located at '+np.array2string(np.array([0.0,1.0,0.0])))
+
+
+def test_FlatAnalser_kwChecker():
+
+    try:
+        Analyser = FlatAnalyser(Position=(0.0,1.0,0.0),direction=(1.0,0,0))
+        assert False
+    except:
+        assert True
+
+    try:
+        Analyser = FlatAnalyser(pos=(0.0,1.0,0.0),direction=(1.0,0,0))
+        assert False
+    except:
+        assert True
