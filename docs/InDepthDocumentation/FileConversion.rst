@@ -9,7 +9,9 @@ In general, it is expected that a CAMEA-like instrument is to be run during expe
 
     - External parameter
 
-Most often, one would rotate the back-end into a suitable :math:`A4` and :math:`E_i` position to cover the interesting physics, and then perform an :math:`A3` scan. The length of this scan depends on the symmetry of the crystal in the given scattering plane as performing a 360 degrees scan with a 90 degrees symmetry does not provide additional information. After such a scan, would rotate :math:`A4` by half a wedge coverage angle (3.75 degrees) to cover the dark angles and then perform an identical :math:`A3` scan. This could be performed with different incoming energies to expand the covered area in the energy direction.
+However, in the initial phase of setup other scans might be conducted. The data conversion thus does not require a specific scan but allows for all types. This does then require the user to choose corresponding visualizations correspondingly.
+
+.. The most common operation is expected to be a rotate of the back-end into a suitable :math:`A4` and :math:`E_i` position to cover the interesting physics, and then a performance of an :math:`A3` scan. The rotation angle of this scan depends on the symmetry of the crystal in the given scattering plane as performing a 360 degrees scan with a 90 degrees symmetry does not provide additional information. After such a scan, would rotate :math:`A4` by half a wedge coverage angle (3.75 degrees) to cover the dark angles and then perform an identical :math:`A3` scan. This could be performed with different incoming energies to expand the covered area in the energy direction.
 
 .. Having the raw data in the H5 format, converting the data files into :math:`S(\vec{q},\omega)` is rather strraihgt forward. 
 
@@ -24,7 +26,8 @@ The raw data from the instrument is expected to be provided in an HdF 5 format w
             │    ├── detector
             │    │    ├── data
             │    │    ├── online
-            │    │    └── polar_angle
+            │    │    ├── polar_angle
+            │    │    └── polar_angle_zero
             │    ├── monochromator
             │    │    ├── curvature_horizontal
             │    │    ├── curvature_horizontal_zero
@@ -35,7 +38,7 @@ The raw data from the instrument is expected to be provided in an HdF 5 format w
             │    │    ├── gm
             │    │    ├── gm_zero
             │    │    ├── rotation_angle
-            │    │    ├── rotation_angle_zero (!!!)
+            │    │    ├── rotation_angle_zero (Is this inserted? Wasn't in RITA2)
             │    │    ├── summed_counts
             │    │    ├── tlm
             │    │    ├── tlm_zero
@@ -53,8 +56,17 @@ The raw data from the instrument is expected to be provided in an HdF 5 format w
             │         └── top_zero
             ├── calibration
             │    ├── 1_pixels
+            │    │    ├── a4
+            │    │    ├── edges
+            │    │    └── ef
             │    ├── 3_pixels
+            │    │    ├── a4
+            │    │    ├── edges
+            │    │    └── ef
             │    └── 8_pixels
+            │         ├── a4
+            │         ├── edges
+            │         └── ef
             ├── control
             │    ├── data
             │    ├── mode
@@ -62,7 +74,7 @@ The raw data from the instrument is expected to be provided in an HdF 5 format w
             │    └── time
             ├── data
             │    ├── data
-            │    └── rotation_angle
+            │    └── (Scan parameter)
             ├── end_time
             ├── proposal_id
             ├── proposal_user
@@ -75,14 +87,13 @@ The raw data from the instrument is expected to be provided in an HdF 5 format w
             │    ├── polar_angle_zero
             │    ├── rotation_angle
             │    ├── rotation_angle_zero
-            │    ├── rotation_angle_zero
             │    ├── temperature
             │    └── unit_cell
             ├── scancommand
             ├── start_time
             └── title
 
-From this file, raw plotting and a conversion algorithm is possible. Raw plotting is further explained in  :ref:`Command Line Tutorial<Command-Line-Tutorials>`.
+From this file, raw plotting and a conversion algorithm is possible. Raw plotting is further explained in  :ref:`Raw plotting and fitting<Raw-plotting-and-fitting>`. 
 
 
 
@@ -102,7 +113,8 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
             │    ├── detector
             │    │    ├── data
             │    │    ├── online
-            │    │    └── polar_angle
+            │    │    ├── polar_angle
+            │    │    └── polar_angle_zero
             │    ├── monochromator
             │    │    ├── curvature_horizontal
             │    │    ├── curvature_horizontal_zero
@@ -113,7 +125,7 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
             │    │    ├── gm
             │    │    ├── gm_zero
             │    │    ├── rotation_angle
-            │    │    ├── rotation_angle_zero (!!!)
+            │    │    ├── rotation_angle_zero (Is this inserted? Wasn't in RITA2)
             │    │    ├── summed_counts
             │    │    ├── tlm
             │    │    ├── tlm_zero
@@ -131,8 +143,17 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
             │         └── top_zero
             ├── calibration
             │    ├── 1_pixels
+            │    │    ├── a4
+            │    │    ├── edges
+            │    │    └── ef
             │    ├── 3_pixels
+            │    │    ├── a4
+            │    │    ├── edges
+            │    │    └── ef
             │    └── 8_pixels
+            │         ├── a4
+            │         ├── edges
+            │         └── ef
             ├── control
             │    ├── data
             │    ├── mode
@@ -146,7 +167,7 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
             │    ├── qx
             │    ├── qy
             │    ├── qz
-            │    └── rotation_angle
+            │    └── (Scan parameter)
             ├── definition
             ├── end_time
             ├── proposal_id
