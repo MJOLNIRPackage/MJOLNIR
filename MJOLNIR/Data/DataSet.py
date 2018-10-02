@@ -223,7 +223,7 @@ class DataSet(object):
             with hdf.File(datafile.fileLocation,mode='r+') as file:
                 #file = hdf.File(datafile.fileLocation,mode='r+')             
                 instrument = getInstrument(file)
-                ScanParam = []
+                
             
                 if instrument.name.split('/')[-1] == 'CAMEA':
                     EPrDetector = 8 
@@ -270,8 +270,7 @@ class DataSet(object):
                 factorsqrtEK = 0.694692
                 
                 A4File = np.array(instrument.get('detector/polar_angle'))
-                if A4File.shape[0]==steps:
-                    ScanParam.append('A4')
+                
                 A4File = A4File.reshape((-1,1,1))
 
                 A4Mean = A4.reshape((1,detectors,binning*EPrDetector))-np.deg2rad(A4File)
@@ -289,8 +288,7 @@ class DataSet(object):
 
                 kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
                 Ei = np.array(instrument.get('monochromator/energy'))
-                if Ei.shape[0]==steps:
-                    ScanParam.append('Ei')
+                
                 
                 ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
 
@@ -299,8 +297,7 @@ class DataSet(object):
                 
                 if A3.shape[0]==1:
                     A3 = A3*np.ones((steps))
-                elif A3.shape[0]==steps:
-                    ScanParam.append('A3')
+                
                 A3.resize((steps,1,1))
 
                 # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
@@ -315,17 +312,13 @@ class DataSet(object):
                 Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
                 Normalization = EfNormalization*np.ones((steps,1,1))
 
-                if len(ScanParam)==0:
-                    # TODO: Figure out what parameter changed
-                    ScanParam.append('External Param')
-
                 if not saveLocation is None:
                     if saveLocation[-1]!='/':
                         saveLocation+='/'
                     saveloc = saveLocation+datafile.fileLocation.replace('.h5','.nxs').split('/')[-1]
                 else:
                     saveloc = datafile.fileLocation.replace('.h5','.nxs')
-                saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,ScanParam)
+                saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization)
                 
                 #file.close()
                 convFil = DataFile.DataFile(saveloc)
@@ -1305,7 +1298,7 @@ class DataSet(object):
             if not A4 is None: # If Id is not given
                 RawId = np.unravel_index(np.argmin(np.abs(self.instrumentCalibrationA4[i]-self.a4Off[i]-A4)),self.instrumentCalibrationA4[i].shape)
                 if np.abs(self.instrumentCalibrationA4[i][RawId]-A4)>A4Tolerence: # If the best found A4 value is more than (default) 1 degree away from wanted 
-                    raise AttributeError('Difference between wanted and found A4 value is {} for file {}.. Maybe the sign of A4 should be changed.'.format(self.instrumentCalibrationA4[i][RawId]-A4,self.convertedFiles[i].name))
+                    raise AttributeError('Difference between wanted ({}) and found A4 value ({}) is {} for file {}.. Maybe the sign of A4 should be changed.'.format(A4,self.instrumentCalibrationA4[i][RawId],self.instrumentCalibrationA4[i][RawId]-A4,self.convertedFiles[i].name))
                 binning = int(self.instrumentCalibrationA4[i].shape[0]/(104*8))
                 Id = int(np.floor(RawId[0]/(8*binning)))
                 returnData = self.I[i][:,Id,:]
@@ -2874,7 +2867,7 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False,**kwarg
     Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
     
     
-    if plot or len(pointsX)!=len(Polygons):
+    if plot or len(pointsX)!=len(Polygons): # pragma: no cover
         plt.figure()
         insiders = np.logical_not(edgePolygonsBool)
         
@@ -2996,8 +2989,8 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False,**kwarg
 
 
 
-@_tools.KwargChecker
-def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0,**kwargs):
+@_tools.KwargChecker # Following function is not used
+def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0,**kwargs): # pragma: no cover
     """Calculate the boundary of a given scan in Q space
     A4Extend: in degrees
     A3Extend: in degrees
@@ -3127,7 +3120,7 @@ def isListOfDataFiles(inputFiles):
     return returnList
 
 
-def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,ScanParam):
+def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization):
     
     fd = hdf.File(savefilename,'w')
     group_path = fs['/entry'].parent.name
@@ -3186,25 +3179,6 @@ def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,N
     
     en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
     en.attrs['NX_class']=b'NX_FLOAT'
-
-    sp = fd.create_group('entry/scanParameter')
-    counter = 0
-    for SP in ScanParam:
-        if SP == 'A3': # link to A3 values
-            sp[SP] = fd['entry/sample/rotation_angle']
-            #sp.attrs['ScanParameter{}'.format(counter)]=SP
-            counter+=1
-        elif SP == 'A4': # link to A4 values
-            Instr = getInstrument(fd)
-            sp[SP] = Instr['detector/polar_angle']
-            #sp.attrs['ScanParameter{}'.format(counter)]=SP
-            counter+=1
-        elif SP == 'Ei': # link to Ei values
-            Instr = getInstrument(fd)
-            sp[SP] = Instr['monochromator/energy']
-            #sp.attrs['ScanParameter{}'.format(counter)]=SP
-            counter+=1
-
 
     fd.close()
 
@@ -3438,6 +3412,8 @@ def OxfordList(list):
         return None
     elif len(list)==1:
         return str(list[0])
+    elif len(list)==2:
+        return ' and '.join([str(x) for x in list])
     else:
         return ', '.join([str(x) for x in list[:-1]])+', and ' +str(list[-1])
 #________________________________________________TESTS_____________________________________________
@@ -3463,6 +3439,11 @@ def test_Dataset_Initialization():
                                                                                                                  
 def test_DataSet_Error():
     
+    try:
+        ds = DataSet(normalizationfiles=[10,11])
+        assert False
+    except:
+        assert True
 
     ds = DataSet()
     
@@ -3513,7 +3494,6 @@ def test_DataSet_Error():
         assert False
     except AttributeError:
         assert True
-
            
     
 
@@ -3862,6 +3842,15 @@ def test_DataSet_plotA3A4(quick):
         assert False
     except AttributeError:
         assert True
+    
+    try:
+        ei = F1.Ei
+        F2.Ei = F1.Ei*10
+        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
+        assert False
+    except AttributeError:
+        F2.Ei = ei
+        assert True
 
     try:
         plotA3A4(files,planes=[10,[22]],ax=axes,singleFigure=True) # 2 axes and singleFigure true
@@ -4021,13 +4010,19 @@ def test_DataSet_plotCutQELine():
     except AttributeError:
         assert True
 
+    try: # No mode
+        dataset.plotCutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='WRONG')
+        assert False
+    except AttributeError:
+        assert True
+
     ax = plt.figure().gca()
 
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
         QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,format='qxqy',ax=ax,vmin=0.0,vmax=1.5e-6,ticks=10,log=True,seperatorWidth=3)
 
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU',vmin=0.0,vmax=1.5e-6,ticks=10,plotSeperator = False,tickRound=1)
+        QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU',plotSeperator = False,tickRound=1)
 
     plt.close('all')
 
@@ -4062,6 +4057,18 @@ def test_DataSet_extractDetectorData():
     data,singleId = dataset.extractDetectorData(Id = 10,returnId=True)
     assert(np.all([data[i]==AllData2[i][:,singleId[i],:] for i in range(len(DataFile))]))
 
-    data2,singleId2= dataset.extractDetectorData(Id = 15, Ef= 3.3, returnId=True)
+    data2,singleId2= dataset.extractDetectorData(A4 = -50, Ef= 3.3, returnId=True)
 
     assert(np.all([np.all(data2[i]==AllData[i][:,singleId2[i][0],singleId2[i][1]]) for i in range(len(DataFile))]))
+
+def test_DataSet_OxfordList():
+    l = ['Apples','Pears']
+    S = OxfordList(l)
+    assert(S=='Apples and Pears')
+
+    l.append('Oranges')
+    S = OxfordList(l)
+    assert(S=='Apples, Pears, and Oranges')
+
+    assert(OxfordList([]) is None)
+    assert(OxfordList(['Apples'])=='Apples')
