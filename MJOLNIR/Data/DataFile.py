@@ -35,9 +35,9 @@ class DataFile(object):
                 else:
                     self.A4Off = 0.0
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/Ef'.format(str(self.binning))))
-                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/A4'.format(str(self.binning))))
-                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/Edges'.format(str(self.binning))))
+                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
@@ -75,9 +75,9 @@ class DataFile(object):
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 self.A4Off = np.array(f.get('entry/zeros/A4'))
                 self.binning=1 # Choose standard binning 1
-                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/Ef'.format(str(self.binning))))
-                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/A4'.format(str(self.binning))))
-                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/Edges'.format(str(self.binning))))
+                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
@@ -245,9 +245,9 @@ def loadBinning(self,binning):
             if not binning in binningsPossible:
                 raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
             
-            self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/Ef'.format(str(binning))))
-            self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/A4'.format(str(binning))))
-            self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/Edges'.format(str(binning))))
+            self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(binning))))
+            self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(binning))))
+            self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(binning))))
             self.binning = binning 
     return self
             
