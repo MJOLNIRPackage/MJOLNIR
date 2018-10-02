@@ -3,7 +3,18 @@ import sys
 import numpy as np
 from difflib import SequenceMatcher
 
-def KwargChecker(func): # Function to check if given key-word arguments has right capitalization
+def KwargChecker(func):
+    """Function to check if given key-word is in the list of accepted Kwargs. If not directly therein, checks capitalization. If still not match raises error
+    with suggestion of closest argument.
+    
+    Args:
+    
+        - func (function): Function to be decorated.
+
+    Raises:
+
+        - AttributeError
+    """
     def newFunc(self,*args,**kwargs):
         def checkArgumentList(argList,kwargs):
             for key in kwargs:
@@ -27,3 +38,37 @@ def KwargChecker(func): # Function to check if given key-word arguments has righ
     
     newFunc._original = func
     return newFunc
+
+
+def my_timer_N(N=0): # pragma: no cover
+    """Timer function to measure time consumbtion of function.
+
+    Kwargs:
+
+        - N (int): Number of itterations to perform.
+
+    Raises:
+
+        - AttributeError
+    """
+    if N<0:
+        raise AttributeError('Number of runs need to be bigger or equal to 1 or equal to 0 for no timing, but {} given.'.format(N))
+    def my_timer(func):
+        import time
+        def newFunc(*args,**kwargs):
+            Time = []
+            if N ==0:
+                returnval = func(*args,**kwargs)
+            else:
+                for i in range(N):
+                    startT = time.time()
+                    returnval = func(*args,**kwargs)
+                    stopT = time.time()
+                    Time.append(stopT-startT)
+                if N>1:
+                    print('Function "{}" took: {}s (\\pm{}s)'.format(func.__name__,np.mean(Time),np.std(Time)/np.sqrt(N)))
+                else:
+                    print('Function "{}" took: {}s'.format(func.__name__,Time[0]))
+            return returnval
+        return newFunc
+    return my_timer
