@@ -17,5 +17,5 @@ warnings.simplefilter('ignore')
 Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
 warnings.simplefilter('once')
 viewer = Viewer3D.Viewer3D(Intensity,bins)
-plt.plot()
+plt.show()
 
