@@ -188,6 +188,72 @@ class Lorentz(FittingFunction):
         return string
 
 
+class InclineLinear(FittingFunction):
+    def func(self,x,a,b,c):
+        d = (c-b)/a
+        y = np.zeros_like(x)
+        y[x<d] = a*x[x<d]+b
+        y[x>=d] = c
+        return y
+    
+    def __init__(self):
+        super(InclineLinear,self).__init__(self.func)
+        self.format=['','','']
+        if USETEX == True:
+            self.variableNames = [self.format[i]+self.parameterNames[i] for i in range(len(self.format))]
+        else:
+            self.variableNames = [self.parameterNames[i] for i in range(len(self.format))]
+    @executable
+    def setParameter(self,event,index): # pragma: no cover
+        if index == 0:
+            self.parameters[1] = event.ydata
+            return 1
+        elif index == 1:
+            if not np.isnan(self.parameters[1]):
+                self.parameters[0] = (event.ydata-self.parameters[1])/event.xdata
+            else:
+                self.parameters[0] = event.ydata/event.xdata
+            return 2
+        elif index == 2:
+            self.parameters[2] = event.ydata#np.abs(self.parameters[1]-event.xdata)/(np.sqrt(2*np.log(2)))
+            return 0
+        
+
+
+    def latex(self,highlight=None):
+        if not highlight is None:
+            if highlight==0:
+                highlight = 1
+            elif highlight == 1:
+                highlight = 0
+            highlight = np.array(highlight).reshape(-1)
+            for i in highlight:
+                self.variableNames[i] = highlighter+self.variableNames[i]+ender
+        if USETEX==True:
+            string = '$f(x, '
+            string+=', '.join([x for x in self.variableNames])+') = '
+            string+='\left\{ \\begin{pmatrix}'+str(self.variableNames[0])+'x+'+str(self.variableNames[1])+' & x<\\frac{'+str(self.variableNames[2])\
+            +'-'+str(self.variableNames[1])+'}{'+str(self.variableNames[0])+'}\\\\ '+str(self.variableNames[2])+' & x\ge\\frac{'+str(self.variableNames[2])\
+            +'-'+str(self.variableNames[1])+'}{'+str(self.variableNames[0])+'}\end{pmatrix}\\right.$'
+        else:
+            string = 'f(x, '
+            string+=', '.join([x for x in self.variableNames])+') = '\
+            +'if x<('+str(self.variableNames[2])+'-'+str(self.variableNames[1])+')/'+str(self.variableNames[0])+': '+str(self.variableNames[0])+'x+'\
+            +str(self.variableNames[1])+' else '+str(self.variableNames[2])
+        if not highlight is None:
+            for i in highlight:
+                self.variableNames[i] = self.variableNames[i][len(highlighter):-len(ender)]
+        return string
+
+
+
+
+
+
+
+
+
+
 def test_FittingFunction_Call():
     for USETEX in [True,False]:
         for f in FittingFunction.__subclasses__():
