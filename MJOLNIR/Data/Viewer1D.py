@@ -21,7 +21,7 @@ else:
     USETEX = False
 import scipy.optimize
 import pyperclip
-from MJOLNIR.Statistics.FittingFunction import Gaussian, Lorentz
+from MJOLNIR.Statistics.FittingFunction import *
 from MJOLNIR import _tools
 
 class State:#pragma: no cover
@@ -102,7 +102,7 @@ class Execute(State):#pragma: no cover
         # Set all nan-values to zero
         guess[np.isnan(guess)]=0.0
 
-        yerr[yerr==0]==1 # Set all zero error values to 1
+        #yerr[ydata==0]=1 # Set all zero error values to 1
         fit = scipy.optimize.curve_fit(f,xdata,ydata,p0=guess,sigma=yerr,absolute_sigma=True)
         self.parent.fitFunction.parameters = fit[0]
         self.parent.fitFunction.fitError = fit[1]
@@ -122,7 +122,7 @@ class Execute(State):#pragma: no cover
     
 class Viewer1D: # pragma: no cover
     initialText = 'Press "i" to initialize fitting procedure.'    
-    fitObjects = [Gaussian,Lorentz]
+    fitObjects = FittingFunction.__subclasses__()
 
     @_tools.KwargChecker
     def __init__(self, XData,YData,YErr,fitFunction=fitObjects[0](),xLabel='',dataLabel='',xID = 0, yID = 0, plotAll = False,**kwargs):
