@@ -12,9 +12,9 @@ else:
         long_description = f.read()
 
 if sys.version_info[0] < 3:
-    tkRequirenment = 'Tkinter'
-else:
     tkRequirenment = 'tkinter'
+else:
+    tkRequirenment = 'Tkinter'
 
 
 setup(
