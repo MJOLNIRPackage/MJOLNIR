@@ -35,7 +35,16 @@ def KwargChecker(func):
         checkArgumentList(argList,kwargs)
         returnval = func(self,*args,**kwargs)
         return returnval
-    
+
+    for attr in ['__module__', '__name__', '__qualname__', '__doc__', '__annotations__','__weakref__']:
+        try:
+            value = getattr(func, attr)
+        except AttributeError:
+            pass
+        else:
+            setattr(newFunc, attr, value)
+    for attr in ['__dict__']:
+        getattr(newFunc, attr).update(getattr(func, attr, {}))
     newFunc._original = func
     return newFunc
 
