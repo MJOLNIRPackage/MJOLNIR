@@ -24,3 +24,4 @@ plt.tight_layout()
 
 ## Cut and plot 1D
 ax,DataList,Bins,binCenter,binDistance = DataObj.plotCut1D(q1,q2,width,minPixel,Emin = 5.2, Emax = 5.7,plotCoverage=True)
+plt.show()

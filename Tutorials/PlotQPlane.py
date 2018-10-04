@@ -19,3 +19,4 @@ ax2 = Data.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.025,yBinTolerance=0
                      enlargen=False,log=False,ax=None,RLUPlot=True,vmin=0,vmax=1e-6)
 
 plt.colorbar(ax2.pmeshs[0])
+plt.show()

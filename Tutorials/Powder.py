@@ -25,3 +25,4 @@ plt.colorbar(ax2.pmeshs[0])
 Data3,qbins3 = DataObj.cutPowder(EBinEdges)
 
 ax2.set_clim(0,1e-6)
+plt.show()

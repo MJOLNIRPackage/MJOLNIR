@@ -24,3 +24,4 @@ for ax in ax2: # loop through axes to increase size and save
     fig.tight_layout()
     fig.savefig('QPatches/{:03d}.png'.format(counter),format='png')
     counter+=1
+plt.show()
