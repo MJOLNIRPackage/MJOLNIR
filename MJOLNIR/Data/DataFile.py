@@ -42,6 +42,7 @@ class DataFile(object):
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
                 self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                self.scanCommand = np.array(f.get('entry/scancommand'))
 
         elif fileLocation.split('.')[-1]=='h5':
             self.type='h5'
@@ -65,12 +66,13 @@ class DataFile(object):
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
                 self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                self.scanCommand = np.array(f.get('entry/scancommand'))
         else:
             raise AttributeError('File is not of type nxs or h5.')
         self.name = fileLocation.split('/')[-1]
         self.fileLocation = fileLocation
         self.sample.calculateProjections()
-
+        
 
     @property
     def A3Off(self):
@@ -273,7 +275,7 @@ def getScanParameter(f,exclude=['data','qx','qy','en','normalization','intensity
             
             
     scanParameters = np.array(scanParameters)
-    scanValues = np.concatenate(scanValues).reshape(len(scanParameters),-1)
+    scanValues = np.array(scanValues)#.reshape(len(scanParameters),-1)
     scanUnits = np.array(scanUnits)
 
 
@@ -416,8 +418,8 @@ class Sample(object):
     def __eq__(self,other):
         if not isinstance(other,type(self)):
             return False
-        return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell),\
-        np.all(self.orientationMatrix==other.orientationMatrix)])
+        return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell)])#,\
+        #np.all(self.orientationMatrix==other.orientationMatrix)])
 
     def calculateProjections(self):
         """Calculate projections and generate projection angles."""
