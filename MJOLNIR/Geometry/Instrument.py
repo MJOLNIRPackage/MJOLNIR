@@ -649,7 +649,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     A4FitValue = []
                     for i in range(8):
                         for j in range(13):
-                            A4FitValue.append(i*8+j*0.55)
+                            A4FitValue.append(-(i*8+j*0.55))
                     A4FitValue = np.array(A4FitValue)
 
                 fitParameters.append(fittedParameters)
