@@ -123,7 +123,7 @@ class Wedge(GeometryConcept.GeometryConcept):
                 raise AttributeError('Object not analyser or detector or a simple list of these')
 
     @_tools.KwargChecker
-    def plot(self,ax,offset=(0,0,0),**kwargs):
+    def plot(self,ax,offset=(0,0,0)):
         """Recursive plotting routine."""
         for obj in self.analysers+self.detectors:
             obj.plot(ax,offset=np.array(self.position,dtype=float)+np.array(offset,dtype=float))

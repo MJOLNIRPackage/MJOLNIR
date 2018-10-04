@@ -77,7 +77,7 @@ def test_Generic_plot():
 class TubeDetector1D(Detector):
     """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
     @_tools.KwargChecker
-    def __init__(self, position, direction,length=0.25, pixels=1024,diameter=0.02,split=[],**kwargs):
+    def __init__(self, position, direction,length=0.25, pixels=1024,diameter=0.02,split=[]):
         """
         Args:
 
@@ -172,7 +172,7 @@ class TubeDetector1D(Detector):
             self._split = npSplit
 
     @_tools.KwargChecker
-    def plot(self,ax,offset=(0.0,0.0,0.0),n=100,**kwargs):
+    def plot(self,ax,offset=(0.0,0.0,0.0),n=100):
         """
         Args:
 

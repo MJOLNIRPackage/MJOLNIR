@@ -13,7 +13,7 @@ class GeometryConcept(object):
     """Abstract geometry concept. Used as base class for Wedge and Instrument."""
 
     @_tools.KwargChecker
-    def __init__(self,position=(0,0,0),**kwargs):
+    def __init__(self,position=(0,0,0)):
         self.position = position
         """
         Kwargs:
@@ -117,7 +117,7 @@ class GeometryObject(GeometryConcept):
     inherit from this class in order enforce a uniform interface."""
     
     @_tools.KwargChecker
-    def __init__(self, position=(0.0,0.0,0.0), direction=(0,0,1),**kwargs):
+    def __init__(self, position=(0.0,0.0,0.0), direction=(0,0,1)):
         """
         Kwargs:
 
