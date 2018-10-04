@@ -13,9 +13,9 @@ import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib._pylab_helpers
-import os
-import sys
-settingsFile = '.settings'
+import _tools
+import sys,os
+settingsName = 'CalibrationInspectorDir'
 
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 
@@ -48,15 +48,8 @@ args = parser.parse_args()
 
 
 if not 'DataFile' in args:
-    startingPath = None
-    try:
-        with open(os.path.realpath(settingsFile),'r') as f:
-            lines = f.readlines()
-            for l in lines:
-                if 'CalibrationInspectorDir:' in l:
-                    startingPath = l.split(':')[-1].strip()
-    except:
-        pass
+    startingPath = _tools.loadSetting(settingsName)
+    
 
     try:
         import tkinter as tk
@@ -74,29 +67,14 @@ if not 'DataFile' in args:
     if len(file)==0: # No file chosen
         sys.exit()
     directory = os.path.split(file)[0]
-    
-    if os.path.isfile(settingsFile):
-        if not startingPath == directory: # If directory of new file is different from olde one, save the new to settings
-            os.rename(settingsFile,settingsFile+'Old')
-            with open(settingsFile,'w') as newF:
-                with open(settingsFile+'Old','r') as oldF:
-                    for line in oldF:
-                        if 'CalibrationInspectorDir:' in line:
-                            newF.write('CalibrationInspectorDir:'+directory+'\n')
-                        else:
-                            newF.write(line)
-            os.remove(settingsFile+'Old')
-    else:
-        with open(settingsFile,'w') as f:
-            f.write('CalibrationInspectorDir:'+directory+'\n')
+    _tools.updateSetting(settingsName,directory)
+
 
 
 else:
     file = args.DataFile
 plot = args.plotList
 binning = args.binning
-
-
 
 argsIdx = []
 
@@ -118,9 +96,9 @@ else:
 
 File = DataFile.DataFile(file)
 
-
 for id in argsIdx:
     if PlotType[id] == 'A4':
+
         File.plotA4(binning = binning)
     
     
@@ -160,4 +138,3 @@ if saveFile==True:
 
 plt.show()
     
- 
