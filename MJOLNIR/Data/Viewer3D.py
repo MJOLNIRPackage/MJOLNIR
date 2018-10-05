@@ -11,8 +11,8 @@ from MJOLNIR import _tools
 import warnings
 
 class Viewer3D(object):  
-    @_tools.KwargChecker
-    def __init__(self,Data,bins,axis=2,**kwargs):#pragma: no cover
+    @_tools.KwargChecker()
+    def __init__(self,Data,bins,axis=2):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 

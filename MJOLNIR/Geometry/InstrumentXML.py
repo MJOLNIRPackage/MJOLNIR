@@ -22,7 +22,7 @@ def parseXML(filename):
 
 	Instr = Instrument.Instrument(**instrSettings)
 
-	for wedge in instr_root.getchildren():
+	for wedge in list(instr_root):#.getchildren():
 		
 		if wedge.tag in dir(Wedge):
 			Wedgeclass_ = getattr(Wedge, wedge.tag)
@@ -41,7 +41,7 @@ def parseXML(filename):
 		
 		
 		
-		for item in wedge.getchildren():
+		for item in list(wedge):#.getchildren():
 			if item.tag in dir(Detector):
 				class_ = getattr(Detector, item.tag)
 			elif item.tag in dir(Analyser):

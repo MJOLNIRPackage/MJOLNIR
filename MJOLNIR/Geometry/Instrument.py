@@ -19,7 +19,7 @@ NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*si
 
 
 class Instrument(GeometryConcept.GeometryConcept):
-    #@_tools.KwargChecker # Not used as excess kwargs are put into settings
+    @_tools.KwargChecker(include=['Author','Instrument','Date','Initialized']) # Not used as excess kwargs are put into settings
     def __init__(self, position=(0,0,0),wedges=[],fileName='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
@@ -302,7 +302,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         with open(fileName,'w') as f:
             f.write(string)
 
-    @_tools.KwargChecker
+    @_tools.KwargChecker()
     def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
@@ -687,7 +687,7 @@ def parseXML(Instr,fileName):
     
     
     Instr._wedges=[]
-    for wedge in instr_root.getchildren():
+    for wedge in list(instr_root):#.getchildren():
         
         if wedge.tag in dir(Wedge):
             Wedgeclass_ = getattr(Wedge, wedge.tag)
@@ -706,7 +706,7 @@ def parseXML(Instr,fileName):
         
         
         
-        for item in wedge.getchildren():
+        for item in list(wedge):#.getchildren():
             if item.tag in dir(Detector):
                 class_ = getattr(Detector, item.tag)
             elif item.tag in dir(Analyser):
@@ -772,7 +772,7 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-#@_tools.KwargChecker
+@_tools.KwargChecker()
 def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): # pragma: no cover
     """Convert McStas simulation to h5 format.
     

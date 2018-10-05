@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py as hdf
 import warnings
+from MJOLNIR import _tools
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
@@ -116,6 +117,7 @@ class DataFile(object):
     def __add__(self,other):
         pass
 
+    @_tools.KwargChecker()
     def plotA4(self,binning=None):
         """Method to plot the fitted A4 values of the normalization table
 
@@ -143,6 +145,7 @@ class DataFile(object):
 
         return fig
 
+    @_tools.KwargChecker()
     def plotEf(self,binning=None):
         """Method to plot the fitted Ef values of the normalization table
 
@@ -169,6 +172,7 @@ class DataFile(object):
 
         return fig
 
+    @_tools.KwargChecker()
     def plotEfOverview(self,binning=None):
         """Method to plot the fitted Ef values of the normalization table
 
@@ -193,6 +197,7 @@ class DataFile(object):
 
         return fig
 
+    @_tools.KwargChecker()
     def plotNormalization(self,binning=None):
         """Method to plot the fitted integrated intensities of the normalization table
 
@@ -218,6 +223,7 @@ class DataFile(object):
         plt.colorbar()
         return fig
 
+@_tools.KwargChecker()
 def loadBinning(self,binning):
     """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
 
@@ -246,6 +252,7 @@ def decodeStr(string):
     except:
         return string
 
+@_tools.KwargChecker()
 def getScanParameter(f,exclude=['data','qx','qy','en','normalization','intensity','monitor']):
     """Extract scan parameter from hdf file.
 
@@ -284,6 +291,7 @@ def getScanParameter(f,exclude=['data','qx','qy','en','normalization','intensity
 
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
+    @_tools.KwargChecker()
     def __init__(self,a=None,b=None,c=None,alpha=90,beta=90,gamma=90,sample=None,name='Unknown'):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0])
@@ -483,7 +491,7 @@ class Sample(object):
 
         return returnStr
 
-
+@_tools.KwargChecker()
 def rotationMatrix(alpha,beta,gamma,format='deg'):
     if format=='deg':
         alpha = np.deg2rad(alpha)
