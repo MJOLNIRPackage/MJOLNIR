@@ -3433,7 +3433,7 @@ def OxfordList(list):
 def test_DataSet_Creation():
 
     try:
-        dataset = DataSet(OtherSetting=10.0)
+        dataset = DataSet(OtherSetting=10.0,YetAnotherWrongSetting=20.0)
         assert False
     except AttributeError:
         assert True
