@@ -98,7 +98,9 @@ class DataSet(object):
     @dataFiles.setter
     def dataFiles(self,dataFiles):
         try:
-            self._dataFiles = isListOfDataFiles(dataFiles)
+            correctDataFiles = isListOfDataFiles(dataFiles)
+            [self._dataFiles.append(file) for file in correctDataFiles if file.type=='h5']
+            [self._convertedFiles.append(file) for file in correctDataFiles if file.type=='nxs']
         except Exception as e:
             raise(e)
 
@@ -130,7 +132,9 @@ class DataSet(object):
     @convertedFiles.setter
     def convertedFiles(self,convertedFiles):
         try:
-            self._convertedFiles = isListOfDataFiles(convertedFiles)
+            correctDataFiles = isListOfDataFiles(convertedFiles)
+            [self._dataFiles.append(file) for file in correctDataFiles if file.type=='h5']
+            [self._convertedFiles.append(file) for file in correctDataFiles if file.type=='nxs']
         except Exception as e:
             raise(e)
         self._getData()
