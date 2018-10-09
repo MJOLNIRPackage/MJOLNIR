@@ -234,14 +234,26 @@ class DataSet(object):
                 elif instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
                     EPrDetector = 1
                 
+            
+                #if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
+                #    raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([x.split('_')[0] for x in np.array(file.get('entry/calibration'))])))
                 
-                if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
+                #EfNormalization = np.array(file.get('entry/calibration/{}_pixels/ef'.format(binning)))
+                #A4Normalization = np.array(file.get('entry/calibration/{}_pixels/a4'.format(binning)))
+                #EdgesNormalization = np.array(file.get('entry/calibration/{}_pixels/edges'.format(binning)))
+                #if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
+                if np.array(instrument.get('calib{}'.format(binning))).shape == ():
                     raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([x.split('_')[0] for x in np.array(file.get('entry/calibration'))])))
-                EfNormalization = np.array(file.get('entry/calibration/{}_pixels/ef'.format(binning)))
-                A4Normalization = np.array(file.get('entry/calibration/{}_pixels/a4'.format(binning)))
-                EdgesNormalization = np.array(file.get('entry/calibration/{}_pixels/edges'.format(binning)))
-
+                
+                Ef = np.array(instrument.get('calib{}/final_energy'.format(str(binning))))
+                width = np.array(instrument.get('calib{}/width'.format(str(binning))))
+                bg = np.array(instrument.get('calib{}/background'.format(str(binning))))
+                amp = np.array(instrument.get('calib{}/amplitude'.format(str(binning))))
+                EfNormalization = np.array([amp,Ef,width,bg]).T
+                A4Normalization = np.array(instrument.get('calib{}/A4'.format(str(binning))))
+                EdgesNormalization = np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
                 Data = np.array(instrument.get('detector/data'))
+                
 
                 detectors = Data.shape[1]
                 steps = Data.shape[0]
@@ -278,13 +290,13 @@ class DataSet(object):
                 A4File = A4File.reshape((-1,1,1))
 
                 A4Mean = A4.reshape((1,detectors,binning*EPrDetector))-np.deg2rad(A4File)
-
+                
                 Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
                 for i in range(detectors): # for each detector
                     for j in range(EPrDetector):
                         for k in range(binning):
                             Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
-
+    
                 EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
                 EfNormalization = (EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
 
@@ -303,7 +315,7 @@ class DataSet(object):
                     A3 = A3*np.ones((steps))
                 
                 A3.resize((steps,1,1))
-
+                
                 # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
                 Qx = ki-kf*np.cos(A4Mean)
                 Qy = -kf*np.sin(A4Mean)
@@ -561,6 +573,12 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
             
+        I = np.concatenate([x.flatten() for x in I])
+        qx = np.concatenate([x.flatten() for x in qx])#self.qx
+        qy = np.concatenate([x.flatten() for x in qy])#self.qy
+        energy = np.concatenate([x.flatten() for x in energy])#self.energy
+        Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
+        Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
         positions = [qx,qy,energy]
         
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend)
@@ -622,8 +640,14 @@ class DataSet(object):
             dataFiles = isListOfDataFiles(dataFiles)
             I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
             
+        I = np.concatenate([x.flatten() for x in I])
+        qx = np.concatenate([x.flatten() for x in qx])#self.qx
+        qy = np.concatenate([x.flatten() for x in qy])#self.qy
+        energy = np.concatenate([x.flatten() for x in energy])#self.energy
+        Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
+        Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
         positions = [qx,qy,energy]
-
+        
         return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,ax = None,**kwargs)
 
     @_tools.KwargChecker()
@@ -1195,7 +1219,7 @@ class DataSet(object):
                 positionValues = binminmaxList[i]*direction+qstart
                 if format.lower() in ['rlu','hkl']:
                     sample =self.convertedFiles[0].sample
-
+                    
                     proj = sample.inv_tr(positionValues[0],positionValues[1]) # Convert into projected coordinates
                     positionValues = np.dot(sample.orientationMatrix[:,:2],proj) # Convert to hkl
 
@@ -1348,6 +1372,86 @@ class DataSet(object):
             totalData = totalData
         return totalData
 
+    def cut1DE(self,E1,E2,q,format='RLU',width=0.02, minPixel = 0.1, dataFiles = None):
+        """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
+        the width attribute.
+        
+        .. note::
+            Can only perform cuts for a constant energy plane of definable width.
+        
+        Args:
+            
+            - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
+            
+            - I (array): Flatten intensity array
+            
+            - Norm (array): Flatten normalization array
+            
+            - Monitor (array): Flatten monitor array
+            
+            - E1 (float): Start energy.
+            
+            - E2 (float): End energy.
+
+            - q (2d vector): Q point 
+        
+        Kwargs:
+            
+            - format (string): Whether the provided Q-poinst are given in RLU/HKL or instrument QxQy (Deflault RLU)
+
+            - width (float): Full width of cut in q-plane (default 0.02).
+            
+            - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
+            
+            - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
+            
+        Returns:
+            
+            - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
+            
+            - Bin list (1 array): Bin edge positions in energy
+
+        """
+        if dataFiles is None:
+                if len(self.convertedFiles)==0:
+                    raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+                else:
+                    self._getData()#datafiles = self.convertedFiles
+                    I = self.I
+                    qx = self.qx
+                    qy = self.qy
+                    energy = self.energy
+                    Norm = self.Norm
+                    Monitor = self.Monitor
+                    sample = self.convertedFiles[0].sample
+
+        else: 
+            #dataFiles = isListOfDataFiles(dataFiles)
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            sample = DS.convertedFiles[0].sample
+            
+        I = np.concatenate([x.flatten() for x in I])
+        qx = np.concatenate([x.flatten() for x in qx])#self.qx
+        qy = np.concatenate([x.flatten() for x in qy])#self.qy
+        energy = np.concatenate([x.flatten() for x in energy])#self.energy
+        Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
+        Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
+        positions = [qx,qy,energy]
+
+        if format.lower() in ['rlu','hkl']: # Recalculate q points into qx and qy points
+
+            projectOrientation = np.dot(sample.orientationMatrix,q)
+            Q = np.array(sample.tr(projectOrientation[0],projectOrientation[1]))
+            # Add width/2 to point in 4 direction and make width mean of the converted positions
+            diffQ = projectOrientation.reshape(3,1)+np.array([[width*0.5,0,0],[-width*0.5,0,0],[0,width*0.5,0],[0,-width*0.5,0]]).T
+            dist = [np.array(sample.tr(diffQ[0][i],diffQ[1][i])) for i in range(4)]-Q
+            width = np.mean(np.linalg.norm(dist,axis=1))
+        elif format.lower()=='qxqy': # Do nothing
+            Q = np.array(q)
+
+
+        return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
 
 def load(filename):
     """Function to load an object from a pickled file.
@@ -1416,7 +1520,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     orthovec=np.array([dirvec[1],-dirvec[0]])
     
     ProjectMatrix = np.array([dirvec,orthovec])
-    
+
     insideEnergy = np.logical_and(positions[2]<=Emax,positions[2]>=Emin)
     if(np.sum(insideEnergy)==0):
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),np.array([]),[Emin,Emax]]
@@ -1476,7 +1580,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
 
 def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False):
     """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
-    the width attribute.
+    the width attribute. TODO: Allow for RLU input!!
     
     .. note::
         Can only perform cuts for a constant energy plane of definable width.
@@ -1512,6 +1616,8 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
         - Bin list (1 array): Bin edge positions in energy
         
     """
+    if len(q.shape)==1:
+        q.shape = (2,1)
     distToQ = np.linalg.norm(positions[:2]-q,axis=0)
 
     inside = distToQ<width
@@ -1535,10 +1641,10 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
     
     normcounts = np.histogram(Energies,bins=bins,weights=np.ones_like(Energies).flatten())[0]
     intensity = np.histogram(Energies,bins=bins,weights=I[allInside].flatten())[0]
-    MonitorCount=  np.histogram(Energies,bins=bins,weights=Monitor[allInside].flatten())[0]
+    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=np.int64))[0] # Need to change to int64 to avoid overflow
     Normalization= np.histogram(Energies,bins=bins,weights=Norm[allInside].flatten())[0]
     
-   
+
     return [intensity,MonitorCount,Normalization,normcounts],[bins]
 
 
@@ -2818,7 +2924,7 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
     """
     if numGroups == False:
         numGroups = len(points)
-    
+
     if Boundary==False:
         BoundPoly= [convexHullPoints(points[i][0].flatten(),points[i][1].flatten()) for i in range(numGroups)]
     else:
@@ -2845,7 +2951,6 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
             pointsX = points[0]
             pointsY = points[1]
         
-    print(type(combiPoly))
     containsAllPoints=np.all([combiPoly.contains(PointS(pointsX[i],pointsY[i])) for i in range(len(pointsX))])
     if not containsAllPoints:
         plt.figure()
