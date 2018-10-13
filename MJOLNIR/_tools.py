@@ -5,19 +5,19 @@ from difflib import SequenceMatcher
 import functools
 
 def KwargChecker(function=None,include=None):
+    """Function to check if given key-word is in the list of accepted Kwargs. If not directly therein, checks capitalization. If still not match raises error
+    with suggestion of closest argument.
+    
+    Args:
+    
+        - func (function): Function to be decorated.
+
+    Raises:
+
+        - AttributeError
+    """
     
     def KwargCheckerNone(func):
-        """Function to check if given key-word is in the list of accepted Kwargs. If not directly therein, checks capitalization. If still not match raises error
-        with suggestion of closest argument.
-        
-        Args:
-        
-            - func (function): Function to be decorated.
-
-        Raises:
-
-            - AttributeError
-        """
         @functools.wraps(func)
         def newFunc(self,*args,**kwargs):
             N = func.__code__.co_argcount            
