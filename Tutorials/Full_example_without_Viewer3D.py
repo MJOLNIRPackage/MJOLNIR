@@ -3,12 +3,12 @@ sys.path.append('..')
 from MJOLNIR.Data import DataSet
 import numpy as np
 import matplotlib.pyplot as plt
-import h5py as hdf
 
 # Convert raw data to NXSqom
 
-ConvertedDataFile=['/home/lass/Dropbox/PhD/Software/DataSimulation/T0Phonon10meV.nxs']
-DS = DataSet.DataSet(convertedFiles=ConvertedDataFile)
+DataFile=['../TestData/1024/Magnon_ComponentA3Scan.h5']
+DS = DataSet.DataSet(dataFiles=DataFile)
+DS.convertDataFile()
 
 # Extract all the data
 I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
@@ -37,8 +37,8 @@ Int = np.divide(I_bin*NormCount_bin,Monitor_bin*Normalization_bin)
 # Plot energy slice of data
 Eslice=2
 
-VMIN=1e-10
-VMAX=1e-6
+VMIN=0
+VMAX=20
 
 fig=plt.figure(figsize=(8,8))
 pc = plt.pcolormesh(Qx[:,:,Eslice].T,Qy[:,:,Eslice].T,Int[:,:,Eslice].T,vmin=VMIN,vmax=VMAX,zorder=10)
@@ -48,7 +48,7 @@ ax = fig.add_subplot(111)
 plt.ylabel('$Q_y$ [1/AA]')
 plt.xlabel('$Q_x$ [1/AA]')
 plt.title('$\hbar \omega =$ {:.02f}'.format(np.mean(energy_bin[:,:,Eslice])) + ' meV')
-plt.axis([-2.7, 2.7, -2.7, 2.7])
+plt.axis([-1.8, 1.8, -1.8, 1.8])
 ax.set_aspect('equal', 'datalim')
 plt.grid('on')
 plt.show()

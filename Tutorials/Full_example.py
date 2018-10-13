@@ -11,11 +11,12 @@ dataset = DataSet.DataSet(dataFiles=DataFile)
 dataset.convertDataFile(saveLocation='../TestData/')
 
 
-Data,bins = dataset.binData3D(0.08,0.08,0.25)
+Data,bins = dataset.binData3D(0.02,0.02,0.1)
 
 warnings.simplefilter('ignore')
 Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
 warnings.simplefilter('once')
 viewer = Viewer3D.Viewer3D(Intensity,bins)
+viewer.caxis=(0,40)
 plt.show()
 

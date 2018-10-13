@@ -3,18 +3,18 @@ Bin data and visualize
 Having converted the data into the Nexus NXsqom format, one wants to both rebin the data and visualize it. As different detector pixels covers different positions in reciprocal space, one needs to rebin the data in order to avoid large areas of no data. This is done using the method in the :ref:`DataSet<DataSet>` called binData3D. As input one needs to provide the step size in the x, y, and z directions, the 3D position and intensity. Furthermore, normalization and monitor count can be specified in order to also bin these. Returned is the rebinned data together with normalization and monitor count, if applicable, and the bins used.
 
 +-------------------------------------------------------------------+------------------------------------------------------------------+
-|      .. literalinclude:: ../../Tutorials/Binning_data.py          |    .. Visualization_E_546:                                       |
+|      .. literalinclude:: ../../Tutorials/Binning_data.py          |    .. Visualization_E_1_5:                                       |
 |         :lines: 4-22,25,28,31-                                    |                                                                  |
-|         :language: python                                         |    .. figure:: ../../Tutorials/Visualization_E_546.png           |
+|         :language: python                                         |    .. figure:: ../../Tutorials/Visualization_E_1_5.png           |
 |         :linenos:                                                 |      :width: 90%                                                 |
 |                                                                   |                                                                  |
-| Binning of the converted data into Qx and Qy bins of size 0.075AA |  Cut through data along the energy direction showing Qx and Qy   |
-| and energy in 0.2 meV. Intensity is calculated and with the bins  |  for a phonon scan at the energy 5.46 meV.                       |
+| Binning of the converted data into Qx and Qy bins of size 0.02 AA |  Cut through data along the energy direction showing Qx and Qy   |
+| and energy in 0.1 meV. Intensity is calculated and with the bins  |  for a phonon scan at the energy 1.5 meV.                        |
 | passed to the visualizer.                                         |                                                                  |
 +-------------------------------------------------------------------+------------------------------------------------------------------+
 |  .. Visualization_Qx_119:                                         |  .. Visualization_Qy_1_84:                                       |
 |                                                                   |                                                                  |
-|  .. figure:: ../../Tutorials/Visualization_Qx_0_5.png             |  .. figure:: ../../Tutorials/Visualization_Qy_1_84.png           |
+|  .. figure:: ../../Tutorials/Visualization_Qx_1_32.png            |  .. figure:: ../../Tutorials/Visualization_Qy_m0_05.png          |
 |    :width: 90%                                                    |    :width: 90%                                                   |
 |                                                                   |                                                                  |
 | Cut of data along the Qx direction.                               | Cut of data along the Qy direction.                              |
