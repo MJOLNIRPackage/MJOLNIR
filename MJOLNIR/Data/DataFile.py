@@ -36,9 +36,16 @@ class DataFile(object):
                 else:
                     self.A4Off = 0.0
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
+                width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
+                bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
+                amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
+                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
@@ -60,9 +67,16 @@ class DataFile(object):
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 self.A4Off = np.array(f.get('entry/zeros/A4'))
                 self.binning=1 # Choose standard binning 1
-                self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-                self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-                self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
+                width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
+                bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
+                amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
+                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
@@ -233,13 +247,24 @@ def loadBinning(self,binning):
     else:
         with hdf.File(self.fileLocation) as f:
             # Check if binning is in file
-            binningsPossible = np.array([int(x.split('_')[0]) for x in np.array(f.get('entry/calibration'))])
+            instr = getInstrument(f)
+            
+            binningsPossible = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])#np.array([int(x.split('_')[0]) for x in np.array(f.get('entry/calibration'))])
             if not binning in binningsPossible:
                 raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
             
-            self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(binning))))
-            self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(binning))))
-            self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(binning))))
+            #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+            #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+            #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+            Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
+            width = np.array(instr.get('calib{}/width'.format(str(binning))))
+            bg = np.array(instr.get('calib{}/background'.format(str(binning))))
+            amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
+            self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+            self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
+            if self.instrumentCalibrationA4 is None:
+                print('self.instrumentCalibrationA4 is NONE with binning {}!!'.format(binning))
+            self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
             self.binning = binning 
     return self
             
@@ -310,6 +335,7 @@ class Sample(object):
             self.name=name
         else:
             print(sample)
+            print(a,b,c,alpha,beta,gamma)
             raise AttributeError('Sample not understood')
             
 
@@ -725,8 +751,8 @@ def test_DataFile():
         assert False
     except:
         assert True
-    files = ['TestData/ManuallyChangedData/A3.h5',
-             'TestData/ManuallyChangedData/A3.nxs']
+    files = ['TestData/1024/Magnon_ComponentA3Scan.h5',
+             'TestData/1024/Magnon_ComponentA3Scan.nxs']
     DF1 = DataFile(files[0])
     DF2 = DataFile(files[1])
     s = str(DF2)
@@ -744,9 +770,10 @@ def test_DataFile_rotations():
 
 def test_DataFile_plotA4():
     plt.ioff()
-    fileName = 'TestData/ManuallyChangedData/A3.h5'
-    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     file = DataFile(fileName)
+    
 
     try:
         file.plotA4(binning=20) # Binning not found in data file
@@ -770,8 +797,8 @@ def test_DataFile_plotA4():
     
 def test_DataFile_plotEf():
     plt.ioff()
-    fileName = 'TestData/ManuallyChangedData/A3.h5'
-    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     file = DataFile(fileName)
 
     try:
@@ -795,8 +822,8 @@ def test_DataFile_plotEf():
 
 def test_DataFile_plotEfOverview():
     plt.ioff()
-    fileName = 'TestData/ManuallyChangedData/A3.h5'
-    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     file = DataFile(fileName)
 
     try:
@@ -820,8 +847,8 @@ def test_DataFile_plotEfOverview():
 
 def test_DataFile_plotNormalization():
     plt.ioff()
-    fileName = 'TestData/ManuallyChangedData/A3.h5'
-    fileName2= 'TestData/ManuallyChangedData/A3.nxs'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     file = DataFile(fileName)
 
     try:
@@ -852,7 +879,7 @@ def test_DataFile_decodeString():
 
 def test_DataFile_ScanParameter():
 
-    files = ['TestData/ManuallyChangedData/A3.h5','TestData/ManuallyChangedData/A3.nxs']
+    files = ['TestData/1024/Magnon_ComponentA3Scan.h5','TestData/1024/Magnon_ComponentA3Scan.nxs']
     for file in files:
         dfile = DataFile(file)
         assert(dfile.scanParameters[0]=='rotation_angle')
@@ -860,4 +887,4 @@ def test_DataFile_ScanParameter():
         assert(len(dfile.scanParameters)==len(dfile.scanValues))
         assert(len(dfile.scanParameters)==1)
         assert(dfile.scanUnits[0]=='degrees')
-        assert(np.all(dfile.scanValues==np.arange(0,181,5)))
+        assert(np.all(dfile.scanValues==np.arange(0,150,1)))
