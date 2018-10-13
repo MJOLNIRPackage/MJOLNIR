@@ -249,8 +249,7 @@ class TubeDetector1D(Detector):
         direction.shape=(1,3)
         pixelPositions = np.dot(scale,direction)+self.position
 
-
-        return np.split(pixelPositions,self.split)
+        return np.split(pixelPositions,self.split)[1:-1]
 
 
 
