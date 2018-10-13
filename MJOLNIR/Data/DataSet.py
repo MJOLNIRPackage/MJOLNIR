@@ -242,7 +242,7 @@ class DataSet(object):
                 #A4Normalization = np.array(file.get('entry/calibration/{}_pixels/a4'.format(binning)))
                 #EdgesNormalization = np.array(file.get('entry/calibration/{}_pixels/edges'.format(binning)))
                 #if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
-                if np.array(instrument.get('calib{}'.format(binning))).shape == ():
+                if np.array(instrument.get('calib{}'.format(binning))) is None:
                     raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([x.split('_')[0] for x in np.array(file.get('entry/calibration'))])))
                 
                 Ef = np.array(instrument.get('calib{}/final_energy'.format(str(binning))))
@@ -250,7 +250,7 @@ class DataSet(object):
                 bg = np.array(instrument.get('calib{}/background'.format(str(binning))))
                 amp = np.array(instrument.get('calib{}/amplitude'.format(str(binning))))
                 EfNormalization = np.array([amp,Ef,width,bg]).T
-                A4Normalization = np.array(instrument.get('calib{}/A4'.format(str(binning))))
+                A4Normalization = np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
                 EdgesNormalization = np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
                 Data = np.array(instrument.get('detector/data'))
                 
@@ -2329,10 +2329,6 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     IAll = np.array([files[i].I for i in range(numFiles)]) # into shape sum(A3),104,64 for CAMEA ## np.array([files[i].I[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
     NormAll = np.array([files[i].Norm for i in range(numFiles)]) ## np.array([files[i].Norm[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
     MonitorAll = np.array([files[i].Monitor for i in range(numFiles)]) ## np.array([files[i].Monitor[:,0,0,:,:].reshape((A3All[i].size,Ishape[3],Ishape[4])) for i in range(numFiles)])
-        #return Ishape, IAll, NormAll,MonitorAll    
-
-    #Ishape, IAll, NormAll,MonitorAll = getData(files,numFiles)
-
     
     if not ax is None:
         if not singleFigure and len(ax) != Ishape[2] and len(planes) == 0: # Plot all planes in provided axes
@@ -2432,9 +2428,12 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
     #print(type(BoundPoly))
     if numFiles==1:
-        points = [points]
+        points = [np.array(points).reshape(2,-1)]
         numGroups = 1
+        #print('NumFiles = 1')
     else:
+        #print('NumFiles = {}'.format(numFiles))
+        
         numGroups = False
     polygons,GoodPolyPoints = voronoiTessellation(points,plot = plotTessellation,Boundary = BoundPoly, numGroups=numGroups)
 
@@ -2922,20 +2921,17 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
 
 
     """
+
     if numGroups == False:
         numGroups = len(points)
 
     if Boundary==False:
-        BoundPoly= [convexHullPoints(points[i][0].flatten(),points[i][1].flatten()) for i in range(numGroups)]
+        BoundPoly= [convexHullPoints(np.array(points[i][0]).flatten(),np.array(points[i][1]).flatten()) for i in range(numGroups)]
     else:
         BoundPoly = Boundary#[PolygonS(x.T) for x in Boundary]
 
     if numGroups == 1:
-        #print('here')
-        #print(len(BoundPoly))
-        #print(BoundPoly)
-        #print(len(BoundPoly[0]))
-        #print(BoundPoly[0])
+
         combiPoly = BoundPoly[0]
         pointsX = np.array([points[0][0].flatten()])[0]
         pointsY = np.array([points[0][1].flatten()])[0]
@@ -3555,9 +3551,9 @@ def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
     del emptyDataset
-    dataset = DataSet(dataFiles='TestData/ManuallyChangedData/A3.h5',convertedFiles='TestData/ManuallyChangedData/A3.nxs',calibrationfiles=[])
-    assert(dataset.dataFiles[0].name=='A3.h5')
-    assert(dataset.convertedFiles[0].name=='A3.nxs')
+    dataset = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5',convertedFiles='TestData/1024/Magnon_ComponentA3Scan.nxs',calibrationfiles=[])
+    assert(dataset.dataFiles[0].name=='Magnon_ComponentA3Scan.h5')
+    assert(dataset.convertedFiles[0].name=='Magnon_ComponentA3Scan.nxs')
     assert(dataset.normalizationfiles == [])
     Str = str(dataset)
 
@@ -3642,15 +3638,15 @@ def test_DataSet_Error():
         assert True
 
 
-    ds.dataFiles = 'TestData/ManuallyChangedData/A3.h5'
+    ds.dataFiles = 'TestData/1024/Magnon_ComponentA3Scan.h5'
 
 def test_DataSet_Equality():
-    D1 = DataSet(dataFiles='TestData/ManuallyChangedData/A3A4.h5')#,convertedFiles=['TestData/VanNormalization.nxs'])
+    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5')#,convertedFiles=['TestData/VanNormalization.nxs'])
     assert(D1==D1)
 
 def test_DataSet_SaveLoad():
     
-    D1 = DataSet(dataFiles='TestData/ManuallyChangedData/A3A4.h5')#,convertedFiles = 'TestData/VanNormalization.nxs')
+    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5')#,convertedFiles = 'TestData/VanNormalization.nxs')
 
     temp = 'temporary.bin'
 
@@ -3660,13 +3656,13 @@ def test_DataSet_SaveLoad():
     assert(D1==D2) 
 
 def test_DataSet_str():
-    D1 = DataSet(dataFiles='TestData/cameasim2018n000001.h5',normalizationfiles = 'TestData/VanNormalization.h5')
+    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5',normalizationfiles = 'TestData/VanNormalization.h5')
     string = str(D1)
     print(string)
 
 
 def test_DataSet_Convert_Data():
-    dataFiles = 'TestData/ManuallyChangedData/A3A4.h5'
+    dataFiles = 'TestData/1024/Magnon_ComponentA3Scan.h5'
     dataset = DataSet(dataFiles=dataFiles)
     
 
@@ -3681,12 +3677,12 @@ def test_DataSet_Convert_Data():
         assert False
     except AttributeError: # FileDoesNotExist
         assert True
-    dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/ManuallyChangedData/')
+    dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/1024/')
     convertedFile = dataset.convertedFiles[0]
     otherFile = DataFile.DataFile(dataFiles.replace('.h5','.nxs'))
     assert(convertedFile==otherFile)
 
-    os.remove('TestData/ManuallyChangedData/A3A4.nxs')
+    os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
     
 
 
@@ -3739,10 +3735,10 @@ def test_DataSet_full_test():
     import matplotlib.pyplot as plt
     import os
     plt.ioff()
-    DataFile = ['TestData/ManuallyChangedData/A3A4.h5']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.h5']
 
     dataset = DataSet(dataFiles=DataFile)
-    dataset.convertDataFile(saveLocation='TestData/ManuallyChangedData/')
+    dataset.convertDataFile(saveLocation='TestData/1024/')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     
@@ -3751,17 +3747,17 @@ def test_DataSet_full_test():
     warnings.simplefilter('once')
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
     
-    os.remove('TestData/ManuallyChangedData/A3A4.nxs')
+    os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
     del viewer
     plt.close('all')
 
 def test_DataSet_Visualization():
     import warnings
     from MJOLNIR.Data import Viewer3D
-    DataFile = ['TestData/ManuallyChangedData/A3.h5']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.h5']
 
     dataset = DataSet(dataFiles=DataFile)
-    dataset.convertDataFile(saveLocation='TestData/ManuallyChangedData')
+    dataset.convertDataFile(saveLocation='TestData/1024')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     plt.ioff()
@@ -3790,7 +3786,7 @@ def test_DataSet_1Dcut():
     width = 0.1
 
     plt.ioff()
-    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -3803,12 +3799,12 @@ def test_DataSet_1Dcut():
 
 
 
-    ax,D,P,binCenter,binDistance = ds.plotCut1D(q1,q2,width,minPixel=0.01,Emin=3.0,Emax=4.0,fmt='.')
-    D2,P2 = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=3.0,Emax=4.0)
+    ax,D,P,binCenter,binDistance = ds.plotCut1D(q1,q2,width,minPixel=0.01,Emin=0.0,Emax=1.5,fmt='.')
+    D2,P2 = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=0.0,Emax=1.5)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
     assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
 
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=3.0,Emax=4.0,extend=False)
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=0.0,Emax=1.5,extend=False)
     #print(bins[0].shape)
     #print(q1[0]-0.1)
     #print(q2[0]+0.1)
@@ -3817,7 +3813,7 @@ def test_DataSet_1Dcut():
 
     q3 = np.array([1.1,1.1])
     q4 = np.array([2.0,2.0])
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q3,q4,width,minPixel=0.01,Emin=3.0,Emax=4.0,extend=False)
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q3,q4,width,minPixel=0.01,Emin=0.0,Emax=1.5,extend=False)
     assert(np.all(np.logical_and(np.logical_and(bins[0][:,0]>=q3[0]-0.1,bins[0][:,0]<=q4[0]+0.1),np.logical_and(bins[0][:,0]>=q3[1]-0.1,bins[0][:,0]<=q4[1]+0.1)))) 
     # x and y-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
@@ -3825,18 +3821,19 @@ def test_DataSet_1Dcut():
 def test_DataSet_1DcutE():
     q =  np.array([1.0,1.0]).reshape(2,1)
     width = 0.1
-
+    Emin = 0.5
+    Emax = 1.5
     plt.ioff()
-    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
     Datset._getData()
     I,qx,qy,energy,Norm,Monitor = Datset.I.flatten(),Datset.qx.flatten(),Datset.qy.flatten(),Datset.energy.flatten(),Datset.Norm.flatten(),Datset.Monitor.flatten()
 
-    [intensity,MonitorCount,Normalization,normcounts],[bins] = cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=3,E2=4,q=q,width=width,minPixel=0.01)
+    [intensity,MonitorCount,Normalization,normcounts],[bins] = cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=Emin,E2=Emax,q=q,width=width,minPixel=0.01)
 
-    assert(np.min(bins)>=3) # Check that bins do not include data outside of cut
-    assert(np.max(bins)<=4)
+    assert(np.min(bins)>=Emin-0.01) # Check that bins do not include data outside of cut
+    assert(np.max(bins)<=Emax+0.01)
     assert(len(bins)==len(intensity)+1)# Bins denotes edges and must then be 1 more than intensity
 
     assert(intensity.shape==MonitorCount.shape) # Check that all matrices are cut equally
@@ -3860,9 +3857,9 @@ def test_DataSet_2Dcut():
     q2 =  np.array([3.0, 0.0])
     width = 0.1
     minPixel=0.02
-    EnergyBins = np.linspace(4,7,4)
+    EnergyBins = np.linspace(0,2,4)
     plt.ioff()
-    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3888,7 +3885,7 @@ def test_DataSet_cutPowder():
     Tolerance = 0.01
 
     plt.ioff()
-    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3906,7 +3903,7 @@ def test_DataSet_cutPowder():
 
 def test_DataSet_createRLUAxes():
     plt.ioff()
-    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -3917,7 +3914,7 @@ def test_DataSet_createRLUAxes():
 
 def test_DataSet_plotQPlane():
     plt.ioff()
-    convertFiles = ['TestData/ManuallyChangedData/A3.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']#'TestData/ManuallyChangedData/A3.h5']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3939,8 +3936,8 @@ def test_DataSet_plotQPlane():
 def test_DataSet_plotA3A4(quick):
     plt.ioff()
 
-    File1 = 'TestData/ManuallyChangedData/A3.h5'
-    File2 = 'TestData/ManuallyChangedData/A3_2.h5'
+    File1 = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    File2 = 'TestData/1024/Magnon_ComponentA3Scan.h5'
 
     DS = DataSet(dataFiles=[File1,File2])
     DS.convertDataFile()
@@ -3983,10 +3980,15 @@ def test_DataSet_plotA3A4(quick):
     except AttributeError:
         assert True
     if not quick==True:
+        print('___________')
         plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
+        print('___________')
         DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
+        print('___________')
         DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
-        patches,energies=DS.plotA3A4(F1,planes=[10,25],returnPatches=True)
+        print('___________')
+        patches,energies=DS.plotA3A4([F1],planes=[10,25],returnPatches=True)
+        print('___________')
         assert(len(patches)==2)
         assert(len(energies)==2)
     plt.close('all')
@@ -4070,11 +4072,11 @@ def test_DataSet_compareNones():
 
 
 def test_DataSet_cutQELine():
-    QPoints = np.array([[0.6,0,0],[0.9,0,0],[1.0,0,0],[1.25,0,0],[1.5,0,0]])
-    EnergyBins = np.linspace(3,4,5)
+    QPoints = np.array([[0.1,0,0],[0.9,0,0],[0.12,0,0],[0.5,0,0],[0.5,0.1,0]])
+    EnergyBins = np.linspace(0.0,1.5,5)
     minPixel = 0.001
     width=0.1
-    DataFile = ['TestData/ManuallyChangedData/A3.nxs']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.nxs']
 
     dataset = DataSet(convertedFiles=DataFile)
     
@@ -4105,10 +4107,10 @@ def test_DataSet_cutQELine():
 
 def test_DataSet_plotCutQELine():
     QPoints = np.array([[0.0,0,0],[0.9,0,0],[10.0,0,0],[1.0,0,0],[1.5,1.0,0],[0,0,0]])
-    EnergyBins = np.linspace(2,3,11)
+    EnergyBins = np.linspace(0,1,11)
     minPixel = 0.001
     width=0.1
-    DataFile = ['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.nxs','TestData/1024/Magnon_ComponentA3Scan.nxs']
     dataset = DataSet(convertedFiles=DataFile)
     
     try: # No Q-points
@@ -4153,7 +4155,7 @@ def test_DataSet_plotCutQELine():
 
 
 def test_DataSet_extractDetectorData():
-    DataFile = ['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.nxs','TestData/1024/Magnon_ComponentA3Scan.nxs']#['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
     dataset = DataSet(convertedFiles=DataFile)
 
     try:
