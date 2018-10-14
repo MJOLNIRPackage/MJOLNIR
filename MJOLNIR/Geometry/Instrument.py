@@ -1409,26 +1409,26 @@ def test_instrument_create_xml():
     assert(len(Instr2.wedges)==8)
 
 
-@pytest.mark.unit
-def test_Normalization_tables(quick):
+#@pytest.mark.unit
+#def test_Normalization_tables(quick):
 
-    Instr = Instrument(fileName='TestData/1024/CAMEA_Full.xml')
-    Instr.initialize()
+#    Instr = Instrument(fileName='TestData/1024/CAMEA_Full.xml')
+#    Instr.initialize()
 
-    NF = 'TestData/1024/EScanRunDoubleFocusHS.h5'
+#    NF = 'TestData/1024/EScanRunDoubleFocusHS.h5'
     #AF = 'TestData/1024/A4Normalization.h5'
 
-    try:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
-        assert False
-    except AttributeError:
-        assert True
+#    try:
+#        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
+#        assert False
+#    except AttributeError:
+#        assert True
 
-    try:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
-        assert False
-    except AttributeError:
-        assert True
+#    try:
+#        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
+#        assert False
+#    except AttributeError:
+#        assert True
 
     #if not quick==True:
     #    Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
