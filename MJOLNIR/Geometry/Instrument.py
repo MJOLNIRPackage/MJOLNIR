@@ -671,7 +671,6 @@ class Instrument(GeometryConcept.GeometryConcept):
             A4File.close()
 
 def parseXML(Instr,fileName):
-    logging.info('Running parseXML')
     import xml.etree.ElementTree as ET
 
     tree = ET.parse(fileName)
