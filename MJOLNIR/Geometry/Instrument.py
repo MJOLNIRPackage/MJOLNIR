@@ -363,11 +363,10 @@ class Instrument(GeometryConcept.GeometryConcept):
             Data = np.array(VanFileInstrument.get('detector/data')).transpose(1,0,2)
             Ei = np.array(VanFileInstrument.get('monochromator/energy'))
             analysers = 8
-            pixels = len(self.A4[0][0]) # <------------------- Change!
+            pixels = self.wedges[0].detectors[0].pixels#len(self.A4[0][0]) # <------------------- Change!
             detectors = len(self.A4[0])*len(self.A4)
             detectorsorInWedge = len(self.A4[0])
             wedges = len(self.A4)
-
             if pixels!=Data.shape[2]:
                 raise ValueError('The number of pixels ({}) in the data file does not match instrument description ({})!'.format(pixels,Data.shape[2]))
 
@@ -573,7 +572,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=300)
                         print('Saving: {}'.format(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i)))
 
-                if not A4datafile is False:
+                if not A4datafile is False: # pragma: no cover
                 # Perform A4 calibration
                     A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
                     EiFile = np.array(A4FileInstrument.get('monochromator/energy'))[0]
@@ -672,6 +671,7 @@ class Instrument(GeometryConcept.GeometryConcept):
             A4File.close()
 
 def parseXML(Instr,fileName):
+    logging.info('Running parseXML')
     import xml.etree.ElementTree as ET
 
     tree = ET.parse(fileName)
@@ -1263,7 +1263,7 @@ def test_Instrument_Initialization():
         assert False
     except ValueError:
         assert True
-    Instr.wedges[0].detectors[0].split = [12,20]
+    Instr.wedges[0].detectors[0].split = [0,12,20,pixels]
     Instr.initialize()
 
     assert(len(Instr.A4)==1)
@@ -1413,26 +1413,26 @@ def test_instrument_create_xml():
 @pytest.mark.unit
 def test_Normalization_tables(quick):
 
-    Instr = Instrument(fileName='TestData/CAMEA_Full.xml')
+    Instr = Instrument(fileName='TestData/1024/CAMEA_Full.xml')
     Instr.initialize()
 
-    NF = 'TestData/VanNormalization.h5'
-    AF = 'TestData/A4Normalization.h5'
+    NF = 'TestData/1024/EScanRunDoubleFocusHS.h5'
+    #AF = 'TestData/1024/A4Normalization.h5'
 
     try:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
         assert False
     except AttributeError:
         assert True
 
     try:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
         assert False
     except AttributeError:
         assert True
 
     if not quick==True:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,savelocation='TestData/',plot=False,tables=['Single']) 
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
     #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     
 

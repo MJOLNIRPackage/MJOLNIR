@@ -108,7 +108,8 @@ class TubeDetector1D(Detector):
         self.pixels = pixels
         self.length = length
         self.diameter = diameter
-               
+        if split == []:
+            split = [0,pixels]
         self.split = split
 
     @property
@@ -294,10 +295,10 @@ def test_TubeDetector_split():
     except AttributeError:
         assert True
 
-    TubeDetector.split=[50]
+    TubeDetector.split=[50,60,100]
     pixelPos = TubeDetector.getPixelPositions()
     assert(len(pixelPos)==2)
-    assert(len(pixelPos[0])==50)
+    assert(len(pixelPos[0])==10)
 
 
 def test_TubeDetector1D_plot():
@@ -314,7 +315,8 @@ def test_TubeDetector1D_getPixelPositions():
     positions = TubeDetector.getPixelPositions()
 
     AssumedPositions = np.array([[0.8,0,1],[0.9,0,1],[1.0,0,1],[1.1,0,1],[1.2,0,1]])
-    
+    print(positions)
+    print(AssumedPositions)
     assert(np.all(AssumedPositions==positions))
 
     

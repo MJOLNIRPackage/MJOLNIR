@@ -266,7 +266,7 @@ def test_Wedge_error():
 
     try:
         wedge.settings['concept']='ManyToMany'
-        wedge.detectors[0].split=[10,30]
+        wedge.detectors[0].split=[10,30,44]
         wedge.calculateDetectorAnalyserPositions()
         assert False
     except ValueError:
@@ -359,7 +359,7 @@ def test_wedge_calculateDetectorAnalyserPositions_ManyToMany():
 
     
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
-    Det2 = Detector.TubeDetector1D(position=(1.5,0.1,1.0),direction=(1.0,0,0),length=0.5,pixels=5,split=[2])
+    Det2 = Detector.TubeDetector1D(position=(1.5,0.1,1.0),direction=(1.0,0,0),length=0.5,pixels=5,split=[0,2,5])
     Ana2 = Analyser.FlatAnalyser(position=(0.75,0,0),direction=(1,0,1))
 
     wedge.append([Det2,Ana,Ana2])
