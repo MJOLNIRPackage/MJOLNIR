@@ -1430,8 +1430,8 @@ def test_Normalization_tables(quick):
     except AttributeError:
         assert True
 
-    if not quick==True:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
+    #if not quick==True:
+    #    Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
     #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
     
 
