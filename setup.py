@@ -16,7 +16,7 @@ else:
 setup(
     name='MJOLNIR',
 
-    version='0.5.1',
+    version='0.6.0',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
@@ -24,8 +24,8 @@ setup(
     url='https://github.com/jakob-lass/MJOLNIR',
     license='MPL-2.0',
     packages=['MJOLNIR','MJOLNIR/Data','MJOLNIR/Geometry','MJOLNIR/Statistics'],
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,',
-    install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely'],
+    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,<3.7.*',
+    install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest','pyperclip'],
     #data_files=[('MJOLNIR/TestData',['TestData/CAMEA_Full_2.xml','TestData/EnergyNormalization_2.calib','TestData/EnergyNormalization_3.calib','TestData/EnergyNormalization_8.calib','TestData/VanNormalization.h5','TestData/VanNormalization.nxs','TestData/cameasim2018n000005.nxs'])],
     
     classifiers=[

@@ -11,32 +11,10 @@ ConvertedDataFile=['/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim201
                    '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000007.nxs','/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000008.nxs',
                    '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000009.nxs','/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000010.nxs',
                    '/home/lass/Dropbox/PhD/Software/CAMEA_Test_Files/cameasim2018n000011.nxs']
+DS = DataSet.DataSet(convertedFiles=ConvertedDataFile)
 
-I = []
-qx = []
-qy = []
-energy = []
-Norm = []
-Monitor = []
-
-for data in ConvertedDataFile:
-    
-    file = hdf.File(data,'r')
-
-    I.append(np.array(file.get('entry/data/intensity')))
-    qx.append(np.array(file.get('entry/data/qx')))
-    qy.append(np.array(file.get('entry/data/qy')))
-    energy.append(np.array(file.get('entry/data/en')))
-    Norm.append(np.array(file.get('entry/data/normalization')))
-    Monitor.append(np.array(file.get('entry/data/monitor')))
-    file.close()
-
-I = np.concatenate(I)
-qx = np.concatenate(qx)
-qy = np.concatenate(qy)
-energy = np.concatenate(energy)
-Norm = np.concatenate(Norm)
-Monitor = np.concatenate(Monitor)
+# Extract all the data
+I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
 
 pos=[qx,qy,energy]
 
@@ -48,8 +26,5 @@ a=4.95
 astar = 2*np.pi/a
 
 viewer = Viewer3D.Viewer3D(Intensity,bins)
-#for i in np.arange(0,2.1,2):
-#    for j in np.arange(0,2.1,2):
-#        viewer.ax.scatter(i*astar,j*astar)
 viewer.caxis=(0.5e-6,5e-5)
 plt.show()

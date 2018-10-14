@@ -4,12 +4,14 @@ sys.path.append('..')
 sys.path.append('../..')
 import math,numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector
+from MJOLNIR import _tools
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 class Wedge(GeometryConcept.GeometryConcept):
     """Wedge object to keep track of analysers and detectors. To be used as a storage object and facilitate easy movement of multiple detectors and analysers as once."""
+    @_tools.KwargChecker(include=[''])
     def __init__(self,position=(0.0,0.0,0.0),detectors=[],analysers=[],concept='ManyToMany',**kwargs):
         """
         Args:
@@ -121,6 +123,7 @@ class Wedge(GeometryConcept.GeometryConcept):
             else:
                 raise AttributeError('Object not analyser or detector or a simple list of these')
 
+    @_tools.KwargChecker()
     def plot(self,ax,offset=(0,0,0)):
         """Recursive plotting routine."""
         for obj in self.analysers+self.detectors:
@@ -263,7 +266,7 @@ def test_Wedge_error():
 
     try:
         wedge.settings['concept']='ManyToMany'
-        wedge.detectors[0].split=[10,30]
+        wedge.detectors[0].split=[10,30,44]
         wedge.calculateDetectorAnalyserPositions()
         assert False
     except ValueError:
@@ -356,7 +359,7 @@ def test_wedge_calculateDetectorAnalyserPositions_ManyToMany():
 
     
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
-    Det2 = Detector.TubeDetector1D(position=(1.5,0.1,1.0),direction=(1.0,0,0),length=0.5,pixels=5,split=[2])
+    Det2 = Detector.TubeDetector1D(position=(1.5,0.1,1.0),direction=(1.0,0,0),length=0.5,pixels=5,split=[0,2,5])
     Ana2 = Analyser.FlatAnalyser(position=(0.75,0,0),direction=(1,0,1))
 
     wedge.append([Det2,Ana,Ana2])

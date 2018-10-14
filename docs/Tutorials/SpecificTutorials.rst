@@ -1,7 +1,7 @@
-Specific Tutorials
-------------------
+Scripting Tutorials
+-------------------
 
-Following is a list of specific tutorials covering a given method but does not necessarily present a normal workflow.
+Following is a list of scripting tutorials covering a given method but does not necessarily present a normal workflow.
 
 .. toctree::
    :maxdepth: 2
@@ -10,6 +10,7 @@ Following is a list of specific tutorials covering a given method but does not n
    CalculateA4Ef
    LoadInstrumentXML
    GenerateNormalization
+   Raw
    ConvertData
    BinAndVisualize
    Full

@@ -3,6 +3,7 @@ sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../..')
 from MJOLNIR.Geometry import GeometryConcept
+from MJOLNIR import _tools
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -75,7 +76,8 @@ def test_Generic_plot():
 
 class TubeDetector1D(Detector):
     """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
-    def __init__(self, position, direction,length=0.25, pixels=452,diameter=0.02,split=[]):
+    @_tools.KwargChecker()
+    def __init__(self, position, direction,length=0.25, pixels=1024,diameter=0.02,split=[]):
         """
         Args:
 
@@ -87,7 +89,7 @@ class TubeDetector1D(Detector):
 
             - length (float): Length of detector tube in meters (default 0.25)
 
-            - pixels (int): Number of pixels (default 452)
+            - pixels (int): Number of pixels (default 1024)
 
             - diameter (float): Diameter of tube in meters (default 0.02)
 
@@ -106,7 +108,8 @@ class TubeDetector1D(Detector):
         self.pixels = pixels
         self.length = length
         self.diameter = diameter
-               
+        if split == []:
+            split = [0,pixels]
         self.split = split
 
     @property
@@ -169,7 +172,7 @@ class TubeDetector1D(Detector):
         else:
             self._split = npSplit
 
-
+    @_tools.KwargChecker()
     def plot(self,ax,offset=(0.0,0.0,0.0),n=100):
         """
         Args:
@@ -247,8 +250,7 @@ class TubeDetector1D(Detector):
         direction.shape=(1,3)
         pixelPositions = np.dot(scale,direction)+self.position
 
-
-        return np.split(pixelPositions,self.split)
+        return np.split(pixelPositions,self.split)[1:-1]
 
 
 
@@ -293,10 +295,10 @@ def test_TubeDetector_split():
     except AttributeError:
         assert True
 
-    TubeDetector.split=[50]
+    TubeDetector.split=[50,60,100]
     pixelPos = TubeDetector.getPixelPositions()
     assert(len(pixelPos)==2)
-    assert(len(pixelPos[0])==50)
+    assert(len(pixelPos[0])==10)
 
 
 def test_TubeDetector1D_plot():
@@ -313,7 +315,8 @@ def test_TubeDetector1D_getPixelPositions():
     positions = TubeDetector.getPixelPositions()
 
     AssumedPositions = np.array([[0.8,0,1],[0.9,0,1],[1.0,0,1],[1.1,0,1],[1.2,0,1]])
-    
+    print(positions)
+    print(AssumedPositions)
     assert(np.all(AssumedPositions==positions))
 
     

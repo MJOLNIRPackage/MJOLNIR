@@ -10,4 +10,4 @@ Below is a list of links to the documentation for individual core functionalitie
    EnergyNormalization
    FileConversion
    VoronoiTessellation
-
+   Visualization

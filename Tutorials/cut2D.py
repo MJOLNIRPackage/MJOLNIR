@@ -4,8 +4,7 @@ sys.path.append('../')
 from MJOLNIR.Data import DataSet
 import numpy as np
 import matplotlib.pyplot as plt
-file = '../TestData/cameasim2018n000011.nxs'
-#file = ['/home/lass/Dropbox/PhD/Software/DataSimulation/T0Phonon10meV.nxs','/home/lass/Dropbox/PhD/Software/DataSimulation/T0Phonon8meV.nxs']
+file = '../TestData/1024/Magnon_ComponentA3Scan.nxs'
 DataObj = DataSet.DataSet(convertedFiles=file)
 
 energy = DataObj.energy
@@ -19,8 +18,9 @@ minPixel = 0.01
 ax,DataList,qBnLit,centerPos,binDIstance = DataObj.plotCutQE(q1,q2,width,minPixel,EnergyBins)
 plt.colorbar(ax.pmeshs[0])
 
-ax.set_clim(0,1e-6)
+ax.set_clim(0,10)
 plt.tight_layout()
 
 ## Cut and plot 1D
-ax,DataList,Bins,binCenter,binDistance = DataObj.plotCut1D(q1,q2,width,minPixel,Emin = 5.2, Emax = 5.7,plotCoverage=True)
+ax2,DataList,Bins,binCenter,binDistance = DataObj.plotCut1D(q1,q2,width,minPixel,Emin = 0.2, Emax = 1.7,plotCoverage=True)
+plt.show()

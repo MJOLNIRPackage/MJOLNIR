@@ -7,10 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import h5py as hdf
 import warnings
+from MJOLNIR import _tools
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
     def __init__(self,fileLocation):
+        # Check if file exists
+        if not os.path.isfile(fileLocation):
+            raise AttributeError('File location does not exist({}).'.format(fileLocation))
         if fileLocation.split('.')[-1]=='nxs':
             self.type='nxs'
             with hdf.File(fileLocation) as f:
@@ -24,18 +28,29 @@ class DataFile(object):
                 self.Monitor=np.array(f.get('entry/data/monitor'))
                 instr = getInstrument(f)
                 self.Ei = np.array(instr.get('monochromator/energy'))
-                self.A3 = np.array(f.get('entry/sample/rotation_angle'))
-                self.A4 = np.array(instr.get('detector/polar_angle'))
+                self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
+                self.A4 = np.array(instr.get('detector/polar_angle')).reshape(-1)
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 if not f.get('entry/zeros/A4') is None:
-                        self.A4Off = np.array(f.get('entry/zeros/A4'))
+                    self.A4Off = np.array(f.get('entry/zeros/A4'))
                 else:
                     self.A4Off = 0.0
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                self.instrumentCalibration = np.array(f.get('entry/calibration/{}_pixels'.format(str(self.binning))))
+                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
+                width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
+                bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
+                amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
+                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
+                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                self.scanCommand = np.array(f.get('entry/scancommand'))
 
         elif fileLocation.split('.')[-1]=='h5':
             self.type='h5'
@@ -46,19 +61,33 @@ class DataFile(object):
                 self.Monitor=np.array(f.get('entry/data/monitor'))
                 instr = getInstrument(f)
                 self.Ei = np.array(instr.get('monochromator/energy'))
+                self.I = np.array(instr.get('detector/data'))
                 self.A3 = np.array(f.get('entry/sample/rotation_angle'))
                 self.A4 = np.array(instr.get('detector/polar_angle'))
                 self.A3Off = np.array(f.get('entry/zeros/A3'))
                 self.A4Off = np.array(f.get('entry/zeros/A4'))
+                self.binning=1 # Choose standard binning 1
+                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
+                width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
+                bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
+                amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
+                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
+                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
                 self.temperature = np.array(sample.get('temperature'))
                 self.magneticField = np.array(sample.get('magnetic_field'))
                 self.electricField = np.array(sample.get('electric_field'))
+                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                self.scanCommand = np.array(f.get('entry/scancommand'))
         else:
             raise AttributeError('File is not of type nxs or h5.')
         self.name = fileLocation.split('/')[-1]
         self.fileLocation = fileLocation
         self.sample.calculateProjections()
-
+        
 
     @property
     def A3Off(self):
@@ -102,8 +131,192 @@ class DataFile(object):
     def __add__(self,other):
         pass
 
+    @_tools.KwargChecker()
+    def plotA4(self,binning=None):
+        """Method to plot the fitted A4 values of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the A4 values are plotted
+
+        """
+        self = loadBinning(self,binning)
+        binning = self.binning
+        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
+
+        A4 = np.reshape(self.instrumentCalibrationA4,(104,8*binning))
+        fig = plt.figure()
+        for i in range(104):
+            plt.scatter(-A4[i],np.arange(len(A4[i])),c=Norm[i])
+        
+        plt.title('Instrument calibration')
+        plt.ylabel('Pixel')
+        plt.xlabel('-A4 [deg]')
+
+        return fig
+
+    @_tools.KwargChecker()
+    def plotEf(self,binning=None):
+        """Method to plot the fitted Ef values of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the Ef values are plotted
+
+        """
+        self = loadBinning(self,binning)
+        
+        binning = self.binning
+        Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
+        fig = plt.figure()
+        for i in range(104):
+            plt.scatter(i*np.ones_like(Ef[i]),Ef[i],zorder=10)
+        plt.xlabel('Detector number')
+        plt.ylabel('Ef [meV]')
+        plt.title('Final Energy Individual')
+        plt.grid(True)
+
+        return fig
+
+    @_tools.KwargChecker()
+    def plotEfOverview(self,binning=None):
+        """Method to plot the fitted Ef values of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the Ef values are plotted
+
+        """
+        self = loadBinning(self,binning)
+        binning = self.binning
+        Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
+        fig = plt.figure()
+        plt.imshow(Ef.T,origin='lower')
+        plt.xlabel('Detector number')
+        plt.ylabel('Pixel number')
+        plt.colorbar()
+        plt.title('Final Energy Overview')
+
+        return fig
+
+    @_tools.KwargChecker()
+    def plotNormalization(self,binning=None):
+        """Method to plot the fitted integrated intensities of the normalization table
+
+        Kwargs:
+    
+            - binning (int): Binning for the corresponding normalization table (default self.binning or 8)
+
+        returns:
+
+            - fig (matplotlib figure): Figure into which the Ef values are plotted
+
+        """
+        self = loadBinning(self,binning)
+        
+        binning = self.binning
+        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
+
+        fig = plt.figure()
+        plt.imshow(Norm.T,origin='lower')
+        plt.xlabel('Detector number')
+        plt.ylabel('Pixel number')
+        plt.title('Normalization')
+        plt.colorbar()
+        return fig
+
+@_tools.KwargChecker()
+def loadBinning(self,binning):
+    """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
+
+
+    if binning is None or binning == self.binning:
+        binning = self.binning
+    else:
+        with hdf.File(self.fileLocation) as f:
+            # Check if binning is in file
+            instr = getInstrument(f)
+            
+            binningsPossible = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])#np.array([int(x.split('_')[0]) for x in np.array(f.get('entry/calibration'))])
+            if not binning in binningsPossible:
+                raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+            
+            #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+            #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+            #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+            Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
+            width = np.array(instr.get('calib{}/width'.format(str(binning))))
+            bg = np.array(instr.get('calib{}/background'.format(str(binning))))
+            amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
+            self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+            self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
+            if self.instrumentCalibrationA4 is None:
+                print('self.instrumentCalibrationA4 is NONE with binning {}!!'.format(binning))
+            self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
+            self.binning = binning 
+    return self
+            
+def decodeStr(string):
+    try:
+        if 'decode' in string.__dir__():
+            return string.decode('utf8')
+        else:
+            return string
+    except:
+        return string
+
+@_tools.KwargChecker()
+def getScanParameter(f,exclude=['data','qx','qy','en','normalization','intensity','monitor']):
+    """Extract scan parameter from hdf file.
+
+    Args:
+
+        - f (hdf): Open HDF5 file object from which parameters are extracted.
+
+    Kwargs:
+
+        - exclude (list): List of string arguments to not be considered as scanning parameter
+
+    """
+    scanParameters = []
+    scanValues = []
+    scanUnits = []
+    
+    dataGroup = f.get('/entry/data')
+    for d in dataGroup:
+        if not str(d) in exclude and str(d).split('_')[-1]!='zero':
+            SCP = dataGroup[d]
+            scanValues.append(np.array(SCP))
+            scanParameters.append(str(d))
+            if 'units' in list(SCP.attrs.keys()):
+                scanUnits.append(decodeStr(SCP.attrs['units']))
+            else:
+                scanUnits.append('Unknown')
+            
+            
+    scanParameters = np.array(scanParameters)
+    scanValues = np.array(scanValues)#.reshape(len(scanParameters),-1)
+    scanUnits = np.array(scanUnits)
+
+
+    return scanParameters,scanValues,scanUnits
+
+
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
+    @_tools.KwargChecker()
     def __init__(self,a=None,b=None,c=None,alpha=90,beta=90,gamma=90,sample=None,name='Unknown'):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0])
@@ -122,6 +335,7 @@ class Sample(object):
             self.name=name
         else:
             print(sample)
+            print(a,b,c,alpha,beta,gamma)
             raise AttributeError('Sample not understood')
             
 
@@ -238,8 +452,8 @@ class Sample(object):
     def __eq__(self,other):
         if not isinstance(other,type(self)):
             return False
-        return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell),\
-        np.all(self.orientationMatrix==other.orientationMatrix)])
+        return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell)])#,\
+        #np.all(self.orientationMatrix==other.orientationMatrix)])
 
     def calculateProjections(self):
         """Calculate projections and generate projection angles."""
@@ -303,7 +517,7 @@ class Sample(object):
 
         return returnStr
 
-
+@_tools.KwargChecker()
 def rotationMatrix(alpha,beta,gamma,format='deg'):
     if format=='deg':
         alpha = np.deg2rad(alpha)
@@ -333,44 +547,79 @@ def extractData(files):
     if not isinstance(files,list):
         files = [files]
     I = []
-    posx = []
-    posy = []
-    energy = []
+    
+    
     Norm = []
     Monitor = []
     a3 = []
     a4 = []
+    a3Off = []
+    a4Off = []
     Ei = []
+    instrumentCalibrationEf = []
+    instrumentCalibrationA4 = []
+    instrumentCalibrationEdges = []
 
+    if(files[0].type!='h5'):
+        qx = []
+        qy = []
+        energy = []
+    scanParameters = []
+    scanParamValue = []
+    scanParamUnit = []
     for datafile in files:
         I.append(datafile.I)
-        posx.append(datafile.qx)
-        posy.append(datafile.qy)
-        energy.append(datafile.energy)
+        if(files[0].type!='h5'):
+            qx.append(datafile.qx)
+            qy.append(datafile.qy)
+            energy.append(datafile.energy)
+        scanParameters = [datafile.scanParameters]
+        scanParamValue = [datafile.scanValues]
+        scanParamUnit = [datafile.scanUnits]
+            
         Norm.append(datafile.Norm)
         Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape is ():
             datafile.A3Off = 0.0
         a3.append(datafile.A3-datafile.A3Off)
-
+        a3Off.append(datafile.A3Off)
         if np.array(datafile.A4Off).shape is ():
-            datafile.A4Off = 0.0
+            datafile.A4Off = [0.0]
         a4.append(datafile.A4-datafile.A4Off)
+        a4Off.append(datafile.A3Off)
         Ei.append(datafile.Ei)
+        instrumentCalibrationEf.append(datafile.instrumentCalibrationEf)
+        instrumentCalibrationA4.append(datafile.instrumentCalibrationA4)
+        instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
         
-    
-    I = np.concatenate(I)
-    qx = np.concatenate(posx)
-    qy = np.concatenate(posy)
-    energy = np.concatenate(energy)
-    Norm = np.concatenate(Norm)
-    Monitor = np.concatenate(Monitor)
-    a3 = np.concatenate(a3)
-    a4 = np.concatenate(a4)
-    Ei = np.concatenate(Ei)
+    I = np.array(I)
+    if(files[0].type!='h5'):
+        qx = np.array(qx)
+        qy = np.array(qy)
+        energy = np.array(energy)
 
-    return I,qx,qy,energy,Norm,Monitor,a3,a4,files[-1].instrumentCalibration,Ei # FIXME: Might be a problem if combining dataset with different calibrations!
+    scanParameters = np.array(scanParameters)
+    scanParamValue = np.array(scanParamValue)
+    scanParamUnit = np.array(scanParamUnit)
 
+    Norm = np.array(Norm)
+    Monitor = np.array(Monitor)
+
+    a3 = np.array(a3)
+    a4 = np.array(a4)
+
+    a3Off = np.array(a3Off)
+    a4Off = np.array(a4Off)
+    instrumentCalibrationEf = np.array(instrumentCalibrationEf)
+    instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
+    instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
+    Ei = np.array(Ei)
+    if files[0].type!='h5':
+        return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
+    else:
+        return I,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
     v/=np.linalg.norm(v)
     m11 = np.cos(theta)+v[0]**2*(1-np.cos(theta))
@@ -502,10 +751,12 @@ def test_DataFile():
         assert False
     except:
         assert True
-    files = ['TestData/cameasim2018n000011.h5',
-             'TestData/cameasim2018n000011.nxs']
+    files = ['TestData/1024/Magnon_ComponentA3Scan.h5',
+             'TestData/1024/Magnon_ComponentA3Scan.nxs']
     DF1 = DataFile(files[0])
     DF2 = DataFile(files[1])
+    s = str(DF2)
+    sampleS = str(DF2.sample)
             
     assert(DF1.sample == DF2.sample)
 
@@ -516,3 +767,124 @@ def test_DataFile_rotations():
     for i in range(len(rotVector)):
         assert(np.isclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i])))
         assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
+
+def test_DataFile_plotA4():
+    plt.ioff()
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    file = DataFile(fileName)
+    
+
+    try:
+        file.plotA4(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotA4(1)
+    fig2 = file.plotA4()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotA4(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+    
+    file2.plotA4(binning=1)
+    plt.close('all')
+
+    
+def test_DataFile_plotEf():
+    plt.ioff()
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    file = DataFile(fileName)
+
+    try:
+        file.plotEf(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotEf(1)
+    fig2 = file.plotEf()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotEf(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    file2.plotEf(binning=1)
+    plt.close('all')
+
+def test_DataFile_plotEfOverview():
+    plt.ioff()
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    file = DataFile(fileName)
+
+    try:
+        file.plotEfOverview(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotEfOverview(1)
+    fig2 = file.plotEfOverview()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotEfOverview(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    file2.plotEfOverview(binning=1)
+    plt.close('all')
+
+def test_DataFile_plotNormalization():
+    plt.ioff()
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    file = DataFile(fileName)
+
+    try:
+        file.plotNormalization(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    fig = file.plotNormalization(1)
+    fig2 = file.plotNormalization()
+
+    file2 = DataFile(fileName2)
+    try:
+        file2.plotNormalization(binning=20) # Binning not found in data file
+        assert False
+    except AttributeError:
+        assert True
+
+    file2.plotNormalization(binning=1)
+    plt.close('all')
+
+def test_DataFile_decodeString():
+    a = b'String'
+    b = 'String'
+
+    assert(decodeStr(a)==decodeStr(b))
+
+
+def test_DataFile_ScanParameter():
+
+    files = ['TestData/1024/Magnon_ComponentA3Scan.h5','TestData/1024/Magnon_ComponentA3Scan.nxs']
+    for file in files:
+        dfile = DataFile(file)
+        assert(dfile.scanParameters[0]=='rotation_angle')
+        assert(len(dfile.scanParameters)==len(dfile.scanUnits))
+        assert(len(dfile.scanParameters)==len(dfile.scanValues))
+        assert(len(dfile.scanParameters)==1)
+        assert(dfile.scanUnits[0]=='degrees')
+        assert(np.all(dfile.scanValues==np.arange(0,150,1)))

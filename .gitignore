@@ -21,6 +21,14 @@ Normalization/*_pixels
 Normalization/Raw
 TestData/*_pixels
 TestData/Raw
+TestData/1024/1_pixels
+TestData/1024/3_pixels
+TestData/1024/8_pixels
+TestData/1024/Raw
+TestData/1024/Inspection/
+TestData/1024/
+TestData/ManuallyChangedData
+CommandLineScripts/.settings
 
 *.calib
 

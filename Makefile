@@ -3,7 +3,10 @@
 
 
 test:
-	pytest -vv MJOLNIR 
+	python -m pytest -vv MJOLNIR 
+
+quicktest:
+	python -m pytest -vv MJOLNIR --quick
 
 # You can set these variables from the command line.
 SPHINXOPTS    =

@@ -9,9 +9,122 @@ In general, it is expected that a CAMEA-like instrument is to be run during expe
 
     - External parameter
 
-Most often, one would rotate the back-end into a suitable :math:`A4` and :math:`E_i` position to cover the interesting physics, and then perform an :math:`A3` scan. The length of this scan depends on the symmetry of the crystal in the given scattering plane as performing a 360 degrees scan with a 90 degrees symmetry does not provide additional information. After such a scan, would rotate :math:`A4` by half a wedge coverage angle (3.75 degrees) to cover the dark angles and then perform an identical :math:`A3` scan. This could be performed with different incoming energies to expand the covered area in the energy direction.
+However, in the initial phase of setup other scans might be conducted. The data conversion thus does not require a specific scan but allows for all types. This does then require the user to choose corresponding visualizations correspondingly.
+
+.. The most common operation is expected to be a rotate of the back-end into a suitable :math:`A4` and :math:`E_i` position to cover the interesting physics, and then a performance of an :math:`A3` scan. The rotation angle of this scan depends on the symmetry of the crystal in the given scattering plane as performing a 360 degrees scan with a 90 degrees symmetry does not provide additional information. After such a scan, would rotate :math:`A4` by half a wedge coverage angle (3.75 degrees) to cover the dark angles and then perform an identical :math:`A3` scan. This could be performed with different incoming energies to expand the covered area in the energy direction.
 
 .. Having the raw data in the H5 format, converting the data files into :math:`S(\vec{q},\omega)` is rather strraihgt forward. 
+
+HdF file format
+---------------
+
+The raw data from the instrument is expected to be provided in an HdF 5 format with the following structure::
+
+    cameasim2018n0000xx.h5
+        └── entry
+            ├── CAMEA
+            │    ├── calib1
+            │    │    ├── a4offset
+            │    │    ├── amplitude
+            │    │    ├── background
+            │    │    ├── boundaries
+            │    │    ├── final_energy
+            │    │    └── width
+            │    ├── calib3
+            │    │    ├── a4offset
+            │    │    ├── amplitude
+            │    │    ├── background
+            │    │    ├── boundaries
+            │    │    ├── final_energy
+            │    │    └── width
+            │    ├── calib8
+            │    │    ├── a4offset
+            │    │    ├── amplitude
+            │    │    ├── background
+            │    │    ├── boundaries
+            │    │    ├── final_energy
+            │    │    └── width
+            │    ├── detector
+            │    │    ├── counts
+            │    │    └── summed_counts
+            │    ├── monochromator
+            │    │    ├── d_spacing
+            │    │    ├── energy
+            │    │    ├── gm
+            │    │    ├── gm_zero
+            │    │    ├── horizontal_curvature
+            │    │    ├── horizontal_curvature_zero
+            │    │    ├── rotation_angle
+            │    │    ├── rotation_angle_zero
+            │    │    ├── summed_counts
+            │    │    ├── tlm
+            │    │    ├── tlm_zero
+            │    │    ├── tum
+            │    │    ├── tum_zero
+            │    │    ├── type
+            │    │    ├── vertical_curvature
+            │    │    └── vertical_curvature_zero
+            │    └── monochromator_slit
+            │         ├── bottom
+            │         ├── bottom_zero
+            │         ├── left
+            │         ├── left_zero
+            │         ├── right
+            │         ├── right_zero
+            │         ├── top
+            │         ├── top_zero
+            │         ├── x_gab
+            │         └── y_gab
+            ├── comment
+            ├── control
+            │    ├── absolute_time
+            │    ├── data
+            │    ├── mode
+            │    ├── preset
+            │    └── time
+            ├── data
+            │    ├── counts
+            │    ├── summed_counts
+            │    └── (Scan parameter)
+            ├── end_time
+            ├── experimental_identifier
+            ├── instrument
+            ├── local_contact
+            │    └── name
+            ├── proposal_id
+            ├── proposal_title
+            ├── proposal_user
+            │    └── name
+            ├── proton_beam
+            │    └── data
+            ├── sample
+            │    ├── azimuthal_angle
+            │    ├── name
+            │    ├── orientation_matrix
+            │    ├── plane_normal
+            │    ├── plane_vector_1
+            │    ├── plane_vector_2
+            │    ├── polar_angle
+            │    ├── polar_angle_zero
+            │    ├── rotation_angle
+            │    ├── rotation_angle_zero
+            │    ├── sgl
+            │    ├── sgl_zero
+            │    ├── sgu
+            │    ├── sgu_zero
+            │    ├── (sample environment parameters)
+            │    └── unit_cell
+            ├── scancommand
+            ├── scanvars
+            ├── start_time
+            ├── title
+            └── user
+                 ├── address
+                 ├── affiliation
+                 ├── email
+                 └── name
+
+From this file, raw plotting and a conversion algorithm is possible. Raw plotting is further explained in  :ref:`Raw plotting and fitting<Raw-plotting-and-fitting>`. 
 
 
 
@@ -28,50 +141,108 @@ Below is a HDF converted file in the NXsqom format for a :math:`A3` scan. Here :
     cameasim2018n0000xx.nxs
         └── entry
             ├── CAMEA
+            │    ├── calib1
+            │    │    ├── a4offset
+            │    │    ├── amplitude
+            │    │    ├── background
+            │    │    ├── boundaries
+            │    │    ├── final_energy
+            │    │    └── width
+            │    ├── calib3
+            │    │    ├── a4offset
+            │    │    ├── amplitude
+            │    │    ├── background
+            │    │    ├── boundaries
+            │    │    ├── final_energy
+            │    │    └── width
+            │    ├── calib8
+            │    │    ├── a4offset
+            │    │    ├── amplitude
+            │    │    ├── background
+            │    │    ├── boundaries
+            │    │    ├── final_energy
+            │    │    └── width
             │    ├── detector
-            │    │    ├── data
-            │    │    ├── polar_angle
-            │    └── monochromator
-            │         ├── d_spacing
-            │         ├── energy
-            │         ├── rotation_angle
-            │         └── type
-            ├── calibration
-            │    ├── 1_pixels
-            │    ├── 3_pixels
-            │    ├── 8_pixels
+            │    │    ├── counts
+            │    │    └── summed_counts
+            │    ├── monochromator
+            │    │    ├── d_spacing
+            │    │    ├── energy
+            │    │    ├── gm
+            │    │    ├── gm_zero
+            │    │    ├── horizontal_curvature
+            │    │    ├── horizontal_curvature_zero
+            │    │    ├── rotation_angle
+            │    │    ├── rotation_angle_zero
+            │    │    ├── summed_counts
+            │    │    ├── tlm
+            │    │    ├── tlm_zero
+            │    │    ├── tum
+            │    │    ├── tum_zero
+            │    │    ├── type
+            │    │    ├── vertical_curvature
+            │    │    └── vertical_curvature_zero
+            │    └── monochromator_slit
+            │         ├── bottom
+            │         ├── bottom_zero
+            │         ├── left
+            │         ├── left_zero
+            │         ├── right
+            │         ├── right_zero
+            │         ├── top
+            │         ├── top_zero
+            │         ├── x_gab
+            │         └── y_gab
+            ├── comment
             ├── control
+            │    ├── absolute_time
             │    ├── data
             │    ├── mode
             │    ├── preset
-            │    ├── time
+            │    └── time
             ├── data
-            │    ├── data
+            │    ├── counts
             │    ├── en
             │    ├── monitor
             │    ├── normalization
             │    ├── qx
             │    ├── qy
-            │    ├── qz
-            │    └── rotation_angle
-            ├── definition
+            │    ├── summed_counts
+            │    └── (Scan parameter)
             ├── end_time
+            ├── experimental_identifier
+            ├── instrument
+            ├── local_contact
+            │    └── name
             ├── proposal_id
+            ├── proposal_title
             ├── proposal_user
             │    └── name
-            ├── reduction
-            │    └── MJOLNIR_algorithm_convert
-            │         ├── author
-            │         ├── binning
-            │         ├── date
-            │         ├── description
-            │         └── rawdata
+            ├── proton_beam
+            │    └── data
             ├── sample
+            │    ├── azimuthal_angle
             │    ├── name
             │    ├── orientation_matrix
             │    ├── plane_normal
+            │    ├── plane_vector_1
+            │    ├── plane_vector_2
             │    ├── polar_angle
+            │    ├── polar_angle_zero
+            │    ├── rotation_angle
+            │    ├── rotation_angle_zero
+            │    ├── sgl
+            │    ├── sgl_zero
+            │    ├── sgu
+            │    ├── sgu_zero
+            │    ├── (sample environment parameters)
             │    └── unit_cell
+            ├── scancommand
+            ├── scanvars
             ├── start_time
-            └── title
-
+            ├── title
+            └── user
+                 ├── address
+                 ├── affiliation
+                 ├── email
+                 └── name

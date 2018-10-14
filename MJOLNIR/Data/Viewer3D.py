@@ -7,17 +7,18 @@ import matplotlib.cm as cm
 import numpy as np
 from matplotlib.widgets import Slider
 import matplotlib.gridspec
-
+from MJOLNIR import _tools
 import warnings
 
 class Viewer3D(object):  
-    def __init__(self,Data,bins,axis=2):
+    @_tools.KwargChecker()
+    def __init__(self,Data,bins,axis=2):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
         Args:
 
-            - Data (3D array): Three dimensional numpy array with Qx, Qy, and E along the first, second, and third directions respectively.
+            - Data (3D array): Intensity array in three dimensions. Assumed to have Qx, Qy, and E along the first, second, and third directions respectively.
 
             - bins (List of 1D arrays): Coordinates of the three directions as returned by the BinData3D functionality of DataSet.
 
@@ -27,6 +28,15 @@ class Viewer3D(object):
 
         Example:
 
+        >>> from MJOLNIR.Data import DataSet,Viewer3D
+        >>> import matplotlib.pyplot as plt
+        >>> import numpy as np
+        >>> 
+        >>> DataFile = ['../TestData/cameasim2018n000011.nxs']
+        >>> Data,bins = dataset.binData3D(0.08,0.08,0.25)
+        >>> 
+        >>> Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+        >>> 
         >>> Viewer = Viewer3D.Viewer3D(Intensity,bins,axis=2)
         >>> Viewer.ax.set_title(str(title)[2:-1])
         >>> plt.show()
@@ -38,7 +48,7 @@ class Viewer3D(object):
         """
         self.Data = Data
         self.bins = bins
-
+        self.dataLimits = [np.nanmin(Data),np.nanmax(Data)]
 
         gs = matplotlib.gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
         
@@ -97,7 +107,8 @@ class Viewer3D(object):
         self.Energy_slider.set_val(self.value)
 
         self.cid = self.figure.canvas.mpl_connect('button_press_event', onclick)
-
+        
+        self.caxis = self.dataLimits
 
     @property 
     def caxis(self):
