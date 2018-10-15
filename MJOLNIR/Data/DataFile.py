@@ -278,36 +278,58 @@ def decodeStr(string):
         return string
 
 @_tools.KwargChecker()
-def getScanParameter(f,exclude=['data','qx','qy','en','normalization','intensity','monitor']):
+def getScanParameter(f):
     """Extract scan parameter from hdf file.
 
     Args:
 
         - f (hdf): Open HDF5 file object from which parameters are extracted.
 
-    Kwargs:
-
-        - exclude (list): List of string arguments to not be considered as scanning parameter
-
     """
-    scanParameters = []
+    if f.get('/entry/scanvars') is None:
+        return [],[],[]
+    scanParameters = str(np.array(f.get('/entry/scanvars'))).split()
     scanValues = []
     scanUnits = []
+
+    if 'a3' in scanParameters:
+        a3Id = scanParameters.index("a3")
+        scanParameters[a3Id] = 'rotation_angle'
+    else:
+        a3Id = None
+
+    if 'a4' in scanParameters:
+        a4Id = scanParameters.index("a4")
+        scanParameters[a4Id] = 'polar_angle'
+    else:
+        a4Id = None
+    if 'ei' in scanParameters:
+        eiId = scanParameters.index("ei")
+        scanParameters[eiId] = 'incident_energy'
+    else:
+        eiId = None
     
+        
+
     dataGroup = f.get('/entry/data')
     for d in dataGroup:
-        if not str(d) in exclude and str(d).split('_')[-1]!='zero':
+        if d in scanParameters:
             SCP = dataGroup[d]
             scanValues.append(np.array(SCP))
-            scanParameters.append(str(d))
             if 'units' in list(SCP.attrs.keys()):
                 scanUnits.append(decodeStr(SCP.attrs['units']))
             else:
                 scanUnits.append('Unknown')
-            
-            
+        
+    if not a3Id is None:
+        scanParameters[a3Id] = 'a3'
+    if not a4Id is None:
+        scanParameters[a4Id] = 'a4'
+    if not eiId is None:
+        scanParameters[eiId] = 'ei'
+    
     scanParameters = np.array(scanParameters)
-    scanValues = np.array(scanValues)#.reshape(len(scanParameters),-1)
+    scanValues = np.array(scanValues)
     scanUnits = np.array(scanUnits)
 
 
@@ -883,7 +905,7 @@ def test_DataFile_ScanParameter():
     files = ['TestData/1024/Magnon_ComponentA3Scan.h5','TestData/1024/Magnon_ComponentA3Scan.nxs']
     for file in files:
         dfile = DataFile(file)
-        assert(dfile.scanParameters[0]=='rotation_angle')
+        assert(dfile.scanParameters[0]=='a3')
         assert(len(dfile.scanParameters)==len(dfile.scanUnits))
         assert(len(dfile.scanParameters)==len(dfile.scanValues))
         assert(len(dfile.scanParameters)==1)
