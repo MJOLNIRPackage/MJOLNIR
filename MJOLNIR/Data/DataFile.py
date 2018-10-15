@@ -31,7 +31,7 @@ class DataFile(object):
                 self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
                 self.Ei = np.array(instr.get('monochromator/energy'))
                 self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
-                self.A4 = np.array(instr.get('detector/polar_angle')).reshape(-1)
+                self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
                 self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
                 self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
@@ -61,9 +61,9 @@ class DataFile(object):
                 self.instrument = instr.name.split('/')[-1]
                 self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
                 self.Ei = np.array(instr.get('monochromator/energy'))
-                self.I = np.array(instr.get('detector/data'))
+                self.I = np.array(instr.get('detector/counts'))
                 self.A3 = np.array(f.get('entry/sample/rotation_angle'))
-                self.A4 = np.array(instr.get('detector/polar_angle'))
+                self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
                 self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
                 self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
                 self.binning=1 # Choose standard binning 1
@@ -780,7 +780,8 @@ def test_DataFile():
     DF2 = DataFile(files[1])
     s = str(DF2)
     sampleS = str(DF2.sample)
-            
+    print(str(DF1.sample))
+    print(str(DF2.sample))
     assert(DF1.sample == DF2.sample)
 
 def test_DataFile_rotations():
