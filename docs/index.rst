@@ -22,11 +22,11 @@ Welcome to MJOLNIR's documentation!
 
 * Python 3.4 is believed to be compatible but is not tested due to updates in testing framework.
 
-.. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.6.0
+.. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.6
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
 
-.. |coverall| image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=0.6.0
-    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR?branch=0.6.0
+.. |coverall| image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=0.6
+    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR?branch=0.6
 
 .. |python27| image:: https://img.shields.io/badge/python-2.7-brightgreen.svg 
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
