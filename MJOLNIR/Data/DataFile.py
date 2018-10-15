@@ -27,14 +27,13 @@ class DataFile(object):
                 self.Norm=np.array(f.get('entry/data/normalization'))
                 self.Monitor=np.array(f.get('entry/data/monitor'))
                 instr = getInstrument(f)
+                self.instrument = instr.name.split('/')[-1]
+                self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
                 self.Ei = np.array(instr.get('monochromator/energy'))
                 self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
                 self.A4 = np.array(instr.get('detector/polar_angle')).reshape(-1)
-                self.A3Off = np.array(f.get('entry/zeros/A3'))
-                if not f.get('entry/zeros/A4') is None:
-                    self.A4Off = np.array(f.get('entry/zeros/A4'))
-                else:
-                    self.A4Off = 0.0
+                self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
+                self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
                 self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
                 #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
                 #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
@@ -57,15 +56,16 @@ class DataFile(object):
             with hdf.File(fileLocation) as f:
                 sample=f.get('/entry/sample')
                 self.sample = Sample(sample=f.get('/entry/sample'))
-                self.Norm=np.array(f.get('entry/data/normalization'))
-                self.Monitor=np.array(f.get('entry/data/monitor'))
+                self.Monitor=np.array(f.get('entry/control/data'))
                 instr = getInstrument(f)
+                self.instrument = instr.name.split('/')[-1]
+                self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
                 self.Ei = np.array(instr.get('monochromator/energy'))
                 self.I = np.array(instr.get('detector/data'))
                 self.A3 = np.array(f.get('entry/sample/rotation_angle'))
                 self.A4 = np.array(instr.get('detector/polar_angle'))
-                self.A3Off = np.array(f.get('entry/zeros/A3'))
-                self.A4Off = np.array(f.get('entry/zeros/A4'))
+                self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
+                self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
                 self.binning=1 # Choose standard binning 1
                 #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
                 #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
@@ -144,7 +144,7 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the A4 values are plotted
 
         """
-        self = loadBinning(self,binning)
+        self.loadBinning(binning)
         binning = self.binning
         Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
 
@@ -172,7 +172,7 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the Ef values are plotted
 
         """
-        self = loadBinning(self,binning)
+        self.loadBinning(binning)
         
         binning = self.binning
         Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
@@ -199,7 +199,7 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the Ef values are plotted
 
         """
-        self = loadBinning(self,binning)
+        self.loadBinning(binning)
         binning = self.binning
         Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
         fig = plt.figure()
@@ -224,8 +224,8 @@ class DataFile(object):
             - fig (matplotlib figure): Figure into which the Ef values are plotted
 
         """
-        self = loadBinning(self,binning)
         
+        self.loadBinning(binning)
         binning = self.binning
         Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
 
@@ -237,36 +237,36 @@ class DataFile(object):
         plt.colorbar()
         return fig
 
-@_tools.KwargChecker()
-def loadBinning(self,binning):
-    """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
+    @_tools.KwargChecker()
+    def loadBinning(self,binning):
+        """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
 
 
-    if binning is None or binning == self.binning:
-        binning = self.binning
-    else:
-        with hdf.File(self.fileLocation) as f:
-            # Check if binning is in file
-            instr = getInstrument(f)
-            
-            binningsPossible = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])#np.array([int(x.split('_')[0]) for x in np.array(f.get('entry/calibration'))])
-            if not binning in binningsPossible:
-                raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
-            
-            #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-            #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-            #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
-            Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
-            width = np.array(instr.get('calib{}/width'.format(str(binning))))
-            bg = np.array(instr.get('calib{}/background'.format(str(binning))))
-            amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
-            self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
-            self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
-            if self.instrumentCalibrationA4 is None:
-                print('self.instrumentCalibrationA4 is NONE with binning {}!!'.format(binning))
-            self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
-            self.binning = binning 
-    return self
+        if binning is None or binning == self.binning:
+            binning = self.binning
+        else:
+            with hdf.File(self.fileLocation) as f:
+                # Check if binning is in file
+                instr = getInstrument(f)
+                
+                binningsPossible = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])#np.array([int(x.split('_')[0]) for x in np.array(f.get('entry/calibration'))])
+                if not binning in binningsPossible:
+                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
+                
+                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
+                width = np.array(instr.get('calib{}/width'.format(str(binning))))
+                bg = np.array(instr.get('calib{}/background'.format(str(binning))))
+                amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
+                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
+                if self.instrumentCalibrationA4 is None:
+                    print('self.instrumentCalibrationA4 is NONE with binning {}!!'.format(binning))
+                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
+                self.binning = binning 
+        #return self
             
 def decodeStr(string):
     try:
@@ -573,11 +573,12 @@ def extractData(files):
             qx.append(datafile.qx)
             qy.append(datafile.qy)
             energy.append(datafile.energy)
+            Norm.append(datafile.Norm)
         scanParameters = [datafile.scanParameters]
         scanParamValue = [datafile.scanValues]
         scanParamUnit = [datafile.scanUnits]
             
-        Norm.append(datafile.Norm)
+        
         Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape is ():
             datafile.A3Off = 0.0
@@ -618,7 +619,7 @@ def extractData(files):
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
     else:
-        return I,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
+        return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
 def rotMatrix(v,theta): # https://en.wikipedia.org/wiki/Rotation_matrix
     v/=np.linalg.norm(v)
