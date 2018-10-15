@@ -796,16 +796,48 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         dset = entry.create_dataset('end_time',(1,),dtype='<S70')
         dset[0] = b"2018-03-22T18:44:02+01:00"
 
+        dset = entry.create_dataset('experimental_identifier',(1,),dtype='<S70')
+        dset[0] = b"UNKNOWN"
+
+        dset = entry.create_dataset('instrument',(1,),dtype='<S70')
+        dset[0] = b"CAMEA"
+
+        dset = entry.create_dataset('comment',(1,),dtype='<S70')
+        dset[0] = b"I feel uncommented"
+
         dset = entry.create_dataset('title',(1,),dtype='<S70')
         dset[0] = np.string_(title)
 
         dset = entry.create_dataset('proposal_id',(1,),dtype='<S70')
         dset[0] = b"2018-00666"
 
+        dset = entry.create_dataset('proposal_title',(1,),dtype='<S70')
+        dset[0] = b"I need my Title!"
+
+        cont = entry.create_group('local_contact')
+        cont.attrs['NX_class'] = np.string_('NXuser')
+        dset = cont.create_dataset('name',(1,),dtype='S70')
+        dset[0] = b"UNKNOWN"
+
         us = entry.create_group('proposal_user')
         us.attrs['NX_class'] = np.string_('NXuser')
         dset = us.create_dataset('name',(1,),dtype='S70')
         dset[0] = b"Jakob Lass"
+        dset = us.create_dataset('email',(1,),dtype='S70')
+        dset[0] = b"jakob@lass.dk"
+
+        pus = entry.create_group('user')
+        pus.attrs['NX_class'] = np.string_('NXuser')
+        dset = pus.create_dataset('name',(1,),dtype='S70')
+        dset[0] = b"Jakob Lass"
+        dset = pus.create_dataset('email',(1,),dtype='S70')
+        dset[0] = b"jakob@lass.dk"
+        dset = pus.create_dataset('address',(1,),dtype='S70')
+        dset[0] = b"UNKNOWN"
+        dset = pus.create_dataset('affiliation',(1,),dtype='S70')
+        dset[0] = b"UNKNOWN"
+
+        
 
     def addMono(inst):
         mono = inst.create_group('monochromator')
@@ -818,19 +850,19 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         dset[0] = 3.354
         dset.attrs['units'] = 'anstrom'
 
-        dset = mono.create_dataset('curvature_horizontal',(1,),'float32')
+        dset = mono.create_dataset('horizontal_curvature',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
-        dset = mono.create_dataset('curvature_vertical',(1,),'float32')
+        dset = mono.create_dataset('vertical_curvatur',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
-        dset = mono.create_dataset('curvature_horizontal_zero',(1,),'float32')
+        dset = mono.create_dataset('horizontal_curvature_zero',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
-        dset = mono.create_dataset('curvature_vertical_zero',(1,),'float32')
+        dset = mono.create_dataset('vertical_curvature_zero',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
@@ -869,7 +901,10 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
             dset = monoSlit.create_dataset(x+'_zero',(1,),'float32')
             dset[0] = 0.0
             dset.attrs['units'] = 'mm'
-
+        for x in ['x_gab','y_gab']:
+            dset = monoSlit.create_dataset(x,(1,),'float32')
+            dset[0] = 0.0
+            dset.attrs['units'] = 'mm'
 
     def addDetector(inst):
         det = inst.create_group('detector')
@@ -961,7 +996,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         cell[5] = 120.
         dset = sam.create_dataset('unit_cell',data=cell)
 
-        dset = sam.create_dataset('temperature',data=0.0)
+        dset = sam.create_dataset('azimuthal_angle',data=0.0)
+        dset = sam.create_dataset('x',data=0.0)
+        dset = sam.create_dataset('y',data=0.0)
+
+        for x in ['sgu','sgl']:
+            dset = sam.create_dataset(x,data=0.0)
+            dset = sam.create_dataset(x+'_zero',data=0.0)
 
 
         
@@ -988,38 +1029,45 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
         det = entry['CAMEA/detector']
-        dset = det.create_dataset('data',data=data )
-        dset.attrs['target'] = np.string_('/entry/CAMEA/detector/data')
-        nxdata['data'] = dset
+        dset = det.create_dataset('counts',data=data )
+        dset.attrs['target'] = np.string_('/entry/CAMEA/detector/counts')
+        nxdata['counts'] = dset
 
-        online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
-        online.attrs['units']=np.string_('Boolean for detector state')
+        dset = det.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)))
+        dset.attrs['target'] = np.string_('/entry/CAMEA/detector/summed_counts')
+        nxdata['summed_counts'] = dset
+
+        #online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
+        #online.attrs['units']=np.string_('Boolean for detector state')
 
         sam = entry['sample']
 
         scanType='Unknown'
+        scanvars = ''
         if isVaried(a3):
             dset = sam.create_dataset('rotation_angle',data=a3)
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=0.0)
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([0.0]))
             nxdata['rotation_angle'] = dset
             nxdata['rotation_angle_zero'] = dset_zero
-            scanType = 'cscan a3 {} da3 {} n {}'.format(np.mean(a3),np.mean(np.diff(a3)),len(a3))
+            scanType = 'cscan a3 {} da3 {} np {} mn 10000'.format(np.mean(a3),np.mean(np.diff(a3)),len(a3))
+            scanvars+='a3'
         else:
             dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=0.0)
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([0.0]))
 
         dset.attrs['units'] = np.string_('degrees')
         dset_zero.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
-            dset = det.create_dataset('polar_angle',data=a4)
+            dset = sam.create_dataset('polar_angle',data=a4)
             nxdata['polar_angle'] = dset
-            dset_zero = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
+            dset_zero = sam.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
             nxdata['polar_angle_zero'] = dset_zero
-            scanType = 'cscan a4 {} da4 {} n {}'.format(np.mean(a4),np.mean(np.diff(a4)),len(a4))
+            scanType = 'cscan a4 {} da4 {} np {} mn 10000'.format(np.mean(a4),np.mean(np.diff(a4)),len(a4))
+            scanvars+='a4'
         else:
-            dset = det.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
-            dset_zero = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
+            dset = sam.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
+            dset_zero = sam.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
         dset.attrs['units'] = np.string_('degrees')
         dset_zero.attrs['units'] = np.string_('degrees')
         
@@ -1031,31 +1079,31 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
             dset = mono.create_dataset('energy',data=ei)
             nxdata['incident_energy'] = dset
             mono.create_dataset('rotation_angle',data=theta);
-            sam.create_dataset('polar_angle',data=tth)
-            scanType = 'cscan ei {} dei {} n {}'.format(np.mean(ei),np.mean(np.diff(ei)),len(ei))
-
+            mono.create_dataset('polar_angle',data=tth)
+            scanType = 'cscan ei {} dei {} np {} mn 10000'.format(np.mean(ei),np.mean(np.diff(ei)),len(ei))
+            scanvars+='ei'
         else:
             dset = mono.create_dataset('energy',(1,),dtype='float32')
             dset[0] = ei[0]
             dset = mono.create_dataset('rotation_angle',(1,),dtype='float32')
             dset[0] = theta[0]
-            dset = sam.create_dataset('polar_angle',(1,),dtype='float32')
+            dset = mono.create_dataset('polar_angle',(1,),dtype='float32')
             dset[0] = tth[0]
         dset = entry['CAMEA/monochromator/rotation_angle']    
         dset.attrs['units'] = np.string_('degrees')
         dset = entry['sample/polar_angle']    
         dset.attrs['units'] = np.string_('degrees')
-        dset = sam.create_dataset('polar_angle_zero',data=0.0);
+        
 
         dset.attrs['units'] = np.string_('degrees')
 
-        dset = mono.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)));
-        dset.attrs['units'] = np.string_('counts')
+        #dset = mono.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)));
+        #dset.attrs['units'] = np.string_('counts')
         
         
         makeMonitor(entry,Numpoints)
         entry.create_dataset('scancommand',data=scanType)
-        
+        entry.create_dataset('scanvars',data=scanvars)
     def makeMonitor(entry,Numpoints):
         control = entry.create_group('control')
         control.attrs['NX_class'] = np.string_('NXmonitor')
@@ -1068,6 +1116,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         time = [36.87]*Numpoints
         control.create_dataset('time',data=time,dtype='float32')
 
+        time = [36.87*1e9]*Numpoints
+        control.create_dataset('absolut_time',data=time,dtype='float32')
+        
+        pb = entry.create_group('proton_beam')
+        pb.attrs['NX_class'] = np.string_('NXmonitor')
+        vals = [0]*Numpoints
+        dset = pb.create_dataset('data',data=vals,dtype='int32')
 
     f = hdf.File(fileName,'w')
     f.attrs['file_name'] = np.string_(fileName)
