@@ -221,136 +221,118 @@ class DataSet(object):
         dataFiles = isListOfDataFiles(dataFiles)
         self.dataFiles = dataFiles
         convertedFiles = []
-        for datafile in dataFiles:
-            if not os.path.isfile(datafile.fileLocation):
-                raise AttributeError('Provided file does not exist, '+str(datafile))
-            with hdf.File(datafile.fileLocation,mode='r+') as file:
-                #file = hdf.File(datafile.fileLocation,mode='r+')             
-                instrument = getInstrument(file)
-                
+        for rawfile in dataFiles:
             
-                if instrument.name.split('/')[-1] == 'CAMEA':
-                    EPrDetector = 8 
-                elif instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
-                    EPrDetector = 1
-                
+            if rawfile.instrument == 'CAMEA':
+                EPrDetector = 8 
+            elif rawfile.instrument in ['MULTIFLEXX','FLATCONE']:
+                EPrDetector = 1
+            else:
+                raise AttributeError('Instrument type of data file not understood. {} was given.'.format(rawfile.instrument))
             
-                #if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
-                #    raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([x.split('_')[0] for x in np.array(file.get('entry/calibration'))])))
-                
-                #EfNormalization = np.array(file.get('entry/calibration/{}_pixels/ef'.format(binning)))
-                #A4Normalization = np.array(file.get('entry/calibration/{}_pixels/a4'.format(binning)))
-                #EdgesNormalization = np.array(file.get('entry/calibration/{}_pixels/edges'.format(binning)))
-                #if np.array(file.get('entry/calibration/{}_pixels'.format(binning))).shape == ():
-                if np.array(instrument.get('calib{}'.format(binning))) is None:
-                    raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([x.split('_')[0] for x in np.array(file.get('entry/calibration'))])))
-                
-                Ef = np.array(instrument.get('calib{}/final_energy'.format(str(binning))))
-                width = np.array(instrument.get('calib{}/width'.format(str(binning))))
-                bg = np.array(instrument.get('calib{}/background'.format(str(binning))))
-                amp = np.array(instrument.get('calib{}/amplitude'.format(str(binning))))
-                EfNormalization = np.array([amp,Ef,width,bg]).T
-                A4Normalization = np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
-                EdgesNormalization = np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
-                Data = np.array(instrument.get('detector/data'))
-                
+            rawfile.loadBinning(binning)
+            #if not binning in rawfile.possibleBinnings:
+            #    raise AttributeError('Binning {} not found in data file, only {} possible'.format(binning,', '.join([str(x) for x in rawfile.possibleBinnings])))
+            
+            EfNormalization = rawfile.instrumentCalibrationEf
+            A4Normalization = rawfile.instrumentCalibrationA4#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
+            EdgesNormalization = rawfile.instrumentCalibrationEdges#np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
+            Data = rawfile.I#np.array(instrument.get('detector/data'))
+            
 
-                detectors = Data.shape[1]
-                steps = Data.shape[0]
-                
-                liveDetectors = np.array(instrument.get('detector/online'),dtype=bool)
-                if liveDetectors is None:
-                    liveDetectors = np.ones((detectors),dtype=bool)
-                
-                if instrument.name.split('/')[-1] in ['MULTIFLEXX','FLATCONE']:
-                    Data.shape = (Data.shape[0],Data.shape[1],-1)
+            detectors = Data.shape[1]
+            steps = Data.shape[0]
+            
+            if rawfile.instrument in ['MULTIFLEXX','FLATCONE']:
+                Data.shape = (Data.shape[0],Data.shape[1],-1)
 
-                A4Zero = file.get('entry/sample/polar_angle_zero')
-                
-                if A4Zero is None:
-                    A4Zero=0.0
-                else:
-                    A4Zero = np.deg2rad(np.array(A4Zero))
+            A4Zero = rawfile.A4Off#file.get('entry/sample/polar_angle_zero')
+            
+            if A4Zero is None:
+                A4Zero=0.0
+            else:
+                A4Zero = np.deg2rad(np.array(A4Zero))
 
-                
-                A3Zero = file.get('entry/sample/rotation_angle_zero')
-                if A3Zero is None:
-                    A3Zero=0.0
-                else:
-                    A3Zero = np.deg2rad(np.array(A3Zero))
+            
+            A3Zero = rawfile.A3Off#file.get('entry/sample/rotation_angle_zero')
+            if A3Zero is None:
+                A3Zero=0.0
+            else:
+                A3Zero = np.deg2rad(np.array(A3Zero))
 
-                A4 = np.deg2rad(A4Normalization)+A4Zero
-                A4=A4.reshape(detectors,binning*EPrDetector,order='C')
+            A4 = np.deg2rad(A4Normalization)+A4Zero
+            A4=A4.reshape(detectors,binning*EPrDetector,order='C')
 
-                PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
-                factorsqrtEK = 0.694692
-                
-                A4File = np.array(instrument.get('detector/polar_angle'))
-                
-                A4File = A4File.reshape((-1,1,1))
+            PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
+            factorsqrtEK = 0.694692
+            
+            A4File = rawfile.A4#np.array(instrument.get('detector/polar_angle'))
+            
+            A4File = A4File.reshape((-1,1,1))
 
-                A4Mean = A4.reshape((1,detectors,binning*EPrDetector))-np.deg2rad(A4File)
-                
-                Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
-                for i in range(detectors): # for each detector
-                    for j in range(EPrDetector):
-                        for k in range(binning):
-                            Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
-    
-                EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
-                EfNormalization = (EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
+            A4Mean = A4.reshape((1,detectors,binning*EPrDetector))-np.deg2rad(A4File)
+            
+            Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
+            for i in range(detectors): # for each detector
+                for j in range(EPrDetector):
+                    for k in range(binning):
+                        Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
 
-                
+            EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
+            EfNormalization = (EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
 
-                kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
-                Ei = np.array(instrument.get('monochromator/energy'))
-                
-                
-                ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
+            
 
-                
-                A3 = np.deg2rad(np.array(file.get('/entry/sample/rotation_angle/')))+A3Zero
-                
-                if A3.shape[0]==1:
-                    A3 = A3*np.ones((steps))
-                
-                A3.resize((steps,1,1))
-                
-                # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
-                Qx = ki-kf*np.cos(A4Mean)
-                Qy = -kf*np.sin(A4Mean)
-                QX = Qx*np.cos(A3)-Qy*np.sin(A3)
-                QY = Qx*np.sin(A3)+Qy*np.cos(A3)
-                DeltaE = Ei-EfMean
-                if DeltaE.shape[0]==1:
-                    DeltaE = DeltaE*np.ones((steps,1,1))
-                Monitor = np.array(file.get('/entry/control/data'),dtype=int).reshape((steps,1,1))
-                Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
-                Normalization = EfNormalization*np.ones((steps,1,1))
+            kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
+            Ei = rawfile.Ei#np.array(instrument.get('monochromator/energy'))
+            
+            
+            ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
 
-                if not saveLocation is None:
-                    if not os.path.isabs(saveLocation): # if full path is given
-                        saveloc = saveLocation
-                        if not saveLocation.split('.')[-1] == 'nxs':
-                            if saveLocation[-1]!='/':
-                                saveLocation+='/'
-                            saveloc = saveLocation+datafile.fileLocation.replace('.h5','.nxs').split('/')[-1]
-                        else:
-                            saveloc = saveLocation
+            
+            A3 = np.deg2rad(np.array(rawfile.A3))+A3Zero #file.get('/entry/sample/rotation_angle/')
+            
+            if A3.shape[0]==1:
+                A3 = A3*np.ones((steps))
+            
+            A3.resize((steps,1,1))
+            
+            # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
+            Qx = ki-kf*np.cos(A4Mean)
+            Qy = -kf*np.sin(A4Mean)
+            QX = Qx*np.cos(A3)-Qy*np.sin(A3)
+            QY = Qx*np.sin(A3)+Qy*np.cos(A3)
+            DeltaE = Ei-EfMean
+            if DeltaE.shape[0]==1:
+                DeltaE = DeltaE*np.ones((steps,1,1))
+            Monitor = rawfile.Monitor.reshape((steps,1,1))#np.array(file.get('/entry/control/data'),dtype=int).reshape((steps,1,1))
+            Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
+            Normalization = EfNormalization*np.ones((steps,1,1))
+
+            if not saveLocation is None:
+                if not os.path.isabs(saveLocation): # if full path is given
+                    saveloc = saveLocation
+                    if not saveLocation.split('.')[-1] == 'nxs':
+                        if saveLocation[-1]!='/':
+                            saveLocation+='/'
+                        saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
                     else:
-                        if not saveLocation.split('.')[-1] == 'nxs':
-                            if saveLocation[-1]!='/':
-                                saveLocation+='/'
-                            saveloc = saveLocation+datafile.fileLocation.replace('.h5','.nxs').split('/')[-1]
-                        else:
-                            saveloc = saveLocation
+                        saveloc = saveLocation
                 else:
-                    saveloc = datafile.fileLocation.replace('.h5','.nxs')
-                saveNXsqom(datafile,file,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization)
-                
-                #file.close()
-                convFil = DataFile.DataFile(saveloc)
-                convertedFiles.append(convFil)
+                    if not saveLocation.split('.')[-1] == 'nxs':
+                        if saveLocation[-1]!='/':
+                            saveLocation+='/'
+                        saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
+                    else:
+                        saveloc = saveLocation
+            else:
+                saveloc = rawfile.fileLocation.replace('.h5','.nxs')
+            
+            saveNXsqom(rawfile,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization)
+            
+            #file.close()
+            convFil = DataFile.DataFile(saveloc)
+            convertedFiles.append(convFil)
         self.convertedFiles = convertedFiles    
         self._getData()
             
@@ -361,7 +343,7 @@ class DataSet(object):
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
             self.scanParameterValues,self.scanParameterUnits = DataFile.extractData(self.convertedFiles)
         else:
-            self.I,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
+            self.I,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
             self.scanParameterValues,self.scanParameterUnits = DataFile.extractData(self.dataFiles)
 
@@ -3237,9 +3219,10 @@ def isListOfDataFiles(inputFiles):
     return returnList
 
 
-def saveNXsqom(datafile,fs,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization):
+def saveNXsqom(datafile,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization):
     
     fd = hdf.File(savefilename,'w')
+    fs = hdf.File(datafile.fileLocation,'r')
     group_path = fs['/entry'].parent.name
     
     group_id = fd.require_group(group_path)
