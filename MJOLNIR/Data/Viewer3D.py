@@ -12,7 +12,7 @@ import warnings
 
 class Viewer3D(object):  
     @_tools.KwargChecker()
-    def __init__(self,Data,bins,axis=2):#pragma: no cover
+        def __init__(self,Data,bins,axis=2,ax = None):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -25,6 +25,8 @@ class Viewer3D(object):
         Kwargs:
 
             - axis (int): Axis along which the interactive plot slices the data (default 2).
+
+            - ax (matplotlib axis): Matplotlib axis into which one pltos data (Default None).
 
         Example:
 
@@ -52,9 +54,19 @@ class Viewer3D(object):
 
         gs = matplotlib.gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
         
-        self.figure = plt.figure()
-        self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
-        
+        if ax is None:
+            self.figure = plt.figure()
+            self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
+            self.xlabel = 'Qx [rlu]'
+            self.ylabel = 'Qy [rlu]'
+            self.zlabel = 'E [meV]'
+        else:
+            self.ax = ax
+            self.figure = ax.get_figure()
+            
+            self.xlabel = ax.get_xlabel()
+            self.ylabel = ax.get_ylabel()
+            self.zlabel = 'E [meV]'
        
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
@@ -93,6 +105,8 @@ class Viewer3D(object):
         else:
             raise AttributeError('Did not understand shading {}.'.format(self.shading))
         self._caxis = self.im.get_clim()
+        self.figpos = [0.125,0.25,0.63,0.63]#self.ax.get_position()
+        
         self.cbaxes = self.figure.add_axes([0.8, 0.2, 0.03, 0.7])
         self.colorbar = self.figure.colorbar(self.im,cax = self.cbaxes)
         warnings.simplefilter("ignore")
@@ -127,19 +141,19 @@ class Viewer3D(object):
     def setAxis(self,axis):
         if axis==2:
             axes = (0,1,2)
-            self.ax.set_xlabel('Qx [1/AA]')
-            self.ax.set_ylabel('Qy [1/AA]')
-            label = 'Energy'
+            self.ax.set_xlabel(self.xlabel)
+            self.ax.set_ylabel(self.ylabel)
+            label = self.zlabel
         elif axis==1:  # pragma: no cover
             axes = (0,2,1)
-            self.ax.set_xlabel('Qx [1/AA]')
-            self.ax.set_ylabel('E [meV]')
-            label = 'Qy'
+            self.ax.set_xlabel(self.xlabel)
+            self.ax.set_ylabel(self.zlabel)
+            label = self.ylabel
         elif axis==0:  # pragma: no cover
             axes = (1,2,0)
-            self.ax.set_xlabel('Qy [1/AA]')
-            self.ax.set_ylabel('E [meV]')
-            label = 'Qx'
+            self.ax.set_xlabel(self.ylabel)
+            self.ax.set_ylabel(self.zlabel)
+            label = self.xlabel
         else:
             raise AttributeError('Axis provided not recognized. Should be 0, 1, or 2 but got {}'.format(axis))
         
@@ -187,7 +201,7 @@ class Viewer3D(object):
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
             self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
         self.im.set_clim(self.caxis)
-
+        self.ax.set_position(self.figpos)
         #ylim = [self.Y[0],self.Y[-1]]
         xlim = self.ax.get_xlim()
         ylim = self.ax.get_ylim()
