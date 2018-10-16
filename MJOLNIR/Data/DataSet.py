@@ -82,7 +82,11 @@ class DataSet(object):
         self._settings = {}
             
         
-        
+        if len(self.convertedFiles)!=0:
+            self.sample = self.convertedFiles[0].sample
+        elif len(self.dataFiles)!=0:
+            self.sample = self.dataFiles[0]
+
         # Add all other kwargs to settings
         for key in kwargs:
             self.settings[key]=kwargs[key]
@@ -2039,11 +2043,11 @@ def createRLUAxes(Dataset): # pragma: no cover
         - ax (Matplotlib axes): Axes containing the RLU plot.
     
     """
-    fileObject = Dataset.convertedFiles[0]
+    sample = Dataset.sample
     
     fig = plt.figure(figsize=(7, 4))
     fig.clf()
-    grid_helper = GridHelperCurveLinear((fileObject.sample.tr, fileObject.sample.inv_tr))
+    grid_helper = GridHelperCurveLinear((sample.tr, sample.inv_tr))
     
     ax = Subplot(fig, 1, 1, 1, grid_helper=grid_helper)
   
@@ -2051,9 +2055,9 @@ def createRLUAxes(Dataset): # pragma: no cover
     ax.set_aspect(1.)
     ax.grid(True, zorder=0)
     
-    ax.format_coord = fileObject.sample.format_coord
-    projV1 = fileObject.sample.orientationMatrix[0].astype(int)
-    projV2 = fileObject.sample.orientationMatrix[1].astype(int)
+    ax.format_coord = sample.format_coord
+    projV1 = sample.orientationMatrix[0].astype(int)
+    projV2 = sample.orientationMatrix[1].astype(int)
     ax.set_xlabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV1[0],projV1[1],projV1[2]))
     ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
     return ax
