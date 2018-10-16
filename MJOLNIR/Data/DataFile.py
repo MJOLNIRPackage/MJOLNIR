@@ -23,6 +23,9 @@ class DataFile(object):
                 self.I=np.array(f.get('entry/data/intensity'))
                 self.qx=np.array(f.get('entry/data/qx'))
                 self.qy=np.array(f.get('entry/data/qy'))
+                self.h=np.array(f.get('entry/data/h'))
+                self.k=np.array(f.get('entry/data/k'))
+                self.l=np.array(f.get('entry/data/l'))
                 self.energy=np.array(f.get('entry/data/en'))
                 self.Norm=np.array(f.get('entry/data/normalization'))
                 self.Monitor=np.array(f.get('entry/data/monitor'))
@@ -578,6 +581,7 @@ def extractData(files):
     a3Off = []
     a4Off = []
     Ei = []
+
     instrumentCalibrationEf = []
     instrumentCalibrationA4 = []
     instrumentCalibrationEdges = []
@@ -586,6 +590,9 @@ def extractData(files):
         qx = []
         qy = []
         energy = []
+        H = []
+        K = []
+        L = []
     scanParameters = []
     scanParamValue = []
     scanParamUnit = []
@@ -596,6 +603,9 @@ def extractData(files):
             qy.append(datafile.qy)
             energy.append(datafile.energy)
             Norm.append(datafile.Norm)
+            H.append(datafile.h)
+            K.append(datafile.k)
+            L.append(datafile.l)
         scanParameters = [datafile.scanParameters]
         scanParamValue = [datafile.scanValues]
         scanParamUnit = [datafile.scanUnits]
@@ -619,6 +629,9 @@ def extractData(files):
     if(files[0].type!='h5'):
         qx = np.array(qx)
         qy = np.array(qy)
+        H = np.array(H)
+        K = np.array(K)
+        L = np.array(L)
         energy = np.array(energy)
 
     scanParameters = np.array(scanParameters)
@@ -639,7 +652,7 @@ def extractData(files):
     Ei = np.array(Ei)
     if files[0].type!='h5':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
     else:
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
