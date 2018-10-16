@@ -279,7 +279,9 @@ class Instrument(GeometryConcept.GeometryConcept):
             Anaposy = np.cos((W*7.5+offset)*np.pi/180)*z_an
             
             for i in range(len(z_an)):
-                string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
+                XX = Anaposx[i]/(np.sqrt(2)*z_an[i])
+                YY = Anaposy[i]/(np.sqrt(2)*z_an[i])
+                string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='"+str(XX)+","+str(YY)+",0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
             
             
             detx_1 = -np.sin((ang_1+W*7.5+offset)*np.pi/180)*det_cen
@@ -289,9 +291,9 @@ class Instrument(GeometryConcept.GeometryConcept):
             detx_2 = -np.sin((ang_2+W*7.5+offset)*np.pi/180)*det_cen
             detz_2 = np.cos((ang_2+W*7.5+offset)*np.pi/180)*det_cen
             for i in range(7):
-                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='1024' length='0.883' diameter='0.02' split='0,150,270,400,510,630,751,875,1024'></TubeDetector1D>\n"
                 if i<6:
-                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='1024' length='0.883' diameter='0.02' split='0,150,270,400,510,630,751,875,1024'></TubeDetector1D>\n"
             string+="\t</Wedge>\n"
             
         string+="</Instrument>"
@@ -771,7 +773,7 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): # pragma: no cover
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90]): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -787,6 +789,10 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
     Kwargs:
 
         - CalibrationFile (str or list of str): Location of calibration file(s) wanted in HdF file (defailt None)
+
+        - pixels (int): Number of pixels on detectors (default 1024)
+
+        - cell (list): Cell parameters passed into the hdf file (default [5,5,5,90,90,90])
 
     """
     def addMetaData(entry,title):
@@ -971,7 +977,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
             data[n] = frame
         return data,a3,a4,ei
         
-    def addSample(entry,name):
+    def addSample(entry,name,cell):
         sam = entry.create_group('sample')
         sam.attrs['NX_class'] = np.string_('NXsample')
         dset = sam.create_dataset('name',(1,),dtype='S70')
@@ -987,13 +993,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         normal[2] = 1.0
         dset = sam.create_dataset('plane_normal',data=normal)
 
-        cell = np.zeros((6,),dtype='float32')
-        cell[0] = 2.464
-        cell[1] = 2.464
-        cell[2] = 6.711
-        cell[3] = 90.
-        cell[4] = 90.
-        cell[5] = 120.
+        cell = np.array(cell,dtype='float32')
         dset = sam.create_dataset('unit_cell',data=cell)
 
         dset = sam.create_dataset('azimuthal_angle',data=0.0)
@@ -1158,7 +1158,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
     
     addDetector(inst)
     
-    addSample(entry,np.string_(sample))
+    addSample(entry,np.string_(sample),cell)
     import os
     Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
     data,a3,a4,ei = readScanData(fname,Numpoints)
