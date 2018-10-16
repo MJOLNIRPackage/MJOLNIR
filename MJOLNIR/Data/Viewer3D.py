@@ -12,7 +12,7 @@ import warnings
 
 class Viewer3D(object):  
     @_tools.KwargChecker()
-        def __init__(self,Data,bins,axis=2,ax = None):#pragma: no cover
+    def __init__(self,Data,bins,axis=2,ax = None):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -26,7 +26,7 @@ class Viewer3D(object):
 
             - axis (int): Axis along which the interactive plot slices the data (default 2).
 
-            - ax (matplotlib axis): Matplotlib axis into which one pltos data (Default None).
+            - ax (matplotlib axis): Matplotlib axis into which one pltos data (Default None)
 
         Example:
 
@@ -60,13 +60,16 @@ class Viewer3D(object):
             self.xlabel = 'Qx [rlu]'
             self.ylabel = 'Qy [rlu]'
             self.zlabel = 'E [meV]'
+            self.rlu = False
         else:
+            warnings.warn('If the provided axis is a RLU axis be aware of the wrong visualization!!')
             self.ax = ax
             self.figure = ax.get_figure()
             
             self.xlabel = ax.get_xlabel()
             self.ylabel = ax.get_ylabel()
             self.zlabel = 'E [meV]'
+            self.rlu = True
        
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
@@ -160,6 +163,7 @@ class Viewer3D(object):
         X=self.bins[axes[0]].transpose(axes)
         Y=self.bins[axes[1]].transpose(axes)
         Z=self.bins[axes[2]].transpose(axes)
+        
 
         masked_array = np.ma.array (self.Data, mask=np.isnan(self.Data)).transpose(axes)
         upperLim = self.Data.shape[axis]-1
@@ -179,7 +183,10 @@ class Viewer3D(object):
         if self.axis==2:
             unit = ' meV'
         else:
-            unit = ' 1/AA'
+            if self.rlu:
+                unit = 'rlu'
+            else:
+                unit = ' 1/AA'
         try:
             val = 0.5*(self.Z[0,0,self.value+1]+self.Z[0,0,self.value])
         except:
@@ -265,8 +272,10 @@ def onkeypress(event,self): # pragma: no cover
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)
             self.plot()
+            
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
+
 
 def reloadslider(self,axis): # pragma: no cover
     self.Energy_slider.set_val(0)
