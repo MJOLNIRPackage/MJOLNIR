@@ -313,6 +313,12 @@ class DataSet(object):
             Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
             Normalization = EfNormalization*np.ones((steps,1,1))
 
+            shapes = QX.shape
+            sample = rawfile.sample
+            pos = sample.inv_tr(QX.flatten(),QY.flatten())
+            H,K,L = (sample.orientationMatrix[0].reshape(-1,1)*pos[0].reshape(1,-1)+sample.orientationMatrix[1].reshape(-1,1)*pos[1].reshape(1,-1)).reshape(3,*shapes)
+
+
             if not saveLocation is None:
                 if not os.path.isabs(saveLocation): # if full path is given
                     saveloc = saveLocation
@@ -332,7 +338,7 @@ class DataSet(object):
             else:
                 saveloc = rawfile.fileLocation.replace('.h5','.nxs')
             
-            saveNXsqom(rawfile,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization)
+            saveNXsqom(rawfile,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,H,K,L)
             
             #file.close()
             convFil = DataFile.DataFile(saveloc)
@@ -345,7 +351,7 @@ class DataSet(object):
         if len(self.convertedFiles)!=0:
             self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits = DataFile.extractData(self.convertedFiles)
+            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l = DataFile.extractData(self.convertedFiles)
         else:
             self.I,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
@@ -3249,7 +3255,7 @@ def isListOfDataFiles(inputFiles):
     return returnList
 
 
-def saveNXsqom(datafile,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization):
+def saveNXsqom(datafile,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,H,K,L):
     
     fd = hdf.File(savefilename,'w')
     fs = hdf.File(datafile.fileLocation,'r')
@@ -3309,6 +3315,12 @@ def saveNXsqom(datafile,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Norm
     
     en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
     en.attrs['NX_class']=b'NX_FLOAT'
+
+    h = data.create_dataset('h',shape=(fileLength),dtype='float32',data=H)
+    k = data.create_dataset('k',shape=(fileLength),dtype='float32',data=K)
+    l = data.create_dataset('l',shape=(fileLength),dtype='float32',data=L)
+    for x in [h,k,l]:
+        x.attrs['NX_class']=b'NX_FLOAT'
 
     fd.close()
 
