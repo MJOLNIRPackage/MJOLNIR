@@ -728,7 +728,7 @@ class DataSet(object):
 
         return plotCutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin,ax,**kwargs)
 
-    def createRLUAxes(self):
+    def createRLUAxes(self,figure=None):
         """Wrapper for the createRLUAxes method.
 
         Returns:
@@ -739,7 +739,7 @@ class DataSet(object):
            Uses sample from the first converted data file. However, this should be taken care of by the comparison of datafiles to ensure same sample and settings.
 
         """
-        return createRLUAxes(self)
+        return createRLUAxes(self,figure=figure)
 
     # TODO: Advanced Kwarg checker for figure
     def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,dataFiles=None,**kwargs):
@@ -2031,7 +2031,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     ax.pmeshs = pmeshs
     return ax,[intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-def createRLUAxes(Dataset): # pragma: no cover
+def createRLUAxes(Dataset,figure=None): # pragma: no cover
     """Create a reciprocal lattice plot for a given DataSet object.
     
     Args:
@@ -2045,8 +2045,11 @@ def createRLUAxes(Dataset): # pragma: no cover
     """
     sample = Dataset.sample
     
-    fig = plt.figure(figsize=(7, 4))
-    fig.clf()
+    if figure is None:
+        fig = plt.figure(figsize=(7, 4))
+    else:
+        fig = figure
+        fig.clf()
     grid_helper = GridHelperCurveLinear((sample.tr, sample.inv_tr))
     
     ax = Subplot(fig, 1, 1, 1, grid_helper=grid_helper)
