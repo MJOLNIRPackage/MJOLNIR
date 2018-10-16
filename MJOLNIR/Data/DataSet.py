@@ -27,7 +27,7 @@ import matplotlib.ticker as ticker
 
 import datetime
 import warnings
-from MJOLNIR.Data import DataFile
+from MJOLNIR.Data import DataFile,Viewer3D
 from MJOLNIR import _tools
 
 import time
@@ -85,7 +85,7 @@ class DataSet(object):
         if len(self.convertedFiles)!=0:
             self.sample = self.convertedFiles[0].sample
         elif len(self.dataFiles)!=0:
-            self.sample = self.dataFiles[0]
+            self.sample = self.dataFiles[0].sample
 
         # Add all other kwargs to settings
         for key in kwargs:
@@ -1438,6 +1438,29 @@ class DataSet(object):
 
 
         return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
+
+
+    def View3D(self,dx,dy,dz,rlu=True):
+        """View data in the Viewer3D object. 
+
+        Kwargs:
+
+            - rlu (Bool): If true a rlu axis is used for plotting orthervise qx,qy (Default True).
+        """
+
+        if rlu:
+            rluax = self.createRLUAxes()
+        else:
+            rluax = None
+
+        Data,bins = self.binData3D(dx,dy,dz)
+        warnings.simplefilter('ignore')
+        Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+        warnings.simplefilter('once')
+
+        Viewer = Viewer3D.Viewer3D(Intensity,bins,axis=2,ax=rluax)
+        return Viewer
+
 
 def load(filename):
     """Function to load an object from a pickled file.
