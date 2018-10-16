@@ -581,7 +581,6 @@ def extractData(files):
     a3Off = []
     a4Off = []
     Ei = []
-
     instrumentCalibrationEf = []
     instrumentCalibrationA4 = []
     instrumentCalibrationEdges = []
