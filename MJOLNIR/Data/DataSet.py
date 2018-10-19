@@ -498,7 +498,7 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                                I = self.I
+                I = self.I
                 qx = self.qx
                 qy = self.qy
                 energy = self.energy
