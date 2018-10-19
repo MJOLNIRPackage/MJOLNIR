@@ -12,7 +12,7 @@ import warnings
 
 class Viewer3D(object):  
     @_tools.KwargChecker()
-    def __init__(self,Data,bins,axis=2,ax = None):#pragma: no cover
+    def __init__(self,Data,bins,axis=2,ax = None,**wkargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -62,10 +62,13 @@ class Viewer3D(object):
             self.zlabel = 'E [meV]'
             self.rlu = False
         else:
-            warnings.warn('If the provided axis is a RLU axis be aware of the wrong visualization!!')
-            self.ax = ax
-            self.figure = ax.get_figure()
-            
+            warnings.warn('If the provided axis is a RLU axis be aware of possibility of wrong visualization when cutting along Q!!')
+            self.axRLU = ax
+            self.figure = ax.get_figure() # Get the correct figure
+            self.axNorm,ax2  = self.figure.subplots(1,2,gridspec_kw={'width_ratios':[4, 1]}) # Create figure on top of the other
+            ax2.remove() # Remove the excess figure
+            self.axRLU.set_position(self.axNorm.get_position()) # Update RLU to correct position
+
             self.xlabel = ax.get_xlabel()
             self.ylabel = ax.get_ylabel()
             self.zlabel = 'E [meV]'
@@ -84,7 +87,7 @@ class Viewer3D(object):
         self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
         self.figure.canvas.mpl_connect('scroll_event',lambda event: onscroll(event, self))
         
-        zeroPoint = np.argmin(np.abs(self.Z))
+        zeroPoint = np.argmin(np.abs(0.5*(self.Z[0,0][1:]+self.Z[0,0][:-1])))
         
     
         self.Energy_slider_ax = self.figure.add_axes([0.15, 0.1, 0.7, 0.03])#, facecolor=axis_color)
@@ -143,16 +146,28 @@ class Viewer3D(object):
 
     def setAxis(self,axis):
         if axis==2:
+            if self.rlu:
+                self.axRLU.set_visible(True)
+                self.axNorm.set_visible(False)
+                self.ax = self.axRLU
             axes = (0,1,2)
             self.ax.set_xlabel(self.xlabel)
             self.ax.set_ylabel(self.ylabel)
             label = self.zlabel
         elif axis==1:  # pragma: no cover
+            if self.rlu:
+                self.axRLU.set_visible(False)
+                self.axNorm.set_visible(True)
+                self.ax = self.axNorm
             axes = (0,2,1)
             self.ax.set_xlabel(self.xlabel)
             self.ax.set_ylabel(self.zlabel)
             label = self.ylabel
         elif axis==0:  # pragma: no cover
+            if self.rlu:
+                self.axRLU.set_visible(False)
+                self.axNorm.set_visible(True)
+                self.ax = self.axNorm
             axes = (1,2,0)
             self.ax.set_xlabel(self.ylabel)
             self.ax.set_ylabel(self.zlabel)
@@ -271,8 +286,8 @@ def onkeypress(event,self): # pragma: no cover
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)
+            self.Energy_slider.set_val(0)
             self.plot()
-            
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
 
@@ -285,7 +300,8 @@ def reloadslider(self,axis): # pragma: no cover
     self.Energy_slider.vline.set_visible(False)
     
     del self.Energy_slider
-    zeroPoint = np.argmin(np.abs(self.Z))
+    
+    zeroPoint = np.argmin(np.abs(0.5*(self.Z[0,0][1:]+self.Z[0,0][:-1])))
     self.Energy_slider = Slider(self.Energy_slider_ax, label=self.label, valmin=self.lowerLim, valmax=self.upperLim, valinit=zeroPoint)
     self.Energy_slider.valtext.set_visible(False)
     self.Energy_slider.on_changed(lambda val: sliders_on_changed(self,val))
