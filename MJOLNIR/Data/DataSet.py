@@ -388,7 +388,6 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
                 I = self.I
                 qx = self.qx
                 qy = self.qy
@@ -450,7 +449,6 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
                 I = self.I
                 qx = self.qx
                 qy = self.qy
@@ -500,8 +498,7 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
-                I = self.I
+                                I = self.I
                 qx = self.qx
                 qy = self.qy
                 energy = self.energy
@@ -552,7 +549,6 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
                 I = self.I
                 qx = self.qx
                 qy = self.qy
@@ -620,7 +616,6 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
                 I = self.I
                 qx = self.qx
                 qy = self.qy
@@ -668,7 +663,6 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
                 I = self.I
                 qx = self.qx
                 qy = self.qy
@@ -718,7 +712,6 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
                 I = self.I
                 qx = self.qx
                 qy = self.qy
@@ -788,7 +781,6 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                self._getData()#datafiles = self.convertedFiles
                 I = self.I
                 qx = self.qx
                 qy = self.qy
@@ -1408,7 +1400,6 @@ class DataSet(object):
                 if len(self.convertedFiles)==0:
                     raise AttributeError('No data file to be binned provided in either input or DataSet object.')
                 else:
-                    self._getData()#datafiles = self.convertedFiles
                     I = self.I
                     qx = self.qx
                     qy = self.qy
