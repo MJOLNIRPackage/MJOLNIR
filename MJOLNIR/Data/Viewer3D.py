@@ -57,18 +57,21 @@ class Viewer3D(object):
         if ax is None:
             self.figure = plt.figure()
             self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
-            self.xlabel = 'Qx [rlu]'
-            self.ylabel = 'Qy [rlu]'
+            self.xlabel = 'Qx [A^-1]'
+            self.ylabel = 'Qy [A^-1]'
             self.zlabel = 'E [meV]'
             self.rlu = False
         else:
             warnings.warn('If the provided axis is a RLU axis be aware of possibility of wrong visualization when cutting along Q!!')
+            
             self.axRLU = ax
             self.figure = ax.get_figure() # Get the correct figure
             self.axNorm,ax2  = self.figure.subplots(1,2,gridspec_kw={'width_ratios':[4, 1]}) # Create figure on top of the other
             ax2.remove() # Remove the excess figure
             self.axRLU.set_position(self.axNorm.get_position()) # Update RLU to correct position
 
+            self._axes = [self.axNorm,self.axNorm,self.axRLU]
+            self.ax = self.axNorm
             self.xlabel = ax.get_xlabel()
             self.ylabel = ax.get_ylabel()
             self.zlabel = 'E [meV]'
@@ -147,27 +150,33 @@ class Viewer3D(object):
     def setAxis(self,axis):
         if axis==2:
             if self.rlu:
-                self.axRLU.set_visible(True)
-                self.axNorm.set_visible(False)
-                self.ax = self.axRLU
+                self.figure.delaxes(self.ax)
+                self.ax = self.figure.add_axes(self._axes[axis])
+                #self.axRLU.set_visible(True)
+                #self.axNorm.set_visible(False)
+                #self.ax = self.axRLU
             axes = (0,1,2)
             self.ax.set_xlabel(self.xlabel)
             self.ax.set_ylabel(self.ylabel)
             label = self.zlabel
         elif axis==1:  # pragma: no cover
             if self.rlu:
-                self.axRLU.set_visible(False)
-                self.axNorm.set_visible(True)
-                self.ax = self.axNorm
+                #self.axRLU.set_visible(False)
+                #self.axNorm.set_visible(True)
+                #self.ax = self.axNorm
+                self.figure.delaxes(self.ax)
+                self.ax = self.figure.add_axes(self._axes[axis])
             axes = (0,2,1)
             self.ax.set_xlabel(self.xlabel)
             self.ax.set_ylabel(self.zlabel)
             label = self.ylabel
         elif axis==0:  # pragma: no cover
             if self.rlu:
-                self.axRLU.set_visible(False)
-                self.axNorm.set_visible(True)
-                self.ax = self.axNorm
+                #self.axRLU.set_visible(False)
+                #self.axNorm.set_visible(True)
+                #self.ax = self.axNorm
+                self.figure.delaxes(self.ax)
+                self.ax = self.figure.add_axes(self._axes[axis])
             axes = (1,2,0)
             self.ax.set_xlabel(self.ylabel)
             self.ax.set_ylabel(self.zlabel)
