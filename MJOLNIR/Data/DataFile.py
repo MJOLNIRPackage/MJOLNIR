@@ -13,83 +13,88 @@ class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
     def __init__(self,fileLocation):
         # Check if file exists
-        if not os.path.isfile(fileLocation):
-            raise AttributeError('File location does not exist({}).'.format(fileLocation))
-        if fileLocation.split('.')[-1]=='nxs':
-            self.type='nxs'
-            with hdf.File(fileLocation) as f:
-                sample=f.get('/entry/sample')
-                self.sample = Sample(sample=f.get('/entry/sample'))
-                self.I=np.array(f.get('entry/data/intensity'))
-                self.qx=np.array(f.get('entry/data/qx'))
-                self.qy=np.array(f.get('entry/data/qy'))
-                self.h=np.array(f.get('entry/data/h'))
-                self.k=np.array(f.get('entry/data/k'))
-                self.l=np.array(f.get('entry/data/l'))
-                self.energy=np.array(f.get('entry/data/en'))
-                self.Norm=np.array(f.get('entry/data/normalization'))
-                self.Monitor=np.array(f.get('entry/data/monitor'))
-                instr = getInstrument(f)
-                self.instrument = instr.name.split('/')[-1]
-                self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                self.Ei = np.array(instr.get('monochromator/energy'))
-                self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
-                self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
-                self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
-                self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
-                self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
-                Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
-                width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
-                bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
-                amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
-                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
-                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
-                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
-                self.temperature = np.array(sample.get('temperature'))
-                self.magneticField = np.array(sample.get('magnetic_field'))
-                self.electricField = np.array(sample.get('electric_field'))
-                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
-                self.scanCommand = np.array(f.get('entry/scancommand'))
-
-        elif fileLocation.split('.')[-1]=='h5':
-            self.type='h5'
-            with hdf.File(fileLocation) as f:
-                sample=f.get('/entry/sample')
-                self.sample = Sample(sample=f.get('/entry/sample'))
-                self.Monitor=np.array(f.get('entry/control/data'))
-                instr = getInstrument(f)
-                self.instrument = instr.name.split('/')[-1]
-                self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                self.Ei = np.array(instr.get('monochromator/energy'))
-                self.I = np.array(instr.get('detector/counts'))
-                self.A3 = np.array(f.get('entry/sample/rotation_angle'))
-                self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
-                self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
-                self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
-                self.binning=1 # Choose standard binning 1
-                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
-                Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
-                width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
-                bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
-                amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
-                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
-                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
-                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
-                self.temperature = np.array(sample.get('temperature'))
-                self.magneticField = np.array(sample.get('magnetic_field'))
-                self.electricField = np.array(sample.get('electric_field'))
-                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
-                self.scanCommand = np.array(f.get('entry/scancommand'))
+        if isinstance(fileLocation,DataFile): # Copy everything in provided file
+            dict = fileLocation.__dict__
+            for key in dict.keys():
+                self.__setattr__(key,dict[key])
         else:
-            raise AttributeError('File is not of type nxs or h5.')
-        self.name = fileLocation.split('/')[-1]
-        self.fileLocation = fileLocation
-        self.sample.calculateProjections()
+            if not os.path.isfile(fileLocation):
+                raise AttributeError('File location does not exist({}).'.format(fileLocation))
+            if fileLocation.split('.')[-1]=='nxs':
+                self.type='nxs'
+                with hdf.File(fileLocation) as f:
+                    sample=f.get('/entry/sample')
+                    self.sample = Sample(sample=f.get('/entry/sample'))
+                    self.I=np.array(f.get('entry/data/intensity'))
+                    self.qx=np.array(f.get('entry/data/qx'))
+                    self.qy=np.array(f.get('entry/data/qy'))
+                    self.h=np.array(f.get('entry/data/h'))
+                    self.k=np.array(f.get('entry/data/k'))
+                    self.l=np.array(f.get('entry/data/l'))
+                    self.energy=np.array(f.get('entry/data/en'))
+                    self.Norm=np.array(f.get('entry/data/normalization'))
+                    self.Monitor=np.array(f.get('entry/data/monitor'))
+                    instr = getInstrument(f)
+                    self.instrument = instr.name.split('/')[-1]
+                    self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
+                    self.Ei = np.array(instr.get('monochromator/energy'))
+                    self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
+                    self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
+                    self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
+                    self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
+                    self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
+                    #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                    #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                    #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                    Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
+                    width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
+                    bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
+                    amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
+                    self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+                    self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
+                    self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
+                    self.temperature = np.array(sample.get('temperature'))
+                    self.magneticField = np.array(sample.get('magnetic_field'))
+                    self.electricField = np.array(sample.get('electric_field'))
+                    self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                    self.scanCommand = np.array(f.get('entry/scancommand'))
+
+            elif fileLocation.split('.')[-1]=='h5':
+                self.type='h5'
+                with hdf.File(fileLocation) as f:
+                    sample=f.get('/entry/sample')
+                    self.sample = Sample(sample=f.get('/entry/sample'))
+                    self.Monitor=np.array(f.get('entry/control/data'))
+                    instr = getInstrument(f)
+                    self.instrument = instr.name.split('/')[-1]
+                    self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
+                    self.Ei = np.array(instr.get('monochromator/energy'))
+                    self.I = np.array(instr.get('detector/counts'))
+                    self.A3 = np.array(f.get('entry/sample/rotation_angle'))
+                    self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
+                    self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
+                    self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
+                    self.binning=1 # Choose standard binning 1
+                    #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
+                    #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
+                    #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
+                    Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
+                    width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
+                    bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
+                    amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
+                    self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
+                    self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
+                    self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
+                    self.temperature = np.array(sample.get('temperature'))
+                    self.magneticField = np.array(sample.get('magnetic_field'))
+                    self.electricField = np.array(sample.get('electric_field'))
+                    self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                    self.scanCommand = np.array(f.get('entry/scancommand'))
+            else:
+                raise AttributeError('File is not of type nxs or h5.')
+            self.name = fileLocation.split('/')[-1]
+            self.fileLocation = fileLocation
+            self.sample.calculateProjections()
         
 
     @property
@@ -123,7 +128,7 @@ class DataFile(object):
             self._A4Off = A4Off
 
     def __eq__(self,other):
-        return(self.fileLocation==other.fileLocation)
+        return(np.all([np.all(self.__dict__[key]==other.__dict__[key]) for key in self.__dict__.keys()]))
     
     def __str__(self):
         returnStr = 'Data file {} from the MJOLNIR software package of type {}\n'.format(self.name,self.type)
@@ -132,7 +137,7 @@ class DataFile(object):
         return returnStr
 
     def __add__(self,other):
-        pass
+        raise NotImplementedError('Adding two data files is not yet supported.')
 
     @_tools.KwargChecker()
     def plotA4(self,binning=None):
@@ -795,6 +800,14 @@ def test_DataFile():
     print(str(DF1.sample))
     print(str(DF2.sample))
     assert(DF1.sample == DF2.sample)
+
+def test_DataFile_equility():
+    f1 = DataFile('TestData/1024/Magnon_ComponentA3Scan.h5')
+    f2 = DataFile('TestData/1024/Magnon_ComponentA3Scan.h5')
+    assert(f1==f2)
+
+    f3 = DataFile(f2)
+    assert(f1==f3)
 
 def test_DataFile_rotations():
     vectors = [np.array([0,0,3.0]),np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0]),np.random.rand(3)]
