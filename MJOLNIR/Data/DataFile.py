@@ -605,9 +605,9 @@ def extractData(files):
             H.append(datafile.h)
             K.append(datafile.k)
             L.append(datafile.l)
-        scanParameters = [datafile.scanParameters]
-        scanParamValue = [datafile.scanValues]
-        scanParamUnit = [datafile.scanUnits]
+        scanParameters.append(datafile.scanParameters)
+        scanParamValue.append(datafile.scanValues)
+        scanParamUnit.append(datafile.scanUnits)
             
         
         Monitor.append(datafile.Monitor)
