@@ -20,10 +20,10 @@ def KwargChecker(function=None,include=None):
     
     def KwargCheckerNone(func):
         @functools.wraps(func)
-        def newFunc(self,*args,**kwargs):
+        def newFunc(*args,**kwargs):
             argList = extractArgsList(func,newFunc,function,include)
             checkArgumentList(argList,kwargs)
-            returnval = func(self,*args,**kwargs)
+            returnval = func(*args,**kwargs)
             return returnval
         #newFunc.__dict__ =  func.__dict__
         newFunc._original = func
