@@ -1284,77 +1284,81 @@ class DataSet(object):
         return ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal
 
     @_tools.KwargChecker()
-    def extractDetectorData(self, Id=None, A4=None, Ef=None, returnId=False, A4Tolerence=1.0, EfTolerence=0.1):
-        """Method to extract data from DataSet-object. Depending on the provided arguments the method returns data from the detector best fulfilling the requirenments.
+    def extractData(self, A4 = None, A4Id = None, Ef = None, EfId = None, raw = False, A4Tolerence = 0.1, EfTolerence = 0.1):
+        """....
         
         Kwargs:
-
-            - Id (int): Detector tube number as described in TODO:  ????
-
-            - A4 (float): Real space A4 value in degrees
-
-            - Ef (float): Final neutron energy in meV
-
-            - ReturnId (Bool): If true also the actual ID of the found tube is returned
-
-            - A4Tolerence (float): Tolerence between found and wanted A4 value in degrees (default 1.0)
+            
+            - A4 (float): Wanted A4 value in degrees (default None)
+            
+            - A4Id (int): Id of wedge which is a number between 0 and 103 (default None)
+            
+            - Ef (float): Wanted Ef value in meV (default None)
+            
+            - EfId (int): Wanted Id of analyser energy, number between 0-7 (default None)
+            
+            - raw (bool): If true method returns Intensity,Nornalization,Monitor, else returns Intensity/(Norm*Monitor) (default False)
+            
+            - A4Tolerence (float): Tolerence between found and wanted A4 value in degrees (default 0.1)
 
             - EfTolerence (float): Tolerence between found and wanted Ef value in meV (default 0.1)
-
-        Return:
-
-            - ScanParam (list): Values of scan parameter(s), if mutiple a matrix is returned
-
-            - label (list): List of label(s)
-
-        Raises:
-
-            - AttributeError, NotImplementedError
-
+            
+        .. note::
+            If A4 or Ef is provided, then these will be used instead of A4Id or EfId.
+            
         """
-        totalData = []
-        totalID = []
-        if not Id is None and not A4 is None: # ??????
-            raise AttributeError('Both the detector ID and A4 value has been provided. Only one of these is allowed at a time.')
-        for i in range(len(self.I)):
-            
-            
-            if not A4 is None: # If Id is not given
-                RawId = np.unravel_index(np.argmin(np.abs(self.instrumentCalibrationA4[i]-self.a4Off[i]-A4)),self.instrumentCalibrationA4[i].shape)
-                if np.abs(self.instrumentCalibrationA4[i][RawId]-A4)>A4Tolerence: # If the best found A4 value is more than (default) 1 degree away from wanted 
-                    raise AttributeError('Difference between wanted ({}) and found A4 value ({}) is {} for file {}.. Maybe the sign of A4 should be changed.'.format(A4,self.instrumentCalibrationA4[i][RawId],self.instrumentCalibrationA4[i][RawId]-A4,self.convertedFiles[i].name))
-                binning = int(self.instrumentCalibrationA4[i].shape[0]/(104*8))
-                Id = int(np.floor(RawId[0]/(8*binning)))
-                returnData = self.I[i][:,Id,:]
-            elif Id is None: # If neither Id or A4 is given, extract all
-                returnData = self.I[i]
-                Id = None
-            else:
-                returnData = self.I[i][:,Id,:]
-
-            if not Ef is None:
-                if self.Ei[i].shape!=(1,):
-                    raise NotImplementedError('It is not possible to find the E-index during an energy scan due to energies chaging on every step.')
-                EfRawId = np.unravel_index(np.argmin(np.abs(self.instrumentCalibrationEf[i][:,1]-Ef)),self.instrumentCalibrationEf[i][:,1].shape)
-                if np.abs(self.instrumentCalibrationEf[i][EfRawId,1]-Ef)>EfTolerence: # If the best found Ef value is more than (default) 0.1 meV away from wanted 
-                    raise AttributeError('Difference between wanted({}) and found Ef value({}) is {} for file {}.'.format(Ef,self.instrumentCalibrationEf[i][EfRawId,1],self.instrumentCalibrationEf[i][EfRawId,1]-Ef,self.convertedFiles[i].name))
-                binning = int(self.instrumentCalibrationEf[i].shape[0]/(104*8))
-                EfId = int(np.mod(EfRawId[0],binning*8))
-                if len(returnData.shape)==2:
-                    returnData = returnData[:,EfId]
-                else:
-                    returnData = returnData[:,:,EfId]
-                Id = Id,EfId
-            if returnId:
-                totalID.append(Id)
-            totalData.append(returnData)
-        if returnId:
-            #print(len(totalData))
-            #print(len(totalID))
-            totalData = [totalData,totalID]
+        # TODO: Test for variable steps
+        if raw: # Shape is (1 or 3, no Files, steps, 104, binning)
+            Data = np.array([self.I,self.Norm,self.Monitor])
         else:
-            totalData = totalData
-        return totalData
+            Data = np.divide(self.I,self.Norm*self.Monitor)
+        
+        if A4 is None and A4Id is None and Ef is None and EfId is None:
+            return Data
+        returnData = []
+        for file in self.convertedFiles:
+            
+            binning = file.binning
+            if not binning == 1:
+                raise AttributeError('Provided file has a binning different from 1. This is not supported for data extraction as one is not allowed to use the prismatic concept for alignment...')
+                
+            # Find A4 id if not given
+            if not A4 is None:
+                NominalA4 = file.instrumentCalibrationA4.reshape(104,8*binning)
+                A4Id,A4Analyser = np.unravel_index(np.argmin(np.abs(NominalA4-file.A4Off-A4)),NominalA4.shape) # Extract only wedge number
+                A4Found = (NominalA4[A4Id,A4Analyser]-file.A4Off)[0]
+                if np.abs(A4Found-A4)>A4Tolerence:
+                    raise AttributeError('Difference between wanted ({}) and found A4 value ({}) is {} for file {}.. Maybe the sign of A4 should be changed.'.format(A4,A4Found,A4-A4Found,file.name))
+            
+
+            # Find A4 id if not given
+            if not Ef is None:
+                if not A4Id is None:
+                    NominalEf = file.instrumentCalibrationEf[:,1].reshape(104,8*binning)[A4Id].reshape(1,-1)
+                else:
+                    NominalEf = file.instrumentCalibrationEf[:,1].reshape(104,8*binning)
+                EfDetector,EfId = np.unravel_index(np.argmin(np.abs(NominalEf-Ef)),NominalEf.shape) # Extract only wedge number
+                EfFound = NominalEf[EfDetector,EfId]
+                if np.abs(EfFound-Ef)>EfTolerence:
+                    raise AttributeError('Difference between wanted ({}) and found Ef value ({}) is {} for file {}.. Maybe the sign of A4 should be changed.'.format(Ef,EfFound,Ef-EfFound,file.name))
+
+            
+            if raw: # Shape is (1 or 3, no Files, steps, 104, binning)
+                Data = np.array([file.I,file.Norm,file.Monitor])
+            else:
+                Data = np.divide(file.I,file.Norm*file.Monitor)
+            
+            if not A4Id is None:
+                rData = Data[:,A4Id].reshape(-1,1,8*binning)
+            else:
+                rData = Data
+                
+            if not EfId is None:
+                rData = rData[:,:,EfId]
+                
+            returnData.append(np.squeeze(rData))
+
+        return returnData
 
     def cut1DE(self,E1,E2,q,format='RLU',width=0.02, minPixel = 0.1, dataFiles = None):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
@@ -4171,14 +4175,12 @@ def test_DataSet_plotCutQELine():
 
 
 def test_DataSet_extractDetectorData():
-    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.nxs','TestData/1024/Magnon_ComponentA3Scan.nxs']#['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
-    dataset = DataSet(convertedFiles=DataFile)
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.h5','TestData/1024/Magnon_ComponentA3Scan.h5']#['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
+    dataset = DataSet(DataFile)
 
-    try:
-        dataset.extractDetectorData(Id=10,A4=1.1) # Providing both Id and A4
-        assert False
-    except AttributeError:
-        assert True
+    binning = 1
+    dataset.convertDataFile(binning=binning)
+
     
     try:
         dataset.extractDetectorData(A4=10000.0) # A4 outside of detector
@@ -4192,17 +4194,42 @@ def test_DataSet_extractDetectorData():
     except AttributeError:
         assert True
     
-    AllData = dataset.extractDetectorData()
-    AllData2,Id = dataset.extractDetectorData(returnId=True)
-    assert(np.all([Id[i] is None for i in range(len(DataFile))]))
-    assert(np.all([AllData[i]==AllData2[i] for i in range(len(DataFile))]))
 
-    data,singleId = dataset.extractDetectorData(Id = 10,returnId=True)
-    assert(np.all([data[i]==AllData2[i][:,singleId[i],:] for i in range(len(DataFile))]))
+    Efs = dataset.convertedFiles[0].instrumentCalibrationEf[:,1].reshape(104,8*binning)
+    AnalyserSelection = 5
+    Ef = np.mean(Efs[:,AnalyserSelection])
 
-    data2,singleId2= dataset.extractDetectorData(A4 = -50, Ef= 3.3, returnId=True)
+    A4s = dataset.convertedFiles[0].instrumentCalibrationA4.reshape(104,8*binning)
+    DetectorSelection = 19
+    A4 = np.mean(A4s[DetectorSelection])-dataset.convertedFiles[0].A4Off
 
-    assert(np.all([np.all(data2[i]==AllData[i][:,singleId2[i][0],singleId2[i][1]]) for i in range(len(DataFile))]))
+
+    DatBoth = dataset.extractData(A4=A4,Ef=Ef)
+    DatBothId = dataset.extractData(A4=A4,EfId=AnalyserSelection)
+    DatOne = dataset.extractData(A4=A4)
+    DatOne2= dataset.extractData(Ef=Ef)
+    DatAll = dataset.extractData()
+    DatAllRaw = dataset.extractData(raw=True)
+
+
+    # Independent of number of files:
+    assert(len(DatAllRaw)==3) # Check that 3 lists are returned
+    assert(len(DatAllRaw[0])==len(DatAllRaw[1]) and len(DatAllRaw[0])==len(DatAllRaw[2])) # Check that 3 list have same number of files
+
+    assert(np.all(DatBothId[0]==DatBoth[0])) # Check that ID and value gives the same.
+
+    # The shape of raw is the same as non-raw
+    assert(len(DatAllRaw[0])==len(DatAll)) # Have same number of files
+
+    for i in range(len(dataset.convertedFiles)):
+        assert(DatAllRaw[0][i].shape==DatAllRaw[1][i].shape and DatAllRaw[0][i].shape==DatAllRaw[2][i].shape) # Check that 3 list have same shape
+        assert(DatAllRaw[0][i].shape==DatAll[i].shape) 
+        
+        size = DatAll[i].shape #  steps, 104, 8
+        assert(DatOne[i].shape==(size[0],size[2])) # If A4 is provided shape is number of steps
+        assert(DatOne2[i].shape==size[:2]) # If Ef4 is provided shape is number of steps
+        assert(DatBoth[i].shape==(size[0],))
+        
 
 def test_DataSet_OxfordList():
     l = ['Apples','Pears']
