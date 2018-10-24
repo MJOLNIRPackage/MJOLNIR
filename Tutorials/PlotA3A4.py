@@ -21,7 +21,7 @@ def test_PlotA3A4(save=False):
     for ax in ax2: # loop through axes to increase size and save
         fig = ax.get_figure()
         fig.set_size_inches(10.5, 10.5, forward=True)
-        fig.tight_layout()
+        
         if save:
             fig.savefig('A3A4/{:03d}.png'.format(counter),format='png')
         counter+=1
