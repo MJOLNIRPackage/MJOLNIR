@@ -6,7 +6,7 @@ def test_Full_example(save=False,show=False):
     import warnings
     import matplotlib.pyplot as plt
     import numpy as np
-    DataFile = '/home/lass/Dropbox/PhD/Software/MJOLNIR/TestData/1024/Magnon_ComponentA3Scan.h5'
+    DataFile = 'TestData/1024/Magnon_ComponentA3Scan.h5'
 
     dataset = DataSet.DataSet(dataFiles=DataFile)
     dataset.convertDataFile(saveLocation='../TestData/',saveFile=save)
