@@ -12,7 +12,6 @@ from matplotlib import rc
 
 from distutils.spawn import find_executable
 if find_executable('latex'): # pragma: no cover
-    
     rc('text', usetex=True)
     plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
     USETEX = True
@@ -50,13 +49,13 @@ class FitInitialization(State):#pragma: no cover
     def __init__(self,parent):
         super(FitInitialization,self).__init__(parent)
         
-        self.__name__ = 'Fit Initialization - Click to choose bold parameter(s) or number for other models.'
-        if USETEX:
-            self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
+        self.__name__ = r'Fit Initialization - Click to choose "\{"parameter(s)"\}" or number for other models.'
+        #if USETEX:
+        #    self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
         self.fitParameterIndex = 0 # Index of current fit parameter
         
         self.ps=' '.join(['{}: {}'.format(i,self.parent.fitObjects[i].__name__) for i in range(len(self.parent.fitObjects))])
-        self.ps+='\n Press e for execution.'
+        self.ps+='\nPress e for execution.'
         self.parent.updateText(self.fitParameterIndex,title=self.__name__,ps=self.ps)
 
         
@@ -90,9 +89,9 @@ class FitInitialization(State):#pragma: no cover
 class Execute(State):#pragma: no cover
     def __init__(self,parent):
         super(Execute,self).__init__(parent)
-        self.__name__='Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters' 
-        if USETEX:
-            self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
+        self.__name__=r'Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters' 
+        #if USETEX:
+        #    self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
         ## Perform fit
         f = lambda *args: self.parent.fitFunction.func.__func__(None,*args)
         xdata = self.parent._xData
@@ -122,7 +121,7 @@ class Execute(State):#pragma: no cover
 
     
 class Viewer1D: # pragma: no cover
-    initialText = 'Press "i" to initialize fitting procedure.'    
+    initialText = r'Press "i" to initialize fitting procedure.'    
     fitObjects = FittingFunction.__subclasses__()
 
     @_tools.KwargChecker()
@@ -338,30 +337,30 @@ class Viewer1D: # pragma: no cover
         self.currentState = self.currentState.mouse(event)    
         
     def updateText(self,highlight=None,title=None,ps=None):
-        if USETEX:
-            text = '$\mathbf{'+'{}'.format(title)+'}$'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
-        else:
-            text = '{}'.format(title)+'}'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
+        #if USETEX:
+        text = '{}'.format(title)+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
+        #else:
+        #    text = '{}'.format(title)+'}'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
         for i in range(self.fitFunction.parameterLength):
             if np.isnan(self.fitFunction.parameters[i]):
-                val = '   '
+                val = r'   '
             else:
-                val = '{:.3e}'.format(self.fitFunction.parameters[i])
-            if USETEX:
-                text+='${}$:    {}     '.format(self.fitFunction.variableNames[i],val)
-            else:
-                text+='{}:    {}     '.format(self.fitFunction.variableNames[i],val)
+                val = r'{:.3e}'.format(self.fitFunction.parameters[i])
+            #if USETEX:
+            text+=r'${}$:    {}     '.format(self.fitFunction.variableNames[i],val)
+            #else:
+            #    text+=r'{}:    {}     '.format(self.fitFunction.variableNames[i],val)
         if not self.fitFunction.fitError is False:
             text+='\n'
             for i in range(self.fitFunction.parameterLength):
                 if np.isnan(self.fitFunction.parameters[i]):
-                    val = '   '
+                    val = r'   '
                 else:
-                    val = '{:.3e}'.format(np.sqrt(self.fitFunction.fitError[i,i]))
-                if USETEX:
-                    text+='${}{}{}$:  {}    '.format('\sigma_{',self.fitFunction.variableNames[i],'}',val)
-                else:
-                    text+='{}{}{}:  {}    '.format('sigma_',self.fitFunction.variableNames[i],'',val)
+                    val = r'{:.3e}'.format(np.sqrt(self.fitFunction.fitError[i,i]))
+                #if USETEX:
+                text+=r'${}{}{}$:  {}    '.format('\sigma_{',self.fitFunction.variableNames[i],'}',val)
+                #else:
+                #    text+=r'{}{}{}:  {}    '.format('sigma_',self.fitFunction.variableNames[i],'',val)
         if not ps is None:
             text+='\n'+ps
         self.text = text
