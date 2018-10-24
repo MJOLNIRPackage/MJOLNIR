@@ -1200,7 +1200,7 @@ class DataSet(object):
 
     @_tools.KwargChecker()
     def extractData(self, A4 = None, A4Id = None, Ef = None, EfId = None, raw = False, A4Tolerence = 0.1, EfTolerence = 0.1):
-        """....
+        """Extract data given A4 value and Ef (or the corresponding indices).
         
         Kwargs:
             
