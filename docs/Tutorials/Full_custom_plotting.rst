@@ -14,7 +14,7 @@ Full example of a data treatment workflow starting from raw h5 files and ending 
 
 
  .. literalinclude:: ../../Tutorials/Full_example_without_Viewer3D.py
-    :lines: 1-             
+    :lines: 3-             
     :language: python      
     :linenos:
 

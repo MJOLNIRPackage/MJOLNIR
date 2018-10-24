@@ -9,7 +9,7 @@ In order to not having to create an instrument from scratch each time a data tre
 |                                                                                                                                         |
 +----------------------------------------------------------------------+------------------------------------------------------------------+
 | .. literalinclude:: ../../Tutorials/Load_Instrument_From_XML_file.py |  .. SimpleInstrument:                                            |
-|     :lines: 4-21,23-33,35-44,46                                      |                                                                  |
+|     :lines: 4-                                                       |                                                                  |
 |     :language: python                                                |  .. figure:: ../../Tutorials/SimpleInstrument.png                |
 |     :linenos:                                                        |    :width: 90%                                                   |
 |                                                                      |                                                                  |

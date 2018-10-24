@@ -4,7 +4,7 @@ Having converted the data into the Nexus NXsqom format, one wants to both rebin 
 
 +-------------------------------------------------------------------+------------------------------------------------------------------+
 |      .. literalinclude:: ../../Tutorials/Binning_data.py          |    .. Visualization_E_1_5:                                       |
-|         :lines: 4-22,25,28,31-                                    |                                                                  |
+|         :lines: 4-39,42-                                          |                                                                  |
 |         :language: python                                         |    .. figure:: ../../Tutorials/Visualization_E_1_5.png           |
 |         :linenos:                                                 |      :width: 90%                                                 |
 |                                                                   |                                                                  |
