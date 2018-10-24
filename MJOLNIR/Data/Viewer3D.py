@@ -57,9 +57,9 @@ class Viewer3D(object):
         if ax is None:
             self.figure = plt.figure()
             self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
-            self.xlabel = 'Qx [A^-1]'
-            self.ylabel = 'Qy [A^-1]'
-            self.zlabel = 'E [meV]'
+            self.xlabel = r'Qx [$A^{-1}$]'
+            self.ylabel = r'Qy [$A^{-1}$]'
+            self.zlabel = r'E [meV]'
             self.rlu = False
         else:
             warnings.warn('If the provided axis is a RLU axis be aware of possibility of wrong visualization when cutting along Q!!')
