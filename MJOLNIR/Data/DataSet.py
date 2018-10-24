@@ -3652,11 +3652,6 @@ def test_DataSet_Convert_Data():
     convertedFile = dataset.convertedFiles[0]
     
     otherFile = DataFile.DataFile(dataFiles.replace('.h5','.nxs'))
-    #print(otherFile.original_file)
-    #print(convertedFile.original_file)
-    print(convertedFile.difference(otherFile))
-    print(convertedFile==otherFile)
-    print(set(convertedFile.__dict__.keys())-set(otherFile.__dict__.keys()))
     assert(convertedFile==otherFile)
     os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
     

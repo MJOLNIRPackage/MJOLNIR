@@ -137,14 +137,12 @@ class DataFile(object):
                 self.__setattr__(key,dictionary[key])
 
     def __eq__(self,other):
-        if not self.__dict__.keys() == other.__dict__.keys(): # Check if same generation and type (h5 or nxs)
-            return False
         return len(self.difference(other))==0
     
     def difference(self,other,keys = set(['sample','instrument','Ei','I','A3','A4','binning','scanParameters'])):
         """Return the difference between two data files by keys"""
         dif = []
-        if not self.__dict__.keys() == other.__dict__.keys(): # Check if same generation and type (h5 or nxs)
+        if not set(self.__dict__.keys()) == set(other.__dict__.keys()): # Check if same generation and type (h5 or nxs)
             return list(set(self.__dict__.keys())-set(other.__dict__.keys()))
 
         comparisonKeys = set(['sample','instrument','Ei','I','A3','A4','binning','scanParameters'])
