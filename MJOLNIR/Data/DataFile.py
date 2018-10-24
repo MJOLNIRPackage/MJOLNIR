@@ -11,6 +11,7 @@ from MJOLNIR import _tools
 import datetime
 
 
+
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
     def __init__(self,fileLocation):
@@ -172,6 +173,104 @@ class DataFile(object):
 
     def __hasattr__(self,s):
         return s in self.__dict__.keys()
+
+    def convert(self,binning):
+        if self.instrument == 'CAMEA':
+            EPrDetector = 8 
+        elif self.instrument in ['MULTIFLEXX','FLATCONE']:
+            EPrDetector = 1
+        else:
+            raise AttributeError('Instrument type of data file not understood. {} was given.'.format(self.instrument))
+        
+        self.loadBinning(binning)
+        
+        EfNormalization = self.instrumentCalibrationEf
+        A4Normalization = self.instrumentCalibrationA4#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
+        EdgesNormalization = self.instrumentCalibrationEdges#np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
+        Data = self.I#np.array(instrument.get('detector/data'))
+        
+
+        detectors = Data.shape[1]
+        steps = Data.shape[0]
+        
+        if self.instrument in ['MULTIFLEXX','FLATCONE']:
+            Data.shape = (Data.shape[0],Data.shape[1],-1)
+
+        A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
+        
+        if A4Zero is None:
+            A4Zero=0.0
+        else:
+            A4Zero = np.deg2rad(np.array(A4Zero))
+
+        
+        A3Zero = self.A3Off#file.get('entry/sample/rotation_angle_zero')
+        if A3Zero is None:
+            A3Zero=0.0
+        else:
+            A3Zero = np.deg2rad(np.array(A3Zero))
+
+        A4 = np.deg2rad(A4Normalization)+A4Zero
+        A4=A4.reshape(detectors,binning*EPrDetector,order='C')
+
+        PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
+        factorsqrtEK = 0.694692
+        
+        A4File = self.A4#np.array(instrument.get('detector/polar_angle'))
+        
+        A4File = A4File.reshape((-1,1,1))
+
+        A4Mean = A4.reshape((1,detectors,binning*EPrDetector))-np.deg2rad(A4File)
+        
+        Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
+        for i in range(detectors): # for each detector
+            for j in range(EPrDetector):
+                for k in range(binning):
+                    Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
+
+        EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
+        EfNormalization = (EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
+
+        
+
+        kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
+        Ei = self.Ei#np.array(instrument.get('monochromator/energy'))
+        
+        
+        ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
+
+        
+        A3 = np.deg2rad(np.array(self.A3))+A3Zero #file.get('/entry/sample/rotation_angle/')
+        
+        if A3.shape[0]==1:
+            A3 = A3*np.ones((steps))
+        
+        A3.resize((steps,1,1))
+        
+        # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
+        Qx = ki-kf*np.cos(A4Mean)
+        Qy = -kf*np.sin(A4Mean)
+        QX = Qx*np.cos(A3)-Qy*np.sin(A3)
+        QY = Qx*np.sin(A3)+Qy*np.cos(A3)
+        DeltaE = Ei-EfMean
+        if DeltaE.shape[0]==1:
+            DeltaE = DeltaE*np.ones((steps,1,1))
+        Monitor = self.Monitor.reshape((steps,1,1))#np.array(file.get('/entry/control/data'),dtype=int).reshape((steps,1,1))
+        Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
+        Normalization = EfNormalization*np.ones((steps,1,1))
+
+        shapes = QX.shape
+        sample = self.sample
+        pos = sample.inv_tr(QX.flatten(),QY.flatten())
+        H,K,L = (sample.orientationMatrix[0].reshape(-1,1)*pos[0].reshape(1,-1)+sample.orientationMatrix[1].reshape(-1,1)*pos[1].reshape(1,-1)).reshape(3,*shapes)
+
+
+        convFile = DataFile(self) # Copy everything from old file
+        updateDict = {'I':Intensity,'Monitor':Monitor,'qx':QX,'qy':QY,'energy':DeltaE,'binning':binning,'Norm':Normalization,
+        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.h5','.nxs')}
+        convFile.updateProperty(updateDict)
+        return convFile
+
 
     @_tools.KwargChecker()
     def plotA4(self,binning=None):
@@ -912,6 +1011,7 @@ def test_DataFile():
     files = ['TestData/1024/Magnon_ComponentA3Scan.h5',
              'TestData/1024/Magnon_ComponentA3Scan.nxs']
     DF1 = DataFile(files[0])
+    assertFile(files[1])
     DF2 = DataFile(files[1])
     s = str(DF2)
     sampleS = str(DF2.sample)
@@ -950,7 +1050,7 @@ def test_DataFile_plotA4():
 
     fig = file.plotA4(1)
     fig2 = file.plotA4()
-
+    assertFile(fileName2)
     file2 = DataFile(fileName2)
     try:
         file2.plotA4(binning=20) # Binning not found in data file
@@ -966,6 +1066,7 @@ def test_DataFile_plotEf():
     plt.ioff()
     fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
     fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    assertFile(fileName2)
     file = DataFile(fileName)
 
     try:
@@ -976,7 +1077,7 @@ def test_DataFile_plotEf():
 
     fig = file.plotEf(1)
     fig2 = file.plotEf()
-
+    
     file2 = DataFile(fileName2)
     try:
         file2.plotEf(binning=20) # Binning not found in data file
@@ -991,6 +1092,8 @@ def test_DataFile_plotEfOverview():
     plt.ioff()
     fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
     fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    assertFile(fileName2)
+
     file = DataFile(fileName)
 
     try:
@@ -1017,6 +1120,7 @@ def test_DataFile_plotNormalization():
     fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
     fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     file = DataFile(fileName)
+    assertFile(fileName2)
 
     try:
         file.plotNormalization(binning=20) # Binning not found in data file
@@ -1047,6 +1151,7 @@ def test_DataFile_decodeString():
 def test_DataFile_ScanParameter():
 
     files = ['TestData/1024/Magnon_ComponentA3Scan.h5','TestData/1024/Magnon_ComponentA3Scan.nxs']
+    assertFile(files[1])
     for file in files:
         dfile = DataFile(file)
         assert(dfile.scanParameters[0]=='a3')
@@ -1055,3 +1160,11 @@ def test_DataFile_ScanParameter():
         assert(len(dfile.scanParameters)==1)
         assert(dfile.scanUnits[0]=='degrees')
         assert(np.all(dfile.scanValues==np.arange(0,150,1)))
+
+
+def assertFile(file):
+    """Make sure that file exists for methods to work"""
+    if not os.path.isfile(file):
+        df = DataFile(file.replace('.nxs','.h5'))
+        con = df.convert(binning=8)
+        con.saveNXsqom(file)
