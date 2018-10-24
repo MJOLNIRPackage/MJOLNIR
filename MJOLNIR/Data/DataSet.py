@@ -182,6 +182,8 @@ class DataSet(object):
 
 
     def __eq__(self, other): 
+        print(self.__dict__.keys())
+        print(other.__dict__.keys())
         return np.logical_and(set(self.__dict__.keys()) == set(other.__dict__.keys()),self.__class__ == other.__class__)
 
     def __str__(self):
@@ -196,7 +198,7 @@ class DataSet(object):
         return string
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None):
+    def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None,saveFile=True):
         """Conversion method for converting scan file(s) to hkl file. Converts the given h5 file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
 
@@ -207,6 +209,8 @@ class DataSet(object):
             - binning (int): Binning to be used when converting files (default 8).
 
             - saveLocation (string): File path to save location of data file(s) (defaults to same as raw file).
+
+            - saveFile (bool): If true, the file(s) will be saved as nxs-files. Otherwise they will only persis in memory.
 
         Raises:
 
@@ -319,30 +323,36 @@ class DataSet(object):
             H,K,L = (sample.orientationMatrix[0].reshape(-1,1)*pos[0].reshape(1,-1)+sample.orientationMatrix[1].reshape(-1,1)*pos[1].reshape(1,-1)).reshape(3,*shapes)
 
 
-            if not saveLocation is None:
-                if not os.path.isabs(saveLocation): # if full path is given
-                    saveloc = saveLocation
-                    if not saveLocation.split('.')[-1] == 'nxs':
-                        if saveLocation[-1]!='/':
-                            saveLocation+='/'
-                        saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
-                    else:
+            convFile = DataFile.DataFile(rawfile) # Copy everything from old file
+            updateDict = {'I':Intensity,'Monitor':Monitor,'qx':QX,'qy':QY,'energy':DeltaE,'binning':binning,'Norm':Normalization,
+            'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':rawfile,'name':rawfile.name.replace('.h5','.nxs')}
+            convFile.updateProperty(updateDict)
+
+            if saveFile:
+                if not saveLocation is None:
+                    if not os.path.isabs(saveLocation): # if full path is given
                         saveloc = saveLocation
+                        if not saveLocation.split('.')[-1] == 'nxs':
+                            if saveLocation[-1]!='/':
+                                saveLocation+='/'
+                            saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
+                        else:
+                            saveloc = saveLocation
+                    else:
+                        if not saveLocation.split('.')[-1] == 'nxs':
+                            if saveLocation[-1]!='/':
+                                saveLocation+='/'
+                            saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
+                        else:
+                            saveloc = saveLocation
                 else:
-                    if not saveLocation.split('.')[-1] == 'nxs':
-                        if saveLocation[-1]!='/':
-                            saveLocation+='/'
-                        saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
-                    else:
-                        saveloc = saveLocation
-            else:
-                saveloc = rawfile.fileLocation.replace('.h5','.nxs')
-            
-            saveNXsqom(rawfile,saveloc,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,H,K,L)
+                    saveloc = rawfile.fileLocation.replace('.h5','.nxs')
+                
+                convFile.saveNXsqom(saveloc)
             
             #file.close()
-            convFil = DataFile.DataFile(saveloc)
-            convertedFiles.append(convFil)
+            
+            convertedFiles.append(convFile)
         self.convertedFiles = convertedFiles    
         self._getData()
             
@@ -3250,74 +3260,6 @@ def isListOfDataFiles(inputFiles):
     return returnList
 
 
-def saveNXsqom(datafile,savefilename,Intensity,Monitor,QX,QY,DeltaE,binning,Normalization,H,K,L):
-    
-    fd = hdf.File(savefilename,'w')
-    fs = hdf.File(datafile.fileLocation,'r')
-    group_path = fs['/entry'].parent.name
-    
-    group_id = fd.require_group(group_path)
-    
-    
-    fs.copy('/entry', group_id, name="/entry")
-    
-    definition = fd.create_dataset('entry/definition',(1,),dtype='S70',data=np.string_('NXsqom'))
-    definition.attrs['NX_class'] = 'NX_CHAR'
-    
-    process = fd.create_group('entry/reduction')
-    process.attrs['NX_class']=b'NXprocess'
-    proc = process.create_group('MJOLNIR_algorithm_convert')
-    proc.attrs['NX_class']=b'NXprocess'
-    author= proc.create_dataset('author',shape=(1,),dtype='S70',data=np.string_('Jakob Lass'))
-    author.attrs['NX_class']=b'NX_CHAR'
-    
-    date= proc.create_dataset('date',shape=(1,),dtype='S70',data=np.string_(datetime.datetime.now()))
-    date.attrs['NX_class']=b'NX_CHAR'
-    
-    description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.string_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
-    description.attrs['NX_class']=b'NX_CHAR'
-    
-    rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(datafile.name))
-    rawdata.attrs['NX_class']=b'NX_CHAR'
-    
-    normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
-    normalizationString.attrs['NX_class']=b'NX_INT'
-    
-    data = fd.get('entry/data')
-    #data['rawdata']=data['data']
-    #del data['data']
-    
-    
-    fileLength = Intensity.shape
-    #print(Intensity.shape)
-    Int = data.create_dataset('intensity',shape=(fileLength),dtype='int32',data=Intensity)
-    Int.attrs['NX_class']='NX_INT'
-    
-    monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
-    monitor.attrs['NX_class']=b'NX_INT'
-
-    normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
-    normalization.attrs['NX_class']=b'NX_FLOAT'
-    
-    qx = data.create_dataset('qx',shape=(fileLength),dtype='float32',data=QX)
-    qx.attrs['NX_class']=b'NX_FLOAT'
-    
-    qy = data.create_dataset('qy',shape=(fileLength),dtype='float32',data=QY)
-    qy.attrs['NX_class']=b'NX_FLOAT'
-    
-    #qz = data.create_dataset('qz',shape=(fileLength,),dtype='float32',data=np.zeros((fileLength,)))
-    #qz.attrs['NX_class']=b'NX_FLOAT'
-    
-    en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
-    en.attrs['NX_class']=b'NX_FLOAT'
-
-    h = data.create_dataset('h',shape=(fileLength),dtype='float32',data=H)
-    k = data.create_dataset('k',shape=(fileLength),dtype='float32',data=K)
-    l = data.create_dataset('l',shape=(fileLength),dtype='float32',data=L)
-    for x in [h,k,l]:
-        x.attrs['NX_class']=b'NX_FLOAT'
-
-    fd.close()
 
 
 def calculateGrid3D(X,Y,Z):
@@ -3536,12 +3478,21 @@ def centeroidnp(arr): # Calcualted centroid
     return Totsum/length
 
 def compareNones(first,second,margin): # Function to compare
-        if first.dtype == type(None) and second.dtype == type(None):
-            return True
-        elif first.dtype == second.dtype:
-            return np.isclose(first,second,atol=margin)
-        else:
-            return False
+    try: 
+        t1 = first.dtype
+    except:
+        t1 = type(first)
+    try:
+        t2 = second.dtype
+    except:
+        t2 = type(second)
+    
+    if t1 == type(None) and t2 == type(None):
+        return True
+    elif t1 == t2:
+        return np.isclose(first,second,atol=margin)
+    else:
+        return False
 
 def OxfordList(list):
     """Create a comma seperated string from the strings provided with last comma trailed by 'and'."""
@@ -3697,11 +3648,16 @@ def test_DataSet_Convert_Data():
         assert False
     except AttributeError: # FileDoesNotExist
         assert True
-    dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/1024/')
+    dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/1024/',saveFile=True)
     convertedFile = dataset.convertedFiles[0]
+    
     otherFile = DataFile.DataFile(dataFiles.replace('.h5','.nxs'))
+    #print(otherFile.original_file)
+    #print(convertedFile.original_file)
+    print(convertedFile.difference(otherFile))
+    print(convertedFile==otherFile)
+    print(set(convertedFile.__dict__.keys())-set(otherFile.__dict__.keys()))
     assert(convertedFile==otherFile)
-
     os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
     
 

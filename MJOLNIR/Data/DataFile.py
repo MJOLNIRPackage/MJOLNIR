@@ -8,15 +8,15 @@ import numpy as np
 import h5py as hdf
 import warnings
 from MJOLNIR import _tools
+import datetime
+
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
     def __init__(self,fileLocation):
         # Check if file exists
         if isinstance(fileLocation,DataFile): # Copy everything in provided file
-            dict = fileLocation.__dict__
-            for key in dict.keys():
-                self.__setattr__(key,dict[key])
+            self.updateProperty(fileLocation.__dict__)
         else:
             if not os.path.isfile(fileLocation):
                 raise AttributeError('File location does not exist({}).'.format(fileLocation))
@@ -58,6 +58,7 @@ class DataFile(object):
                     self.electricField = np.array(sample.get('electric_field'))
                     self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
                     self.scanCommand = np.array(f.get('entry/scancommand'))
+                    self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
 
             elif fileLocation.split('.')[-1]=='h5':
                 self.type='h5'
@@ -93,8 +94,11 @@ class DataFile(object):
             else:
                 raise AttributeError('File is not of type nxs or h5.')
             self.name = fileLocation.split('/')[-1]
-            self.fileLocation = fileLocation
+            self.fileLocation = os.path.abspath(fileLocation)
             self.sample.calculateProjections()
+            for key in ['magneticField','temperature','electricField']:
+                if self.__dict__[key].dtype ==object: # Is np nan object
+                    self.__dict__[key] = None
         
 
     @property
@@ -127,9 +131,38 @@ class DataFile(object):
         else:
             self._A4Off = A4Off
 
+    def updateProperty(self,dictionary):
+        if isinstance(dictionary,dict):
+            for key in dictionary.keys():
+                self.__setattr__(key,dictionary[key])
+
     def __eq__(self,other):
-        return(np.all([np.all(self.__dict__[key]==other.__dict__[key]) for key in self.__dict__.keys()]))
+        if not self.__dict__.keys() == other.__dict__.keys(): # Check if same generation and type (h5 or nxs)
+            return False
+        return len(self.difference(other))==0
     
+    def difference(self,other,keys = set(['sample','instrument','Ei','I','A3','A4','binning','scanParameters'])):
+        """Return the difference between two data files by keys"""
+        dif = []
+        if not self.__dict__.keys() == other.__dict__.keys(): # Check if same generation and type (h5 or nxs)
+            return list(set(self.__dict__.keys())-set(other.__dict__.keys()))
+
+        comparisonKeys = set(['sample','instrument','Ei','I','A3','A4','binning','scanParameters'])
+        for key in comparisonKeys:
+            skey = self.__dict__[key]
+            okey = other.__dict__[key]
+            if isinstance(skey,np.ndarray):
+                try:
+                    if not np.all(np.isclose(skey,okey)):
+                        if not np.all(np.isnan(skey),np.isnan(okey)):
+                            dif.append(key)
+                except (TypeError, AttributeError):
+                    if np.all(skey!=okey):
+                        dif.append(key)
+            elif not np.all(self.__dict__[key]==other.__dict__[key]):
+                dif.append(key)
+        return dif
+
     def __str__(self):
         returnStr = 'Data file {} from the MJOLNIR software package of type {}\n'.format(self.name,self.type)
         returnStr+= 'Ei: '+ str(self.Ei) + '\nA3: ' + ','.join([str(x) for x in self.A3])
@@ -138,6 +171,9 @@ class DataFile(object):
 
     def __add__(self,other):
         raise NotImplementedError('Adding two data files is not yet supported.')
+
+    def __hasattr__(self,s):
+        return s in self.__dict__.keys()
 
     @_tools.KwargChecker()
     def plotA4(self,binning=None):
@@ -275,6 +311,90 @@ class DataFile(object):
                 self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
                 self.binning = binning 
         #return self
+
+
+    def saveNXsqom(self,savefilename):
+        if not self.__hasattr__('original_file'):
+            raise AttributeError('Data file does not have link to the original file. This is needed to make a complete copy when creating nxs-files')
+        if not self.type =='nxs':
+            raise AttributeError('Only nxs typed files can be saved as nxs-files.')
+
+        datafile = self.original_file
+        Intensity = self.I
+        Monitor = self.Monitor
+        QX = self.qx
+        QY = self.qy
+        DeltaE = self.energy 
+        binning = self.binning
+        Normalization = self.Norm
+        H = self.h
+        K = self.k
+        L = self.l
+
+        if os.path.exists(savefilename):
+            warnings.warn('The file {} exists alread. Old file will be renamed to {}.'.format(savefilename,savefilename+'_old'))
+            os.rename(savefilename,savefilename+'_old')
+        fd = hdf.File(savefilename,'w')
+        fs = hdf.File(datafile.fileLocation,'r')
+        group_path = fs['/entry'].parent.name
+        
+        group_id = fd.require_group(group_path)
+        
+        
+        fs.copy('/entry', group_id, name="/entry")
+        
+        definition = fd.create_dataset('entry/definition',(1,),dtype='S70',data=np.string_('NXsqom'))
+        definition.attrs['NX_class'] = 'NX_CHAR'
+        
+        process = fd.create_group('entry/reduction')
+        process.attrs['NX_class']=b'NXprocess'
+        proc = process.create_group('MJOLNIR_algorithm_convert')
+        proc.attrs['NX_class']=b'NXprocess'
+        author= proc.create_dataset('author',shape=(1,),dtype='S70',data=np.string_('Jakob Lass'))
+        author.attrs['NX_class']=b'NX_CHAR'
+        
+        date= proc.create_dataset('date',shape=(1,),dtype='S70',data=np.string_(datetime.datetime.now()))
+        date.attrs['NX_class']=b'NX_CHAR'
+        
+        description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.string_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
+        description.attrs['NX_class']=b'NX_CHAR'
+        
+        rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(os.path.realpath(datafile.fileLocation)))
+        rawdata.attrs['NX_class']=b'NX_CHAR'
+
+        normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
+        normalizationString.attrs['NX_class']=b'NX_INT'
+        
+        data = fd.get('entry/data')
+        
+        fileLength = Intensity.shape
+        
+        Int = data.create_dataset('intensity',shape=(fileLength),dtype='int32',data=Intensity)
+        Int.attrs['NX_class']='NX_INT'
+        
+        monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
+        monitor.attrs['NX_class']=b'NX_INT'
+
+        normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
+        normalization.attrs['NX_class']=b'NX_FLOAT'
+        
+        qx = data.create_dataset('qx',shape=(fileLength),dtype='float32',data=QX)
+        qx.attrs['NX_class']=b'NX_FLOAT'
+        
+        qy = data.create_dataset('qy',shape=(fileLength),dtype='float32',data=QY)
+        qy.attrs['NX_class']=b'NX_FLOAT'
+
+        en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
+        en.attrs['NX_class']=b'NX_FLOAT'
+
+        h = data.create_dataset('h',shape=(fileLength),dtype='float32',data=H)
+        k = data.create_dataset('k',shape=(fileLength),dtype='float32',data=K)
+        l = data.create_dataset('l',shape=(fileLength),dtype='float32',data=L)
+        for x in [h,k,l]:
+            x.attrs['NX_class']=b'NX_FLOAT'
+
+        fd.close()
+
             
 def decodeStr(string):
     try:
