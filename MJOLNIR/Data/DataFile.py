@@ -11,7 +11,6 @@ from MJOLNIR import _tools
 import datetime
 import math
 import shapely
-from MJOLNIR.Data import DataSet
 from shapely.geometry import Polygon as PolygonS, Point as PointS
 
 class DataFile(object):
@@ -455,7 +454,7 @@ class DataFile(object):
             r = np.linalg.norm([x,y],axis=0)
             theta = np.arctan2(y,x)
             
-            rBins = DataSet.binEdges(r,0.00001)
+            rBins = _tools.binEdges(r,0.00001)
             
             out = -1
             while np.sum(r>rBins[out])<steps:
@@ -1392,9 +1391,9 @@ def test_DataFile_BoundaryCalculation(quick):
         binning = [1]
     for B in binning:
         print('Using binning {}'.format(B))
-        ds = DataSet.DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5')
-        ds.convertDataFile(binning=B, saveFile = False)
-        EP,EBins = ds.convertedFiles[0].calculateEdgePolygons()
+        df = DataFile('TestData/1024/Magnon_ComponentA3Scan.h5')
+        converted = df.convert(binning=B)
+        EP,EBins = converted.calculateEdgePolygons()
         areas = np.array([e.area for e in EP])
         assert(np.all(areas>2.0)) # Value found by running algorithm
         assert(len(EBins)==B*8+1)

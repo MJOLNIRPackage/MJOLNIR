@@ -4,7 +4,7 @@ Powder cutting and visualization
 When having a converted data file of a powder sample, one might be interested in the powder signal instead of the (qx,qy) intensities. These can both be found and plotted by using the cutPowder and plotCutPowder methods of the DataSet object. The three different calls below all produce the same data treatment, i.e. intensity, monitor, normalization, and normalization count as a function of length of q and energy transfer. It has been choosen, with the use of qMinBin=0.01 and tolerance=0.125 that the length of q and the energies are binned with minimum sizes 0.01 1/A and 0.125 meV.
 
  .. literalinclude:: ../../Tutorials/Powder.py
-     :lines: 5-31,35-
+     :lines: 5-32,36-
      :language: python
      :linenos:
 

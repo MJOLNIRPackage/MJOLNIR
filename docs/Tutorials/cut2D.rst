@@ -5,7 +5,7 @@ Q-energy cutting and visualization in 1 and 2 dimensions
 One feature needed when dealing with 3D intensity data is to be able to cut from q one point to another and investigate the energy dependency of the intensity. This can be done by invoking the cutQE or plotCutQE. These methods perform constant energy cuts between the given q points (q1 and q2) and then stiches them together. When hovering over a position, the nearest qx, qy, and energy center is shown as well as its intensity.
 
  .. literalinclude:: ../../Tutorials/cut2D.py
-     :lines: 5-21,34- 
+     :lines: 5-22,35- 
      :language: python
      :linenos:
 

@@ -3,6 +3,7 @@ sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 from MJOLNIR.Data import DataFile
 DataFile.assertFile('TestData/1024/Magnon_ComponentA3Scan.nxs')
 from MJOLNIR.Data import DataSet
+from MJOLNIR import _tools
 def test_cut2D(show=False):
     import numpy as np
     import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ def test_cut2D(show=False):
     DataObj.convertDataFile()
     energy = DataObj.energy
 
-    EnergyBins = DataSet.binEdges(energy,tolerance=0.125)
+    EnergyBins = _tools.binEdges(energy,tolerance=0.125)
     q1 = np.array([1.0,0])
     q2 = np.array([0,1.0])
     width = 0.1 # 1/A

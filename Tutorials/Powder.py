@@ -3,6 +3,7 @@ sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 from MJOLNIR.Data import DataFile
 DataFile.assertFile('TestData/1024/Magnon_ComponentA3Scan.nxs')
 from MJOLNIR.Data import DataSet
+from MJOLNIR import _tools
 def test_Powder(show=False):
     import matplotlib.pyplot as plt
     file = 'TestData/1024/Magnon_ComponentA3Scan.h5'
@@ -16,7 +17,7 @@ def test_Powder(show=False):
     Norm = DataObj.Norm
     Monitor = DataObj.Monitor
 
-    EBinEdges = DataSet.binEdges(energy,tolerance=0.125)
+    EBinEdges = _tools.binEdges(energy,tolerance=0.125)
 
     ax,Data,qbins = DataObj.plotCutPowder(EBinEdges,qMinBin=0.05)
     plt.colorbar(ax.pmeshs[0])
