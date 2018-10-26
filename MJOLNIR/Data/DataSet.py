@@ -224,13 +224,14 @@ class DataSet(object):
         if dataFiles is None:
             if len(self.dataFiles)==0:
                 raise AttributeError('No data files file provided either through input of in the DataSet object.')
-            dataFiles = self.dataFiles
+        else:
+            dataFiles = isListOfDataFiles(dataFiles)
+        
 
-        dataFiles = isListOfDataFiles(dataFiles)
-        self.dataFiles = dataFiles
+        
+        dataFiles = self.dataFiles
         convertedFiles = []
         for rawfile in dataFiles:
-            
             convFile = rawfile.convert(binning)
 
             if saveFile:
