@@ -9,8 +9,10 @@ import h5py as hdf
 import warnings
 from MJOLNIR import _tools
 import datetime
-
-
+import math
+import shapely
+from MJOLNIR.Data import DataSet
+from shapely.geometry import Polygon as PolygonS, Point as PointS
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
@@ -409,6 +411,149 @@ class DataFile(object):
                 self.binning = binning 
         #return self
 
+    @_tools.KwargChecker()
+    def calculateEdgePolygons(self,addEdge=True):
+        """Method to calculate bounding polygon for all energies. The energies are split using the bin-edges method of DataSet. Hereafter,
+        the outer most points are found in polar coordinates and a possible addition is made creating the padded bounding polygon.
+        
+        Kwargs:
+            
+            - addEdge (bool/float): If true, padding is found as difference between outer and next outer point. If addEdge is a number, generate padding a padding of this value (default True)
+            
+        Returns:
+            
+            - edgePolygon (list): List of shapely polygons of the boundary
+            
+            - EBins (list): Binning edges in energy
+            
+        """
+        if addEdge:
+            if np.isclose(float(addEdge),1.0):
+                addEdgeAmount = None
+            else:
+                addEdgeAmount = addEdge
+        
+        Energy = self.energy
+        
+        E = np.sort(np.mean(self.energy,axis=(0,1)))
+        dif = np.diff(E)*0.5
+        EBins = np.concatenate([[E[0]-dif[0]],E[:-1]+dif,[E[-1]+dif[-1]]])
+        steps = Energy.shape[0]
+        
+        
+        edgePolygon = []
+        for i in range(len(EBins)-1):
+            ELow = EBins[i]
+            EHigh= EBins[i+1]
+            
+            EBool = np.logical_and(Energy>ELow,Energy<EHigh)
+            
+            x = self.qx[EBool]
+            y = self.qy[EBool]
+            
+            
+            r = np.linalg.norm([x,y],axis=0)
+            theta = np.arctan2(y,x)
+            
+            rBins = DataSet.binEdges(r,0.00001)
+            
+            out = -1
+            while np.sum(r>rBins[out])<steps:
+                out-=1
+            rOuter = r>rBins[out]
+            inner = 0
+            while np.sum(r<rBins[inner])<steps:
+                inner+=1
+            rInner = r<rBins[inner]
+            
+            minEdge = []
+            maxEdge = []
+            _minEdge= []
+            _maxEdge= []
+            include = 0
+            for j in range(len(rBins)-1):
+                Bool = np.logical_and(r>rBins[j-include],r<rBins[j+1])
+                if np.sum(Bool)<steps-1:
+                    include+=1
+                    continue
+                else:
+                    include = 0
+                TT = theta[Bool]
+                dif = np.diff(TT)
+                if np.max(abs(dif))>np.pi*1.9:
+                    idx = np.argmax(abs(dif))
+                    TT[idx+1:]+=-np.sign(dif[idx])*2*np.pi
+                minT,maxT = minMax(TT)
+                _minT,_maxT = minMax(TT)
+                
+                if addEdge:
+                    mint, maxt = minMax(TT[np.logical_not(np.logical_or(np.isclose(TT,minT),np.isclose(TT,maxT)))])
+                    if addEdgeAmount is None:
+                        minT = minT-0.5*(mint-minT)
+                        maxT = maxT-0.5*(maxt-maxT)
+                    else:
+                        minT = minT+np.sign(minT-mint)*addEdgeAmount
+                        maxT = maxT+np.sign(maxT-maxt)*addEdgeAmount
+                    
+                R = np.mean(r[Bool])
+                minEdge.append([R*np.cos(minT),R*np.sin(minT)])
+                maxEdge.append([R*np.cos(maxT),R*np.sin(maxT)])
+                
+                _minEdge.append([R*np.cos(_minT),R*np.sin(_minT)])
+                _maxEdge.append([R*np.cos(_maxT),R*np.sin(_maxT)])
+            
+            minEdge = np.array(minEdge).T
+            maxEdge = np.array(maxEdge).T
+            
+            innerPoints = np.array([x[rInner],y[rInner]])
+            _innerPoints= np.array([x[rInner],y[rInner]])
+            if addEdge:
+                if addEdgeAmount is None:
+                    RR = rBins[inner]-(rBins[inner+1]-rBins[inner])
+                else:
+                    RR = rBins[inner]-addEdgeAmount
+                Theta = np.arctan2(innerPoints[1],innerPoints[0])
+                innerPoints = np.array([np.cos(Theta),np.sin(Theta)])*RR
+                    
+                
+            outerPoints = np.array([x[rOuter],y[rOuter]])
+            _outerPoints= np.array([x[rOuter],y[rOuter]])
+            if addEdge:
+                if addEdgeAmount is None:
+                    RR = rBins[out]-(rBins[out-1]-rBins[out])
+                else:
+                    RR = rBins[out]+addEdgeAmount
+                Theta = np.arctan2(outerPoints[1],outerPoints[0])
+                outerPoints = np.array([np.cos(Theta),np.sin(Theta)])*RR
+            
+                
+            refvec1,center1 = calRefVector(innerPoints)
+            refvec2,center2 = calRefVector(outerPoints)
+            sInnerEdge = np.array(sorted(innerPoints.T,key=lambda x: clockwiseangle_and_distance(x,origin=center1,refvec=refvec1))).T
+            sOuterEdge = np.array(sorted(outerPoints.T,key=lambda x: clockwiseangle_and_distance(x,origin=center2,refvec=refvec2))).T
+            
+            sMinEdge = np.array(sorted(minEdge.T,key=np.linalg.norm)).T
+            sMaxEdge = np.array(sorted(maxEdge.T,key=np.linalg.norm)).T
+            
+            XY = np.concatenate([sInnerEdge,sMinEdge,np.fliplr(sOuterEdge),np.fliplr(sMaxEdge)],axis=1)#np.concatenate([minEdge,rmaxEdge,np.fliplr(maxEdge),rminEdge],axis=1)
+            
+            edgePolygon.append(shapely.geometry.polygon.Polygon(XY.T))
+            
+            originalPoints = np.concatenate([_innerPoints.T,_outerPoints.T,_minEdge,_maxEdge],axis=0)
+            
+            pointsContained = np.sum([edgePolygon[-1].contains(PointS(originalPoints[I][0],originalPoints[I][1])) for I in range(originalPoints.shape[0])])
+            if pointsContained!=originalPoints.shape[0]:
+                inside = np.array([edgePolygon[-1].contains(PointS(originalPoints[I][0],originalPoints[I][1])) for I in range(originalPoints.shape[0])])
+                outside = np.logical_not(inside)
+                plt.figure()
+                plt.scatter(x,y,c='k')
+                plt.scatter(originalPoints[inside][:,0],originalPoints[inside][:,1],c='g')
+                plt.scatter(originalPoints[outside][:,0],originalPoints[outside][:,1],c='r',zorder=100)
+                plt.plot(np.array(edgePolygon[-1].boundary.coords)[:,0],np.array(edgePolygon[-1].boundary.coords)[:,1],c='r')
+                plt.title(i)
+                raise AttributeError('Error! {} points are outside the found shape with energy !'.format(np.sum(outside),0.5*(EBins[i]+EBins[i+1])))
+        return edgePolygon,EBins
+
 
     def saveNXsqom(self,savefilename):
         if not self.__hasattr__('original_file'):
@@ -764,6 +909,10 @@ class Sample(object):
 
         return returnStr
 
+    
+
+
+
 @_tools.KwargChecker()
 def rotationMatrix(alpha,beta,gamma,format='deg'):
     if format=='deg':
@@ -905,6 +1054,81 @@ def rotate2X(v):
     
     Rotation = np.dot(R2,R)
     return Rotation
+
+
+
+def clockwiseangle_and_distance(point,origin=[0,0],refvec = [0,1]):
+    """Sort points clockwise. Taken from https://stackoverflow.com/questions/41855695/sorting-list-of-two-dimensional-coordinates-by-clockwise-angle-using-python
+    
+    Args:
+        
+        - point (list): List of points in 2D of size 2xN
+        
+    Kwargs:
+        
+        - origin (list): Location of origin from which the points are to be sorted (default [0,0])
+        
+        - refvec (list): Vector direction for definition of zero point (default [0,1])
+        
+    """
+    # Vector between point and the origin: v = p - o
+    vector = [point[0]-origin[0], point[1]-origin[1]]
+    # Length of vector: ||v||
+    lenvector = math.hypot(vector[0], vector[1])
+    # If length is zero there is no angle
+    if lenvector == 0:
+        return -math.pi, 0
+    # Normalize vector: v/||v||
+    normalized = [vector[0]/lenvector, vector[1]/lenvector]
+    dotprod  = normalized[0]*refvec[0] + normalized[1]*refvec[1]     # x1*x2 + y1*y2
+    diffprod = refvec[1]*normalized[0] - refvec[0]*normalized[1]     # x1*y2 - y1*x2
+    angle = math.atan2(diffprod, dotprod)
+    # Negative angles represent counter-clockwise angles so we need to subtract them 
+    # from 2*pi (360 degrees)
+    if angle < 0:
+        return 2*math.pi+angle, lenvector
+    # I return first the angle because that's the primary sorting criterium
+    # but if two vectors have the same angle then the shorter distance should come first.
+    return angle, lenvector
+
+def calRefVector(points):
+    """ Calcualte reference vector as vector pointing from mean point to geometric center. For half moon shape this is anti-radially.
+    
+    Args:
+        
+        - points (list): list of points for which reference vector is calcualted, shape is 2xN
+        
+    Returns:
+        
+        vector: Reference vector
+    
+    """
+    center = np.mean(points,axis=1).reshape(2,1)
+    argMinDist = np.argmin(np.linalg.norm(center-points,axis=0))
+    return center-points[:,argMinDist].reshape(2,1),center
+
+
+def minMax(x,axis=0):
+    """Return minimal and maximal of list.
+    
+    Args:
+        
+        - x (list): Object from which min and max is to be found.
+        
+    Kwargs:
+        
+        - axis (int): Axis or axes along which to operate (default 0)
+      
+    Returns:
+        
+        - min: Minimal value
+        
+        - max: Maximal value
+        
+    """
+    return np.min(x),np.max(x)
+
+
 # --------------------------- TESTS -------------------------
 
 def test_sample_exceptions():
@@ -1160,6 +1384,22 @@ def test_DataFile_ScanParameter():
         assert(len(dfile.scanParameters)==1)
         assert(dfile.scanUnits[0]=='degrees')
         assert(np.all(dfile.scanValues==np.arange(0,150,1)))
+
+def test_DataFile_BoundaryCalculation(quick):
+    if quick==True:
+        binning = [1,3,8]
+    else:
+        binning = [1]
+    for B in binning:
+        print('Using binning {}'.format(B))
+        ds = DataSet.DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5')
+        ds.convertDataFile(binning=B, saveFile = False)
+        EP,EBins = ds.convertedFiles[0].calculateEdgePolygons()
+        areas = np.array([e.area for e in EP])
+        assert(np.all(areas>2.0)) # Value found by running algorithm
+        assert(len(EBins)==B*8+1)
+        
+
 
 
 def assertFile(file):
