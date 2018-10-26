@@ -20,7 +20,8 @@ def test_Load_XML(save=False):
     ax.set_ylabel('y [m]')
     ax.set_zlabel('z [m]')
     plt.tight_layout()
-    plt.savefig('SimpleInstrument.png',format='png',dpi=300)
+    if save:
+        plt.savefig('SimpleInstrument.png',format='png',dpi=300)
 
     Instr.initialize() # Initialize instrument
 
