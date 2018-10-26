@@ -487,7 +487,8 @@ class DataSet(object):
         
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend)
 
-    # TODO: Advanced Kwarg checker for figures!
+ 
+    @_tools.KwargChecker(function=plt.errorbar)
     def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,dataFiles=None,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
@@ -541,7 +542,7 @@ class DataSet(object):
 
         else: 
             dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DataFile.extractData()
+            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData()
             
         I = np.concatenate([x.flatten() for x in I])
         qx = np.concatenate([x.flatten() for x in qx])#self.qx
@@ -594,7 +595,7 @@ class DataSet(object):
 
         return cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
 
-    # TODO: Advanced Kwargs checker for figure
+    @_tools.KwargChecker(function=plt.pcolormesh)
     def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
@@ -656,7 +657,8 @@ class DataSet(object):
         """
         return createRLUAxes(self,figure=figure)
 
-    # TODO: Advanced Kwarg checker for figure
+    
+    #@_tools.KwargChecker(function=plt.pcolormesh,include=[])
     def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,dataFiles=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
         
@@ -1622,7 +1624,7 @@ def binEdges(values,tolerance):
     bin_edges.append(unique_values[-1] + tolerance / 2)
     return np.array(bin_edges)
 
-# TODO: Advance Kwargs checker for figures
+@_tools.KwargChecker(function=plt.errorbar)
 def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,**kwargs):
     """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
     Adds the 3D position on the x axis with ticks.
@@ -1740,7 +1742,7 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
     return [intensity,monitorCount,Normalization,NormCount],qbins
 
 
-# TODO: Advanced Kwargs checker for figures
+@_tools.KwargChecker(function=plt.pcolormesh)
 def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwargs):
     """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
     
@@ -1874,7 +1876,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
     
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-#TODO: Advanced Kwargs checker for figures
+@_tools.KwargChecker(function=plt.errorbar)
 def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,**kwargs):
     """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
@@ -2005,7 +2007,7 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
     return ax
 
-#TODO: Advanced Kwargs checker for figures
+@_tools.KwargChecker(function=plt.pcolormesh)
 def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,**kwargs):
     """Plotting tool to show binned intensities in the Q plane between provided energies.
     
@@ -2846,7 +2848,7 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
 
         - plot (bool): If True, method plots pixels created with green as edge bins and red as internal (default False)
 
-        - Boundary (lost of Polygons): List of Shapely polygons constituting the boundaries (Default False)
+        - Boundary (list of Polygons): List of Shapely polygons constituting the boundaries (Default False)
 
 
     """
