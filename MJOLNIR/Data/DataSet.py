@@ -1465,7 +1465,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     orthobins = [-width/2.0,width/2.0]
     insideWidth = np.logical_and(propos[1]<orthobins[1],propos[1]>orthobins[0])
     
-    lenbins = np.array(binEdges(propos[0][insideWidth],minPixel))
+    lenbins = np.array(_tools.binEdges(propos[0][insideWidth],minPixel))
     orthopos = np.outer(orthobins,orthovec)
     binpositions = np.outer(lenbins,dirvec)+q1
     
@@ -1562,7 +1562,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
     Energies = positions[2][allInside]
     
     
-    bins = np.array(binEdges(Energies,minPixel))
+    bins = np.array(_tools.binEdges(Energies,minPixel))
     
     if len(bins)==0:
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[[E1,E2]]
@@ -1576,53 +1576,6 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
     return [intensity,MonitorCount,Normalization,normcounts],[bins]
 
 
-
-
-
-
-        
-def binEdges(values,tolerance):
-    """Generate binning of values array with minimum bin size of tolerance. Binning starts at values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
-    
-    Args:
-        
-        - values (array): 1D array to be binned.
-        
-        - tolerance (float): Minimum length of bin sizes.
-        
-    Returns:
-        
-        - bins (array)
-    
-    """
-    values_array = np.array(values).ravel()
-    unique_values = np.asarray(list(set(values_array)))
-    unique_values.sort()
-    if len(unique_values)==0:
-        return []
-    #    bin_edges = [unique_values[0] - tolerance / 2]
-    #    for i in range(len(unique_values) - 1):
-    #        if unique_values[i+1] - unique_values[i] > tolerance:
-    #            bin_edges.append((unique_values[i] + unique_values[i+1]) / 2)
-    #        else:
-    #            pass
-    #    
-    #    bin_edges.append(unique_values[-1] + tolerance / 2)
-    bin_edges = [unique_values[0] - tolerance / 2.0]
-    add = 1
-    current = 0
-    while current<len(unique_values) - 2:
-        add=1
-        while unique_values[current+add] - unique_values[current] < tolerance:
-            if current+add < len(unique_values) - 2:
-                add+=1
-            else:
-                current=len(unique_values)-add-1
-                break
-        bin_edges.append((unique_values[current] + unique_values[current+add]) / 2)
-        current+=add+1
-    bin_edges.append(unique_values[-1] + tolerance / 2)
-    return np.array(bin_edges)
 
 @_tools.KwargChecker(function=plt.errorbar)
 def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,**kwargs):
@@ -1732,7 +1685,7 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
     for i in range(len(EBinEdges)-1):
         e_inside = np.logical_and(energy>EBinEdges[i],energy<=EBinEdges[i+1])
         q_inside = q[e_inside]
-        qbins.append(np.array(binEdges(q_inside,tolerance=qMinBin)))
+        qbins.append(np.array(_tools.binEdges(q_inside,tolerance=qMinBin)))
             
         intensity.append(np.histogram(q_inside,bins=qbins[-1],weights=I[e_inside].flatten())[0].astype(I.dtype))
         monitorCount.append(np.histogram(q_inside,bins=qbins[-1],weights=Monitor[e_inside].flatten())[0].astype(Monitor.dtype))
@@ -2007,7 +1960,7 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
     return ax
 
-@_tools.KwargChecker(function=plt.pcolormesh)
+#@_tools.KwargChecker(function=plt.pcolormesh)
 def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,**kwargs):
     """Plotting tool to show binned intensities in the Q plane between provided energies.
     
@@ -2090,7 +2043,7 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
     for i in range(len(EBinEdges)-1):
         e_inside = np.logical_and(energy>EBinEdges[i],energy<=EBinEdges[i+1])
         if enlargen:
-            yBins = binEdges(y[e_inside],yBinTolerance)
+            yBins = _tools.binEdges(y[e_inside],yBinTolerance)
         else:
             yBins = np.arange(np.min(y[e_inside]),np.max(y[e_inside]),yBinTolerance)
         for j in range(len(yBins)-1):
@@ -2100,7 +2053,7 @@ def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBin
             #y_inside = y[ey_inside]
             
             if enlargen:
-                xbins = binEdges(x_inside,tolerance=xBinTolerance)
+                xbins = _tools.binEdges(x_inside,tolerance=xBinTolerance)
             else:
                 xbins = np.arange(np.min(x),np.max(x),xBinTolerance)
                 
@@ -3660,7 +3613,7 @@ def test_DataSet_binEdges():
     X = np.random.rand(100)*3 # array between 0 and 3 -ish
     X.sort()
     tolerance = 0.01
-    Bins = binEdges(X,tolerance=tolerance)
+    Bins = _tools.binEdges(X,tolerance=tolerance)
 
     assert(Bins[0]==X[0]-0.5*tolerance)
     assert(Bins[-1]==X[-1]+0.5*tolerance)
@@ -3780,7 +3733,7 @@ def test_DataSet_cutPowder():
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
-    eBins = binEdges(Datset.energy,0.25)
+    eBins = _tools.binEdges(Datset.energy,0.25)
 
     ax,D,q = Datset.plotCutPowder(eBins,Tolerance)# Remove to improve test ,vmin=0,vmax=1e-6)
     D2,q2 = Datset.cutPowder(eBins,Tolerance)

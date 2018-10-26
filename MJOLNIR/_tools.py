@@ -195,3 +195,39 @@ def logClass(parent=None,log=__name__,stream=sys.stdout,level=logging.CRITICAL):
                 setattr(NewCls, key, d[key])
         return NewCls
     return track_all_class_methods
+
+
+def binEdges(values,tolerance):
+    """Generate binning of values array with minimum bin size of tolerance. Binning starts at values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
+    
+    Args:
+        
+        - values (array): 1D array to be binned.
+        
+        - tolerance (float): Minimum length of bin sizes.
+        
+    Returns:
+        
+        - bins (array)
+    
+    """
+    values_array = np.array(values).ravel()
+    unique_values = np.asarray(list(set(values_array)))
+    unique_values.sort()
+    if len(unique_values)==0:
+        return []
+    bin_edges = [unique_values[0] - tolerance / 2.0]
+    add = 1
+    current = 0
+    while current<len(unique_values) - 2:
+        add=1
+        while unique_values[current+add] - unique_values[current] < tolerance:
+            if current+add < len(unique_values) - 2:
+                add+=1
+            else:
+                current=len(unique_values)-add-1
+                break
+        bin_edges.append((unique_values[current] + unique_values[current+add]) / 2)
+        current+=add+1
+    bin_edges.append(unique_values[-1] + tolerance / 2)
+    return np.array(bin_edges)
