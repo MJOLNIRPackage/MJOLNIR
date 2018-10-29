@@ -1,0 +1,21 @@
+29/10-18 - Start of hot commissioning
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Monday 29th of October.
+Today, the following is planned:
+
+- First neutrons on the instrument
+- Initial check of old alignment of A1-A2
+
+Possible difficulties to be discussed:
+
+- Tuning of the bias voltage of the detectors can be difficult as there is non-linearities in measurements.
+    - On RITA2 this was countered by putting a mask in front of the 2D detector.
+    - The CAMEA back-end has a build-in mask due to the cross-talk shielding and the scattering of analysers into different parts of the detectors.
+    - It could be possible to assume that the design energies of the back-end are true making it possible to figure out :math:`E_i` independent of the A4 angle.
+    - The energies expected is provided in table 
+- Alignment of the A2 and A4 are not independen but need to be aligned together
+
+
+
+

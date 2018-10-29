@@ -15,6 +15,11 @@ Welcome to MJOLNIR's documentation!
    InDepthDocumentation/Documentation
    Optimizations/Optimization
 
+.. toctree::
+   :maxdepth: 1
+
+   Commissioning/Commissioning
+
 
 | 
 
