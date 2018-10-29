@@ -1,6 +1,9 @@
 29/10-18 - Start of hot commissioning
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. note::
+    No neutrons on the instrument due to the need of adjusting the motor controller for A4. The motor enertia is too small as it has been calibrated for RITA2 and not CAMEA. 
+
 Monday 29th of October.
 Today, the following is planned:
 
@@ -20,25 +23,79 @@ Possible difficulties to be discussed:
 
 .. _EfTable: 
 
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| Analyser | :math:`A5` [deg] | :math:`E_i` calculated [meV] | :math:`E_i` article [meV] | :math:`E_i` McStas [meV] |
-+==========+==================+==============================+===========================+==========================+
-| 0        | 48.90            | 3.200                        | 3.21                      | 3.204                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| 1        | 47.21            | 3.374                        | 3.38                      | 3.379                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| 2        | 45.53            | 3.568                        | 3.58                      | 3.575                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| 3        | 43.84            | 3.787                        | 3.80                      | 3.794                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| 4        | 42.16            | 4.033                        | 4.05                      | 4.041                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| 5        | 40.47            | 4.313                        | 4.33                      | 4.320                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| 6        | 38.79            | 4.629                        | 4.64                      | 4.637                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
-| 7        | 37.10            | 4.993                        | 5.01                      | 5.000                    |
-+----------+------------------+------------------------------+---------------------------+--------------------------+
 
-.. note::
-    No neutrons on the instrument due to technical issues with motor controllers and docking the secondary spectrometer onto the sample table.
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | Analyser | :math:`A5` [deg] | :math:`E_i` calculated [meV] | :math:`E_i` article [meV] | :math:`E_i` McStas [meV] |
+    +==========+==================+==============================+===========================+==========================+
+    | 0        | 48.90            | 3.200                        | 3.21                      | 3.204                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | 1        | 47.21            | 3.374                        | 3.38                      | 3.379                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | 2        | 45.53            | 3.568                        | 3.58                      | 3.575                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | 3        | 43.84            | 3.787                        | 3.80                      | 3.794                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | 4        | 42.16            | 4.033                        | 4.05                      | 4.041                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | 5        | 40.47            | 4.313                        | 4.33                      | 4.320                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | 6        | 38.79            | 4.629                        | 4.64                      | 4.637                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+    | 7        | 37.10            | 4.993                        | 5.01                      | 5.000                    |
+    +----------+------------------+------------------------------+---------------------------+--------------------------+
+
+    Final energies are calculated from the angles defined in the McStas simulation and a d-spacing of 3.355 Å for PG. The article numbers are taken from [Groitl2016]_, while the McStas numbers are found from the normalization procedure using 1 software pixel as described in :doc:`Software pixel binning<../InDepthDocumentation/EnergyNormalization>` 
+
+
+
+
+.. [Groitl2016] Review of Scientific Instruments, Groitl, F et al. ; CAMEA - A novel multiplexing analyzer for neutron spectroscopy; 2016
+
+
+Fitting routine for finding :math:`A2` and :math:`A4` offsets
+-------------------------------------------------------------
+
+As mentioned above, the determination of the offsets in :math:`A2` and :math:`A4` is coupled. That is, the offset in :math:`A2` results in an offset in the incoming energy thus chaning the scattering angle :math:`A4`. One way of determining these offsets is to consider a sample with known lattice parameters. Further, it is assumed that the lattice parameter of the monochromator is :math:`d_{pg}=3.355` Å. The 'out-going' wave from the monochromator must be equal to the 'in-coming' wave of the sample (assuming first order scattering), meaning that according to Braggs law
+
+.. math::
+
+    \lambda_{pg} = 2 d_{pg} \sin{\frac{A2+\delta_{A2}}{2}},\qquad \lambda_S = 2 d_S \sin{\frac{A4+\delta_{A4}}{2}}.
+
+    \lambda_{pg} = \lambda_S \Rightarrow \qquad 2 d_{pg} \sin{\frac{A2+\delta_{A2}}{2}} = 2 d_S \sin{\frac{A4+\delta_{A4}}{2}}.
+
+One is then left with one equation with two unknowns, but if two reflections in the crystal are known, one can solve the set of equations. However, this relies on the determination of :math:`A2` and :math:`A4` to be without any uncertainty. Often, multiple scattering vectors are possible for a given sample and one can thus over-determine the offsets. This is then formulated as:
+
+.. math::
+
+    \qquad 2 d_{pg} \sin{\frac{A2_i+\delta_{A2}}{2}} = 2 d_{S,i} \sin{\frac{A4_i+\delta_{A4}}{2}},
+
+where :math:`A2_i` denotes angle corresponding to incoming energy :math:`i` and :math:`d_{S,i}` and :math:`A4_i` are the :math:`i` 'th lattice spacing and corresponding scattering angle. Allowing :math:`A2` to be dependent on :math:`i` allows for changes in incoming energies which might allow for more reflections inside of the limits of the secondary spectrometer. Formally the fitting is performed by minimizing the difference between the calcualted wavelengths of the monochromator and sample reflections using least :math:`\chi^2` . The uncertainties are then defined for the individual wavelengths as
+
+.. math::
+
+    \sigma_{\lambda_i} = \sqrt{4\sin^2(\theta_i)\sigma_{d_i}^2+4d_i^2\cos^2(\theta_i)\sigma_{\theta_i}^2},
+
+where :math:`\theta_i` is either :math:`A2_i` or :math:`A4_i` . With the assumption of known d-spacing, the uncertainty :math:`\sigma_d` can in princible be set to 0. When the optimal values of the two offsets have been found on could define the uncertainties of these as the change in offset resulting in an increase of the :math:`\chi^2` value of one. 
+
+Example of offset fitting
+.........................
+
+A possible sample to be used for such a fitting procedure is AlO in powder form. This ensures that the value of sample rotation, :math:`A3`, is unimportant. This material has scattering planes with spacings given by :math:`d\in\{3.3993, 2.0371, 2.4915, 2.1145\}` Å, which for an incoming energy of 5 meV gives scattering angles, :math:`A4` , of 73.0, 166.2, 108.5, and 146.1 degrees. As to mimic a real measurement a random offset (but equal for all of the reflections) is added together with a Gaussian noise 0.05 degrees on both :math:`A2` and :math:`A4` . The used values are tabulated in dataTable_ below. 
+
+
+.. _dataTable:
+
++---------------+-------------------+-----------------------+-----------------------------+-----------------------+-----------------------------+
+| :math:`d` [Å] | :math:`E_i` [mev] | :math:`A2` true [deg] | :math:`A2` 'measured' [deg] | :math:`A4` true [deg] | :math:`A4` 'measured' [deg] |
++===============+===================+=======================+=============================+=======================+=============================+
+|        3.3993 |               5.0 |               74.1426 |                     69.5344 |               73.0186 |                     69.9029 |
++---------------+-------------------+-----------------------+-----------------------------+-----------------------+-----------------------------+
+|        2.0371 |               5.0 |               74.1426 |                     69.4865 |              166.2374 |                    163.2118 |
++---------------+-------------------+-----------------------+-----------------------------+-----------------------+-----------------------------+
+|        2.4915 |               5.0 |               74.1426 |                     69.5796 |              108.5306 |                    105.4428 |
++---------------+-------------------+-----------------------+-----------------------------+-----------------------+-----------------------------+
+|        2.1145 |               5.0 |               74.1426 |                     69.5630 |              146.0592 |                    142.9605 |
++---------------+-------------------+-----------------------+-----------------------------+-----------------------+-----------------------------+
+
+Running the minimization results in an A2 offset of -4.620 :math:`\pm` 0.004 degrees and an A4 offset of -3.14 :math:`\pm` 0.03 degrees. These are somewhat consistent with the simulated offsets of -4.608 and -3.067 for A2 and A4 respectively. It is seen that the found values are 3.2 and 2.3 sigmas away suggesting an underestimation of the uncertainties of the offsets.  
+
