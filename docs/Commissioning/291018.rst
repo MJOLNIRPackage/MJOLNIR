@@ -17,39 +17,37 @@ Possible difficulties to be discussed:
     - The CAMEA back-end has a build-in mask due to the cross-talk shielding and the scattering of analysers into different parts of the detectors.
     - It could be possible to assume that the design energies of the back-end are true making it possible to figure out :math:`E_i` independent of the A4 angle.
     - The energies expected is provided in table EfTable_
+
+    
+    .. _EfTable: 
+
+
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | Analyser | :math:`A5` [deg] | :math:`E_i` calculated [meV] | :math:`E_i` article [meV] | :math:`E_i` McStas [meV] |
+        +==========+==================+==============================+===========================+==========================+
+        | 0        | 48.90            | 3.200                        | 3.21                      | 3.204                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | 1        | 47.21            | 3.374                        | 3.38                      | 3.379                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | 2        | 45.53            | 3.568                        | 3.58                      | 3.575                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | 3        | 43.84            | 3.787                        | 3.80                      | 3.794                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | 4        | 42.16            | 4.033                        | 4.05                      | 4.041                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | 5        | 40.47            | 4.313                        | 4.33                      | 4.320                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | 6        | 38.79            | 4.629                        | 4.64                      | 4.637                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+        | 7        | 37.10            | 4.993                        | 5.01                      | 5.000                    |
+        +----------+------------------+------------------------------+---------------------------+--------------------------+
+
+        EfTable: Final energies are calculated from the angles defined in the McStas simulation and a d-spacing of 3.355 Å for PG. The article numbers are taken from Groitl2016_, while the McStas numbers are found from the normalization procedure using 1 software pixel as described in :doc:`Software pixel binning<../InDepthDocumentation/EnergyNormalization>` 
+
 - Alignment of the A2 and A4 are not independen but need to be aligned together
 
 
-
-.. _EfTable: 
-
-
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | Analyser | :math:`A5` [deg] | :math:`E_i` calculated [meV] | :math:`E_i` article [meV] | :math:`E_i` McStas [meV] |
-    +==========+==================+==============================+===========================+==========================+
-    | 0        | 48.90            | 3.200                        | 3.21                      | 3.204                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | 1        | 47.21            | 3.374                        | 3.38                      | 3.379                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | 2        | 45.53            | 3.568                        | 3.58                      | 3.575                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | 3        | 43.84            | 3.787                        | 3.80                      | 3.794                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | 4        | 42.16            | 4.033                        | 4.05                      | 4.041                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | 5        | 40.47            | 4.313                        | 4.33                      | 4.320                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | 6        | 38.79            | 4.629                        | 4.64                      | 4.637                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-    | 7        | 37.10            | 4.993                        | 5.01                      | 5.000                    |
-    +----------+------------------+------------------------------+---------------------------+--------------------------+
-
-    Final energies are calculated from the angles defined in the McStas simulation and a d-spacing of 3.355 Å for PG. The article numbers are taken from [Groitl2016]_, while the McStas numbers are found from the normalization procedure using 1 software pixel as described in :doc:`Software pixel binning<../InDepthDocumentation/EnergyNormalization>` 
-
-
-
-
-.. [Groitl2016] Review of Scientific Instruments, Groitl, F et al. ; CAMEA - A novel multiplexing analyzer for neutron spectroscopy; 2016
+.. _Groitl2016: Review of Scientific Instruments, Groitl, F et al. ; CAMEA - A novel multiplexing analyzer for neutron spectroscopy; 2016
 
 
 Fitting routine for finding :math:`A2` and :math:`A4` offsets
