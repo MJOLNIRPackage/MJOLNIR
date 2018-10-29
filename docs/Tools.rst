@@ -16,6 +16,7 @@ Below is a list of the general tools developed for the MJOLNIR software package.
 
    KwargChecker
    my_timer_N
+   binEdges
 
 
 

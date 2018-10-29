@@ -24,7 +24,6 @@ The DataSet object is the interface between the data files and the data treatmen
     DataSet.DataSet.cutQELine
     DataSet.DataSet.plotCutQELine
     DataSet.binData3D
-    DataSet.binEdges
     DataSet.boundaryQ
     DataSet.calculateGrid3D
     DataSet.createRLUAxes
