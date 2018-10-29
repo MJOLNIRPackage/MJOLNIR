@@ -13,7 +13,7 @@ In order to determine the active area of each detector, and indeed of each detec
 
 .. _EnergySummed:                                         
                                                         
-  .. figure:: EnergySummed.png       
+  .. figure:: Figures/detector29.png       
     :width: 50%   
     :align: center                                             
                                               
@@ -25,7 +25,7 @@ Currently the active area is defined as pixels within the center :math:`\pm 3\si
 
 .. _GaussFitWedge:                                         
                                                         
-  .. figure:: GaussFitWedge.png       
+  .. figure:: Figures/Fit_wedge_4.png       
     :width: 75%   
     :align: center                                             
                                               
@@ -33,7 +33,7 @@ Currently the active area is defined as pixels within the center :math:`\pm 3\si
 
 .. _ActiveArea:                                         
                                                         
-  .. figure:: ActiveArea.png       
+  .. figure:: Figures/Active_29.png           
     :width: 50%   
     :align: center                                             
                                               
@@ -48,12 +48,23 @@ With the knowledge of the positions and widths of the active areas on the detect
 
 
 .. _SoftwarePixels:                                         
-                                                        
-  .. figure:: SoftwarePixels.png       
-    :width: 50%   
-    :align: center                                             
-                                              
-    Fit of eight software pixels to Vanadium normalization for the 29th detector tube.
+
+  |1Pixel| |3Pixels| |8Pixels|
+
+  Fit of one, three, and eight software pixels to Vanadium normalization for the 29th detector tube.
+
+.. |1Pixel| image:: Figures/1Pixelsdetector29.png       
+  :width: 33%   
+
+
+.. |3Pixels| image:: Figures/3Pixelsdetector29.png       
+  :width: 33%   
+
+
+.. |8Pixels| image:: Figures/8Pixelsdetector29.png       
+  :width: 33%   
+
+    
 
 It merely remains to save the obtained normalization into a file, which is done in the CSV format. For each detector, analyser, and software pixel the following parameters are saved:
 
@@ -72,5 +83,5 @@ It merely remains to save the obtained normalization into a file, which is done 
    0,0,7,269.377490747,3.31657107929,0.0341873820177,-0.0625227707394,58,63
    ...
 
-The CSV file is saved and is used when converting experiment data from raw HDF files into NXqom files explained in the Data file conversion documentation.
+The CSV file is saved and is used when converting experiment data from raw HDF files into NXqom files explained in the Data file conversion documentation. For a table of the found energies, see :ref:`291018<EfTable>`
 
