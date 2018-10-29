@@ -57,7 +57,7 @@ class FitInitialization(State):#pragma: no cover
         self.ps=' '.join(['{}: {}'.format(i,self.parent.fitObjects[i].__name__) for i in range(len(self.parent.fitObjects))])
         self.ps+='\nPress e for execution.'
         self.parent.updateText(self.fitParameterIndex,title=self.__name__,ps=self.ps)
-
+        plt.draw()
         
     def button(self,event): # Change fitting function
         if event.key in [str(x) for x in np.arange(len(self.parent.fitObjects))]:
@@ -71,10 +71,10 @@ class FitInitialization(State):#pragma: no cover
         elif event.key in ['r']:
             self.fitParameterIndex = np.mod(self.fitParameterIndex-1,self.parent.fitFunction.parameterLength)
             self.parent.fitFunction.parameters[self.fitParameterIndex] = np.NaN
-            
+        
         elif event.key in ['e']: # Execute fitting
             return Execute(self.parent)
-            
+        plt.draw()    
         return self            
     def mouse(self,event):
         if not event.inaxes is None: # Only if inside the axis
@@ -108,6 +108,7 @@ class Execute(State):#pragma: no cover
         self.parent.fitFunction.fitError = fit[1]
         self.parent.plotFit()
         self.parent.updateText(title=self.__name__)
+        plt.draw()
         
     def button(self,event):
         if event.key in ['ctrl+i','i']: # New fitting
@@ -287,6 +288,7 @@ class Viewer1D: # pragma: no cover
                 
         if not self.xLabel is '':
             self.ax.set_xlabel(self.xLabel[self.xID])
+        plt.draw()
         
     def plotFit(self):
         """Plot current guess or fit"""
@@ -294,6 +296,7 @@ class Viewer1D: # pragma: no cover
             self.removeFitPlot()
             self.y = self.fitFunction(self.x)
             self.fitPlot = self.ax.plot(self.x,self.y)
+            plt.draw()
 
     def initData(self):
         """Update with new indices both X and Y (+Yerr)"""
@@ -308,6 +311,7 @@ class Viewer1D: # pragma: no cover
         if not self.fitPlot is None:
             try:
                 self.fitPlot[0].remove()
+                plt.draw()
             except:
                 pass
                 
