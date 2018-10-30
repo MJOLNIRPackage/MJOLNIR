@@ -1,4 +1,17 @@
-30/10-18 - Start of hot commissioning
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+30/10-18 - Opening of shutter and background
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Something new?
+Things done today:
+
+- Opening of shutter
+    - The neutron guide is not suitably under vacuum and needs to be fixed by turning on pump(s).
+    - After restart of pumps and security checks the main shutter and secondary shutter are allowed to be opened.
+    - Test of shutter closing when triggered by alarm (beam stop button, malfunctioning external safety system).
+
+- Check of software
+    - Streaming of data through the UDP pipline as well as direct logging tested to be functional.
+    - Connections between Six and motors, monitors confirmed.
+    - Slight reajustment of data path way from detector to histogram memory is needed as data becomes skewed.
+
+- Measurements
+    - Background measurement of full tank for 83 minutes with a total of around 2500 counts or 0.3 count/(minut tube).
