@@ -854,7 +854,7 @@ class Sample(object):
         except:
             raise AttributeError('No unit cell is set for sample object.')
         self.realVectorA = np.array([self.a,0,0])
-        self.realVectorB = np.dot(-np.array([self.b,0,0]),rotationMatrix(0,0,self.gamma))
+        self.realVectorB = np.dot(np.array([self.b,0,0]),rotationMatrix(0,0,self.gamma))
         self.realVectorC = np.dot(np.array([self.c,0,0]),rotationMatrix(0,self.beta,0))
         
         self.volume = np.abs(np.dot(self.realVectorA,np.cross(self.realVectorB,self.realVectorC)))
@@ -1045,6 +1045,8 @@ def rotate2X(v):
     # Find axis perp to v and proj v into x-y plane -> rotate 2 plane and then to x
     vRotInPlane = np.array([-v[1],v[0],0])
     vPlan = np.array([v[0],v[1],0])
+    if np.isclose(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)),1.0):
+        return rotMatrix([1,0,0],0.0)
     theta = np.arccos(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)))
     R = rotMatrix(vRotInPlane,theta)
     v2 = np.dot(R,v)
