@@ -15,3 +15,10 @@ Things done today:
 
 - Measurements
     - Background measurement of full tank for 83 minutes with a total of around 2500 counts or 0.3 count/(minut tube).
+
+.. figure:: FarAngleCAMEA.png
+  :width: 30%
+  :align: center
+
+The secondary spectrometer in the direct beam to test that it can go through the space between sample table and guide.
+
