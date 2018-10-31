@@ -1,0 +1,14 @@
+31/10-18 - Data wrangling and measurement
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- During the night a background scan was measrued with between 0.25 and 0.3 counts/minut in each tube. The distribution is homogenious execpt for at the ends of the tubes. Here it is believed that high voltage malfuncitons add signal.
+- The data transfer from the detector through streaming and histogram memory works but the format of the detector matrix in the data files is change from being (np,104,1024) --> (np,1024,104)
+
+- Visit by Henrik:
+
+.. figure:: Henrik_NameTag.png
+  :width: 30%
+
+  Visit of Henrik and the mandatory photo session. CAMEA has gotten a name tag as well.
+
+
