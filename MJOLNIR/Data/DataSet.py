@@ -241,18 +241,18 @@ class DataSet(object):
                         if not saveLocation.split('.')[-1] == 'nxs':
                             if saveLocation[-1]!='/':
                                 saveLocation+='/'
-                            saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
+                            saveloc = saveLocation+rawfile.fileLocation.replace('.hdf','.nxs').split('/')[-1]
                         else:
                             saveloc = saveLocation
                     else:
                         if not saveLocation.split('.')[-1] == 'nxs':
                             if saveLocation[-1]!='/':
                                 saveLocation+='/'
-                            saveloc = saveLocation+rawfile.fileLocation.replace('.h5','.nxs').split('/')[-1]
+                            saveloc = saveLocation+rawfile.fileLocation.replace('.hdf','.nxs').split('/')[-1]
                         else:
                             saveloc = saveLocation
                 else:
-                    saveloc = rawfile.fileLocation.replace('.h5','.nxs')
+                    saveloc = rawfile.fileLocation.replace('.hdf','.nxs')
                 
                 convFile.saveNXsqom(saveloc)
             
@@ -3384,9 +3384,9 @@ def test_Dataset_Initialization():
     emptyDataset = DataSet()
     del emptyDataset
     DataFile.assertFile('TestData/1024/Magnon_ComponentA3Scan.nxs')
-    dataset = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5',convertedFiles='TestData/1024/Magnon_ComponentA3Scan.nxs',calibrationfiles=[])
+    dataset = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.hdf',convertedFiles='TestData/1024/Magnon_ComponentA3Scan.nxs',calibrationfiles=[])
     
-    assert(dataset.dataFiles[0].name=='Magnon_ComponentA3Scan.h5')
+    assert(dataset.dataFiles[0].name=='Magnon_ComponentA3Scan.hdf')
     assert(dataset.convertedFiles[0].name=='Magnon_ComponentA3Scan.nxs')
     assert(dataset.normalizationfiles == [])
     Str = str(dataset)
@@ -3472,15 +3472,15 @@ def test_DataSet_Error():
         assert True
 
 
-    ds.dataFiles = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    ds.dataFiles = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
 
 def test_DataSet_Equality():
-    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5')#,convertedFiles=['TestData/VanNormalization.nxs'])
+    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.hdf')#,convertedFiles=['TestData/VanNormalization.nxs'])
     assert(D1==D1)
 
 def test_DataSet_SaveLoad():
     
-    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5')#,convertedFiles = 'TestData/VanNormalization.nxs')
+    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.hdf')#,convertedFiles = 'TestData/VanNormalization.nxs')
 
     temp = 'temporary.bin'
 
@@ -3490,13 +3490,13 @@ def test_DataSet_SaveLoad():
     assert(D1==D2) 
 
 def test_DataSet_str():
-    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.h5',normalizationfiles = 'TestData/VanNormalization.h5')
+    D1 = DataSet(dataFiles='TestData/1024/Magnon_ComponentA3Scan.hdf',normalizationfiles = 'TestData/VanNormalization.hdf')
     string = str(D1)
     print(string)
 
 
 def test_DataSet_Convert_Data():
-    dataFiles = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    dataFiles = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     dataset = DataSet(dataFiles=dataFiles)
     
 
@@ -3519,7 +3519,7 @@ def test_DataSet_Convert_Data():
     dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='TestData/1024/',saveFile=True)
     convertedFile = dataset.convertedFiles[0]
     
-    otherFile = DataFile.DataFile(dataFiles.replace('.h5','.nxs'))
+    otherFile = DataFile.DataFile(dataFiles.replace('.hdf','.nxs'))
     assert(convertedFile==otherFile)
     os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
     
@@ -3574,7 +3574,7 @@ def test_DataSet_full_test():
     import matplotlib.pyplot as plt
     import os
     plt.ioff()
-    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.h5']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.hdf']
 
     dataset = DataSet(dataFiles=DataFile)
     dataset.convertDataFile(saveLocation='TestData/1024/')
@@ -3593,7 +3593,7 @@ def test_DataSet_full_test():
 def test_DataSet_Visualization():
     import warnings
     from MJOLNIR.Data import Viewer3D
-    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.h5']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.hdf']
 
     dataset = DataSet(dataFiles=DataFile)
     dataset.convertDataFile(saveLocation='TestData/1024')
@@ -3626,7 +3626,7 @@ def test_DataSet_1Dcut():
     width = 0.1
 
     plt.ioff()
-    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -3664,7 +3664,7 @@ def test_DataSet_1DcutE():
     Emin = 0.5
     Emax = 1.5
     plt.ioff()
-    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.hdf']
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
     Datset._getData()
@@ -3699,7 +3699,7 @@ def test_DataSet_2Dcut():
     minPixel=0.02
     EnergyBins = np.linspace(0,2,4)
     plt.ioff()
-    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
     try:
@@ -3729,7 +3729,7 @@ def test_DataSet_cutPowder():
     Tolerance = 0.01
 
     plt.ioff()
-    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3747,7 +3747,7 @@ def test_DataSet_cutPowder():
 
 def test_DataSet_createRLUAxes():
     plt.ioff()
-    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -3758,7 +3758,7 @@ def test_DataSet_createRLUAxes():
 
 def test_DataSet_plotQPlane():
     plt.ioff()
-    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.h5']#'TestData/ManuallyChangedData/A3.h5']
+    convertFiles = ['TestData/1024/Magnon_ComponentA3Scan.hdf']#'TestData/ManuallyChangedData/A3.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -3780,8 +3780,8 @@ def test_DataSet_plotQPlane():
 def test_DataSet_plotA3A4(quick):
     plt.ioff()
 
-    File1 = 'TestData/1024/Magnon_ComponentA3Scan.h5'
-    File2 = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    File1 = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
+    File2 = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
 
     DS = DataSet(dataFiles=[File1,File2])
     DS.convertDataFile()
@@ -3999,7 +3999,7 @@ def test_DataSet_plotCutQELine():
 
 
 def test_DataSet_extractDetectorData():
-    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.h5','TestData/1024/Magnon_ComponentA3Scan.h5']#['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
+    DataFile = ['TestData/1024/Magnon_ComponentA3Scan.hdf','TestData/1024/Magnon_ComponentA3Scan.hdf']#['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
     dataset = DataSet(DataFile)
 
     binning = 1

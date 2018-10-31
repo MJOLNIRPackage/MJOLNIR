@@ -6,7 +6,7 @@ from MJOLNIR.Data import DataSet
 def test_Plot_Q_Plane(save=False):
     import numpy as np
     import matplotlib.pyplot as plt
-    file = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    file = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     Data = DataSet.DataSet(dataFiles=file)
     Data.convertDataFile()
     EMin = np.min(Data.energy)+1.5

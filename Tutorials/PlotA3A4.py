@@ -6,7 +6,7 @@ def test_PlotA3A4(save=False):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    File = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    File = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     DS = DataSet.DataSet(dataFiles=File)
     DS.convertDataFile()
     files = DS.convertedFiles

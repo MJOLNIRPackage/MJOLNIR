@@ -6,7 +6,7 @@ def test_Binning_data(view = False):
     import numpy as np
     import h5py as hdf
     import matplotlib.pyplot as plt
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     ds = DataSet.DataSet(dataFiles=fileName)
     ds.convertDataFile()
 

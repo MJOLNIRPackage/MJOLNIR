@@ -7,7 +7,7 @@ def test_Full_example_without_Viewer3D(show=False):
 
     # Convert raw data to NXSqom
 
-    DataFile=['TestData/1024/Magnon_ComponentA3Scan.h5']
+    DataFile=['TestData/1024/Magnon_ComponentA3Scan.hdf']
     DS = DataSet.DataSet(dataFiles=DataFile)
     DS.convertDataFile(saveFile=False)
 

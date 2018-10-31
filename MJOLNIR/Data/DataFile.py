@@ -27,7 +27,7 @@ class DataFile(object):
                 with hdf.File(fileLocation) as f:
                     sample=f.get('/entry/sample')
                     self.sample = Sample(sample=f.get('/entry/sample'))
-                    self.I=np.array(f.get('entry/data/intensity'))
+                    self.I=np.array(f.get('entry/data/intensity')).swapaxes(1,2)
                     self.qx=np.array(f.get('entry/data/qx'))
                     self.qy=np.array(f.get('entry/data/qy'))
                     self.h=np.array(f.get('entry/data/h'))
@@ -62,7 +62,7 @@ class DataFile(object):
                     self.scanCommand = np.array(f.get('entry/scancommand'))
                     self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
 
-            elif fileLocation.split('.')[-1]=='h5':
+            elif fileLocation.split('.')[-1]=='hdf':
                 self.type='h5'
                 with hdf.File(fileLocation) as f:
                     sample=f.get('/entry/sample')
@@ -72,7 +72,7 @@ class DataFile(object):
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
                     self.Ei = np.array(instr.get('monochromator/energy'))
-                    self.I = np.array(instr.get('detector/counts'))
+                    self.I = np.array(instr.get('detector/counts')).swapaxes(1,2)
                     self.A3 = np.array(f.get('entry/sample/rotation_angle'))
                     self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
                     self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
@@ -268,7 +268,7 @@ class DataFile(object):
 
         convFile = DataFile(self) # Copy everything from old file
         updateDict = {'I':Intensity,'Monitor':Monitor,'qx':QX,'qy':QY,'energy':DeltaE,'binning':binning,'Norm':Normalization,
-        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.h5','.nxs')}
+        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.hdf','.nxs')}
         convFile.updateProperty(updateDict)
         return convFile
 
@@ -561,7 +561,7 @@ class DataFile(object):
             raise AttributeError('Only nxs typed files can be saved as nxs-files.')
 
         datafile = self.original_file
-        Intensity = self.I
+        Intensity = self.I.swapaxes(1,2)
         Monitor = self.Monitor
         QX = self.qx
         QY = self.qy
@@ -1045,8 +1045,9 @@ def rotate2X(v):
     # Find axis perp to v and proj v into x-y plane -> rotate 2 plane and then to x
     vRotInPlane = np.array([-v[1],v[0],0])
     vPlan = np.array([v[0],v[1],0])
-    if np.isclose(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)),1.0):
-        return rotMatrix([1,0,0],0.0)
+    ## TODO: Check this!
+    #if np.isclose(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)),1.0):
+    #    return rotMatrix([1,0,0],0.0)
     theta = np.arccos(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)))
     R = rotMatrix(vRotInPlane,theta)
     v2 = np.dot(R,v)
@@ -1206,7 +1207,7 @@ def test_equality():
 
 def test_calculateProjections():
 
-    s1 = Sample(np.pi*2,np.pi*2,np.pi*2,90,90,120)
+    s1 = Sample(np.pi*2,np.pi*2,np.pi*2,90,90,60)
 
     s1.orientationMatrix = np.array([[1,0,0],[0,1,0]])
     s1.calculateProjections()
@@ -1233,7 +1234,7 @@ def test_DataFile():
         assert False
     except:
         assert True
-    files = ['TestData/1024/Magnon_ComponentA3Scan.h5',
+    files = ['TestData/1024/Magnon_ComponentA3Scan.hdf',
              'TestData/1024/Magnon_ComponentA3Scan.nxs']
     DF1 = DataFile(files[0])
     assertFile(files[1])
@@ -1245,8 +1246,8 @@ def test_DataFile():
     assert(DF1.sample == DF2.sample)
 
 def test_DataFile_equility():
-    f1 = DataFile('TestData/1024/Magnon_ComponentA3Scan.h5')
-    f2 = DataFile('TestData/1024/Magnon_ComponentA3Scan.h5')
+    f1 = DataFile('TestData/1024/Magnon_ComponentA3Scan.hdf')
+    f2 = DataFile('TestData/1024/Magnon_ComponentA3Scan.hdf')
     assert(f1==f2)
 
     f3 = DataFile(f2)
@@ -1258,11 +1259,12 @@ def test_DataFile_rotations():
     rotVector = [np.dot(rotations[i],vectors[i]) for i in range(len(vectors))]
     for i in range(len(rotVector)):
         assert(np.isclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i])))
+        print(rotVector[i][0],np.linalg.norm(rotVector[i]))
         assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
 
 def test_DataFile_plotA4():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     file = DataFile(fileName)
     
@@ -1289,7 +1291,7 @@ def test_DataFile_plotA4():
     
 def test_DataFile_plotEf():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     assertFile(fileName2)
     file = DataFile(fileName)
@@ -1315,7 +1317,7 @@ def test_DataFile_plotEf():
 
 def test_DataFile_plotEfOverview():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     assertFile(fileName2)
 
@@ -1342,7 +1344,7 @@ def test_DataFile_plotEfOverview():
 
 def test_DataFile_plotNormalization():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
     file = DataFile(fileName)
     assertFile(fileName2)
@@ -1375,7 +1377,7 @@ def test_DataFile_decodeString():
 
 def test_DataFile_ScanParameter():
 
-    files = ['TestData/1024/Magnon_ComponentA3Scan.h5','TestData/1024/Magnon_ComponentA3Scan.nxs']
+    files = ['TestData/1024/Magnon_ComponentA3Scan.hdf','TestData/1024/Magnon_ComponentA3Scan.nxs']
     assertFile(files[1])
     for file in files:
         dfile = DataFile(file)
@@ -1393,7 +1395,7 @@ def test_DataFile_BoundaryCalculation(quick):
         binning = [1]
     for B in binning:
         print('Using binning {}'.format(B))
-        df = DataFile('TestData/1024/Magnon_ComponentA3Scan.h5')
+        df = DataFile('TestData/1024/Magnon_ComponentA3Scan.hdf')
         converted = df.convert(binning=B)
         EP,EBins = converted.calculateEdgePolygons()
         areas = np.array([e.area for e in EP])
@@ -1406,6 +1408,6 @@ def test_DataFile_BoundaryCalculation(quick):
 def assertFile(file):
     """Make sure that file exists for methods to work"""
     if not os.path.isfile(file):
-        df = DataFile(file.replace('.nxs','.h5'))
+        df = DataFile(file.replace('.nxs','.hdf'))
         con = df.convert(binning=8)
         con.saveNXsqom(file)

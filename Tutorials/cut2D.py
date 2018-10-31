@@ -7,7 +7,7 @@ from MJOLNIR import _tools
 def test_cut2D(show=False):
     import numpy as np
     import matplotlib.pyplot as plt
-    file = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    file = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
     DataObj = DataSet.DataSet(dataFiles=file)
     DataObj.convertDataFile()
     energy = DataObj.energy

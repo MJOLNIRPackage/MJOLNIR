@@ -11,4 +11,11 @@
 
   Visit of Henrik and the mandatory photo session. CAMEA has gotten a name tag as well.
 
+- The first neutrons have been measured!
 
+.. figure:: FirstNeutrons.jpg
+  :width: 30%
+
+  First neutrons as observed in the RITA cabin
+
+- No dispersions have yet been measured as those in lead are at too A4

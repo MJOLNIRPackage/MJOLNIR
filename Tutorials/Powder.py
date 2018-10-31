@@ -6,7 +6,7 @@ from MJOLNIR.Data import DataSet
 from MJOLNIR import _tools
 def test_Powder(show=False):
     import matplotlib.pyplot as plt
-    file = 'TestData/1024/Magnon_ComponentA3Scan.h5'
+    file = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
 
     DataObj = DataSet.DataSet(dataFiles=file)
     DataObj.convertDataFile()
