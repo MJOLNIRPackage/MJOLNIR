@@ -18,4 +18,4 @@
 
   First neutrons as observed in the RITA cabin
 
-- No dispersions have yet been measured as those in lead are at too A4
+- No dispersions have yet been measured as those in lead are at too high A4.
