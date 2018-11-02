@@ -37,6 +37,6 @@ One of the current explanations is that air scattering moves neutrons from sampl
   :width: 45%
   :align: center
 
-  PICTURE MISSING! Detector overview with shielding mat just in front of the middle part of Be filter. As seen, the background remains while neutrons are completely blocked.
+  Detector overview with shielding mat just in front of the middle part of Be filter. As seen, the background remains while neutrons are completely blocked.
 
 
