@@ -305,7 +305,7 @@ class Instrument(GeometryConcept.GeometryConcept):
             f.write(string)
 
     @_tools.KwargChecker()
-    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False):
+    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False,mask=True):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
         Generates 4 different tables:
@@ -332,6 +332,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - plot (boolean): Set to True if pictures of all fit are to be stored in savelocation
 
+            - mask (boolean): If True the lower 100 pixels are set to 0
 
         .. warning::
             At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Guassian width of Vanadium peaks.
@@ -362,10 +363,14 @@ class Instrument(GeometryConcept.GeometryConcept):
             if savelocation[-1]!='/':
                 savelocation+='/'
             
-            Data = np.array(VanFileInstrument.get('detector/data')).transpose(1,0,2)
-            Ei = np.array(VanFileInstrument.get('monochromator/energy'))
+            Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)
+            
+            if True: #Mask pixels where spurion is present
+                Data[:,:,:100]=0
+
+            Ei = np.array(VanFileInstrument.get('monochromator/energy')).astype(float)
             analysers = 8
-            pixels = self.wedges[0].detectors[0].pixels#len(self.A4[0][0]) # <------------------- Change!
+            pixels = self.wedges[0].detectors[0].pixels
             detectors = len(self.A4[0])*len(self.A4)
             detectorsorInWedge = len(self.A4[0])
             wedges = len(self.A4)
@@ -418,23 +423,25 @@ class Instrument(GeometryConcept.GeometryConcept):
             for j in range(analysers):
                 peakPos[:,j],peakVal[:,j] = findPeak(dataSubtracted) # Find a peak in data
                 for i in range(detectors):
-                    guess = [peakVal[i,j],float(peakPos[i,j]),pixels/100.0,np.min(ESummedData[i])]
+                    guess = [peakVal[i,j],float(peakPos[i,j]),20,np.min(ESummedData[i])]
+                   
                     res = scipy.optimize.curve_fit(Gaussian,np.arange(ESummedData.shape[1]),dataSubtracted[i,:],p0=[guess])
                     peakPos[i,j] = res[0][1]
                     peakVal[i,j] = res[0][0]
                     peakWidth[i,j]= res[0][2]
-
+                    if peakPos[i,j]>ESummedData.shape[1]:
+                        raise ValueError('Peak found at {} for analyser {} and detector {}'.format(peakPos[i,j],j,i))
                     # Generate peak as the one fitted and subtract it from signal
                     x=np.arange(pixels)
                     y = Gaussian(x,peakVal[i,j],peakPos[i,j],peakWidth[i,j],peakBackg[i,j])
                     peak = y>peakVal[i,j]*0.05
                     dataSubtracted[i,peak]= 0
-
+            plt.plot()
             if plot: # pragma: no cover
-                plt.clf()
-                plt.suptitle('Fits')
                 x = np.arange(pixels)
                 for k in range(wedges):
+                    plt.clf()
+                    plt.suptitle('Fits')
                     for i in range(detectorsorInWedge):
                         y=np.zeros_like(x,dtype=float)
                         plt.subplot(4, 4, i+1)
@@ -445,12 +452,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.plot(x,y,'k')
                         plt.xlabel('Pixel')
                         plt.ylabel('Intensity [arg]')
-                        plt.title('Detector {}'.format(i))
+                        plt.title('Detector {}'.format(i+13*k))
                         plt.ylim(0,np.max(ESummedData[i+13*k])*1.1)
 
                     plt.tight_layout()
-                    plt.savefig(savelocation+'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
-                    print('Saving: {}'.format(savelocation+'/Raw/Fit_wedge_'+str(k)+'.png'))
+                    plt.savefig(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
+                    print('Saving: {}'.format(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png'))
 
             
             ## Sort the positions such that peak 1 is the furthermost left peak and assert diff(pos)>100
@@ -461,18 +468,17 @@ class Instrument(GeometryConcept.GeometryConcept):
             sortedPeakPosArg2 = np.argsort(sortedPeakPos,axis=1)
             sortedPeakPos.sort(axis=1)
 
-            differences = np.diff(sortedPeakPos,axis=1)
-            outliers = np.zeros_like(peakPos,dtype=bool)
-            outliers[:,:-1]=differences<pixels/10
-            sortedPeakPos[outliers]=5*pixels
+            #differences = np.diff(sortedPeakPos,axis=1)
+            #outliers = np.zeros_like(peakPos,dtype=bool)
+            #outliers[:,:-1]=differences<pixels/100
+            #sortedPeakPos[outliers]=5*pixels
             sortedPeakPosArg3 = np.argsort(sortedPeakPos,axis=1)
             argSort = np.array([sortedPeakPosArg[i,sortedPeakPosArg2[i,sortedPeakPosArg3[i,:]]] for i in range(detectors)])
             sortedPeakPos = np.sort(sortedPeakPos,axis=1)
-            peaks=np.sum(sortedPeakPos<5*pixels,axis=1) # Number of peaks found
-
+            peaks=np.sum(sortedPeakPos<7*pixels,axis=1) # Number of peaks found
 
             if np.any(peaks!=analysers):
-                raise ValueError('Wrong number of peaks, {} found in detector(s): {}\nIn total error in {} detector(s).'.format(peaks[peaks!=analysers],np.arange(peaks.shape[0])[peaks!=analysers],np.sum(peaks[peaks!=analysers])))
+                raise ValueError('Wrong number of peaks, {} found in detector(s): {}\nIn total error in {} detector(s).'.format(peaks[peaks!=analysers],np.arange(peaks.shape[0])[peaks!=analysers],np.sum(peaks!=analysers)))
 
             pixelpos  = np.array([peakPos[i,argSort[i]] for i in range(detectors)])
             widths    = np.array([peakWidth[i,argSort[i]] for i in range(detectors)])
@@ -539,31 +545,43 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.title('Detector {}, {} pixels'.format(i,detpixels))
                         x =np.linspace(0,detpixels,len(Ei))
                     for j in range(analysers):
-
                         center = int(round(sortedPeakPos[i,j]))
                         width = activePixels[i,j].sum()
                         pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
-                        
                         for k in range(detpixels):
                             binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
-                            guess = [np.max(binPixelData), Ei[np.argmax(binPixelData)],0.1,0]
+                            ECenter = Ei[np.argmax(binPixelData)]
+                            ECutLow = ECenter-0.4
+                            ECutHigh= ECenter+0.4
+                            TopId = np.argmin(np.abs(Ei-ECutHigh))
+                            BotId = np.argmin(np.abs(ECutLow-Ei))
+                            if TopId<BotId:
+                                _ = TopId
+                                TopId = BotId
+                                BotId = _
+                            binPixelData = binPixelData[BotId:TopId]
+                            EiLocal = Ei[BotId:TopId]
+                            Bg = np.min(binPixelData[[0,-1]])
+                            guess = np.array([np.max(binPixelData), ECenter,0.005,Bg],dtype=float)
                             try:
-                                res = scipy.optimize.curve_fit(Gaussian,Ei,binPixelData,p0=guess)
+                                res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
+                                
                             except:
                                 if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
                                     os.makedirs(savelocation+'/{}_pixels'.format(detpixels))
                                 if not plot:
                                     plt.ioff
                                 plt.figure()
-                                plt.scatter(Ei,binPixelData)
-                                plt.plot(Ei,Gaussian(Ei,guess[0],guess[1],guess[2],guess[3]))
-                                plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=300)
+                                plt.scatter(EiLocal,binPixelData)
+                                plt.plot(Ei,Gaussian(Ei,*guess))
+                            
+                                plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
                                 plt.close()
 
                             fittedParameters[i,j,k]=res[0]
                             if plot: # pragma: no cover
                                 plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
-                                plt.scatter(Ei,binPixelData,color=colors[:,k])
+                                plt.scatter(EiLocal,binPixelData,color=colors[:,k])
                         activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
                     activePixelDetector.append(activePixelAnalyser)
                     if plot: # pragma: no cover
@@ -571,11 +589,11 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.xlabel('Ei [meV]')
                         plt.ylabel('Weight [arb]')
                         plt.tight_layout(rect=(0,0,1,0.95))
-                        plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=300)
+                        plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=150)
                         print('Saving: {}'.format(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i)))
 
                 if not A4datafile is False: # pragma: no cover
-                # Perform A4 calibration
+                    # Perform A4 calibration
                     A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
                     EiFile = np.array(A4FileInstrument.get('monochromator/energy'))[0]
                     A4FileIntensity = np.array(A4FileInstrument.get('detector/data'))
@@ -630,7 +648,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     if plot==True: # pragma: no cover
                         if not os.path.exists(savelocation+'A4'):
                             os.makedirs(savelocation+'A4')
-                        plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=300)
+                        plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=150)
 
                     A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
 
@@ -639,12 +657,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.scatter(range(A4.shape[0]),A4FitValue)
                         plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
                         plt.legend(['File','Geometry'])
-                        plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=300)
+                        plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=150)
 
                         diff = A4FitValue-MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi#+2*theta*180.0/np.pi
                         plt.clf()
                         plt.scatter(range(A4.shape[0]),diff)
-                        plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=300)
+                        plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=150)
 
                 else: # Use nominal A4 values
                     A4FitValue = []
