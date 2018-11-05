@@ -12,7 +12,7 @@ Having chosen binning(s) one creates the tables either with or without creating 
 +-------------------------------------------------------------------+------------------------------------------------------------------+
 | .. literalinclude:: ../../Tutorials/Generate_normalization.py     |  .. RawData:                                                     |
 |     :lines: 4-                                                    |                                                                  |
-|     :language: python                                             |  .. figure:: ../../TestData/Raw/Fit_wedge_4.png                  |
+|     :language: python                                             |  .. figure:: ../Commissioning/Normalization/Fit_wedge_4.png      |
 |     :linenos:                                                     |    :width: 90%                                                   |
 |                                                                   |                                                                  |
 |                                                                   | Plot of fit to data integrated in the energy direction for wedge |
@@ -21,10 +21,10 @@ Having chosen binning(s) one creates the tables either with or without creating 
 +-------------------------------------------------------------------+------------------------------------------------------------------+
 |  .. SimpleInstrumentA4:                                           |  .. SimpleInstrumentEf:                                          |
 |                                                                   |                                                                  |
-|  .. figure:: ../../TestData/Raw/Active_52.png                     |  .. figure:: ../../TestData/8_pixels/Detector52.png              |
+|  .. figure:: ../Commissioning/Normalization/Active_51.png         |  .. figure:: ../Commissioning/Normalization/8Pixel/Detector51.png|
 |    :width: 90%                                                    |    :width: 90%                                                   |
 |                                                                   |                                                                  |
-| Active area of detector 52 as defined by 3 sigmas away from center| Fit of peaks in vanadium data for detector 52 when using a       |
+| Active area of detector 51 as defined by 3 sigmas away from center| Fit of peaks in vanadium data for detector 51 when using a       |
 | pixel, where red denotes active and black inactive.               | a binning of 8 pixels per analyser.                              |
 |                                                                   |                                                                  |
 +-------------------------------------------------------------------+------------------------------------------------------------------+

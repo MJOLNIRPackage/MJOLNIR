@@ -1492,20 +1492,20 @@ def test_Normalization_tables(quick):
     #AF = 'TestData/1024/A4Normalization.h5'
 
     try:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=[]) # No binning specified 
         assert False
     except AttributeError:
         assert True
 
     try:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=['Nothing?']) # Wrong binning
         assert False
     except AttributeError:
         assert True
 
     if not quick==True:
-        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='TestData',plot=False,tables=['Single',3,8]) 
+        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='Data/',plot=False,tables=['Single',3,8]) 
     else:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=['Single']) 
 
 
