@@ -5,7 +5,7 @@ This part of the documentation is intented to contain a sort of commissioning lo
 
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 0
    :reversed:
    :titlesonly:
    :includehidden:
