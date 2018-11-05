@@ -6,11 +6,11 @@ def test_Full_example(save=False,show=False):
     import warnings
     import matplotlib.pyplot as plt
     import numpy as np
-    DataFile = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
+    DataFile = '../Data/camea2018n000017.hdf'
 
     dataset = DataSet.DataSet(dataFiles=DataFile)
-    dataset.convertDataFile(saveLocation='../TestData/',saveFile=save)
-    viewer = dataset.View3D(0.02,0.02,0.1)
+    dataset.convertDataFile(saveLocation='../Data/',saveFile=save)
+    viewer = dataset.View3D(0.02,0.02,0.1,rlu=False)
     
     viewer.caxis=(0,40)
     if show:

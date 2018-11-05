@@ -41,9 +41,9 @@ class DataFile(object):
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
                     self.Ei = np.array(instr.get('monochromator/energy'))
                     self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
-                    self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
+                    self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
                     self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
-                    self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
+                    self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
                     #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
                     #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
@@ -63,7 +63,7 @@ class DataFile(object):
                     self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
 
             elif fileLocation.split('.')[-1]=='hdf':
-                self.type='h5'
+                self.type='hdf'
                 with hdf.File(fileLocation) as f:
                     sample=f.get('/entry/sample')
                     self.sample = Sample(sample=f.get('/entry/sample'))
@@ -74,9 +74,9 @@ class DataFile(object):
                     self.Ei = np.array(instr.get('monochromator/energy'))
                     self.I = np.array(instr.get('detector/counts')).swapaxes(1,2)
                     self.A3 = np.array(f.get('entry/sample/rotation_angle'))
-                    self.A4 = np.array(f.get('entry/sample/polar_angle')).reshape(-1)
+                    self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
                     self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
-                    self.A4Off = np.array(f.get('entry/sample/polar_angle_zero'))
+                    self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning=1 # Choose standard binning 1
                     #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
                     #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
@@ -94,7 +94,7 @@ class DataFile(object):
                     self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
                     self.scanCommand = np.array(f.get('entry/scancommand'))
             else:
-                raise AttributeError('File is not of type nxs or h5.')
+                raise AttributeError('File is not of type nxs or hdf.')
             self.name = fileLocation.split('/')[-1]
             self.fileLocation = os.path.abspath(fileLocation)
             self.sample.calculateProjections()
@@ -133,6 +133,39 @@ class DataFile(object):
         else:
             self._A4Off = A4Off
 
+    @property
+    def A3(self):
+        return self._A3
+
+    @A3.getter
+    def A3(self):
+        return self._A3
+
+    @A3.setter
+    def A3(self,A3):
+        if A3.shape == ():
+            self._A3 = [0.0]
+        else:
+            if A3[0] is None:
+                self._A3 = [0.0]
+            else:
+                self._A3 = A3
+
+    @property
+    def A4(self):
+        return self._A4
+
+    @A4.getter
+    def A4(self):
+        return self._A4
+
+    @A4.setter
+    def A4(self,A4):
+        if A4.shape == ():
+            self._A4 = [0.0]
+        else:
+            self._A4 = A4
+
     def updateProperty(self,dictionary):
         if isinstance(dictionary,dict):
             for key in dictionary.keys():
@@ -141,13 +174,13 @@ class DataFile(object):
     def __eq__(self,other):
         return len(self.difference(other))==0
     
-    def difference(self,other,keys = set(['sample','instrument','Ei','I','A3','A4','binning','scanParameters'])):
+    def difference(self,other,keys = set(['sample','instrument','Ei','I','_A3','_A4','binning','scanParameters'])):
         """Return the difference between two data files by keys"""
         dif = []
-        if not set(self.__dict__.keys()) == set(other.__dict__.keys()): # Check if same generation and type (h5 or nxs)
+        if not set(self.__dict__.keys()) == set(other.__dict__.keys()): # Check if same generation and type (hdf or nxs)
             return list(set(self.__dict__.keys())-set(other.__dict__.keys()))
 
-        comparisonKeys = set(['sample','instrument','Ei','I','A3','A4','binning','scanParameters'])
+        comparisonKeys = keys
         for key in comparisonKeys:
             skey = self.__dict__[key]
             okey = other.__dict__[key]
@@ -199,13 +232,14 @@ class DataFile(object):
 
         A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
         
+        print(A4Zero)
         if A4Zero is None:
             A4Zero=0.0
         else:
             A4Zero = np.deg2rad(np.array(A4Zero))
 
         
-        A3Zero = self.A3Off#file.get('entry/sample/rotation_angle_zero')
+        A3Zero = self.A3Off
         if A3Zero is None:
             A3Zero=0.0
         else:
@@ -235,7 +269,7 @@ class DataFile(object):
         
 
         kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
-        Ei = self.Ei#np.array(instrument.get('monochromator/energy'))
+        Ei = self.Ei.reshape(-1,1,1)#np.array(instrument.get('monochromator/energy'))
         
         
         ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
@@ -657,7 +691,7 @@ def getScanParameter(f):
     """
     if f.get('/entry/scanvars') is None:
         return [],[],[]
-    scanParameters = str(np.array(f.get('/entry/scanvars'))).split()
+    scanParameters = [x.decode() for x in f.get('/entry/scanvars')]
     scanValues = []
     scanUnits = []
 
@@ -955,7 +989,7 @@ def extractData(files):
     instrumentCalibrationA4 = []
     instrumentCalibrationEdges = []
 
-    if(files[0].type!='h5'):
+    if(files[0].type!='hdf'):
         qx = []
         qy = []
         energy = []
@@ -967,7 +1001,7 @@ def extractData(files):
     scanParamUnit = []
     for datafile in files:
         I.append(datafile.I)
-        if(files[0].type!='h5'):
+        if(files[0].type!='hdf'):
             qx.append(datafile.qx)
             qy.append(datafile.qy)
             energy.append(datafile.energy)
@@ -995,7 +1029,7 @@ def extractData(files):
         instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
         
     I = np.array(I)
-    if(files[0].type!='h5'):
+    if(files[0].type!='hdf'):
         qx = np.array(qx)
         qy = np.array(qy)
         H = np.array(H)
@@ -1019,7 +1053,7 @@ def extractData(files):
     instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
     instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
     Ei = np.array(Ei)
-    if files[0].type!='h5':
+    if files[0].type!='hdf':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
     else:
@@ -1234,8 +1268,8 @@ def test_DataFile():
         assert False
     except:
         assert True
-    files = ['TestData/1024/Magnon_ComponentA3Scan.hdf',
-             'TestData/1024/Magnon_ComponentA3Scan.nxs']
+    files = ['Data/camea2018n000017.hdf',
+             'Data/camea2018n000017.nxs']
     DF1 = DataFile(files[0])
     assertFile(files[1])
     DF2 = DataFile(files[1])
@@ -1246,8 +1280,8 @@ def test_DataFile():
     assert(DF1.sample == DF2.sample)
 
 def test_DataFile_equility():
-    f1 = DataFile('TestData/1024/Magnon_ComponentA3Scan.hdf')
-    f2 = DataFile('TestData/1024/Magnon_ComponentA3Scan.hdf')
+    f1 = DataFile('Data/camea2018n000017.hdf')
+    f2 = DataFile('Data/camea2018n000017.hdf')
     assert(f1==f2)
 
     f3 = DataFile(f2)
@@ -1264,8 +1298,8 @@ def test_DataFile_rotations():
 
 def test_DataFile_plotA4():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
-    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    fileName = 'Data/camea2018n000017.hdf'
+    fileName2= 'Data/camea2018n000017.nxs'
     file = DataFile(fileName)
     
 
@@ -1291,8 +1325,8 @@ def test_DataFile_plotA4():
     
 def test_DataFile_plotEf():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
-    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    fileName = 'Data/camea2018n000017.hdf'
+    fileName2= 'Data/camea2018n000017.nxs'
     assertFile(fileName2)
     file = DataFile(fileName)
 
@@ -1317,8 +1351,8 @@ def test_DataFile_plotEf():
 
 def test_DataFile_plotEfOverview():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
-    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    fileName = 'Data/camea2018n000017.hdf'
+    fileName2= 'Data/camea2018n000017.nxs'
     assertFile(fileName2)
 
     file = DataFile(fileName)
@@ -1344,8 +1378,8 @@ def test_DataFile_plotEfOverview():
 
 def test_DataFile_plotNormalization():
     plt.ioff()
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
-    fileName2= 'TestData/1024/Magnon_ComponentA3Scan.nxs'
+    fileName = 'Data/camea2018n000017.hdf'
+    fileName2= 'Data/camea2018n000017.nxs'
     file = DataFile(fileName)
     assertFile(fileName2)
 
@@ -1377,7 +1411,7 @@ def test_DataFile_decodeString():
 
 def test_DataFile_ScanParameter():
 
-    files = ['TestData/1024/Magnon_ComponentA3Scan.hdf','TestData/1024/Magnon_ComponentA3Scan.nxs']
+    files = ['Data/camea2018n000017.hdf','Data/camea2018n000017.nxs']
     assertFile(files[1])
     for file in files:
         dfile = DataFile(file)
@@ -1385,22 +1419,23 @@ def test_DataFile_ScanParameter():
         assert(len(dfile.scanParameters)==len(dfile.scanUnits))
         assert(len(dfile.scanParameters)==len(dfile.scanValues))
         assert(len(dfile.scanParameters)==1)
-        assert(dfile.scanUnits[0]=='degrees')
-        assert(np.all(dfile.scanValues==np.arange(0,150,1)))
+        assert(dfile.scanUnits[0]=='degree')
+        ##assert(np.all(dfile.scanValues==np.arange(0,150,1)))
 
-def test_DataFile_BoundaryCalculation(quick):
-    if quick==True:
-        binning = [1,3,8]
-    else:
-        binning = [1]
-    for B in binning:
-        print('Using binning {}'.format(B))
-        df = DataFile('TestData/1024/Magnon_ComponentA3Scan.hdf')
-        converted = df.convert(binning=B)
-        EP,EBins = converted.calculateEdgePolygons()
-        areas = np.array([e.area for e in EP])
-        assert(np.all(areas>2.0)) # Value found by running algorithm
-        assert(len(EBins)==B*8+1)
+#
+#def test_DataFile_BoundaryCalculation(quick):
+#    if quick==True:
+#        binning = [1,3,8]
+#    else:
+#        binning = [1]
+#    for B in binning:
+#        print('Using binning {}'.format(B))
+#        df = DataFile('Data/camea2018n000017.hdf')
+#        converted = df.convert(binning=B)
+#        EP,EBins = converted.calculateEdgePolygons()
+#        areas = np.array([e.area for e in EP])
+#        assert(np.all(areas>2.0)) # Value found by running algorithm
+#        assert(len(EBins)==B*8+1)
         
 
 

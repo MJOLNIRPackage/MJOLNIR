@@ -436,7 +436,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     y = Gaussian(x,peakVal[i,j],peakPos[i,j],peakWidth[i,j],peakBackg[i,j])
                     peak = y>peakVal[i,j]*0.05
                     dataSubtracted[i,peak]= 0
-            plt.plot()
+            
             if plot: # pragma: no cover
                 x = np.arange(pixels)
                 for k in range(wedges):
@@ -1482,30 +1482,30 @@ def test_instrument_create_xml():
     assert(len(Instr2.wedges)==8)
 
 
-#@pytest.mark.unit
-#def test_Normalization_tables(quick):
+@pytest.mark.unit
+def test_Normalization_tables(quick):
 
-#    Instr = Instrument(fileName='TestData/1024/CAMEA_Full.xml')
-#    Instr.initialize()
+    Instr = Instrument(fileName='Data/CAMEA_Full.xml')
+    Instr.initialize()
 
-#    NF = 'TestData/1024/EScanRunDoubleFocusHS.h5'
+    NF = 'Data/camea2018n000038.hdf'
     #AF = 'TestData/1024/A4Normalization.h5'
 
-#    try:
-#        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
-#        assert False
-#    except AttributeError:
-#        assert True
+    try:
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
+        assert False
+    except AttributeError:
+        assert True
 
-#    try:
-#        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
-#        assert False
-#    except AttributeError:
-#        assert True
+    try:
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
+        assert False
+    except AttributeError:
+        assert True
 
-    #if not quick==True:
-    #    Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
-    #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
-    
+    if not quick==True:
+        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='TestData',plot=False,tables=['Single',3,8]) 
+    else:
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
 
 
