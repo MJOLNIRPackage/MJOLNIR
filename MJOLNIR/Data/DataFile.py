@@ -61,6 +61,7 @@ class DataFile(object):
                     self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
                     self.scanCommand = np.array(f.get('entry/scancommand'))
                     self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
+                    self.title = np.array(f.get('entry/title'))
 
             elif fileLocation.split('.')[-1]=='hdf':
                 self.type='hdf'
@@ -93,6 +94,7 @@ class DataFile(object):
                     self.electricField = np.array(sample.get('electric_field'))
                     self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
                     self.scanCommand = np.array(f.get('entry/scancommand'))
+                    self.title = np.array(f.get('entry/title'))
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
             self.name = fileLocation.split('/')[-1]
@@ -208,6 +210,7 @@ class DataFile(object):
     def __hasattr__(self,s):
         return s in self.__dict__.keys()
 
+    @_tools.KwargChecker()
     def convert(self,binning):
         if self.instrument == 'CAMEA':
             EPrDetector = 8 
@@ -232,7 +235,7 @@ class DataFile(object):
 
         A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
         
-        print(A4Zero)
+        
         if A4Zero is None:
             A4Zero=0.0
         else:
