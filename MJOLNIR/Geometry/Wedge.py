@@ -180,18 +180,18 @@ class Wedge(GeometryConcept.GeometryConcept):
                     raise ValueError("ManyToMany concept chosen by detector split into number of parts not matching number of analysers!")
                 detectorPixelPositions.append(np.concatenate(PixelPos))
                 
-                LDA = [PixelPos[i]-self.analysers[i].position for i in range(len(PixelPos))] # Detector - analyser vector
-                LAS = [self.analysers[i].position+self.position for i in range(len(PixelPos))]
                 vertical = np.array([0,0,1])
-
-                perpVect = [np.cross(vertical,LAS[i]) for i in range(len(PixelPos))]
-
+                
+                LAS = [self.analysers[i].position+self.position for i in range(len(PixelPos))]
+                perpVect = [np.cross(vertical,LAS[i])/(np.linalg.norm(np.cross(vertical,LAS[i]))) for i in range(len(PixelPos))]
+                
                 deltaXD = [np.dot(PixelPos[i],perpVect[i]) for i in range(len(PixelPos))]
-
+                LDA = [np.array(PixelPos[i])-np.array(deltaXD[i]).reshape(-1,1)*np.array(perpVect[i]).reshape(1,3)-self.analysers[i].position for i in range(len(PixelPos))]
+                
                 LD = [np.linalg.norm(LDA[i],axis=1) for i in range(len(PixelPos))]
                 LA = [np.linalg.norm(LAS[i]) for i in range(len(PixelPos))]
-
                 deltaXDprime = [deltaXD[i]/(LD[i]/LA[i]+1.0) for i in range(len(PixelPos))]
+
 
                 analyserPixelPositions.append(np.concatenate([np.outer(deltaXDprime[i],perpVect[i])+self.analysers[i].position+self.position for i in range(len(PixelPos))]))
 
