@@ -5,9 +5,17 @@ Whilst the Be filter has been cooling, the :math:`2\theta` data has been analyse
 This follows from the fact that the scattering angle is to be negated when moving to the other side of the direct beam while the offset is the same. In an equation, if the AlO peak is found at :math:`C_1=2\theta_S+\theta_{off}` and the other at :math:`C_2=-2\theta_S+\theta_{off}` then the actual scattering angle is :math:`2\theta=\frac{C1-C2}{2}` . For the given data, the value was found to be 71.1082 :math:`\pm` 0.0008 degrees.
 By subtracting this from all of the other fits, the graph below is found. As seen, there is a general offset for all wedges of 3.52 :math:`\pm` 0.03 degrees between the found and the calibration table. Further, the :math:`2\theta` step size between the tubes is also different than the calibration files. This is due to the out of plane scattering as described in :ref:`Geometry<InstrumentFig>`.
 
-.. _2thetaAlOOffset: 
+.. _2thetaAlOOffset5meV: 
 
-.. figure:: Normalization/A4NormalizationFlat.png
+.. figure:: Normalization/A4NormalizationFlat5meV.png
    :width: 75%  
 
-From the found sample scattering angle, assuming that the lattice paramters are known, the true incoming energy can be found through the regular Bragg scattering condition with the powder ring peak being (0,2,1) of AlO. This is found to be :math:`E_i=4.993192` meV, which compared to the one written in the data file as 4.999995 meV is quite close.
+.. _2thetaAlOOffset3_2meV: 
+
+.. figure:: Normalization/A4NormalizationFlat3_2meV.png
+   :width: 75%  
+
+
+
+From the found sample scattering angle, assuming that the lattice paramters are known, the true incoming energy can be found through the regular Bragg scattering condition with the powder ring peak being (0,2,1) of AlO. This is found to be :math:`E_i=4.993192` meV, which compared to the one written in the data file as 4.999995 meV is quite close. However, when using the HFO sample kindly provided by Romain Franck, the calculated :math:`E_i=3.1886` meV as compared to the  :math:`E_i=3.199995` meV wanted. 
+This corresponds to an offset in :math:`A_1` of about 0.12 degrees. This is to be investigated.
