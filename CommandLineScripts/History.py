@@ -96,7 +96,7 @@ for file in completePaths:
     except:
         returnText+=file.split('/')[-1]+' not correct format\n'
     else:
-        returnText+=f.name+': '+f.scanCommand[0].decode()+'\n'
+        returnText+=f.name+': '+f.scanCommand[0].decode()+'\t'+f.title[0].decode()+'\n'
 
 saveFile = args.save
 
