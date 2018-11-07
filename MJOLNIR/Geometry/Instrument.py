@@ -233,20 +233,20 @@ class Instrument(GeometryConcept.GeometryConcept):
         ang_1 = np.zeros((7,))
         ang_2 = np.zeros((6,))
 
-        ang_1[6]=-3.33
-        ang_1[5]=-2.22
-        ang_1[4]=-1.11
+        ang_1[6]=-3.3#3
+        ang_1[5]=-2.2#2
+        ang_1[4]=-1.1#1
         ang_1[3]=0
-        ang_1[2]=1.11
-        ang_1[1]=2.22
-        ang_1[0]=3.33
+        ang_1[2]=1.1#1
+        ang_1[1]=2.2#2
+        ang_1[0]=3.3#3
 
-        ang_2[5]=-2.775
-        ang_2[4]=-1.665
-        ang_2[3]=-0.555
-        ang_2[2]=0.555
-        ang_2[1]=1.665
-        ang_2[0]=2.775
+        ang_2[5]=-2.75#75
+        ang_2[4]=-1.65#65
+        ang_2[3]=-0.55#5
+        ang_2[2]=0.55#5
+        ang_2[1]=1.65#65
+        ang_2[0]=2.75#75
 
 
         z_an = np.zeros((8,))
@@ -267,7 +267,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         det_cen = 1.2
         wedges=8
 
-        offset = -4.835960288880082# offset such that last pixel of detector 0 is at 0
+        offset =0.0# -4.835960288880082# offset such that last pixel of detector 0 is at 0
 
 
         string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>\n"
@@ -275,25 +275,25 @@ class Instrument(GeometryConcept.GeometryConcept):
             
             string+="\t<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>\n"
             
-            Anaposx = -np.sin((W*7.5+offset)*np.pi/180)*z_an
-            Anaposy = np.cos((W*7.5+offset)*np.pi/180)*z_an
+            Anaposx = -np.sin((W*8.0+offset)*np.pi/180)*z_an
+            Anaposy = np.cos((W*8.0+offset)*np.pi/180)*z_an
             
             for i in range(len(z_an)):
                 XX = Anaposx[i]/(np.sqrt(2)*z_an[i])
                 YY = Anaposy[i]/(np.sqrt(2)*z_an[i])
-                string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='"+str(XX)+","+str(YY)+",0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
+                string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='"+str(YY)+","+str(XX)+",0.0' d_spacing='3.354' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
             
             
-            detx_1 = -np.sin((ang_1+W*7.5+offset)*np.pi/180)*det_cen
-            detz_1 = np.cos((ang_1+W*7.5+offset)*np.pi/180)*det_cen
+            detx_1 = -np.sin((ang_1+W*8.0+offset)*np.pi/180)*det_cen
+            detz_1 = np.cos((ang_1+W*8.0+offset)*np.pi/180)*det_cen
             
             
-            detx_2 = -np.sin((ang_2+W*7.5+offset)*np.pi/180)*det_cen
-            detz_2 = np.cos((ang_2+W*7.5+offset)*np.pi/180)*det_cen
+            detx_2 = -np.sin((ang_2+W*8.0+offset)*np.pi/180)*det_cen
+            detz_2 = np.cos((ang_2+W*8.0+offset)*np.pi/180)*det_cen
             for i in range(7):
-                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='1024' length='0.883' diameter='0.02' split='0,150,270,400,510,630,751,875,1024'></TubeDetector1D>\n"
+                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H2 if np.mod(W,2) else H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
                 if i<6:
-                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='1024' length='0.883' diameter='0.02' split='0,150,270,400,510,630,751,875,1024'></TubeDetector1D>\n"
+                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H1 if np.mod(W,2) else H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
             string+="\t</Wedge>\n"
             
         string+="</Instrument>"
