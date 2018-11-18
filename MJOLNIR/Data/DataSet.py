@@ -316,9 +316,12 @@ class DataSet(object):
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
             
         
-
-        pos=[qx.flatten(),qy.flatten(),energy.flatten()]
-
+        #print(qx.shape)
+        #print(np.concatenate(qx,axis=0).flatten().shape)
+        pos=[np.concatenate(qx,axis=0).flatten(),np.concatenate(qy,axis=0).flatten(),np.concatenate(energy,axis=0).flatten()]
+        I = np.concatenate(I,axis=0)
+        Monitor = np.concatenate(Monitor,axis=0)
+        Norm = np.concatenate(Norm,axis=0)
         returnData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
 
         return returnData,bins
@@ -893,7 +896,8 @@ class DataSet(object):
             If an HKL point outside of the scattering plane is given, the program will just take the projection onto the scattering plane.
             
         """
-        QPoints = np.array(QPoints)
+        if not isinstance(QPoints,np.ndarray):
+            QPoints = np.array(QPoints)
 
         if(len(QPoints)<2):
             raise AttributeError('Number of Q points given is less than 2.')
@@ -2229,7 +2233,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
     #@_tools.my_timer_N()
     #def A4Instr(files,numFiles):
-    A4InstrAll = np.array([files[i].instrumentCalibrationA4-A4All[i] for i in range(numFiles)])
+    A4InstrAll = -( np.array([files[i].instrumentCalibrationA4+A4All[i] for i in range(numFiles)]))
     
     # Find binning (All are equal through testing)
     binning = files[0].binning
@@ -3621,8 +3625,8 @@ def test_DataSet_binEdges():
     assert(np.all(np.diff(Bins[:-1])>tolerance))
 
 def test_DataSet_1Dcut():
-    q1 =  np.array([1.0,0.0])
-    q2 =  np.array([1.0, 0.5])
+    q1 =  np.array([1.23,-1.25])
+    q2 =  np.array([1.54, -1.51])
     width = 0.1
 
     plt.ioff()
@@ -3631,40 +3635,29 @@ def test_DataSet_1Dcut():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
 
-    #try: # No points inside energy interval
-    #    ds.cut1D(q1,q2,width,minPixel=0.01,Emin=205.5,Emax=206.0)
-    #    assert False
-    #except AttributeError:
-    #    assert True
-
-
-
     ax,D,P,binCenter,binDistance = ds.plotCut1D(q1,q2,width,minPixel=0.01,Emin=0.0,Emax=1.5,fmt='.')
     D2,P2 = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=0.0,Emax=1.5)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
     assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
 
     [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=0.0,Emax=1.5,extend=False)
-    #print(bins[0].shape)
-    #print(q1[0]-0.1)
-    #print(q2[0]+0.1)
     assert(np.all(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1))) 
     # x-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
-    q3 = np.array([1.1,1.1])
-    q4 = np.array([2.0,2.0])
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q3,q4,width,minPixel=0.01,Emin=0.0,Emax=1.5,extend=False)
-    assert(np.all(np.logical_and(np.logical_and(bins[0][:,0]>=q3[0]-0.1,bins[0][:,0]<=q4[0]+0.1),np.logical_and(bins[0][:,0]>=q3[1]-0.1,bins[0][:,0]<=q4[1]+0.1)))) 
+    #q3 = np.array([1.1,1.1])
+    #q4 = np.array([2.0,2.0])
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,minPixel=0.01,Emin=0.0,Emax=1.5,extend=False)
+    assert(np.all(np.logical_and(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1),np.logical_and(bins[0][:,0]>=q1[1]-0.1,bins[0][:,0]<=q2[1]+0.1)))) 
     # x and y-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
-    os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
+    os.remove('Data/camea2018n000038.nxs')
 
 def test_DataSet_1DcutE():
-    q =  np.array([2.0,1.0]).reshape(2,1)
+    q =  np.array([1.23,-1.25]).reshape(2,1)
     width = 0.1
     Emin = 0.5
     Emax = 1.5
     plt.ioff()
-    convertFiles = ['Data/camea2018n000017.hdf']
+    convertFiles = ['Data/camea2018n000038.hdf']
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
     Datset._getData()
@@ -3780,8 +3773,8 @@ def test_DataSet_plotQPlane():
 def test_DataSet_plotA3A4(quick):
     plt.ioff()
 
-    File1 = 'Data/camea2018n000017.hdf'
-    File2 = 'Data/camea2018n000017.hdf'
+    File1 = 'Data/camea2018n000136.hdf'
+    File2 = 'Data/camea2018n000137.hdf'
 
     DS = DataSet(dataFiles=[File1,File2])
     DS.convertDataFile()
@@ -3916,13 +3909,14 @@ def test_DataSet_compareNones():
 
 
 def test_DataSet_cutQELine():
-    QPoints = np.array([[0.1,0,0],[0.9,0,0],[0.12,0,0],[0.5,0,0],[0.5,0.1,0]])
+    QPoints = np.array([[0.3,-1],[0.7,-1.4],[1.6,-0,9],[0.3,-0.9]])
     EnergyBins = np.linspace(0.0,1.5,5)
     minPixel = 0.001
     width=0.1
-    DataFile = ['Data/camea2018n000017.nxs']
+    DataFile = ['Data/camea2018n000137.hdf']
 
     dataset = DataSet(convertedFiles=DataFile)
+    dataset.convertDataFile(saveFile=False)
     
     try:
         dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='WRONG')
@@ -3936,7 +3930,7 @@ def test_DataSet_cutQELine():
     except AttributeError:
         assert True
 
-    DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,format='QxQy')
+    DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='QxQy')
     DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU')
     for i in range(len(DataList)): # Check each segment
         print("i="+str(i))
@@ -3950,13 +3944,14 @@ def test_DataSet_cutQELine():
     assert(BinList.shape==(len(QPoints)-1,len(EnergyBins)-1,3))
 
 def test_DataSet_plotCutQELine():
-    QPoints = np.array([[0.0,0,0],[0.9,0,0],[10.0,0,0],[1.0,0,0],[1.5,1.0,0],[0,0,0]])
+    QPoints = np.array([[0.3,-1.0],[0.7,-1.4],[1.6,-0,9],[0.3,-0.9]],dtype=float)
     EnergyBins = np.linspace(0,1,11)
     minPixel = 0.001
     width=0.1
     
-    DataFile = ['Data/camea2018n000017.nxs','Data/camea2018n000017.nxs']
+    DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
     dataset = DataSet(convertedFiles=DataFile)
+    dataset.convertDataFile(saveFile=False)
     
     try: # No Q-points
         dataset.plotCutQELine([],EnergyBins,width=width,minPixel=minPixel,format='RLU')
@@ -3965,7 +3960,7 @@ def test_DataSet_plotCutQELine():
         assert True
 
     try: # No points in E range
-        dataset.plotCutQELine(QPoints,EnergyBins+100,width=width,minPixel=minPixel,format='RLU',vmin=0.0,vmax=1.5e-6,ticks=10)
+        dataset.plotCutQELine(QPoints,EnergyBins+100,width=width,minPixel=minPixel,format='qxqy',vmin=0.0,vmax=1.5e-6,ticks=10)
         assert False
     except AttributeError:
         assert True
