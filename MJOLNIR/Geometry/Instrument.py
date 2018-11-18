@@ -664,12 +664,27 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.scatter(range(A4.shape[0]),diff)
                         plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=150)
 
-                else: # Use nominal A4 values
-                    A4FitValue = []
-                    for i in range(8):
-                        for j in range(13):
-                            A4FitValue.append(-(i*8+j*0.55))
-                    A4FitValue = np.array(A4FitValue)
+                else: # Use nominal A4 values from calculation
+                    #A4FitValue = []
+                    #for i in range(8):
+                    #    for j in range(13):
+                    #        A4FitValue.append(-(i*8+j*0.55))
+                    #A4FitValue = np.array(A4FitValue)
+                    A4 = np.array(self.A4).reshape(104,1024)
+                    A4Pixel = []
+                    for i in range(len(fittedParameters)):
+                        for j in range(len(fittedParameters[i])):
+                            for k in range(len(fittedParameters[i][j])):
+                                #print(activePixelDetector[i][j][k],activePixelDetector[i][j][k+1])
+                                A4Pixel.append(np.mean(A4[i,activePixelDetector[i][j][k]:activePixelDetector[i][j][k+1]]))
+                    A4Pixel = np.array(A4Pixel).reshape(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
+                    #print(A4Pixel.shape)
+                    #print(len(activePixelDetector))
+                    #print(len(activePixelDetector[0]))
+                    #print(len(activePixelDetector[0][0]))
+                    #print(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
+                    #h=kk
+                    A4FitValue = np.rad2deg(A4Pixel)
 
                 fitParameters.append(fittedParameters)
                 activePixelRanges.append(np.array(activePixelDetector))
@@ -679,7 +694,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                         for k in range(len(fittedParameters[i][j])):
                             tableString+=str(i)+','+str(j)+','+str(k)+','+','.join([str(x) for x in fittedParameters[i][j][k]])
                             tableString+=','+str(activePixelRanges[-1][i][j][k])+','+str(activePixelRanges[-1][i][j][k+1])
-                            tableString+=','+str(A4FitValue[i])+'\n'
+                            tableString+=','+str(A4FitValue[i,j,k])+'\n'
                 tableName = 'Normalization_{}.calib'.format(detpixels)
                 print('Saving {} pixel data to {}'.format(detpixels,savelocation+tableName))
                 file = open(savelocation+tableName,mode='w')
@@ -1485,7 +1500,7 @@ def test_instrument_create_xml():
 @pytest.mark.unit
 def test_Normalization_tables(quick):
 
-    Instr = Instrument(fileName='Data/CAMEA_Full.xml')
+    Instr = Instrument(fileName='Data/CAMEA_Updated.xml')
     Instr.initialize()
 
     NF = 'Data/camea2018n000038.hdf'
