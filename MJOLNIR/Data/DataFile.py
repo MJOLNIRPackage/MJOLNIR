@@ -42,7 +42,7 @@ class DataFile(object):
                     self.Ei = np.array(instr.get('monochromator/energy'))
                     self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
                     self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
-                    self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
+                    self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
                     self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
                     #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
@@ -76,7 +76,7 @@ class DataFile(object):
                     self.I = np.array(instr.get('detector/counts')).swapaxes(1,2)
                     self.A3 = np.array(f.get('entry/sample/rotation_angle'))
                     self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
-                    self.A3Off = np.array(f.get('entry/sample/rotation_angle_zero'))
+                    self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
                     self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning=1 # Choose standard binning 1
                     #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
@@ -95,6 +95,9 @@ class DataFile(object):
                     self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
                     self.scanCommand = np.array(f.get('entry/scancommand'))
                     self.title = np.array(f.get('entry/title'))
+                    ###################
+                    self.I[:,:,:100]=0#
+                    ###################
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
             self.name = fileLocation.split('/')[-1]
@@ -103,6 +106,8 @@ class DataFile(object):
             for key in ['magneticField','temperature','electricField']:
                 if self.__dict__[key].dtype ==object: # Is np nan object
                     self.__dict__[key] = None
+
+            
         
 
     @property
@@ -239,16 +244,16 @@ class DataFile(object):
         if A4Zero is None:
             A4Zero=0.0
         else:
-            A4Zero = np.deg2rad(np.array(A4Zero))
+            A4Zero = np.array(A4Zero)
 
-        
+        #print(180.0/np.pi*A4Zero)
         A3Zero = self.A3Off
         if A3Zero is None:
             A3Zero=0.0
         else:
             A3Zero = np.deg2rad(np.array(A3Zero))
 
-        A4 = np.deg2rad(A4Normalization)+A4Zero
+        A4 = np.deg2rad(A4Normalization)
         A4=A4.reshape(detectors,binning*EPrDetector,order='C')
 
         PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
@@ -258,7 +263,7 @@ class DataFile(object):
         
         A4File = A4File.reshape((-1,1,1))
 
-        A4Mean = A4.reshape((1,detectors,binning*EPrDetector))-np.deg2rad(A4File)
+        A4Mean = -(A4.reshape((1,detectors,binning*EPrDetector))+np.deg2rad(A4File-A4Zero))
         
         Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
         for i in range(detectors): # for each detector
@@ -748,15 +753,36 @@ class Sample(object):
     def __init__(self,a=None,b=None,c=None,alpha=90,beta=90,gamma=90,sample=None,name='Unknown'):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0])
-            self.orientationMatrix = np.array(sample.get('orientation_matrix'))
+            #self.orientationMatrix = np.array(sample.get('orientation_matrix'))
+            #for i in range(len(self.orientationMatrix)): # Normalize orientation matrix
+            #    self.orientationMatrix[i]/=np.linalg.norm(self.orientationMatrix[i])
             self.planeNormal = np.array(sample.get('plane_normal'))
             self.polarAngle = np.array(sample.get('polar_angle'))
             self.rotationAngle = np.array(sample.get('rotation_angle'))
             self.unitCell = np.array(sample.get('unit_cell'))
+            self.plane_vector1 = np.array(sample.get('plane_vector_1'))
+            self.plane_vector2 = np.array(sample.get('plane_vector_2'))
+            self.orientationMatrix=np.array([self.plane_vector1[:3],self.plane_vector2[:3],self.planeNormal])
+            self.calculateProjections()
+            V=self.plane_vector1
+            Q= V[:3]
+            rlv = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC])
+            Ql = np.linalg.norm(np.sum([Q[i]*rlv[i] for i in range(3)],axis=0))
+            
+            Ei =V[7]
+            Ef =V[8]
+            factorsqrtEK = 0.694692
+            ki = np.sqrt(Ei)*factorsqrtEK
+            kf = np.sqrt(Ef)*factorsqrtEK
+            A4 = np.arccos((ki**2+kf**2-Ql**2)/(2*ki*kf))
+            theta = np.arctan2(ki-kf*np.cos(A4),kf*np.sin(A4))
+            omega=np.deg2rad(V[3])-theta
+
+            self.A3Off = -np.rad2deg(omega)*0
             
         elif np.all([a is not None,b is not None, c is not None]):
             self.unitCell = np.array([a,b,c,alpha,beta,gamma])
-            self.orientationMatrix = np.array([[1,0,0],[0,1,0]])
+            self.orientationMatrix = np.array([[1,0,0],[0,1,0],[0,0,1]])
             self.planeNormal = np.array([0,0,1])
             self.polarAngle = np.array(0)
             self.rotationAngle = np.array(0)
@@ -901,9 +927,9 @@ class Sample(object):
         ## Ensure that aStar is along the x-axis
         RotMatrix = rotate2X(self.reciprocalVectorA)
         #angle = vectorAngle(self.reciprocalVectorA,np.array([1,0,0])) # TODO: make general!!!
-        self.reciprocalVectorA=np.dot(self.reciprocalVectorA,RotMatrix)
-        self.reciprocalVectorB=np.dot(self.reciprocalVectorB,RotMatrix)
-        self.reciprocalVectorC=np.dot(self.reciprocalVectorC,RotMatrix)
+        self.reciprocalVectorA=np.dot(RotMatrix,self.reciprocalVectorA)
+        self.reciprocalVectorB=np.dot(RotMatrix,self.reciprocalVectorB)
+        self.reciprocalVectorC=np.dot(RotMatrix,self.reciprocalVectorC)
 
         reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC])
         self.projectionVector1 = np.array(np.dot(self.orientationMatrix[0],reciprocalMatrix))
@@ -1040,9 +1066,9 @@ def extractData(files):
         L = np.array(L)
         energy = np.array(energy)
 
-    scanParameters = np.array(scanParameters)
-    scanParamValue = np.array(scanParamValue)
-    scanParamUnit = np.array(scanParamUnit)
+    scanParameters = scanParameters
+    scanParamValue = scanParamValue
+    scanParamUnit = scanParamUnit
 
     Norm = np.array(Norm)
     Monitor = np.array(Monitor)
