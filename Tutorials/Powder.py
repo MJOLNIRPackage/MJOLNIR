@@ -1,12 +1,12 @@
 import sys,os
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 from MJOLNIR.Data import DataFile
-DataFile.assertFile('TestData/1024/Magnon_ComponentA3Scan.nxs')
+DataFile.assertFile('Data/Magnon_ComponentA3Scan.nxs')
 from MJOLNIR.Data import DataSet
 from MJOLNIR import _tools
 def test_Powder(show=False):
     import matplotlib.pyplot as plt
-    file = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
+    file = 'Data/Magnon_ComponentA3Scan.hdf'
 
     DataObj = DataSet.DataSet(dataFiles=file)
     DataObj.convertDataFile()
