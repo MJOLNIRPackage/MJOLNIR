@@ -1,0 +1,45 @@
+17/11-18 - Magnon in YMnO3
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With the combination of incoming energies :math:`E_i` and angles :math:`A_4` the following data has been taken. As seen, the two spin waves emerge and overlap as expected.
+
+
+|dE2_3| |dE2_85| |dE3_6|
+|dE4_3| |dE5_3| |dE5_7|
+|dE6_0| |dE6_4| |dE6_8|
+|dE7_3| |dE7_9| |dE8_5|
+
+|Qx0_7| |Qy0_9|
+
+
+.. |dE2_3| image:: FullMap/dE2_3.png
+   :width: 32%
+.. |dE2_85| image:: FullMap/dE2_85.png
+   :width: 32%
+.. |dE3_6| image:: FullMap/dE3_6.png
+   :width: 32%
+
+.. |dE4_3| image:: FullMap/dE4_3.png
+   :width: 32%
+.. |dE5_0| image:: FullMap/dE5_0.png
+   :width: 32%
+.. |dE5_3| image:: FullMap/dE5_3.png
+   :width: 32%
+.. |dE5_7| image:: FullMap/dE5_7.png
+   :width: 32%
+.. |dE6_0| image:: FullMap/dE6_0.png
+   :width: 32%
+.. |dE6_4| image:: FullMap/dE6_4.png
+   :width: 32%
+.. |dE6_8| image:: FullMap/dE6_8.png
+   :width: 32%
+.. |dE7_3| image:: FullMap/dE7_3.png
+   :width: 32%
+.. |dE7_9| image:: FullMap/dE7_9.png
+   :width: 32%
+.. |dE8_5| image:: FullMap/dE8_5.png
+   :width: 32%
+.. |Qx0_7| image:: FullMap/Qx0_7.png
+   :width: 32%
+.. |Qy0_9| image:: FullMap/Qy0_9.png
+   :width: 32%
