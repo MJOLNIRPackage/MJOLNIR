@@ -596,7 +596,15 @@ class DataFile(object):
         return edgePolygon,EBins
 
 
-    def saveNXsqom(self,savefilename):
+    def saveNXsqom(self,saveFileName):
+        """Save converted file into an NXsqom.
+
+        Args:
+
+            - saveFileName (string): File name to be saved into.
+
+        """
+
         if not self.__hasattr__('original_file'):
             raise AttributeError('Data file does not have link to the original file. This is needed to make a complete copy when creating nxs-files')
         if not self.type =='nxs':
@@ -614,10 +622,10 @@ class DataFile(object):
         K = self.k
         L = self.l
 
-        if os.path.exists(savefilename):
-            warnings.warn('The file {} exists alread. Old file will be renamed to {}.'.format(savefilename,savefilename+'_old'))
-            os.rename(savefilename,savefilename+'_old')
-        fd = hdf.File(savefilename,'w')
+        if os.path.exists(saveFileName):
+            warnings.warn('The file {} exists alread. Old file will be renamed to {}.'.format(saveFileName,saveFileName+'_old'))
+            os.rename(saveFileName,saveFileName+'_old')
+        fd = hdf.File(saveFileName,'w')
         fs = hdf.File(datafile.fileLocation,'r')
         group_path = fs['/entry'].parent.name
         
@@ -762,7 +770,7 @@ class Sample(object):
             self.unitCell = np.array(sample.get('unit_cell'))
             self.plane_vector1 = np.array(sample.get('plane_vector_1'))
             self.plane_vector2 = np.array(sample.get('plane_vector_2'))
-            self.orientationMatrix=np.array([self.plane_vector1[:3],self.plane_vector2[:3],self.planeNormal])
+            self.orientationMatrix=np.array(sample.get('orientation_matrix'))#np.array([self.plane_vector1[:3],self.plane_vector2[:3],self.planeNormal])
             self.calculateProjections()
             V=self.plane_vector1
             Q= V[:3]
