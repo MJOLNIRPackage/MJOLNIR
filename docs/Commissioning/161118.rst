@@ -1,11 +1,11 @@
 16/11-18 - Diffuse scattering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-|dEDiffuse0| |dEDiffuse1| |dEDiffuse2| 
+|dEDiffuse1| |dEDiffuse2| |dEDiffuse3|
 
-|dEDiffuse3| |dEDiffuse4| |dEDiffuse5| 
+|dEDiffuse4| |dEDiffuse5| |dEDiffuse6|
 
-|dEDiffuse6| |dEDiffuse7|
+|dEDiffuse7|
 
 
 .. |dEDiffuse0| image:: FullMap/000.png
