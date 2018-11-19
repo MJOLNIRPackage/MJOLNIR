@@ -55,3 +55,16 @@ With the combination of incoming energies :math:`E_i` and angles :math:`A4` the 
    :width: 32%
 .. |Qy0_9| image:: FullMap/Qy0_9.png
    :width: 32%
+
+
+Diffuse scattering
+^^^^^^^^^^^^^^^^^^
+
+|dEDiffuse1| |dEDiffuse2|
+
+
+.. |dEDiffuse1| image:: FullMap/006.png
+   :width: 32%
+.. |dEDiffuse2| image:: FullMap/007.png
+   :width: 32%
+
