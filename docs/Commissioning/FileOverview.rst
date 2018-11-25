@@ -172,3 +172,56 @@ Following is a raw overview of scan files with: name, scan command and title
  - camea2018n000168.hdf: sc a3 27 da3 0.5 np 81 mn 75000	YMnO3 T=10K positive side 2t=76 Ei=11.9
  - camea2018n000169.hdf: sc a3 27 da3 0.5 np 81 mn 75000	YMnO3 T=10K positive side 2t=80 Ei=11.9
  - camea2018n000178.hdf: sc a3 0 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=5.5 2t=-10 HHL plane around 1 1 0
+ - camea2018n000179.hdf: sc a3 0 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=5.5 2t=-14 HHL plane around 1 1 0
+ - camea2018n000180.hdf: sc a3 0 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=5.5 2t=-50 HHL plane around 1 1 0
+ - camea2018n000181.hdf: sc a3 0 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=5.5 2t=-54 HHL plane around 1 1 0
+ - camea2018n000182.hdf: sc a3 -10 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=7.1 2t=-10 HHL plane around 1 1 0
+ - camea2018n000183.hdf: sc a3 -10 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=7.1 2t=-14 HHL plane around 1 1 0
+ - camea2018n000184.hdf: sc a3 -10 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=7.1 2t=-50 HHL plane around 1 1 0
+ - camea2018n000185.hdf: sc a3 -10 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=7.1 2t=-54 HHL plane around 1 1 0
+ - camea2018n000186.hdf: sc a3 -5 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=6.6 2t=-10 HHL plane around 1 1 0
+ - camea2018n000187.hdf: sc a3 -5 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=6.6 2t=-14 HHL plane around 1 1 0
+ - camea2018n000190.hdf: sc a3 -5 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=6.6 2t=-54 HHL plane around 1 1 0
+ - camea2018n000191.hdf: sc a3 -1 da3 0.1 np 31 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000192.hdf: sc sgl -2 dsgl 0.5 np 15 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000193.hdf: sc sgu 0 dsgu 0.5 np 15 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000194.hdf: sc sgu 0 dsgu 0.5 np 15 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000195.hdf: sc sgl -3 dsgl 0.5 np 15 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000196.hdf: sc a3 -1.85 da3 0.1 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000197.hdf: sc a3 69.7 da3 0.1 np 31 mn 50000	SeCuO3 hk0 plane Alignment
+ - camea2018n000198.hdf: sc a3 69.7 da3 2.5 np 5 mn 50000	SeCuO3 hk0 plane Alignment
+ - camea2018n000199.hdf: sc a3 69.7 da3 5 np 7 mn 50000	SeCuO3 hk0 plane Alignment
+ - camea2018n000200.hdf: sc a3 -23 da3 0.5 np 21 mn 5000	SeCuO3 hk0 plane Alignment
+ - camea2018n000201.hdf: sc a3 -5 da3 0.25 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000202.hdf: sc a3 -5.2 da3 0.1 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000203.hdf: sc a3 27 da3 0.1 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000204.hdf: sc a3 48 da3 0.25 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000205.hdf: sc a3 47.75 da3 0.1 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000206.hdf: sc a3 120 da3 0.1 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000207.hdf: sc a3 119.7 da3 0.05 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000208.hdf: sc a3 119.7 da3 0.05 np 21 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000209.hdf: sc sgu 1 dsgu 0.5 np 7 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000210.hdf: sc sgl -2.2 dsgl 0.5 np 7 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000211.hdf: sc sgl -2.2 dsgl 0.5 np 7 mn 2000	SeCuO3 hk0 plane Alignment
+ - camea2018n000212.hdf: sc a3 115 da3 0.5 np 51 mn 100000	SeCu3 Map of 020 2t=-35 Ei=5.25
+ - camea2018n000213.hdf: sc a3 115 da3 0.5 np 51 mn 100000	SeCu3 Map of 020 2t=-31 Ei=5.25
+ - camea2018n000214.hdf: sc a3 115 da3 0.5 np 51 mn 100000	SeCu3 Map of 020 2t=-35 Ei=5.25
+ - camea2018n000215.hdf: sc a3 120 da3 1 np 41 mn 200000	SeCu3 Map of 020 2t=-40 Ei=5.55
+ - camea2018n000216.hdf: sc a3 120 da3 1 np 41 mn 200000	SeCu3 Map of 020 2t=-44 Ei=5.5
+ - camea2018n000217.hdf: sc a3 120 da3 1 np 41 mn 200000	SeCu3 Map of 020 2t=-40 Ei=5.55
+ - camea2018n000218.hdf: sc a3 120 da3 1 np 41 mn 200000	SeCu3 Map of 020 2t=-44 Ei=5.5
+ - camea2018n000219.hdf: sc a3 120 da3 1 np 41 mn 200000	SeCu3 Map of 020 2t=-40 Ei=5.55
+ - camea2018n000220.hdf: sc a3 120 da3 1 np 41 mn 200000	SeCu3 Map of 020 2t=-44 Ei=5.5
+ - camea2018n000221.hdf: sc a3 112 da3 0.1 np 21 mn 2000	Ni3TeO6 alignment
+ - camea2018n000222.hdf: sc a3 62 da3 0.1 np 21 mn 2000	Ni3TeO6 alignment
+ - camea2018n000223.hdf: sc a3 2 da3 0.1 np 21 mn 2000	Ni3TeO6 alignment
+ - camea2018n000224.hdf: sc sgu 0 dsgu 0.5 np 7 mn 5000	Ni3TeO6 alignment
+ - camea2018n000225.hdf not correct format
+ - camea2018n000226.hdf: sc sgl 0 dsgl 0.5 np 7 mn 5000	Ni3TeO6 alignment
+ - camea2018n000227.hdf: sc sgl -1 dsgl 0.5 np 9 mn 5000	Ni3TeO6 alignment
+ - camea2018n000228.hdf: sc sgu 0 dsgu 0.5 np 9 mn 5000	Ni3TeO6 alignment
+ - camea2018n000229.hdf: sc sgu 0 dsgu 0.5 np 9 mn 2000	Ni3TeO6 alignment
+ - camea2018n000230.hdf: sc sgl 0 dsgl 0.5 np 9 mn 2000	Ni3TeO6 alignment
+ - camea2018n000231.hdf: sc a3 55 da3 0.5 np 181 mn 250000	Ni3TeO6 Ei=5.75 2t=-10 around 0 0 1.5
+ - camea2018n000232.hdf: sc a3 55 da3 0.5 np 181 mn 250000	Ni3TeO6 Ei=5.75 2t=-14 around 0 0 1.5
+ - camea2018n000233.hdf: sc a3 35 da3 0.5 np 181 mn 250000	Ni3TeO6 Ei=7.35 2t=-10 around 0 0 1.5

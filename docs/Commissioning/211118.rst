@@ -1,0 +1,4 @@
+21/11-18 - Measurement of CuSeO3
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With the small sample and weak signal, the excitations of CuSeO3 is very difficult to measure. This has to be viewed in the light of the sample also being measured at Thales with 6 min/point. There, the signal was also found to be weak.
