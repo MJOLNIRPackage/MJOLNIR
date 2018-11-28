@@ -12,6 +12,7 @@ import datetime
 import math
 import shapely
 from shapely.geometry import Polygon as PolygonS, Point as PointS
+from . import TasUBlib
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
@@ -27,7 +28,7 @@ class DataFile(object):
                 with hdf.File(fileLocation) as f:
                     sample=f.get('/entry/sample')
                     self.sample = Sample(sample=f.get('/entry/sample'))
-                    self.I=np.array(f.get('entry/data/intensity')).swapaxes(1,2)
+                    self.I=np.array(f.get('entry/data/intensity'))
                     self.qx=np.array(f.get('entry/data/qx'))
                     self.qy=np.array(f.get('entry/data/qy'))
                     self.h=np.array(f.get('entry/data/h'))
@@ -45,9 +46,6 @@ class DataFile(object):
                     self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
                     self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                    #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-                    #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-                    #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
                     Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
                     width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
                     bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
@@ -79,9 +77,6 @@ class DataFile(object):
                     self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
                     self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning=1 # Choose standard binning 1
-                    #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-                    #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-                    #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
                     Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
                     width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
                     bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
@@ -96,7 +91,7 @@ class DataFile(object):
                     self.scanCommand = np.array(f.get('entry/scancommand'))
                     self.title = np.array(f.get('entry/title'))
                     ###################
-                    self.I[:,:,:100]=0#
+                    self.I[:,:,:200]=0#
                     ###################
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
@@ -107,7 +102,6 @@ class DataFile(object):
                 if self.__dict__[key].dtype ==object: # Is np nan object
                     self.__dict__[key] = None
 
-            
         
 
     @property
@@ -246,7 +240,6 @@ class DataFile(object):
         else:
             A4Zero = np.array(A4Zero)
 
-        #print(180.0/np.pi*A4Zero)
         A3Zero = self.A3Off
         if A3Zero is None:
             A3Zero=0.0
@@ -259,7 +252,7 @@ class DataFile(object):
         PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
         factorsqrtEK = 0.694692
         
-        A4File = self.A4#np.array(instrument.get('detector/polar_angle'))
+        A4File = self.A4
         
         A4File = A4File.reshape((-1,1,1))
 
@@ -273,28 +266,24 @@ class DataFile(object):
 
         EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
         EfNormalization = (EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
-
-        
-
-        kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
-        Ei = self.Ei.reshape(-1,1,1)#np.array(instrument.get('monochromator/energy'))
-        
-        
-        ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
-
-        
         A3 = np.deg2rad(np.array(self.A3))+A3Zero #file.get('/entry/sample/rotation_angle/')
-        
         if A3.shape[0]==1:
             A3 = A3*np.ones((steps))
         
         A3.resize((steps,1,1))
-        
-        # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
-        Qx = ki-kf*np.cos(A4Mean)
-        Qy = -kf*np.sin(A4Mean)
-        QX = Qx*np.cos(A3)-Qy*np.sin(A3)
-        QY = Qx*np.sin(A3)+Qy*np.cos(A3)
+        Ei = self.Ei.reshape(-1,1,1)#np.array(instrument.get('monochromator/energy'))
+        if False:
+            kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
+            
+            ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
+            # Shape everything into shape (steps,detectors,bins) (if external parameter is changed, this is assured by A3 reshape)
+            Qx = ki-kf*np.cos(A4Mean)
+            Qy = -kf*np.sin(A4Mean)
+            QX = Qx*np.cos(A3)-Qy*np.sin(A3)
+            QY = Qx*np.sin(A3)+Qy*np.cos(A3)
+        else:
+            UBINV = np.linalg.inv(self.sample.orientationMatrix)
+            HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3).squeeze(),np.rad2deg(-A4Mean)],Ei.squeeze(),EfMean.squeeze())
         DeltaE = Ei-EfMean
         if DeltaE.shape[0]==1:
             DeltaE = DeltaE*np.ones((steps,1,1))
@@ -306,6 +295,10 @@ class DataFile(object):
         sample = self.sample
         pos = sample.inv_tr(QX.flatten(),QY.flatten())
         H,K,L = (sample.orientationMatrix[0].reshape(-1,1)*pos[0].reshape(1,-1)+sample.orientationMatrix[1].reshape(-1,1)*pos[1].reshape(1,-1)).reshape(3,*shapes)
+
+        ###########################
+        Monitor[:,:,:binning] = 0 #
+        ###########################
 
 
         convFile = DataFile(self) # Copy everything from old file
@@ -611,7 +604,7 @@ class DataFile(object):
             raise AttributeError('Only nxs typed files can be saved as nxs-files.')
 
         datafile = self.original_file
-        Intensity = self.I.swapaxes(1,2)
+        Intensity = self.I # Dont swap axis as they are correct!
         Monitor = self.Monitor
         QX = self.qx
         QY = self.qy
@@ -954,19 +947,20 @@ class Sample(object):
     def tr(self,h,k):
         """Convert from curved coordinate to rectlinear coordinate."""
         h, k = np.asarray(h), np.asarray(k)
-        Pos = np.dot(self.projectionMatrix,[h,k])
+        Pos = np.dot(self.projectionMatrix,[h,k])*np.pi*2
         return Pos[0],Pos[1]
         
     def inv_tr(self, x,y):
         """Convert from rectlinear coordinate to curved coordinate."""
         x, y = np.asarray(x), np.asarray(y)
-        Pos = np.dot(np.linalg.inv(self.projectionMatrix),[x,y])
+        Pos = np.dot(np.linalg.inv(self.projectionMatrix),[x,y])/(2*np.pi)
         return Pos[0],Pos[1]   
 
 
     def format_coord(self,x,y):
-        pos = self.inv_tr(x,y)
-        rlu = self.orientationMatrix[0]*pos[0]+self.orientationMatrix[1]*pos[1]
+        x, y = np.asarray(x), np.asarray(y)
+        rlu = np.dot(np.linalg.inv(self.orientationMatrix),[x,y,0])/(2*np.pi)
+        #rlu = pos#self.orientationMatrix[0]*pos[0]+self.orientationMatrix[1]*pos[1]
         return "h = {0:.3f}, k = {1:.3f}, l = {2:.3f}".format(rlu[0],rlu[1],rlu[2])
 
     def __str__(self):
