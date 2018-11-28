@@ -1363,12 +1363,22 @@ class DataSet(object):
         return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
 
 
-    def View3D(self,dx,dy,dz,rlu=True):
+    def View3D(self,dx,dy,dz,rlu=True, log=False):
         """View data in the Viewer3D object. 
+
+        Args:
+
+            - dx (float): step size in qx
+
+            - dx (float): step size in qy
+
+            - dz (float): step size in E
 
         Kwargs:
 
             - rlu (Bool): If true a rlu axis is used for plotting orthervise qx,qy (Default True).
+
+            - log (Bool): If true logarithm of intensity is plotted
         """
 
         if rlu:
@@ -1380,7 +1390,8 @@ class DataSet(object):
         warnings.simplefilter('ignore')
         Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
         warnings.simplefilter('once')
-
+        if log:
+            Intensity = np.log10(Intensity+1e-20)
         Viewer = Viewer3D.Viewer3D(Intensity,bins,axis=2,ax=rluax)
         return Viewer
 
