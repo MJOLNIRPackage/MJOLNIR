@@ -225,3 +225,27 @@ Following is a raw overview of scan files with: name, scan command and title
  - camea2018n000231.hdf: sc a3 55 da3 0.5 np 181 mn 250000	Ni3TeO6 Ei=5.75 2t=-10 around 0 0 1.5
  - camea2018n000232.hdf: sc a3 55 da3 0.5 np 181 mn 250000	Ni3TeO6 Ei=5.75 2t=-14 around 0 0 1.5
  - camea2018n000233.hdf: sc a3 35 da3 0.5 np 181 mn 250000	Ni3TeO6 Ei=7.35 2t=-10 around 0 0 1.5
+ - camea2018n000234.hdf: sc a3 35 da3 0.5 np 181 mn 200000	Ni3TeO6 Ei=7.35 2t=-10 around 0 0 1.5
+ - camea2018n000235.hdf: sc a3 35 da3 0.5 np 181 mn 200000	Ni3TeO6 Ei=7.35 2t=-14 around 0 0 1.5
+ - camea2018n000236.hdf: sc a3 55 da3 0.5 np 181 mn 150000	Ni3TeO6 Ei=5.5 2t=-10 T=25K around 0 0 1.5
+ - camea2018n000250.hdf: sc msl 10 dmsl 1 np 21 mn 2000	Alignment YMnO3
+ - camea2018n000251.hdf: sc msr 10 dmsr 1 np 21 mn 2000	Alignment YMnO3
+ - camea2018n000252.hdf: sc a3 79.79 da3 0.2 np 31 mn 5000	Alignment YMnO3
+ - camea2018n000253.hdf: sc a3 79.79 da3 0.2 np 31 mn 5000	Alignment YMnO3
+ - camea2018n000254.hdf: sc a3 79.99 da3 0.2 np 31 mn 5000	Alignment YMnO3
+ - camea2018n000255.hdf: sc a3 79.99 da3 0.2 np 31 mn 5000	Alignment YMnO3
+ - camea2018n000256.hdf: sc a3 79.99 da3 0.2 np 31 mn 5000	Alignment YMnO3
+ - camea2018n000257.hdf: sc a3 79.99 da3 0.2 np 31 mn 5000	Alignment YMnO3
+ - camea2018n000258.hdf: sc a3 79.99 da3 0.2 np 31 mn 5000	Alignment YMnO3
+ - camea2018n000259.hdf: sc a3 79 da3 1 np 181 mn 100000	YMnO3 inelastics, Ei=5.25 2t=-12 around 1 0 0
+ - camea2018n000260.hdf: sc a3 79 da3 1 np 181 mn 100000	YMnO3 inelastics, Ei=5.25 2t=-16 around 1 0 0
+ - camea2018n000261.hdf: sc a3 79 da3 1 np 181 mn 100000	YMnO3 inelastics, Ei=5.25 2t=-50 around 1 0 0
+ - camea2018n000262.hdf: sc a3 79 da3 1 np 181 mn 100000	YMnO3 inelastics, Ei=5.25 2t=-54 around 1 0 0
+ - camea2018n000263.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=5.25 2t=-12 around 1 0 0 TT=2
+ - camea2018n000264.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=5.25 2t=-16 around 1 0 0 TT=2
+ - camea2018n000265.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=5.25 2t=-50 around 1 0 0 TT=2
+ - camea2018n000266.hdf not correct format
+ - camea2018n000267.hdf: sc a3 30.8 da3 0.1 np 21 mn 2000	YMnO3 inelastics, Ei=5.25 2t=-54 around 1 0 0 TT=2
+ - camea2018n000268.hdf: sc a3 90 da3 0.5 np 361 mn 10000	YMnO3 elastics, Ei=4.96 2t=-30 around 1 0 0
+ - camea2018n000269.hdf: sc a3 90 da3 0.25 np 721 mn 5000	YMnO3 elastics, Ei=4.96 2t=-31 around 1 0 0
+ - camea2018n000270.hdf: sc a3 90 da3 0.25 np 721 mn 5000	YMnO3 elastics, Ei=4.96 2t=-35 around 1 0 0
