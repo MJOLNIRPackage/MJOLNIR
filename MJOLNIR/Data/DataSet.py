@@ -1282,6 +1282,7 @@ class DataSet(object):
 
         return returnData
 
+    @_tools.KwargChecker()
     def cut1DE(self,E1,E2,q,format='RLU',width=0.02, minPixel = 0.1, dataFiles = None):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
@@ -1362,7 +1363,7 @@ class DataSet(object):
 
         return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
 
-
+    @_tools.KwargChecker()
     def View3D(self,dx,dy,dz,rlu=True, log=False):
         """View data in the Viewer3D object. 
 
