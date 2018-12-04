@@ -1882,7 +1882,10 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     if len(returnpositions) < 1:
         raise RuntimeError("Expect at least one slice in energy dimension")
 
-    dirvec = np.array(q2) - np.array(q1)
+    q1 = np.array(q1)
+    q2 = np.array(q2)
+
+    dirvec = q2 - q1
     dirvec /= np.linalg.norm(dirvec)
 
     edgeQDistance = []
