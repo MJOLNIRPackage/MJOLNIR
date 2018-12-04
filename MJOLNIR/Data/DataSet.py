@@ -1924,7 +1924,6 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         if x < binDistance[Eindex][0] or x >= binDistance[Eindex][-1]:
             return "x out of range: {:.3}".format(x)
         index = binDistance[Eindex].searchsorted(x) - 1
-        #return "{:5.3f} / {:5.3f}  Eindex: {}  index: {}  len(binDistance): {}".format(x, y, Eindex, index, len(binDistance))
         qx, qy, E = centerPos[Eindex][index]
         Intensity = Int[Eindex][index][0]
         return "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx, qy, E, Intensity)
