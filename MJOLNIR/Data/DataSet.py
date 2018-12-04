@@ -1896,6 +1896,15 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
             raise RuntimeError("edgeQDistance[{}] is not sorted".format(iE))
         edgeQDistance.append(q)
 
+    centerQDistance = [0.5 * (x[:-1] + x[1:]) for x in edgeQDistance]
+    centerQPosition = [ [dirvec * x + q1 for x in a] for a in centerQDistance]
+
+    for i in range(len(centerQPosition)):
+        if not np.allclose(centerQPosition[i], centerPos[i][:,:2]):
+            raise RuntimeError("Numeric difference")
+        if not np.allclose(binDistance[i], centerQDistance[i]):
+            raise RuntimeError("Numeric difference")
+
     binEnergies = [x[2] for x in returnpositions]
     Int = [ np.divide( intensityArray[i] * normcountArray[i], monitorArray[i] * normalizationArray[i] ) for i in range(len(intensityArray)) ]
 
@@ -1914,30 +1923,34 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         maxVal = np.max(np.concatenate(Int))
         ax.set_clim(minVal,maxVal)
 
-    def format_coord(x,y,binDistance,centerPos,Int):# pragma: no cover
+    def format_coord(x,y,edgeQDistance,centerQPosition,centerPos,Int):# pragma: no cover
         if len(EnergyBins) < 2:
             return "len(EnergyBins) < 2"
         if y < EnergyBins[0] or y >= EnergyBins[-1]:
             return "E out of range {:.3}  {}..{}".format(y, EnergyBins[0], EnergyBins[-1])
         Eindex = EnergyBins.searchsorted(y) - 1
-        if len(binDistance[Eindex]) < 2:
-            raise RuntimeError("len(binDistance[{}]) < 2".format(Eindex))
-        if x < binDistance[Eindex][0] or x >= binDistance[Eindex][-1]:
+        if len(edgeQDistance[Eindex]) < 2:
+            raise RuntimeError("len(edgeQDistance[{}]) < 2".format(Eindex))
+        if x < edgeQDistance[Eindex][0] or x >= edgeQDistance[Eindex][-1]:
             return "x out of range: {:.3}".format(x)
-        index = binDistance[Eindex].searchsorted(x) - 1
-        qx, qy, E = centerPos[Eindex][index]
+        index = edgeQDistance[Eindex].searchsorted(x) - 1
+        a, b, E = centerPos[Eindex][index]
+        qx, qy = centerQPosition[Eindex][index]
         Intensity = Int[Eindex][index][0]
         return "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx, qy, E, Intensity)
 
-    edgeQDistanceAvg = 0.5 * (edgeQDistance[0][1:] + edgeQDistance[0][:-1])
-    my_xticks = []
-    for x in edgeQDistanceAvg:
-        q = dirvec * x + q1
-        my_xticks.append("{:.3}\n{:.3}".format(q[0], q[1]))
+    xtick_positions = []
+    xtick_labels = []
+    iE = 0
+    m = len(centerQPosition[iE])
+    for n in np.linspace(0, m-1, 4):
+        i = int(round(n))
+        xtick_positions.append(centerQDistance[iE][i])
+        xtick_labels.append("{0:.3f}\n{1:.3f}".format(centerQPosition[iE][i][0], centerQPosition[iE][i][1]))
 
-    ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPos,Int)
-    ax.set_xticks(edgeQDistanceAvg)
-    ax.set_xticklabels(my_xticks, fontsize=8, multialignment="center", ha="center")
+    ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerQPosition,centerPos,Int)
+    ax.set_xticks(xtick_positions)
+    ax.set_xticklabels(xtick_labels, fontsize=8, multialignment="center", ha="center")
     ax.set_xlabel('$Q_h/A$\n$Q_k/A$', fontsize=8)
     ax.xaxis.set_label_coords(1.15, -0.025)
     ax.set_ylabel('E [meV]')
