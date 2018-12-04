@@ -1838,11 +1838,11 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
         monitorArray.append(MonitorCount)
         normalizationArray.append(Normalization)
         normcountArray.append(normcounts)
-        centerPos.append(0.5*(position[0][:-1]+position[0][1:]))
-        binDistance.append(np.linalg.norm(centerPos[-1][:,:2]-q1,axis=1))#position[0][0][:2],axis=1))#np.linalg.norm(centerPos[-1][:,:2]-q1,axis=1))
 
-    
-    
+        thisCenterPos = 0.5*(position[0][:-1]+position[0][1:])
+        centerPos.append(thisCenterPos)
+        binDistance.append(np.linalg.norm(thisCenterPos[:,:2]-q1,axis=1))
+
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
 @_tools.KwargChecker(function=plt.errorbar)
@@ -1875,29 +1875,33 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
 
     [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance = cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins)
     
+    dirvec = np.array(q2) - np.array(q1)
+    dirvec /= np.linalg.norm(dirvec)
+
+    binDistance2 = []
+    for iE in range(len(EnergyBins)-1):
+        p = returnpositions[iE][0][:,:2] - q1
+        q = np.dot(p, dirvec)
+        binDistance2.append(q)
+
+    if binDistance2[0].shape != (len(returnpositions[0][0]),):
+        raise RuntimeError("Inconsistent shape")
+
+    for a in binDistance2:
+        if not (np.sort(a) == a).all():
+            raise RuntimeError("binDistance2 was not sorted at energy index {}".format(iE))
+
+    binEnergies = [x[2] for x in returnpositions]
+    Int = [ np.divide( intensityArray[i] * normcountArray[i], monitorArray[i] * normalizationArray[i] ) for i in range(len(intensityArray)) ]
+
     if ax is None:
         plt.figure()
         ax = plt.gca()
-    
-    dirvec = np.array(q2)-np.array(q1)
-    leftEdgeBins = np.array([np.dot(returnpositions[i][0][0,:2],dirvec) for i in range(len(returnpositions))])
-    rightEdgeBins = np.array([np.dot(returnpositions[i][0][-1,:2],dirvec) for i in range(len(returnpositions))])
 
-    leftEdgeIndex = np.argmin(leftEdgeBins)
-    rightEdgeIndex= np.argmax(rightEdgeBins)
-
-    binedges = [np.linalg.norm(returnpositions[i][0][:,:2]-returnpositions[leftEdgeIndex][0][0,:2],axis=1) for i in range(len(returnpositions))]
-    
-    #print(binedges)
-
-    binenergies = [returnpositions[i][2] for i in range(len(returnpositions))]
-    warnings.simplefilter('ignore')
-    Int = [np.divide(intensityArray[i]*normcountArray[i],monitorArray[i]*normalizationArray[i]) for i in range(len(intensityArray))]
-    warnings.simplefilter('once')
     pmeshs = []
     for i in range(len(Int)):
-        pmeshs.append(ax.pcolormesh(binedges[i],binenergies[i],Int[i].T,**kwargs))
-    
+        pmeshs.append(ax.pcolormesh(binDistance2[i], binEnergies[i], Int[i].T, **kwargs))
+
     ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
     
     if not 'vmin' in kwargs or not 'vmax' in kwargs:
@@ -1905,37 +1909,32 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         maxVal = np.max(np.concatenate(Int))
         ax.set_clim(minVal,maxVal)
 
-    binCenter = centerPos[0]#np.concatenate(centerPos,axis=0)
-    #binCenter.sort(axis=0)
-    binDistanceAll = binDistance[0]#np.linalg.norm(binCenter[:,:2]-q1,axis=1)
-    #print(binDistanceAll)
-    
-    num=len(binDistanceAll)
-    
-    # leftPoint = returnpositions[leftEdgeIndex][0][0,:2]
-    # rightPoint = returnpositions[rightEdgeIndex][0][-1,:2]
-    # diffVector = rightPoint-leftPoint
-
-    xvalues = np.round(np.linspace(0,num-1,5)).astype(int)
-    
-    my_xticks=[]
-    for i in xvalues:
-        my_xticks.append('\n'.join(map(str,[np.round(binCenter[i,0],2),np.round(binCenter[i,1],2)])))
-    
-    
     def format_coord(x,y,binDistance,centerPos,Int):# pragma: no cover
-        Eindex = np.argmin(np.abs([x[0][2] for x in centerPos]-y))
-        index = np.argmin(np.abs(binDistance[Eindex]-x))
-        qx,qy,E = centerPos[Eindex][index]
+        if len(EnergyBins) < 2:
+            return "len(EnergyBins) < 2"
+        if y < EnergyBins[0] or y >= EnergyBins[-1]:
+            return "E out of range {:.3}  {}..{}".format(y, EnergyBins[0], EnergyBins[-1])
+        Eindex = EnergyBins.searchsorted(y) - 1
+        if len(binDistance[Eindex]) < 2:
+            raise RuntimeError("len(binDistance[{}]) < 2".format(Eindex))
+        if x < binDistance[Eindex][0] or x >= binDistance[Eindex][-1]:
+            return "x out of range: {:.3}".format(x)
+        index = binDistance[Eindex].searchsorted(x) - 1
+        #return "{:5.3f} / {:5.3f}  Eindex: {}  index: {}  len(binDistance): {}".format(x, y, Eindex, index, len(binDistance))
+        qx, qy, E = centerPos[Eindex][index]
         Intensity = Int[Eindex][index][0]
-        return  "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx,qy,E,Intensity)
-    
-    ax.format_coord = lambda x,y: format_coord(x,y,binDistance,centerPos,Int)
+        return "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx, qy, E, Intensity)
 
+    binDistance2Avg = 0.5 * (binDistance2[0][1:] + binDistance2[0][:-1])
+    my_xticks = []
+    for x in binDistance2Avg:
+        q = dirvec * x + q1
+        my_xticks.append("{:.3}\n{:.3}".format(q[0], q[1]))
 
-    ax.set_xticks(binDistanceAll[xvalues])
-    ax.set_xticklabels(my_xticks,fontsize=10, multialignment="center",ha="center")
-    ax.set_xlabel('$Q_h/A$\n$Q_k/A$', fontsize=10)
+    ax.format_coord = lambda x,y: format_coord(x,y,binDistance2,centerPos,Int)
+    ax.set_xticks(binDistance2Avg)
+    ax.set_xticklabels(my_xticks, fontsize=8, multialignment="center", ha="center")
+    ax.set_xlabel('$Q_h/A$\n$Q_k/A$', fontsize=8)
     ax.xaxis.set_label_coords(1.15, -0.025)
     ax.set_ylabel('E [meV]')
     plt.tight_layout()
