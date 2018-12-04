@@ -1906,7 +1906,9 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
             raise RuntimeError("Numeric difference")
 
     binEnergies = [x[2] for x in returnpositions]
+    warnings.simplefilter('ignore')
     Int = [ np.divide( intensityArray[i] * normcountArray[i], monitorArray[i] * normalizationArray[i] ) for i in range(len(intensityArray)) ]
+    warnings.simplefilter('once')
 
     if ax is None:
         plt.figure()
