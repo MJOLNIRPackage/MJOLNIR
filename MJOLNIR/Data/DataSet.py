@@ -1896,15 +1896,6 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
             raise RuntimeError("edgeQDistance[{}] is not sorted".format(iE))
         edgeQDistance.append(q)
 
-    centerQDistance = [0.5 * (x[:-1] + x[1:]) for x in edgeQDistance]
-    centerQPosition = [ [dirvec * x + q1 for x in a] for a in centerQDistance]
-
-    for i in range(len(centerQPosition)):
-        if not np.allclose(centerQPosition[i], centerPos[i][:,:2]):
-            raise RuntimeError("Numeric difference")
-        if not np.allclose(binDistance[i], centerQDistance[i]):
-            raise RuntimeError("Numeric difference")
-
     binEnergies = [x[2] for x in returnpositions]
     warnings.simplefilter('ignore')
     Int = [ np.divide( intensityArray[i] * normcountArray[i], monitorArray[i] * normalizationArray[i] ) for i in range(len(intensityArray)) ]
@@ -1925,7 +1916,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         maxVal = np.max(np.concatenate(Int))
         ax.set_clim(minVal,maxVal)
 
-    def format_coord(x,y,edgeQDistance,centerQPosition,centerPos,Int):# pragma: no cover
+    def format_coord(x,y,edgeQDistance,centerPos,Int):# pragma: no cover
         if len(EnergyBins) < 2:
             return "len(EnergyBins) < 2"
         if y < EnergyBins[0] or y >= EnergyBins[-1]:
@@ -1936,21 +1927,21 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         if x < edgeQDistance[Eindex][0] or x >= edgeQDistance[Eindex][-1]:
             return "x out of range: {:.3}".format(x)
         index = edgeQDistance[Eindex].searchsorted(x) - 1
-        a, b, E = centerPos[Eindex][index]
-        qx, qy = centerQPosition[Eindex][index]
+        qx, qy, E = centerPos[Eindex][index]
         Intensity = Int[Eindex][index][0]
         return "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx, qy, E, Intensity)
 
     xtick_positions = []
     xtick_labels = []
     iE = 0
-    m = len(centerQPosition[iE])
+    m = len(centerPos[iE])
     for n in np.linspace(0, m-1, 4):
         i = int(round(n))
-        xtick_positions.append(centerQDistance[iE][i])
-        xtick_labels.append("{0:.3f}\n{1:.3f}".format(centerQPosition[iE][i][0], centerQPosition[iE][i][1]))
+        xtick_positions.append(binDistance[iE][i])
+        q = centerPos[iE][i][:2]
+        xtick_labels.append("{0:.3f}\n{1:.3f}".format(q[0], q[1]))
 
-    ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerQPosition,centerPos,Int)
+    ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPos,Int)
     ax.set_xticks(xtick_positions)
     ax.set_xticklabels(xtick_labels, fontsize=8, multialignment="center", ha="center")
     ax.set_xlabel('$Q_h/A$\n$Q_k/A$', fontsize=8)
