@@ -1885,18 +1885,13 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
     dirvec = np.array(q2) - np.array(q1)
     dirvec /= np.linalg.norm(dirvec)
 
-    binDistance2 = []
+    edgeQDistance = []
     for iE in range(len(EnergyBins)-1):
         p = returnpositions[iE][0][:,:2] - q1
         q = np.dot(p, dirvec)
-        binDistance2.append(q)
-
-    if binDistance2[0].shape != (len(returnpositions[0][0]),):
-        raise RuntimeError("Inconsistent shape")
-
-    for a in binDistance2:
-        if not (np.sort(a) == a).all():
-            raise RuntimeError("binDistance2 was not sorted at energy index {}".format(iE))
+        if not (np.sort(q) == q).all():
+            raise RuntimeError("edgeQDistance[{}] is not sorted".format(iE))
+        edgeQDistance.append(q)
 
     binEnergies = [x[2] for x in returnpositions]
     Int = [ np.divide( intensityArray[i] * normcountArray[i], monitorArray[i] * normalizationArray[i] ) for i in range(len(intensityArray)) ]
@@ -1907,7 +1902,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
 
     pmeshs = []
     for i in range(len(Int)):
-        pmeshs.append(ax.pcolormesh(binDistance2[i], binEnergies[i], Int[i].T, **kwargs))
+        pmeshs.append(ax.pcolormesh(edgeQDistance[i], binEnergies[i], Int[i].T, **kwargs))
 
     ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
     
@@ -1931,14 +1926,14 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,*
         Intensity = Int[Eindex][index][0]
         return "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx, qy, E, Intensity)
 
-    binDistance2Avg = 0.5 * (binDistance2[0][1:] + binDistance2[0][:-1])
+    edgeQDistanceAvg = 0.5 * (edgeQDistance[0][1:] + edgeQDistance[0][:-1])
     my_xticks = []
-    for x in binDistance2Avg:
+    for x in edgeQDistanceAvg:
         q = dirvec * x + q1
         my_xticks.append("{:.3}\n{:.3}".format(q[0], q[1]))
 
-    ax.format_coord = lambda x,y: format_coord(x,y,binDistance2,centerPos,Int)
-    ax.set_xticks(binDistance2Avg)
+    ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPos,Int)
+    ax.set_xticks(edgeQDistanceAvg)
     ax.set_xticklabels(my_xticks, fontsize=8, multialignment="center", ha="center")
     ax.set_xlabel('$Q_h/A$\n$Q_k/A$', fontsize=8)
     ax.xaxis.set_label_coords(1.15, -0.025)
