@@ -1828,7 +1828,10 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
     centerPos = []
     returnpositions = []
     binDistance = []
-    
+
+    dirvec = np.array(q2) - np.array(q1)
+    dirvec /= np.linalg.norm(dirvec)
+
     for i in np.arange(len(EnergyBins)-1):
         [intensity,MonitorCount,Normalization,normcounts],position = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins[i],EnergyBins[i+1],plotCoverage=False,extend=extend)
         if len(intensity)==0:
@@ -1841,7 +1844,8 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
 
         thisCenterPos = 0.5*(position[0][:-1]+position[0][1:])
         centerPos.append(thisCenterPos)
-        binDistance.append(np.linalg.norm(thisCenterPos[:,:2]-q1,axis=1))
+        thisBinDistance = np.dot(thisCenterPos[:,:2] - q1, dirvec)
+        binDistance.append(thisBinDistance)
 
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
