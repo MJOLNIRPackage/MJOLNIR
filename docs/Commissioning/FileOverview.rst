@@ -249,3 +249,49 @@ Following is a raw overview of scan files with: name, scan command and title
  - camea2018n000268.hdf: sc a3 90 da3 0.5 np 361 mn 10000	YMnO3 elastics, Ei=4.96 2t=-30 around 1 0 0
  - camea2018n000269.hdf: sc a3 90 da3 0.25 np 721 mn 5000	YMnO3 elastics, Ei=4.96 2t=-31 around 1 0 0
  - camea2018n000270.hdf: sc a3 90 da3 0.25 np 721 mn 5000	YMnO3 elastics, Ei=4.96 2t=-35 around 1 0 0
+ - camea2018n000276.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=5.25 2t=-12 around 1 0 0
+ - camea2018n000277.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=5.25 2t=-16 around 1 0 0
+ - camea2018n000278.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=5.25 2t=-50 around 1 0 0
+ - camea2018n000279.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=5.25 2t=-54 around 1 0 0
+ - camea2018n000280.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-12 around 1 0 0
+ - camea2018n000281.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-12 around 1 0 0
+ - camea2018n000282.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-16 around 1 0 0
+ - camea2018n000283.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-50 around 1 0 0
+ - camea2018n000284.hdf: sc a3 79 da3 1 np 181 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-54 around 1 0 0
+ - camea2018n000285.hdf: sc a3 95 da3 1 np 131 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-12 around 1 0 0
+ - camea2018n000286.hdf: sc a3 95 da3 1 np 131 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-16 around 1 0 0
+ - camea2018n000287.hdf: sc a3 95 da3 1 np 131 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-50 around 1 0 0
+ - camea2018n000288.hdf: sc a3 95 da3 1 np 131 mn 80000	YMnO3 inelastics, Ei=6.85 2t=-54 around 1 0 0
+ - camea2018n000289.hdf: sc a3 48.5 da3 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000290.hdf: sc a3 132 da3 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000291.hdf: sc a3 49 da3 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000292.hdf: sc a3 48.995 da3 0.05 a4 -42.6642 da4 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000293.hdf: sc a3 136 da3 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000294.hdf: sc a3 136.30 da3 0.05 a4 -48.032 da4 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000295.hdf: sc a3 86.54 da3 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000296.hdf: sc a3 85.54 da3 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000297.hdf: sc a4 -66.195 da4 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000298.hdf: sc a3 48.6625 da3 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000299.hdf: sc a3 48.9586 da3 0.05 a4 -42.664 da4 0.1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000300.hdf: sc sgl 0 dsgl 0.5 np 7 mn 2000	SrBaCuSiO alignment
+ - camea2018n000301.hdf: sc sgl 0 dsgl 0.5 np 11 mn 2000	SrBaCuSiO alignment
+ - camea2018n000302.hdf: sc sgu 0 dsgu 0.5 np 11 mn 2000	SrBaCuSiO alignment
+ - camea2018n000303.hdf: sc sgl 0 dsgl 0.5 np 11 mn 2000	SrBaCuSiO alignment
+ - camea2018n000304.hdf: sc mst 10 dmst 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000305.hdf: sc mst 17 dmst 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000306.hdf: sc msb 15 dmsb 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000307.hdf: sc msl 15 dmsl 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000308.hdf: sc msl 5 dmsl 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000309.hdf: sc msr 10 dmsr 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000310.hdf: sc msl 5 dmsl 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000311.hdf not correct format
+ - camea2018n000312.hdf: sc msr 10 dmsr 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000313.hdf: sc msl 5 dmsl 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000314.hdf: sc msr 10 dmsr 1 np 21 mn 2000	SrBaCuSiO alignment
+ - camea2018n000315.hdf: sc a3 40 da3 0.5 np 221 mn 100000	MV80 SrBaCuSiO Ei=7.5 2t=-12 tt=1.5
+ - camea2018n000316.hdf: sc a3 40 da3 0.5 np 221 mn 100000	MV80 SrBaCuSiO Ei=7.5 2t=-16 tt=1.5
+ - camea2018n000317.hdf: sc a3 30 da3 0.5 np 221 mn 100000	MV80 SrBaCuSiO Ei=9 2t=-12 tt=1.5
+ - camea2018n000318.hdf: sc a3 30 da3 0.5 np 221 mn 100000	MV80 SrBaCuSiO Ei=9 2t=-16 tt=1.5
+ - camea2018n000319.hdf: sc a3 19 da3 0.5 np 101 mn 100000	MV80 SrBaCuSiO Ei=7.5 2t=-25 tt=1.5
+ - camea2018n000320.hdf: sc a3 19 da3 0.5 np 101 mn 100000	MV80 SrBaCuSiO Ei=7.5 2t=-29 tt=1.5
+ - 
