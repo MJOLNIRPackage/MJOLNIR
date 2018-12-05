@@ -1,5 +1,5 @@
-Electronic logbook of scans
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Electronic logbook of scans files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Following is a raw overview of scan files with: name, scan command and title
 
  - camea2018n000001.hdf: sc a3 67.67 da3 0 np 1 ti 300	UNKNOWN
