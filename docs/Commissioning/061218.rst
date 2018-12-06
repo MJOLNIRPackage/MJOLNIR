@@ -1,0 +1,10 @@
+06/12-18 - Christmas and Ming Purple 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Christmas is upon us and this also shows, even in SINQ. The beautiful christmas hat has been masterfully created by Ana and will forever be her legacy at PSI. Startup of Ming Purple measurements.
+
+
+
+.. figure:: Christmas.jpeg
+  :width: 45%
+  :align: center
