@@ -274,7 +274,7 @@ class DataSet(object):
             self.scanParameterValues,self.scanParameterUnits = DataFile.extractData(self.dataFiles)
 
     @_tools.KwargChecker()
-    def binData3D(self,dx,dy,dz,dataFiles=None):
+    def binData3D(self,dx,dy,dz,rlu=False,dataFiles=None):
         """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
 
         Args:
@@ -286,6 +286,8 @@ class DataSet(object):
             - dz (float): step sizes along the z direction (required).
 
         Kwargs:
+
+            - rlu (bool): If True, the rotate QX,QY is used for binning (default True)
 
             - datafile (string or list of strings): Location(s) of data file to be binned (default converted file in DataSet).
 
@@ -313,7 +315,7 @@ class DataSet(object):
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
         
         #print(qx.shape)
@@ -377,7 +379,7 @@ class DataSet(object):
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
         positions = [qx,qy,energy]
        
@@ -426,7 +428,7 @@ class DataSet(object):
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
         positions = [qx,qy,energy]
 
@@ -478,7 +480,7 @@ class DataSet(object):
         else: 
             #dataFiles = isListOfDataFiles(dataFiles)
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
         I = np.concatenate([x.flatten() for x in I])
         qx = np.concatenate([x.flatten() for x in qx])#self.qx
@@ -545,7 +547,7 @@ class DataSet(object):
 
         else: 
             dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData() # TODO: Update this
             
         I = np.concatenate([x.flatten() for x in I])
         qx = np.concatenate([x.flatten() for x in qx])#self.qx
@@ -592,7 +594,7 @@ class DataSet(object):
 
         else: 
             dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData() # TODO: Update this!!
             
         positions = [qx,qy,energy]
 
@@ -641,7 +643,7 @@ class DataSet(object):
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
         positions = [qx,qy,energy]
 
@@ -711,7 +713,7 @@ class DataSet(object):
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
         #if ax is None and RLUPlot is True:
         #    ax = self.createRLUAxes()
         
@@ -1338,7 +1340,7 @@ class DataSet(object):
         else: 
             #dataFiles = isListOfDataFiles(dataFiles)
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor#dataFiles.extractData()
+            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             sample = DS.convertedFiles[0].sample
             
         I = np.concatenate([x.flatten() for x in I])
@@ -1387,7 +1389,7 @@ class DataSet(object):
         else:
             rluax = None
 
-        Data,bins = self.binData3D(dx,dy,dz)
+        Data,bins = self.binData3D(dx,dy,dz,rlu=rlu)
         warnings.simplefilter('ignore')
         Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
         warnings.simplefilter('once')
@@ -1979,10 +1981,8 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     ax.grid(True, zorder=0)
     
     ax.format_coord = sample.format_coord
-    projV1 = sample.orientationMatrix[0].astype(int)
-    projV2 = sample.orientationMatrix[1].astype(int)
-    ax.set_xlabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV1[0],projV1[1],projV1[2]))
-    ax.set_ylabel('hkl = [{0:d},{1:d},{2:d}]'.format(projV2[0],projV2[1],projV2[2]))
+    ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector1.astype(int)])))
+    ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector2.astype(int)])))
     return ax
 
 #@_tools.KwargChecker(function=plt.pcolormesh)
@@ -3651,7 +3651,7 @@ def test_DataSet_1Dcut():
     width = 0.1
 
     plt.ioff()
-    convertFiles = ['Data/camea2018n000038.hdf']
+    convertFiles = ['Data/camea2018n000137.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -3713,11 +3713,11 @@ def test_DataSet_2Dcut():
     minPixel=0.02
     EnergyBins = np.linspace(0,2,4)
     plt.ioff()
-    convertFiles = ['Data/camea2018n000017.hdf']
+    convertFiles = ['Data/camea2018n000137.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
     try:
-        os.remove('Data/camea2018n000017.nxs')
+        os.remove('Data/camea2018n000137.nxs')
     except:
         pass
     Datset.convertDataFile()
@@ -3965,7 +3965,7 @@ def test_DataSet_cutQELine():
     assert(BinList.shape==(len(QPoints)-1,len(EnergyBins)-1,3))
 
 def test_DataSet_plotCutQELine():
-    QPoints = np.array([[0.3,-1.0],[0.7,-1.4],[1.6,-0,9],[0.3,-0.9]],dtype=float)
+    QPoints = np.array([[0.3,-1.0],[0.7,-1.4],[1.6,-0,9],[0.3,-0.9]])
     EnergyBins = np.linspace(0,1,11)
     minPixel = 0.001
     width=0.1

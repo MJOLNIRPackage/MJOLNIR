@@ -189,7 +189,7 @@ def calcTasQH(UBINV,angles,Ei,Ef):
 
 
 def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating the UB matrices
-    import TasUBlibDEG
+    from . import TasUBlibDEG
         #[a1,a2,a3,b1,b2,b3,alpha1,alpha2,alpha3,beta1,beta2,beta3]
     
     r1 = [ 1.0000000e+00,  0.0000000e+00,  0.0000000e+00,  8.4377825e-06,
