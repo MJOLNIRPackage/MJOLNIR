@@ -952,8 +952,8 @@ class Sample(object):
         self.reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC]).T
 
         # Set sign of largest component to plus and correct lengths
-        self.projV1=V1*np.sign(V1[np.argmax(np.abs(V1))])/(np.linalg.norm(pV1Q)**2)
-        self.projV2=V2*np.sign(V2[np.argmax(np.abs(V2))])/(np.linalg.norm(pV2Q)**2)
+        self.projV1=V1*np.sign(V1[np.argmax(np.abs(V1))])#/(np.linalg.norm(pV1Q)**2)
+        self.projV2=V2*np.sign(V2[np.argmax(np.abs(V2))])#/(np.linalg.norm(pV2Q)**2)
 
         p23 = np.array([[1,0,0],[0,1,0]]) # To extract Qx, Qy only
         PM = np.array([self.projV1,self.projV2]).T # Projection matrix

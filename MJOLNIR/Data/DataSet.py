@@ -3708,10 +3708,10 @@ def test_DataSet_1DcutE():
 
 def test_DataSet_2Dcut():
     q1 =  np.array([0,0.0])
-    q2 =  np.array([3.0, 0.0])
+    q2 =  np.array([1.5, -1.5])
     width = 0.1
     minPixel=0.02
-    EnergyBins = np.linspace(0,2,4)
+    EnergyBins = np.linspace(2,3,4)
     plt.ioff()
     convertFiles = ['Data/camea2018n000137.hdf']
     
@@ -3720,7 +3720,7 @@ def test_DataSet_2Dcut():
         os.remove('Data/camea2018n000137.nxs')
     except:
         pass
-    Datset.convertDataFile()
+    Datset.convertDataFile(saveFile=False)
     ax,Data,pos,cpos,distance = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins)# Remove to improve test coverage ,vmin=0.0 , vmax= 5e-06)
     Data2,pos2,cpos2,distance2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins)
     for i in range(len(Data)):
@@ -3930,8 +3930,9 @@ def test_DataSet_compareNones():
 
 
 def test_DataSet_cutQELine():
-    QPoints = np.array([[0.3,-1],[0.7,-1.4],[1.6,-0,9],[0.3,-0.9]])
-    EnergyBins = np.linspace(0.0,1.5,5)
+    QPoints = np.array([[0.3,-1],[0.7,-1.4],[1.6,-0.9],[0.3,-0.9]],dtype=float)
+    QPointsHKL=np.array([[0.3,-1,0],[0.7,-1.4,0],[1.6,-0.9,0],[0.3,-0.9,0]],dtype=float)
+    EnergyBins = np.linspace(1.7,2.7,5)
     minPixel = 0.001
     width=0.1
     DataFile = ['Data/camea2018n000137.hdf']
@@ -3952,7 +3953,7 @@ def test_DataSet_cutQELine():
         assert True
 
     DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='QxQy')
-    DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU')
+    DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPointsHKL,EnergyBins,width=width,minPixel=minPixel,format='RLU')
     for i in range(len(DataList)): # Check each segment
         print("i="+str(i))
         assert(DataList[i].shape==(4,len(EnergyBins)-1)) # Must be of size (4,len(E)-1)
@@ -3965,8 +3966,13 @@ def test_DataSet_cutQELine():
     assert(BinList.shape==(len(QPoints)-1,len(EnergyBins)-1,3))
 
 def test_DataSet_plotCutQELine():
-    QPoints = np.array([[0.3,-1.0],[0.7,-1.4],[1.6,-0,9],[0.3,-0.9]])
-    EnergyBins = np.linspace(0,1,11)
+    Points = np.array([[0.7140393034102988,-0.4959224853328328],
+                        [1.128363301356428,-1.6520150761601147],
+                        [1.9002545852012716,-0.9393552598967219],
+                        [1.0432282332853056,-0.12375569239528339]],dtype=float)
+    QPoints = np.zeros((Points.shape[0],3))
+    QPoints[:,:2]=Points
+    EnergyBins = np.linspace(1.7,2.7,11)
     minPixel = 0.001
     width=0.1
     
@@ -4009,8 +4015,14 @@ def test_DataSet_plotCutQELine():
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
         QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,format='qxqy',ax=ax,vmin=0.0,vmax=1.5e-6,ticks=10,log=True,seperatorWidth=3)
 
+
+    HKLPoints = np.array([[0.0,1.0,0.0],
+                        [-0.25,1.9,0.0],
+                        [1.5,0.6,0.0],
+                        [1.0,1.0,0.0]])
+
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        QPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU',plotSeperator = False,tickRound=1)
+        HKLPoints,EnergyBins,width=width,minPixel=minPixel,format='RLU',plotSeperator = False,tickRound=1)
 
     plt.close('all')
 
