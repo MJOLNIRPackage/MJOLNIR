@@ -91,7 +91,7 @@ class DataFile(object):
                     self.scanCommand = np.array(f.get('entry/scancommand'))
                     self.title = np.array(f.get('entry/title'))
                     ###################
-                    self.I[:,:,:0]=0#
+                    self.I[:,:,:200]=0#
                     ###################
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
@@ -300,7 +300,7 @@ class DataFile(object):
 
        
         ###########################
-        #Monitor[:,:,:binning*2] = 0 #
+        Monitor[:,:,:binning] = 0 #
         ###########################
 
 
