@@ -320,6 +320,9 @@ class DataSet(object):
         
         #print(qx.shape)
         #print(np.concatenate(qx,axis=0).flatten().shape)
+        if rlu:
+            for i in range(len(self.convertedFiles)):
+                qx[i],qy[i] = np.einsum('ij,j...->i...',self.sample.RotMat,np.array([qx[i],qy[i]]))
         pos=[np.concatenate(qx,axis=0).flatten(),np.concatenate(qy,axis=0).flatten(),np.concatenate(energy,axis=0).flatten()]
         I = np.concatenate(I,axis=0)
         Monitor = np.concatenate(Monitor,axis=0)
@@ -1366,7 +1369,7 @@ class DataSet(object):
         return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
 
     @_tools.KwargChecker()
-    def View3D(self,dx,dy,dz,rlu=True, log=False):
+    def View3D(self,dx,dy,dz,rlu=True, log=False,grid=False):
         """View data in the Viewer3D object. 
 
         Args:
@@ -1386,6 +1389,7 @@ class DataSet(object):
 
         if rlu:
             rluax = self.createRLUAxes()
+
         else:
             rluax = None
 
@@ -1395,7 +1399,7 @@ class DataSet(object):
         warnings.simplefilter('once')
         if log:
             Intensity = np.log10(Intensity+1e-20)
-        Viewer = Viewer3D.Viewer3D(Intensity,bins,axis=2,ax=rluax)
+        Viewer = Viewer3D.Viewer3D(Data,bins,axis=2,ax=rluax,grid=grid)
         return Viewer
 
 
