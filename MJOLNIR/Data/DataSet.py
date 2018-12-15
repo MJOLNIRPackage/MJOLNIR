@@ -1972,7 +1972,7 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     else:
         fig = figure
         fig.clf()
-    grid_helper = GridHelperCurveLinear((sample.tr, sample.inv_tr))
+    grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr))
     
     ax = Subplot(fig, 1, 1, 1, grid_helper=grid_helper)
   
