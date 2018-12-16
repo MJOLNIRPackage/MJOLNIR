@@ -1397,9 +1397,7 @@ class DataSet(object):
         warnings.simplefilter('ignore')
         Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
         warnings.simplefilter('once')
-        if log:
-            Intensity = np.log10(Intensity+1e-20)
-        Viewer = Viewer3D.Viewer3D(Data,bins,axis=2,ax=rluax,grid=grid)
+        Viewer = Viewer3D.Viewer3D(Data,bins,axis=2,ax=rluax,grid=grid,log=log)
         return Viewer
 
 
