@@ -1697,6 +1697,13 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
 
     """
     qx,qy,energy = positions
+    qx = np.concatenate(qx,axis=0)
+    qy = np.concatenate(qy,axis=0)
+    energy = np.concatenate(energy,axis=0)
+    I = np.concatenate(I,axis=0)
+    Norm = np.concatenate(Norm,axis=0)
+    Monitor = np.concatenate(Monitor,axis=0)
+
     q = np.linalg.norm([qx,qy],axis=0)
     intensity = []
     monitorCount = []
