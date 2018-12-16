@@ -12,7 +12,7 @@ import warnings
 
 class Viewer3D(object):  
     @_tools.KwargChecker(include=['grid'])
-    def __init__(self,Data,bins,axis=2,ax = None,**kwargs):#pragma: no cover
+    def __init__(self,Data,bins,axis=2, log=False ,ax = None,**kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -25,6 +25,8 @@ class Viewer3D(object):
         Kwargs:
 
             - axis (int): Axis along which the interactive plot slices the data (default 2).
+
+            - log (bool): If true, the log 10 of the intensity is plotted (default False)
 
             - ax (matplotlib axis): Matplotlib axis into which one pltos data (Default None)
 
@@ -57,6 +59,8 @@ class Viewer3D(object):
         else:
             self.Data = Data
             self.allData = False
+        if log:
+            self.Data = np.log10(self.Data+1e-20)
         self.bins = bins
         self.dataLimits = [np.nanmin(Data),np.nanmax(Data)]
 
