@@ -383,12 +383,16 @@ class DataSet(object):
         else: 
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-        if len(qx.shape)==4:
+        if len(qx.shape)==1 or len(qx.shape)==4:
+            print('Concatinating {}'.format(qx.shape))
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
-
-        positions = [qx,qy,energy]
+            I = np.concatenate(I,axis=0)
+            Norm = np.concatenate(Norm,axis=0)
+            Monitor = np.concatenate(Monitor,axis=0)
+        
+        positions = np.array([qx,qy,energy])
        
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
 
@@ -437,7 +441,16 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
-        positions = [qx,qy,energy]
+        if len(qx.shape)==1 or len(qx.shape)==4:
+            print('Concatinating {}'.format(qx.shape))
+            qx = np.concatenate(qx,axis=0)
+            qy = np.concatenate(qy,axis=0)
+            energy = np.concatenate(energy,axis=0)
+            I = np.concatenate(I,axis=0)
+            Norm = np.concatenate(Norm,axis=0)
+            Monitor = np.concatenate(Monitor,axis=0)
+        
+        positions = np.array([qx,qy,energy])
 
         return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax,plotCoverage,extend=extend,**kwargs)
 
@@ -489,14 +502,24 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
-        I = np.concatenate([x.flatten() for x in I])
-        qx = np.concatenate([x.flatten() for x in qx])#self.qx
-        qy = np.concatenate([x.flatten() for x in qy])#self.qy
-        energy = np.concatenate([x.flatten() for x in energy])#self.energy
-        Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
-        Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
-        positions = [qx,qy,energy]
+        #I = np.concatenate([x.flatten() for x in I])
+        #qx = np.concatenate([x.flatten() for x in qx])#self.qx
+        #qy = np.concatenate([x.flatten() for x in qy])#self.qy
+        #energy = np.concatenate([x.flatten() for x in energy])#self.energy
+        #Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
+        #Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
+        #positions = [qx,qy,energy]
+        if len(qx.shape)==1 or len(qx.shape)==4:
+            print('Concatinating {}'.format(qx.shape))
+            qx = np.concatenate(qx,axis=0)
+            qy = np.concatenate(qy,axis=0)
+            energy = np.concatenate(energy,axis=0)
+            I = np.concatenate(I,axis=0)
+            Norm = np.concatenate(Norm,axis=0)
+            Monitor = np.concatenate(Monitor,axis=0)
         
+        positions = np.array([qx,qy,energy])
+
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend)
 
  
@@ -556,14 +579,23 @@ class DataSet(object):
             dataFiles = isListOfDataFiles(dataFiles)
             I,qx,qy,energy,Norm,Monitor = dataFiles.extractData() # TODO: Update this
             
-        I = np.concatenate([x.flatten() for x in I])
-        qx = np.concatenate([x.flatten() for x in qx])#self.qx
-        qy = np.concatenate([x.flatten() for x in qy])#self.qy
-        energy = np.concatenate([x.flatten() for x in energy])#self.energy
-        Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
-        Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
-        positions = [qx,qy,energy]
+        #I = np.concatenate([x.flatten() for x in I])
+        #qx = np.concatenate([x.flatten() for x in qx])#self.qx
+        #qy = np.concatenate([x.flatten() for x in qy])#self.qy
+        #energy = np.concatenate([x.flatten() for x in energy])#self.energy
+        #Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
+        #Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
+        #positions = [qx,qy,energy]
+        if len(qx.shape)==1 or len(qx.shape)==4:
+            print('Concatinating {}'.format(qx.shape))
+            qx = np.concatenate(qx,axis=0)
+            qy = np.concatenate(qy,axis=0)
+            energy = np.concatenate(energy,axis=0)
+            I = np.concatenate(I,axis=0)
+            Norm = np.concatenate(Norm,axis=0)
+            Monitor = np.concatenate(Monitor,axis=0)
         
+        positions = np.array([qx,qy,energy])
         return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,ax = None,**kwargs)
 
     @_tools.KwargChecker()
@@ -602,8 +634,16 @@ class DataSet(object):
         else: 
             dataFiles = isListOfDataFiles(dataFiles)
             I,qx,qy,energy,Norm,Monitor = dataFiles.extractData() # TODO: Update this!!
-            
-        positions = [qx,qy,energy]
+        if len(qx.shape)==1 or len(qx.shape)==4:
+            print('Concatinating {}'.format(qx.shape))
+            qx = np.concatenate(qx,axis=0)
+            qy = np.concatenate(qy,axis=0)
+            energy = np.concatenate(energy,axis=0)
+            I = np.concatenate(I,axis=0)
+            Norm = np.concatenate(Norm,axis=0)
+            Monitor = np.concatenate(Monitor,axis=0)
+        
+        positions = np.array([qx,qy,energy])
 
         return cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
 
@@ -652,7 +692,16 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
-        positions = [qx,qy,energy]
+        if len(qx.shape)==1 or len(qx.shape)==4:
+            print('Concatinating {}'.format(qx.shape))
+            qx = np.concatenate(qx,axis=0)
+            qy = np.concatenate(qy,axis=0)
+            energy = np.concatenate(energy,axis=0)
+            I = np.concatenate(I,axis=0)
+            Norm = np.concatenate(Norm,axis=0)
+            Monitor = np.concatenate(Monitor,axis=0)
+        
+        positions = np.array([qx,qy,energy])
 
         return plotCutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin,ax,**kwargs)
 
@@ -724,7 +773,16 @@ class DataSet(object):
         #if ax is None and RLUPlot is True:
         #    ax = self.createRLUAxes()
         
-        pos = [qx,qy,energy]
+        if len(qx.shape)==1 or len(qx.shape)==4:
+            print('Concatinating {}'.format(qx.shape))
+            qx = np.concatenate(qx,axis=0)
+            qy = np.concatenate(qy,axis=0)
+            energy = np.concatenate(energy,axis=0)
+            I = np.concatenate(I,axis=0)
+            Norm = np.concatenate(Norm,axis=0)
+            Monitor = np.concatenate(Monitor,axis=0)
+        
+        positions = np.array([qx,qy,energy])
         return plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
 
     @_tools.KwargChecker()
@@ -1472,7 +1530,9 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     orthovec=np.array([dirvec[1],-dirvec[0]])
     
     ProjectMatrix = np.array([dirvec,orthovec])
-
+    print(Emax)
+    print(Emin)
+    print(np.array(positions).shape)
     insideEnergy = np.logical_and(positions[2]<=Emax,positions[2]>=Emin)
     if(np.sum(insideEnergy)==0):
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),np.array([]),[Emin,Emax]]
