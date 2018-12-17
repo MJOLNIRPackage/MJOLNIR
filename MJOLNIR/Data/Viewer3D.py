@@ -11,8 +11,8 @@ from MJOLNIR import _tools
 import warnings
 
 class Viewer3D(object):  
-    @_tools.KwargChecker(include=['grid'])
-    def __init__(self,Data,bins,axis=2, log=False ,ax = None,**kwargs):#pragma: no cover
+    @_tools.KwargChecker()
+    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -66,14 +66,17 @@ class Viewer3D(object):
 
         gs = matplotlib.gridspec.GridSpec(1, 2, width_ratios=[4, 1]) 
         
-        if 'grid' in kwargs.keys():
-            gridArg = kwargs['grid']
+        if not grid == False:
+            gridArg = grid
             if isinstance(gridArg,(bool)):
                 self.grid = gridArg
                 self.gridZOrder=-10
             elif isinstance(gridArg,(int,float)):
                 self.grid = True
                 self.gridZOrder=gridArg
+        else:
+            self.grid = False
+            self.gridZOrder = 0
 
         if ax is None:
             self.figure = plt.figure()
@@ -92,9 +95,13 @@ class Viewer3D(object):
             self.axRLU.set_position(self.axNorm.get_position()) # Update RLU to correct position
 
             self._axes = [self.axNorm,self.axNorm,self.axRLU]
+            self._axes[0].set_xlabel(r'Qx [$A^{-1}$]')
+            self._axes[0].set_ylabel(r'E [meV]')
+            self._axes[1].set_xlabel(r'Qy [$A^{-1}$]')
+            self._axes[1].set_ylabel(r'E [meV]')
             self.ax = self.axNorm
-            self.xlabel = ax.get_xlabel()
-            self.ylabel = ax.get_ylabel()
+            self.xlabel = r'Qx [$A^{-1}$]'
+            self.ylabel = r'Qy [$A^{-1}$]'
             self.zlabel = 'E [meV]'
             self.rlu = True
        
@@ -177,10 +184,11 @@ class Viewer3D(object):
                 #self.axRLU.set_visible(True)
                 #self.axNorm.set_visible(False)
                 #self.ax = self.axRLU
+            else:
+                self.ax.set_xlabel(self.xlabel)
+                self.ax.set_ylabel(self.ylabel)
             axes = (0,1,2)
-            self.ax.set_xlabel(self.xlabel)
-            self.ax.set_ylabel(self.ylabel)
-            label = self.zlabel
+            label = self.zlabel#self.ax.get_ylabel
         elif axis==1:  # pragma: no cover
             if self.rlu:
                 #self.axRLU.set_visible(False)
@@ -188,10 +196,11 @@ class Viewer3D(object):
                 #self.ax = self.axNorm
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+            else:
+                self.ax.set_xlabel(self.xlabel)
+                self.ax.set_ylabel(self.zlabel)
             axes = (0,2,1)
-            self.ax.set_xlabel(self.xlabel)
-            self.ax.set_ylabel(self.zlabel)
-            label = self.ylabel
+            label =  self.ylabel#self.ax.get_ylabel
         elif axis==0:  # pragma: no cover
             if self.rlu:
                 #self.axRLU.set_visible(False)
@@ -199,10 +208,11 @@ class Viewer3D(object):
                 #self.ax = self.axNorm
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+            else:
+                self.ax.set_xlabel(self.ylabel)
+                self.ax.set_ylabel(self.zlabel)
             axes = (1,2,0)
-            self.ax.set_xlabel(self.ylabel)
-            self.ax.set_ylabel(self.zlabel)
-            label = self.xlabel
+            label =  self.xlabel#self.ax.get_xlabel()
         else:
             raise AttributeError('Axis provided not recognized. Should be 0, 1, or 2 but got {}'.format(axis))
         
@@ -266,43 +276,37 @@ class Viewer3D(object):
 
 def onclick(self, event): # pragma: no cover
     if event.xdata is not None and self.ax.in_axes(event):
-        
         idz = self.value
         axis = self.axis
-        if axis==0:
-            XX,YY = self.Y[idz,0,:],self.Z[idz,:,0]
-        elif axis==1:
-            XX,YY = self.X[:,idz,0],self.Z[0,idz,:]
-        elif axis==2:
-            XX,YY = self.X[:,0,idz],self.Y[0,:,idz]
-        XX = 0.5*(XX[:-1]+XX[1:])
-        YY = 0.5*(YY[:-1]+YY[1:])
-        idx = np.unravel_index(np.argmin(np.abs(XX-event.xdata)),XX.shape)
-        idy = np.unravel_index(np.argmin(np.abs(YY-event.ydata)),YY.shape)
+
+        XX,YY = self.X[:,:,idz],self.Y[:,:,idz]
+        XX = 0.25*(XX[:-1,:-1]+XX[1:,:-1]+XX[:-1,1:]+XX[1:,1:])
+        YY = 0.25*(YY[:-1,:-1]+YY[1:,:-1]+YY[:-1,1:]+YY[1:,1:])
+        idx = np.unravel_index(np.argmin(np.abs(XX-event.xdata)),XX.shape)[0]
+        idy = np.unravel_index(np.argmin(np.abs(YY-event.ydata)),YY.shape)[1]
         I = self.masked_array[idx,idy,idz]
+
         masked = np.ma.is_masked(I)
-        
         printString = ''
         printString+=self.ax.format_coord(event.xdata, event.ydata)+', '
 
         if masked:
             I = np.nan
-        else:
-            I = I[0]
+
         printString+='I = {:.4E}'.format(I)
         if self.allData is True:
-            #print(np.array([idx,idy,idz]))
-            #print(self.axes)
-            ID = np.array([idx[0],idy[0],idz])[list(self.axes)]
-            #print(ID)
+            if self.axis == 0:
+                flipper = [2,0,1]
+            elif self.axis == 1:
+                flipper = [0,2,1]
+            else:
+                flipper = [0,1,2]
+            ID = np.array([idx,idy,idz])[flipper]
             cts = self.Counts[ID[0],ID[1],ID[2]]
             Norm = self.Normalization[ID[0],ID[1],ID[2]]
-            Mon = int(self.Monitor[ID[0],ID[1],ID[2]])
+            Mon = self.Monitor[ID[0],ID[1],ID[2]]
             NC = self.NormCounts[ID[0],ID[1],ID[2]]
-            #print('cts,Norm,Mon,NC',cts,Norm,Mon,NC)
-            printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,Mon,NC)
-            
-            #print('x={}, y={}, xdata={}, ydata={}, idx={}, idy={},I = {:.4E}'.format(event.x, event.y, event.xdata, event.ydata, idx, idy, I))
+            printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
 
         print(printString)
         
