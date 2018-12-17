@@ -384,7 +384,7 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
         if len(qx.shape)==1 or len(qx.shape)==4:
-            print('Concatinating {}'.format(qx.shape))
+            
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
@@ -442,7 +442,7 @@ class DataSet(object):
             I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
         if len(qx.shape)==1 or len(qx.shape)==4:
-            print('Concatinating {}'.format(qx.shape))
+            
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
@@ -510,7 +510,7 @@ class DataSet(object):
         #Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
         #positions = [qx,qy,energy]
         if len(qx.shape)==1 or len(qx.shape)==4:
-            print('Concatinating {}'.format(qx.shape))
+            
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
@@ -587,7 +587,7 @@ class DataSet(object):
         #Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
         #positions = [qx,qy,energy]
         if len(qx.shape)==1 or len(qx.shape)==4:
-            print('Concatinating {}'.format(qx.shape))
+            
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
@@ -635,7 +635,7 @@ class DataSet(object):
             dataFiles = isListOfDataFiles(dataFiles)
             I,qx,qy,energy,Norm,Monitor = dataFiles.extractData() # TODO: Update this!!
         if len(qx.shape)==1 or len(qx.shape)==4:
-            print('Concatinating {}'.format(qx.shape))
+            
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
@@ -693,7 +693,7 @@ class DataSet(object):
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
         if len(qx.shape)==1 or len(qx.shape)==4:
-            print('Concatinating {}'.format(qx.shape))
+            
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
@@ -774,7 +774,7 @@ class DataSet(object):
         #    ax = self.createRLUAxes()
         
         if len(qx.shape)==1 or len(qx.shape)==4:
-            print('Concatinating {}'.format(qx.shape))
+            
             qx = np.concatenate(qx,axis=0)
             qy = np.concatenate(qy,axis=0)
             energy = np.concatenate(energy,axis=0)
@@ -1661,7 +1661,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
 
 
 
-@_tools.KwargChecker(function=plt.errorbar)
+@_tools.KwargChecker(function=plt.errorbar,include='label')
 def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,**kwargs):
     """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
     Adds the 3D position on the x axis with ticks.
