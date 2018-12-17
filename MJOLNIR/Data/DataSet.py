@@ -383,7 +383,11 @@ class DataSet(object):
         else: 
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-            
+        if len(qx.shape)==4:
+            qx = np.concatenate(qx,axis=0)
+            qy = np.concatenate(qy,axis=0)
+            energy = np.concatenate(energy,axis=0)
+
         positions = [qx,qy,energy]
        
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
