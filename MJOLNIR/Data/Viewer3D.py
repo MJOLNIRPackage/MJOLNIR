@@ -86,43 +86,69 @@ class Viewer3D(object):
             self.zlabel = r'E [meV]'
             self.rlu = False
         else:
-            warnings.warn('If the provided axis is a RLU axis be aware of possibility of wrong visualization when cutting along Q!!')
-            
-            self.axRLU = ax
-            self.figure = ax.get_figure() # Get the correct figure
-            self.axNorm,ax2  = self.figure.subplots(1,2,gridspec_kw={'width_ratios':[4, 1]}) # Create figure on top of the other
-            ax2.remove() # Remove the excess figure
-            self.axRLU.set_position(self.axNorm.get_position()) # Update RLU to correct position
+            #warnings.warn('If the provided axis is a RLU axis be aware of possibility of wrong visualization when cutting along Q!!')
+            if isinstance(ax,plt.Axes): # Assuming only RLU - energy plot is provided
+                self.axRLU = ax
+                self.figure = ax.get_figure() # Get the correct figure
+                self.axNorm,ax2  = self.figure.subplots(1,2,gridspec_kw={'width_ratios':[4, 1]}) # Create figure on top of the other
+                ax2.remove() # Remove the excess figure
+                
+                self.axRLU.set_position(self.axNorm.get_position()) # Update RLU to correct position
 
-            self._axes = [self.axNorm,self.axNorm,self.axRLU]
-            self._axes[0].set_xlabel(r'Qx [$A^{-1}$]')
-            self._axes[0].set_ylabel(r'E [meV]')
-            self._axes[1].set_xlabel(r'Qy [$A^{-1}$]')
-            self._axes[1].set_ylabel(r'E [meV]')
-            self.ax = self.axNorm
-            self.xlabel = r'Qx [$A^{-1}$]'
-            self.ylabel = r'Qy [$A^{-1}$]'
-            self.zlabel = 'E [meV]'
-            self.rlu = True
+                self._axes = [self.axNorm,self.axNorm,self.axRLU]
+                self._axes[0].set_xlabel(r'Qx [$A^{-1}$]')
+                self._axes[0].set_ylabel(r'E [meV]')
+                self._axes[1].set_xlabel(r'Qy [$A^{-1}$]')
+                self._axes[1].set_ylabel(r'E [meV]')
+                self.ax = self.axNorm
+                self.xlabel = r'Qx [$A^{-1}$]'
+                self.ylabel = r'Qy [$A^{-1}$]'
+                self.zlabel = 'E [meV]'
+                self.rlu = True
+            elif len(ax)==3: # All axes provided in order QxE,QyE,QxQy
+                self.axQxE = ax[0]
+                self.axQyE = ax[1]
+                self.axRLU = ax[2]
+                self.figure = self.axQyE.get_figure() # Get the correct figure
+                self.axNorm,ax2  = self.figure.subplots(1,2,gridspec_kw={'width_ratios':[4, 1]}) # Create figure on top of the other
+                ax2.remove() # Remove the excess figure
+                
+                self.axQxE.set_position(self.axNorm.get_position()) # Update axQxE to correct position
+                self.axQyE.set_position(self.axNorm.get_position()) # Update axQyE to correct position
+                self.axRLU.set_position(self.axNorm.get_position()) # Update axRLU to correct position
+                self._axes = [self.axQxE,self.axQyE,self.axRLU]
+                
+                self.ax = self.axNorm
+                hkl = ['H','K','L']
+                xlabelSplit = self.axQyE.get_xlabel().replace(' [RLU]','').split(',')
+                ylabelSplit = self.axQxE.get_xlabel().replace(' [RLU]','').split(',')
+                self.xlabel = '\n'.join(['{}: '.format(hkl[i])+'{:+.3f}'.format(float(xlabelSplit[i])) for i in range(len(xlabelSplit))])
+                self.ylabel = '\n'.join(['{}: '.format(hkl[i])+'{:+.3f}'.format(float(ylabelSplit[i])) for i in range(len(ylabelSplit))])
+                self.zlabel = 'E [meV]'
+                self.rlu = True
+                
+                self.EnergySliderTransform=[self.axQxE._length,self.axQyE._length,1.0] # Factor to divide the Energy slider value with (only applicable for QE axes)
+
+            else:
+                raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
        
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
-        
         self.cmap = cm.jet
         self.cmap.set_bad('white',1.)
         self.value = 0
         
         axis_color='white'
         self.setAxis(axis)
-        
         self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
         self.figure.canvas.mpl_connect('scroll_event',lambda event: onscroll(event, self))
         
         zeroPoint = np.argmin(np.abs(0.5*(self.Z[0,0][1:]+self.Z[0,0][:-1])))
         
     
-        self.Energy_slider_ax = self.figure.add_axes([0.15, 0.1, 0.7, 0.03])#, facecolor=axis_color)
-        self.Energy_slider = Slider(self.Energy_slider_ax, label=self.label, valmin=self.lowerLim, valmax=self.upperLim, valinit=zeroPoint,valfmt='%0f')
+        self.Energy_slider_ax = self.figure.add_axes([0.15, 0.1, 0.7, 0.03])
+        
+        self.Energy_slider = Slider(self.Energy_slider_ax, label=self.label, valmin=self.lowerLim, valmax=self.upperLim, valinit=zeroPoint)
         self.Energy_slider.valtext.set_visible(False)
         
         self.Energy_slider.on_changed(lambda val: sliders_on_changed(self,val))
@@ -177,13 +203,11 @@ class Viewer3D(object):
         self.colorbar.update_bruteforce(self.im)
 
     def setAxis(self,axis):
+        
         if axis==2:
             if self.rlu:
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
-                #self.axRLU.set_visible(True)
-                #self.axNorm.set_visible(False)
-                #self.ax = self.axRLU
             else:
                 self.ax.set_xlabel(self.xlabel)
                 self.ax.set_ylabel(self.ylabel)
@@ -191,9 +215,6 @@ class Viewer3D(object):
             label = self.zlabel#self.ax.get_ylabel
         elif axis==1:  # pragma: no cover
             if self.rlu:
-                #self.axRLU.set_visible(False)
-                #self.axNorm.set_visible(True)
-                #self.ax = self.axNorm
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
             else:
@@ -203,9 +224,6 @@ class Viewer3D(object):
             label =  self.ylabel#self.ax.get_ylabel
         elif axis==0:  # pragma: no cover
             if self.rlu:
-                #self.axRLU.set_visible(False)
-                #self.axNorm.set_visible(True)
-                #self.ax = self.axNorm
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
             else:
@@ -213,9 +231,9 @@ class Viewer3D(object):
                 self.ax.set_ylabel(self.zlabel)
             axes = (1,2,0)
             label =  self.xlabel#self.ax.get_xlabel()
+            
         else:
             raise AttributeError('Axis provided not recognized. Should be 0, 1, or 2 but got {}'.format(axis))
-        
         X=self.bins[axes[0]].transpose(axes)
         Y=self.bins[axes[1]].transpose(axes)
         Z=self.bins[axes[2]].transpose(axes)
@@ -247,14 +265,12 @@ class Viewer3D(object):
             val = 0.5*(self.Z[0,0,self.value+1]+self.Z[0,0,self.value])
         except:
             val = 0.5*(2*self.Z[0,0,self.value]-self.Z[0,0,self.value-1])
+        if hasattr(self,'EnergySliderTransform'):
+            val/=self.EnergySliderTransform[self.axis]
         return str(np.round(val,2))+unit
     
     
     def plot(self):
-        #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
-        #self.im.set_array(self.masked_array[:,:,self.value].T.ravel()) # = self.ax.pcolormesh(self.X.T[:-1],self.Y.T[:-1],self.masked_array[:,:,self.value].T,zorder=10,shading='gouraud')
-        #self.im.autoscale()
-        #self.colorbar.update_bruteforce(self.im)
         self.text.set_text(self.stringValue())
         self.im.remove()
         if self.shading=='flat':
@@ -265,13 +281,11 @@ class Viewer3D(object):
             self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
         self.im.set_clim(self.caxis)
         self.ax.set_position(self.figpos)
-        #ylim = [self.Y[0],self.Y[-1]]
         xlim = self.ax.get_xlim()
         ylim = self.ax.get_ylim()
         if self.axis == 2:
             pass
         self.ax.grid(self.grid,zorder=self.gridZOrder)
-            #self.ax.set_xlim(np.min([xlim[0],ylim[0]]),np.max([xlim[1],ylim[1]]))
 
 
 def onclick(self, event): # pragma: no cover
@@ -311,11 +325,6 @@ def onclick(self, event): # pragma: no cover
 
         print(printString)
         
-
-
-
-
-
 def onkeypress(event,self): # pragma: no cover
     if event.key in ['+','up']:
         increaseAxis(event,self)
@@ -373,7 +382,7 @@ def onkeypress(event,self): # pragma: no cover
 def reloadslider(self,axis): # pragma: no cover
     self.Energy_slider.set_val(0)
     self.setAxis(axis)
-    self.Energy_slider.label.remove()#self.Energy_slider.label.text('')
+    self.Energy_slider.label.remove()
     self.Energy_slider.disconnect(self.Energy_slider.cids[0])
     self.Energy_slider.vline.set_visible(False)
     
