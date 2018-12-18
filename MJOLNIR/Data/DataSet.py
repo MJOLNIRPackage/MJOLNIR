@@ -718,6 +718,19 @@ class DataSet(object):
         """
         return createRLUAxes(self,figure=figure)
 
+
+    def createQEAxes(self,axis=0,figure=None):
+        """Wrapper for the createRLUAxes method.
+
+        Returns:
+
+            - ax (Matplotlib axes): Created reciprocal lattice axes.
+
+        .. note::
+           Uses sample from the first converted data file. However, this should be taken care of by the comparison of datafiles to ensure same sample and settings.
+
+        """
+        return createQEAxes(self,axis=axis,figure=figure)
     
     #@_tools.KwargChecker(function=plt.pcolormesh,include=[])
     def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,dataFiles=None,**kwargs):
@@ -1447,19 +1460,35 @@ class DataSet(object):
             - rlu (Bool): If true a rlu axis is used for plotting orthervise qx,qy (Default True).
 
             - log (Bool): If true logarithm of intensity is plotted
+
+        If one plots not using RLU, everything is plotted in real units (1/AA), and the Qx and QY is not rotated. That is, the
+        x axis in energy is not along the projection vector. The cuts of constant Qx and Qy does not represent any symmetry directions in
+        the sample.
+        However, if one utilizes the RLU flag, first Qx and Qy are rotated with first HKL vector along the x-axis. This thus means that 
+        cuts of constant Qx (or more correctly along the principal HKL vector) represents a symmetry direction. However, as the data is 
+        binned in equal sized voxels, constant Qy does not necessarily correspond to HKL vector 2 (it will in systems with 90 degrees 
+        between the two vectors). 
         """
 
         if rlu:
             rluax = self.createRLUAxes()
+            figure = rluax.get_figure()
+            figure.delaxes(rluax)
+            qxEax = self.createQEAxes(axis=0,figure=figure)
+            figure.delaxes(qxEax)
+            qyEax = self.createQEAxes(axis=1,figure=figure)
+            figure.delaxes(qyEax)
+            
+            axes = [qxEax,qyEax,rluax]
 
         else:
-            rluax = None
+            axes = None
 
         Data,bins = self.binData3D(dx,dy,dz,rlu=rlu)
         warnings.simplefilter('ignore')
         Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
         warnings.simplefilter('once')
-        Viewer = Viewer3D.Viewer3D(Data,bins,axis=2,ax=rluax,grid=grid,log=log)
+        Viewer = Viewer3D.Viewer3D(Data,bins,axis=2,ax=axes,grid=grid,log=log)
         return Viewer
 
 
@@ -2036,7 +2065,7 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     Returns:
         
         - ax (Matplotlib axes): Axes containing the RLU plot.
-    
+        
     """
     sample = Dataset.sample
     
@@ -2057,6 +2086,81 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector1.astype(int)])))
     ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector2.astype(int)])))
     return ax
+
+
+def createQEAxes(self,axis=0,figure = None):
+    """Function to create Q E plot
+
+    Kwargs:
+
+        - axis (int): Whether to create axis 0 or 1 (projection vector 0 or orthogonal to this, default 0)
+
+        - figure
+
+
+    """
+    angle = self.sample.projectionAngle
+    v1 = self.sample.projectionVector1
+    v2 = self.sample.projectionVector2
+    
+    v2Length = np.linalg.norm(v2)
+    
+    
+    projectionMatrix = np.linalg.inv(np.array([[1,0],[np.cos(angle)*v2Length,np.sin(angle)*v2Length]]).T)
+    
+    projectionVectorQX = np.dot(np.dot(projectionMatrix,[1,0]),np.array([v1,v2]))
+    projectionVectorQY = np.dot(np.dot(projectionMatrix,[0,1]),np.array([v1,v2]))
+    
+    projectionVectorQXLength = np.linalg.norm(np.dot(self.sample.orientationMatrix,projectionVectorQX))
+    projectionVectorQYLength = np.linalg.norm(np.dot(self.sample.orientationMatrix,projectionVectorQY))
+    projectionVectorQXFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQX])
+    projectionVectorQYFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQY])
+    
+    if axis == 0:
+        projectionVectorLength = projectionVectorQYLength
+        projectionVectorLengthORthogonal = projectionVectorQXLength
+        projectionVectorFormated = projectionVectorQXFormated
+    elif axis == 1:
+        projectionVectorLength = projectionVectorQXLength
+        projectionVectorFormated = projectionVectorQYFormated
+        projectionVectorLengthORthogonal = projectionVectorQYLength
+    else:
+        raise AttributeError('Provided axis of {} is not allowed. Should be eiter 0 or 1.'.format(axis))
+
+    if figure is None:
+        
+        figure = plt.figure(figsize=(7, 4))
+    else:
+        figure.clf()
+    def inv_tr(l,x,y):
+        return x*l,y
+    
+    def tr(l,x,y):
+        return x/l,y
+    
+    
+    
+    grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
+                                        lambda x,y:tr(projectionVectorLength,x,y)))
+    
+    ax = Subplot(figure, 1, 1, 1, grid_helper=grid_helper)
+    
+    figure.add_subplot(ax)
+    #ax.set_aspect(1.)
+    ax.grid(True, zorder=0)
+    
+    def format_coord(l,x,y): 
+        x, y = np.asarray(x), np.asarray(y)
+        return "{:.4f}\t E: {:.4f}".format(x/l,y)
+    
+    ax.format_coord = lambda x,y: format_coord(projectionVectorLength,x,y)
+    ax.set_xlabel('{} [RLU]'.format(projectionVectorFormated))
+    
+    ax.set_ylabel('E [meV]')
+    ax._length = projectionVectorLengthORthogonal
+    return ax
+
+
 
 #@_tools.KwargChecker(function=plt.pcolormesh)
 def plotQPlane(I,Monitor,Norm,pos,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,**kwargs):
