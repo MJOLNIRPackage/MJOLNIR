@@ -95,7 +95,7 @@ def my_timer_N(N=0): # pragma: no cover
         return newFunc
     return my_timer
 
-def beautifyArgs(args=(),kwargs={}):
+def beautifyArgs(args=(),kwargs={}): # pragma: no cover
     """Beautify arguments and keyword arguments. Returns formated string with arguments and 
     keyword argumenets seperated with commas as called in a function"""
     returnStr = ''
@@ -109,7 +109,7 @@ def beautifyArgs(args=(),kwargs={}):
         returnStr+=', '.join([str(x) for x in kwformat])
     return returnStr
 
-def createLogger(self,name,stream=sys.stdout,level=logging.ERROR):
+def createLogger(self,name,stream=sys.stdout,level=logging.ERROR): # pragma: no cover
     self._log =  logging.getLogger(name)
     self._log.setLevel(level)
     ch = logging.StreamHandler(sys.stdout)
@@ -118,7 +118,7 @@ def createLogger(self,name,stream=sys.stdout,level=logging.ERROR):
     ch.setFormatter(formatter)
     self._log.addHandler(ch)
 
-def logMethod(self,original_function): 
+def logMethod(self,original_function):  # pragma: no cover
     @functools.wraps(original_function)     
     def new_function(*args,**kwargs):
         self._log.info('Calling {}({})'.format(new_function.original_function.__name__,beautifyArgs(args,kwargs)))
@@ -135,7 +135,7 @@ def logAttribute(self,original_attribute):
     self._log.info('Calling attribute {}'.format(str(original_attribute)))                                     
     
 
-def logClass(parent=None,log=__name__,stream=sys.stdout,level=logging.CRITICAL):
+def logClass(parent=None,log=__name__,stream=sys.stdout,level=logging.CRITICAL): # pragma: no cover
     if parent is None:
         parent = object
     def track_all_class_methods(Cls):
@@ -282,3 +282,32 @@ def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hd
         dataFiles.append([format.format(folder,year,x) for x in numbers])
     return list(np.concatenate(dataFiles))
 
+
+def test_binEdges():
+    values = np.exp(np.linspace(-0.1,1,101)) # Generate non-linear points
+    #values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
+    minBin = 0.1
+    bins = binEdges(values,minBin)
+
+    assert(np.isclose(bins[0],values[0]-0.5*minBin)) # First bin starts at values[0]-tolerance/2.0
+    assert(np.isclose(bins[-1],values[-1]+0.5*minBin)) # Last bin ends at values[-1]+tolerance/2.0
+    assert(np.all(np.diff(bins)>=minBin)) # Assert that all bins are at least of size minBin
+
+def test_fileListGenerator():
+    numberStr = '0,20-23-24,4000'
+    year = 2018
+    folder = '/home/camea'
+    try:
+        files = fileListGenerator(numberStr,folder,year)
+        assert False # Too many dasches
+    except AttributeError:
+        assert True
+
+    numberStr = '0,20-23,4000'
+
+    files = fileListGenerator(numberStr,folder,year)
+    filesCorrect = np.array([
+        '/home/camea/camea2018n000000.hdf', '/home/camea/camea2018n000020.hdf', 
+        '/home/camea/camea2018n000021.hdf', '/home/camea/camea2018n000022.hdf', 
+        '/home/camea/camea2018n000023.hdf', '/home/camea/camea2018n004000.hdf'])
+    assert(np.all(filesCorrect == np.array(files)))
