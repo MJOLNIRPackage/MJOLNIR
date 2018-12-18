@@ -231,3 +231,54 @@ def binEdges(values,tolerance):
         current+=add+1
     bin_edges.append(unique_values[-1] + tolerance / 2)
     return np.array(bin_edges)
+
+
+def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hdf'):
+    """Function to generate list of data files.
+    
+    Args:
+        
+        - numberString (str): List if numbers seperated with comma and dashes for sequences.
+        
+        - folder (str): Folder of wanted data files.
+        
+        - year (int): Year if wanted data files
+        
+    Kwargs:
+        
+        - format (str): format of data files (default '{:}camea{:d}n{:06d}.hdf')
+        
+    returns:
+        
+        - list of strings: List containing the full file string for each number provided.
+        
+    Example:
+        >>> numberString = '201-205,207-208,210,212'
+        >>> files = fileListGenerator(numberString,'data/',2018)
+        ['data/camea2018n000201.hdf', 'data/camea2018n000202.hdf', 
+        'data/camea2018n000203.hdf', 'data/camea2018n000204.hdf', 
+        'data/camea2018n000205.hdf', 'data/camea2018n000207.hdf', 
+        'data/camea2018n000208.hdf', 'data/camea2018n000210.hdf', 
+        'data/camea2018n000212.hdf']
+    """
+        
+    splits = numberString.split(',')
+    dataFiles = []
+    for sp in splits:
+        isRange = sp.find('-')!=-1
+        
+        if isRange:
+            spSplits = sp.split('-')
+            if len(spSplits)>2:
+                raise AttributeError('Sequence "{}" not understood - too many dashes.'.format(sp))
+            startNumber = int(spSplits[0])
+            endNumber = int(spSplits[1])
+            numbers = np.arange(startNumber,endNumber+1)    
+        else:
+            numbers = [int(sp)]
+        if not folder[-1]=='/':
+            folder+='/'
+        
+        dataFiles.append([format.format(folder,year,x) for x in numbers])
+    return list(np.concatenate(dataFiles))
+
