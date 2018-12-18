@@ -294,7 +294,8 @@ def onclick(self, event): # pragma: no cover
             I = np.nan
 
         printString+='I = {:.4E}'.format(I)
-        if self.allData is True:
+       
+        if self.allData is True and not masked:
             if self.axis == 0:
                 flipper = [2,0,1]
             elif self.axis == 1:
