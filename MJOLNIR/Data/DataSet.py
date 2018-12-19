@@ -182,8 +182,6 @@ class DataSet(object):
 
 
     def __eq__(self, other): 
-        print(self.__dict__.keys())
-        print(other.__dict__.keys())
         return np.logical_and(set(self.__dict__.keys()) == set(other.__dict__.keys()),self.__class__ == other.__class__)
 
     def __str__(self):
@@ -317,9 +315,7 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
             
-        
-        #print(qx.shape)
-        #print(np.concatenate(qx,axis=0).flatten().shape)
+
         if rlu:
             for i in range(len(self.convertedFiles)):
                 qx[i],qy[i] = np.einsum('ij,j...->i...',self.sample.RotMat,np.array([qx[i],qy[i]]))
@@ -1559,9 +1555,6 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     orthovec=np.array([dirvec[1],-dirvec[0]])
     
     ProjectMatrix = np.array([dirvec,orthovec])
-    print(Emax)
-    print(Emin)
-    print(np.array(positions).shape)
     insideEnergy = np.logical_and(positions[2]<=Emax,positions[2]>=Emin)
     if(np.sum(insideEnergy)==0):
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),np.array([]),[Emin,Emax]]
@@ -2369,8 +2362,6 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
             raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,len(planes)))
             
     
-    #files = np.array(files)
-    #print(files)
     try:
         numFiles = len(files)
     except:
@@ -2468,7 +2459,6 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
     unique,uindex,count = np.unique(PosAll,axis=1,return_index=True,return_counts=True)
     
     if np.sum(count>1)>0: # If there is any duplicate points
-        #print('Binning!')
         BoundPoly= [convexHullPoints(points[i][0].flatten(),points[i][1].flatten()) for i in range(numFiles)]
 
         mask = np.ones(PosAll.shape[1],dtype=bool)
@@ -2500,7 +2490,6 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         
     else:
         BoundPoly = False
-        #print('No binning')
         # Sort measured points first in y and then x direction
         index = np.lexsort((unique[1], unique[0]))
         shape = I.shape[2] #(64 or 8 depending on instrument and binning)
@@ -2512,14 +2501,10 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
     #points,BoundPoly,Isorted,Normsorted,Monsorted = genPointsAndBoundary(A3All,A4InstrAll,numFiles,I,Norm,Mon)
 
-    #print(type(BoundPoly))
     if numFiles==1:
         points = [np.array(points).reshape(2,-1)]
         numGroups = 1
-        #print('NumFiles = 1')
     else:
-        #print('NumFiles = {}'.format(numFiles))
-        
         numGroups = False
     polygons,GoodPolyPoints = voronoiTessellation(points,plot = plotTessellation,Boundary = BoundPoly, numGroups=numGroups)
 
@@ -3022,7 +3007,6 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
         pointsX = np.array([points[0][0].flatten()])[0]
         pointsY = np.array([points[0][1].flatten()])[0]
     else: # Combine all files
-        #print(numGroups)
         combiPoly = BoundPoly[0].union(BoundPoly[1])
         for i in range(len(BoundPoly)-2):
             combiPoly = combiPoly.union(BoundPoly[i+2])
