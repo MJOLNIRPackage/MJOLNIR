@@ -3285,14 +3285,14 @@ def isListOfStrings(object):
     
 def isListOfDataFiles(inputFiles):
     returnList = []
-    if isinstance(inputFiles,list):
+    if isinstance(inputFiles,(list,np.ndarray)):
         for file in inputFiles:
             if isinstance(file,DataFile.DataFile):
                 returnList.append(file)
             elif isinstance(file,str):
                 # Check if file exists
                 if not os.path.isfile(file):
-                    raise AttributeError('Following file do not exist:\n{}'.format(file))
+                    raise AttributeError('Following file does not exist:\n{}'.format(file))
                 returnList.append(DataFile.DataFile(file))
     elif isinstance(inputFiles,DataFile.DataFile):
         returnList.append(inputFiles)
