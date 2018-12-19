@@ -392,7 +392,7 @@ class DataSet(object):
        
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
 
-    @_tools.KwargChecker(function=plt.errorbar) #Advanced KWargs checker for figures
+    @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,dataFiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
@@ -519,7 +519,7 @@ class DataSet(object):
         return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend)
 
  
-    @_tools.KwargChecker(function=plt.errorbar)
+    @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
     def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,ax=None,dataFiles=None,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
@@ -1683,7 +1683,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
 
 
 
-@_tools.KwargChecker(function=plt.errorbar,include='label')
+@_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
 def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,ax=None,plotCoverage=False,extend=True,**kwargs):
     """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
     Adds the 3D position on the x axis with ticks.
@@ -1946,7 +1946,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
 
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-@_tools.KwargChecker(function=plt.errorbar)
+@_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
 def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,ax = None,**kwargs):
     """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
