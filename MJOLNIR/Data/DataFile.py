@@ -69,7 +69,10 @@ class DataFile(object):
                     self.sample = Sample(sample=f.get('/entry/sample'))
                     self.MonitorPreset=np.array(f.get('entry/control/preset'))
                     self.Monitor = np.array(f.get('entry/control/data'))
-                    self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
+                    self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
+                    if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
+                        if self.Monitor[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
+                            self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
