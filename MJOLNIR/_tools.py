@@ -4,6 +4,7 @@ import numpy as np
 from difflib import SequenceMatcher
 import functools
 import logging
+MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
 def KwargChecker(function=None,include=None):
     """Function to check if given key-word is in the list of accepted Kwargs. If not directly therein, checks capitalization. If still not match raises error
@@ -17,7 +18,7 @@ def KwargChecker(function=None,include=None):
 
         - AttributeError
     """
-    
+    @functools.wraps(None)
     def KwargCheckerNone(func):
         @functools.wraps(func)
         def newFunc(*args,**kwargs):
@@ -25,24 +26,31 @@ def KwargChecker(function=None,include=None):
             checkArgumentList(argList,kwargs)
             returnval = func(*args,**kwargs)
             return returnval
-        #newFunc.__dict__ =  func.__dict__
         newFunc._original = func
         newFunc._include = include
         newFunc._function = function
-        
-        
         return newFunc
     return KwargCheckerNone
 
 def extractArgsList(func,newFunc,function,include):
-    N = func.__code__.co_argcount            
-    argList = list(newFunc._original.__code__.co_varnames[:N])
+    N = func.__code__.co_argcount # Number of arguments with which the function is called
+    argList = list(newFunc._original.__code__.co_varnames[:N]) # List of arguments
     if not function is None:
-        for arg in function.__code__.co_varnames[:function.__code__.co_argcount]:
-            argList.append(str(arg))
+        if isinstance(function,(list,np.ndarray)): # allow function kwarg to be list or ndarray
+            for f in function:
+                for arg in f.__code__.co_varnames[:f.__code__.co_argcount]: # extract all arguments from function
+                    argList.append(str(arg))
+        else: # if single function
+            for arg in function.__code__.co_varnames[:function.__code__.co_argcount]:
+                argList.append(str(arg))
     if not include is None:
-        for arg in include:
-            argList.append(str(arg))
+        if isinstance(include,(list,np.ndarray)):
+            for arg in include:
+                argList.append(str(arg))
+        else:
+            argList.append(str(include))
+        argList = list(set(argList)) # Cast to set to remove duplicates
+        argList.sort() #  Sort alphabetically
     return argList
 
 def checkArgumentList(argList,kwargs):
