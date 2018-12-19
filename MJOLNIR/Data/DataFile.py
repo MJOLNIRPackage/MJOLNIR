@@ -37,6 +37,7 @@ class DataFile(object):
                     self.energy=np.array(f.get('entry/data/en'))
                     self.Norm=np.array(f.get('entry/data/normalization'))
                     self.Monitor=np.array(f.get('entry/data/monitor'))
+                    self.MonitorPreset=np.array(f.get('entry/control/preset'))
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
@@ -66,7 +67,9 @@ class DataFile(object):
                 with hdf.File(fileLocation) as f:
                     sample=f.get('/entry/sample')
                     self.sample = Sample(sample=f.get('/entry/sample'))
-                    self.Monitor=np.array(f.get('entry/control/data'))
+                    self.MonitorPreset=np.array(f.get('entry/control/preset'))
+                    self.Monitor = np.array(f.get('entry/control/data'))
+                    self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
