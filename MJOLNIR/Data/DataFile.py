@@ -12,7 +12,7 @@ import datetime
 import math
 import shapely
 from shapely.geometry import Polygon as PolygonS, Point as PointS
-from . import TasUBlibDEG as TasUBlib
+from MJOLNIR.Data import TasUBlibDEG as TasUBlib
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
