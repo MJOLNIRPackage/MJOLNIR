@@ -1235,7 +1235,7 @@ def Norm2D(v):
         return v*reciprocal[0]
     
     ratio = np.max(reciprocal)/np.min(reciprocal)
-    if np.isclose(np.mod(ratio,1),0.0):
+    if np.isclose(np.mod(ratio,1),0.0) or np.isclose(np.mod(ratio,1),1.0):
         return v*np.min(reciprocal)*ratio
     else:
         return v
