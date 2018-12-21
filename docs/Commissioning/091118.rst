@@ -1,0 +1,35 @@
+09/11-18 - First magnon in YMnO3
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+By performing 2 A3 scans with 0.5 step size and 121 points, counting roughly 3 minuts/point and :math:`2\theta` of -20 and -40 degrees, the scans shown below are found. In total, 12 hours have been used for this scan.
+
+
+|199| |219| |239| 
+|258| |278| |297|
+|307| |327| |347|
+
+.. |199| image:: FirstMagnon/1_99.png
+   :width: 32%
+
+.. |219| image:: FirstMagnon/2_19.png
+   :width: 32%
+
+.. |239| image:: FirstMagnon/2_39.png
+   :width: 32%
+
+.. |258| image:: FirstMagnon/2_58.png
+   :width: 32%
+
+.. |278| image:: FirstMagnon/2_78.png
+   :width: 32%
+
+.. |297| image:: FirstMagnon/2_97.png
+   :width: 32%
+
+.. |307| image:: FirstMagnon/3_07.png
+   :width: 32%
+
+.. |327| image:: FirstMagnon/3_27.png
+   :width: 32%
+
+.. |347| image:: FirstMagnon/3_47.png
+   :width: 32%

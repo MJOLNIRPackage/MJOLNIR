@@ -1,12 +1,17 @@
 # Minimal makefile for Sphinx documentation
 #
 
-
 test:
-	python -m pytest -vv MJOLNIR 
+	python -m pytest -vv MJOLNIR
 
 quicktest:
 	python -m pytest -vv MJOLNIR --quick
+
+tutorialtest:
+	python -m pytest -vv Tutorials
+
+fulltest:
+	python -m pytest -vv MJOLNIR Tutorials
 
 # You can set these variables from the command line.
 SPHINXOPTS    =

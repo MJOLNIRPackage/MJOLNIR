@@ -1,0 +1,96 @@
+05/11-18 - Energy normalization
+*******************************
+
+With the energy scan using a curved monochromator and Vanadium, data file 'camea2018n000038.hdf', the following three energy diagrams is found. It is noticable that due to the excess background around pixel 80 across all tubes, and the crude method of masking these when finding energies, the lowest energy of the 3.2 meV analyser bank for 8 software pixel does not converge. This then results in rather arbitrary values found.
+The values of 1 pixel binning can be found in the table in :ref:`291018<EfTable>` .
+
+.. figure:: EnergyNormalization_1pixels.png
+  :width: 60%
+  :align: center
+
+.. figure:: EnergyNormalization_3pixels.png
+  :width: 60%
+  :align: center
+
+.. figure:: EnergyNormalization_8pixels.png
+  :width: 60%
+  :align: center
+
+For the FWHM values, below the energy widths for 1 and 3 pixelation is shown.
+
+|Pixel1EB| |Pixel3EB| 
+
+.. |Pixel1EB| image:: EnergyNormalization_1pixels_EB.png
+   :width: 45%
+
+
+.. |Pixel3EB| image:: EnergyNormalization_3pixels_EB.png
+   :width: 45%
+
+
+
+
+
+Pixel area and fit
+^^^^^^^^^^^^^^^^^^
+Below are the active areas of detector tubes 39, 40, 45, 46, 50, and 51. These tubes are the four outer most in wedge 4 as well as the middle in the upper and lower layers.
+
+|Raw39| |Raw45| |Raw50|
+
+|Raw40| |Raw46| |Raw51|
+
+.. |Raw39| image:: Normalization/Active_39.png
+   :width: 30%
+
+.. |Raw40| image:: Normalization/Active_40.png
+   :width: 30%
+
+.. |Raw45| image:: Normalization/Active_45.png
+   :width: 30%
+
+.. |Raw46| image:: Normalization/Active_46.png
+   :width: 30%
+
+.. |Raw50| image:: Normalization/Active_50.png
+   :width: 30%
+
+.. |Raw51| image:: Normalization/Active_51.png
+   :width: 30%
+
+Pixel binning 1, 3, and 8
+^^^^^^^^^^^^^^^^^^^^^^^^^
+Using all of the pixel binnings for detector tubes 39, 45, and 51 results in the following positions
+
+|39Pixel1| |39Pixel3| |39Pixel8|
+
+|45Pixel1| |45Pixel3| |45Pixel8|
+
+|51Pixel1| |51Pixel3| |51Pixel8|
+
+.. |39Pixel1| image:: Normalization/1Pixel/Detector39.png
+   :width: 30%
+
+.. |39Pixel3| image:: Normalization/3Pixel/Detector39.png
+   :width: 30%
+
+.. |39Pixel8| image:: Normalization/8Pixel/Detector39.png
+   :width: 30%
+
+.. |45Pixel1| image:: Normalization/1Pixel/Detector45.png
+   :width: 30%
+
+.. |45Pixel3| image:: Normalization/3Pixel/Detector45.png
+   :width: 30%
+
+.. |45Pixel8| image:: Normalization/8Pixel/Detector45.png
+   :width: 30%
+
+.. |51Pixel1| image:: Normalization/1Pixel/Detector51.png
+   :width: 30%
+
+.. |51Pixel3| image:: Normalization/3Pixel/Detector51.png
+   :width: 30%
+
+.. |51Pixel8| image:: Normalization/8Pixel/Detector51.png
+   :width: 30%
+

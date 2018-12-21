@@ -1,0 +1,30 @@
+16/11-18 - Diffuse scattering
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+|dEDiffuse1| |dEDiffuse2| |dEDiffuse3|
+
+|dEDiffuse4| |dEDiffuse5| |dEDiffuse6|
+
+|dEDiffuse7|
+
+
+.. |dEDiffuse0| image:: FullMap/000.png
+   :width: 32%
+.. |dEDiffuse1| image:: FullMap/001.png
+   :width: 32%
+
+.. |dEDiffuse2| image:: FullMap/002.png
+   :width: 32%
+.. |dEDiffuse3| image:: FullMap/003.png
+   :width: 32%
+
+.. |dEDiffuse4| image:: FullMap/004.png
+   :width: 32%
+.. |dEDiffuse5| image:: FullMap/005.png
+   :width: 32%
+
+.. |dEDiffuse6| image:: FullMap/006.png
+   :width: 32%
+.. |dEDiffuse7| image:: FullMap/007.png
+   :width: 32%
+

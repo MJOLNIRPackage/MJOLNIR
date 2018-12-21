@@ -31,10 +31,10 @@ copyright = u'2018, Jakob Lass'
 author = u'Jakob Lass'
 
 # The short X.Y version
-version = u'0.6.0'
+version = u'0.7'
 # The full version, including alpha/beta/rc tags
 
-release = u'0.6.0'
+release = u'0.7'
 
 
 
@@ -43,7 +43,7 @@ release = u'0.6.0'
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-needs_sphinx = '1.4'
+needs_sphinx = '1.7'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -99,7 +99,7 @@ html_theme = 'classic'
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-html_theme_options = {'body_max_width': None}
+html_theme_options = {'body_max_width': 'none'}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

@@ -5,7 +5,7 @@ In order to build a complete instrument using the MJOLNIR :ref:`GeometryModule` 
 
 +------------------------------------------------------------------+-----------------------------------------------------------+
 | .. literalinclude:: ../../Tutorials/Build_a_simple_instrument.py | .. _Build_a_simple_instrument_fig:                        |
-|     :lines: 4-27,29-                                             |                                                           |
+|     :lines: 4,6-                                                 |                                                           |
 |     :language: python                                            | .. figure:: ../../Tutorials/Build_a_simple_instrument.png |
 |     :linenos:                                                    |   :width: 75%                                             |
 |                                                                  |                                                           |

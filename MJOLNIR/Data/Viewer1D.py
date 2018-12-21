@@ -12,7 +12,6 @@ from matplotlib import rc
 
 from distutils.spawn import find_executable
 if find_executable('latex'): # pragma: no cover
-    
     rc('text', usetex=True)
     plt.rc('text.latex', preamble=r'\usepackage{amsmath}')
     USETEX = True
@@ -50,14 +49,15 @@ class FitInitialization(State):#pragma: no cover
     def __init__(self,parent):
         super(FitInitialization,self).__init__(parent)
         
-        self.__name__ = 'Fit Initialization - Click to choose bold parameter(s) or number for other models.'
-        if USETEX:
-            self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
+        self.__name__ = r'Fit Initialization - Click to choose "\{"parameter(s)"\}" or number for other models.'
+        #if USETEX:
+        #    self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
         self.fitParameterIndex = 0 # Index of current fit parameter
         
         self.ps=' '.join(['{}: {}'.format(i,self.parent.fitObjects[i].__name__) for i in range(len(self.parent.fitObjects))])
+        self.ps+='\nPress e for execution.'
         self.parent.updateText(self.fitParameterIndex,title=self.__name__,ps=self.ps)
-
+        plt.draw()
         
     def button(self,event): # Change fitting function
         if event.key in [str(x) for x in np.arange(len(self.parent.fitObjects))]:
@@ -71,10 +71,10 @@ class FitInitialization(State):#pragma: no cover
         elif event.key in ['r']:
             self.fitParameterIndex = np.mod(self.fitParameterIndex-1,self.parent.fitFunction.parameterLength)
             self.parent.fitFunction.parameters[self.fitParameterIndex] = np.NaN
-            
+        
         elif event.key in ['e']: # Execute fitting
             return Execute(self.parent)
-            
+        plt.draw()    
         return self            
     def mouse(self,event):
         if not event.inaxes is None: # Only if inside the axis
@@ -89,14 +89,14 @@ class FitInitialization(State):#pragma: no cover
 class Execute(State):#pragma: no cover
     def __init__(self,parent):
         super(Execute,self).__init__(parent)
-        self.__name__='Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters' 
-        if USETEX:
-            self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
+        self.__name__=r'Fit Executed - Press "i" for new fit or "ctrl+c" to copy parameters' 
+        #if USETEX:
+        #    self.__name__ = '\ '.join([x for x in self.__name__.split(' ')])
         ## Perform fit
         f = lambda *args: self.parent.fitFunction.func.__func__(None,*args)
-        xdata = self.parent.xData
-        ydata = self.parent.yData
-        yerr = self.parent.yErr
+        xdata = self.parent._xData
+        ydata = self.parent._yData
+        yerr = self.parent._yErr
         guess = self.parent.fitFunction.parameters
 
         # Set all nan-values to zero
@@ -108,6 +108,7 @@ class Execute(State):#pragma: no cover
         self.parent.fitFunction.fitError = fit[1]
         self.parent.plotFit()
         self.parent.updateText(title=self.__name__)
+        plt.draw()
         
     def button(self,event):
         if event.key in ['ctrl+i','i']: # New fitting
@@ -121,18 +122,18 @@ class Execute(State):#pragma: no cover
 
     
 class Viewer1D: # pragma: no cover
-    initialText = 'Press "i" to initialize fitting procedure.'    
+    initialText = r'Press "i" to initialize fitting procedure.'    
     fitObjects = FittingFunction.__subclasses__()
 
-    @_tools.KwargChecker
-    def __init__(self, XData,YData,YErr,fitFunction=fitObjects[0](),xLabel='',dataLabel='',xID = 0, yID = 0, plotAll = False,**kwargs):
+    @_tools.KwargChecker()
+    def __init__(self, XData,YData,YErr,fitFunction=fitObjects[0](),xLabel='',dataLabel='',xID = 0, plotAll = False,**kwargs):
         """Interactive visualization of 1D data with fitting capabilities. Currently only inteded for 1 scan file.
         
         Args:
             
-            - XData (list): List of x-valies in shape (n) or (n,m) for n scan points and m scan parameters.
+            - XData (list): List of x-valies in shape (m,n) for m data series and n scan points.
             
-            - YData (list): List of y-values in shape (n) or (n,m) or (n,m,l) for n scan points, m and l free.
+            - YData (list): List of y-values in shape (m,n) for m data series and n scan points.
             
             - YErr (list): List of y errors in same shape as YData.
             
@@ -154,14 +155,15 @@ class Viewer1D: # pragma: no cover
             
             - AttributeError
                 
-        Example:
+        Example: # TODO: REDO!!
 
-        >>> from Mjolnir.Data import DataSet,Viewer1D
-        >>> file = 'TestData/ManuallyChangedData/A3.nxs'
-        >>> ds = DataSet.DataSet(convertedFiles = file)
-        >>> data = ds.extractDetectorData(ID=10)
+        >>> from MJOLNIR.Data import DataSet,Viewer1D
+        >>> file = 'TestData/ManuallyChangedData/A3.h5'
+        >>> ds = DataSet.DataSet(dataFiles = file)
+        >>> ds.convertDataFile(binning=1)
+        >>> data = ds.extractData(A4Id=30)
         >>>
-        >>> Y = np.concatenate(data)[:,:5] # Only first 5 energies
+        >>> Y = data[:,:5] # Only first 5 energies
         >>> Y_err = np.sqrt(Y) # Calculate errors
         >>> X = np.arange(Y.shape[0])
         >>> 
@@ -177,54 +179,47 @@ class Viewer1D: # pragma: no cover
         """
         ## Make x data into shape (N,M) for N: num of variables, M: scanpoints
         if len(XData.shape) >= 3 or len(XData.shape)==0:
-            raise AttributeError('Expected size of xData is 1 or 2 dimensional')
-        self.xDataAll = XData
-        if len(XData.shape)==1:
-            self.xDataAll = np.array(self.xDataAll).reshape(-1,1)
+            raise AttributeError('Expected size of xData is 2 dimensions')
+        
+        if np.all([len(YData[i]) != len(XData[i]) for i in range(len(YData))]):
+        #if len(YData.shape) >= 4 or len(YData.shape)==0:
+            raise AttributeError('Shape of YData({}) does not match XData({}).'.format(YData.shape,XData.shape))
+        if YErr.shape != YData.shape:
+            raise AttributeError('Shape of YErr{}) does not match YData({}).'.format(YErr.shape,YData.shape))
+                
+        if not dataLabel is '':
+            dataLabel = np.array(dataLabel).reshape(-1)
+            #dataLabel.dtype = object
+        else:
+            dataLabel = [str(x) for x in np.arange(len(YData))]    
+        
+        if len(xLabel)!=len(XData) and xLabel!='':
+            raise AttributeError('Provided x-labels do not match number of x-values. ({} labels and {} x-values)'.format(len(xLabel),len(self.XData)))
+        if len(dataLabel)!=len(YData) and dataLabel!='':
+            raise AttributeError('Provided data labels do not match number of y values. ({} labels and {} x-values)'.format(len(dataLabel),len(YData)))
         
         
-        if len(YData.shape) >= 4 or len(YData.shape)==0:
-            raise AttributeError('Expected size of xData is 1, 2, or 3 dimensional')
-        self.yDataAll = YData
-        self.yErrAll = YErr
-        if len(YData.shape)==1:
-            self.yDataAll = np.array(self.yDataAll).reshape(-1,1)
-            self.yErrAll = np.array(self.yErrAll).reshape(-1,1)
-        elif len(YData.shape)==3: # yDataAll into shape (N,M) as above
+        if xID>len(XData)-1:
+            raise AttributeError('Provided xId ({}) is outside of x values provided ({})'.format(xID,len(XData)))
+        
+        
+        # Save all data to self
+        self.xData = XData
+        self.yData = YData
+        self.yErr = YErr
+        
 
-            self.yDataAll = np.array(self.yDataAll).reshape(YData.shape[0],-1)
-            self.yErrAll = np.array(self.yErrAll).reshape(YData.shape[0],-1)
-            
-            if not dataLabel is '':
-                dataLabel = np.array(dataLabel).reshape(-1)
-                dataLabel.dtype = object
-                    
-        
-        if len(xLabel)!=self.xDataAll.shape[1] and xLabel!='':
-            raise AttributeError('Provided x-labels do not match number of x-values. ({} labels and {} x-values)'.format(len(xLabel),len(self.xDataAll)))
-        if len(dataLabel)!=self.yDataAll.shape[1] and dataLabel!='':
-            raise AttributeError('Provided data labels do not match number of y values. ({} labels and {} x-values)'.format(len(dataLabel),len(self.yDataAll)))
-        
-        
-        if xID>self.xDataAll.shape[1]-1:
-            raise AttributeError('Provided xId ({}) is outside of x values provided ({})'.format(xID,self.xDataAll.shape[1]))
-        self.xID = xID
-        if yID>self.yDataAll.shape[1]-1:
-            raise AttributeError('Provided yId ({}) is outside of y values provided ({})'.format(yID,self.yDataAll.shape[1]))
-        self.yID = yID
-        
-        if dataLabel == '': # If no label is given, generate them as [0,1,2,3,...]
-            dataLabel = [str(x) for x in np.arange(len(self.yDataAll))]
-        
         self.xLabel = xLabel
         self.dataLabel = dataLabel
+        self.xID = xID
+        
         gs = matplotlib.gridspec.GridSpec(2, 1, height_ratios=[1, 6]) 
         self.figure = plt.figure()
         self.textAx = plt.subplot(gs[0])
         self.textAx.remove()
         self.ax = plt.subplot(gs[1])
         
-        if self.yDataAll.shape[1]>10 and plotAll==True:
+        if len(self.yData)>10 and plotAll==True:
             warnings.warn('More than 10 plots are being plotted. This may take some time...',category=RuntimeWarning,stacklevel=2)
         self.plotAll = plotAll
         
@@ -274,25 +269,26 @@ class Viewer1D: # pragma: no cover
         self.ax.clear()
         self.ax.set_ylabel('Int [arb]')
         if self.plotAll==False:
-            self.dataPlot = self.ax.errorbar(self.xData,self.yData,yerr=self.yErr,fmt='.')
+            self.dataPlot = self.ax.errorbar(self._xData,self._yData,yerr=self._yErr,fmt='.')
             
             
             if not self.dataLabel is '':
-                self.ax.legend([self.dataLabel[self.yID]])
+                self.ax.legend([self.dataLabel[self.xID]])
                 self.ax.legend_.draggable(True)
         else:
-            for i in range(self.yDataAll.shape[1]):
-                self.dataPlot = self.ax.errorbar(self.xData,self.yDataAll[:,i],yerr=self.yErrAll[:,i],fmt='.')
+            for i in range(len(self.yData)):
+                self.dataPlot = self.ax.errorbar(self.xData[i],self.yData[i],yerr=self.yErr[i],fmt='.')
 
             if not self.dataLabel is '':
                 labels = self.dataLabel.copy()
                     
-                labels[self.yID] = '*'+labels[self.yID]
+                labels[self.xID] = '*'+labels[self.xID]
                 self.ax.legend(labels)
                 self.ax.legend_.draggable(True)
                 
         if not self.xLabel is '':
             self.ax.set_xlabel(self.xLabel[self.xID])
+        plt.draw()
         
     def plotFit(self):
         """Plot current guess or fit"""
@@ -300,15 +296,14 @@ class Viewer1D: # pragma: no cover
             self.removeFitPlot()
             self.y = self.fitFunction(self.x)
             self.fitPlot = self.ax.plot(self.x,self.y)
+            plt.draw()
 
     def initData(self):
         """Update with new indices both X and Y (+Yerr)"""
-        self.xData = self.xDataAll[:,self.xID]
-        self.yData = self.yDataAll[:,self.yID]
-        self.yErr = self.yErrAll[:,self.yID]
-        self.x = np.linspace(np.min(self.xData),np.max(self.xData),201)
-        
-        
+        self._xData = self.xData[self.xID]
+        self._yData = self.yData[self.xID]
+        self._yErr = self.yErr[self.xID]
+        self.x = np.linspace(np.min(self._xData),np.max(self._xData),len(self._xData)*10)
         self.plotData()
             
     def removeFitPlot(self):
@@ -316,25 +311,26 @@ class Viewer1D: # pragma: no cover
         if not self.fitPlot is None:
             try:
                 self.fitPlot[0].remove()
+                plt.draw()
             except:
                 pass
                 
     def button(self,event):
         if event.key in ['up','down','left','right']: # Change xID or yID
             if event.key == 'left':
-                if self.xDataAll.shape[1]>1:
-                    self.xID = np.mod(self.xID-1,self.xDataAll.shape[1])
+                if len(self.xData)>1:
+                    self.xID = np.mod(self.xID-1,len(self.xData))
                 else:
                     return
             elif event.key == 'right':
-                if self.xDataAll.shape[1]>1:
-                    self.xID = np.mod(self.xID+1,self.xDataAll.shape[1])
+                if len(self.xData)>1:
+                    self.xID = np.mod(self.xID+1,len(self.xData))
                 else:
                     return
-            elif event.key == 'down':
-                self.yID = np.mod(self.yID-1,self.yDataAll.shape[1])
-            elif event.key == 'up':
-                self.yID = np.mod(self.yID+1,self.yDataAll.shape[1])
+            #elif event.key == 'down':
+            #    self.yID = np.mod(self.yID-1,self.yDataAll.shape[1])
+            #elif event.key == 'up':
+            #    self.yID = np.mod(self.yID+1,self.yDataAll.shape[1])
             self.initData()
 
         elif event.key in ['ctrl+c']:
@@ -345,30 +341,30 @@ class Viewer1D: # pragma: no cover
         self.currentState = self.currentState.mouse(event)    
         
     def updateText(self,highlight=None,title=None,ps=None):
-        if USETEX:
-            text = '$\mathbf{'+'{}'.format(title)+'}$'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
-        else:
-            text = '{}'.format(title)+'}'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
+        #if USETEX:
+        text = '{}'.format(title)+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
+        #else:
+        #    text = '{}'.format(title)+'}'+'\nCurrent fitting model: {}\n'.format(self.fitFunction.latex(highlight=highlight))
         for i in range(self.fitFunction.parameterLength):
             if np.isnan(self.fitFunction.parameters[i]):
-                val = '   '
+                val = r'   '
             else:
-                val = '{:.3e}'.format(self.fitFunction.parameters[i])
-            if USETEX:
-                text+='${}$:    {}     '.format(self.fitFunction.variableNames[i],val)
-            else:
-                text+='{}:    {}     '.format(self.fitFunction.variableNames[i],val)
+                val = r'{:.3e}'.format(self.fitFunction.parameters[i])
+            #if USETEX:
+            text+=r'${}$:    {}     '.format(self.fitFunction.variableNames[i],val)
+            #else:
+            #    text+=r'{}:    {}     '.format(self.fitFunction.variableNames[i],val)
         if not self.fitFunction.fitError is False:
             text+='\n'
             for i in range(self.fitFunction.parameterLength):
                 if np.isnan(self.fitFunction.parameters[i]):
-                    val = '   '
+                    val = r'   '
                 else:
-                    val = '{:.3e}'.format(np.sqrt(self.fitFunction.fitError[i,i]))
-                if USETEX:
-                    text+='${}{}{}$:  {}    '.format('\sigma_{',self.fitFunction.variableNames[i],'}',val)
-                else:
-                    text+='{}{}{}:  {}    '.format('sigma_',self.fitFunction.variableNames[i],'',val)
+                    val = r'{:.3e}'.format(np.sqrt(self.fitFunction.fitError[i,i]))
+                #if USETEX:
+                text+=r'${}{}{}$:  {}    '.format('\sigma_{',self.fitFunction.variableNames[i],'}',val)
+                #else:
+                #    text+=r'{}{}{}:  {}    '.format('sigma_',self.fitFunction.variableNames[i],'',val)
         if not ps is None:
             text+='\n'+ps
         self.text = text

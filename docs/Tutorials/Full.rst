@@ -1,21 +1,12 @@
 Full data treatment
 ^^^^^^^^^^^^^^^^^^^
 
-Full example of the data treatment starting from the instrument definitions provided in the XML file, through generation of normalization table using 8 software pixels, and to data conversion, rebinning and visualization. The file tree for this example is given below where location of data files for normalization and actual data, together with the generated files are shown.
-
-::
-
-    project
-    ├── TestData          
-    │   └── 1024
-    │       └ Magnon_ComponentA3Scan.h5              Magnon scan data in raw format
-    └── Tutorials
-        └── Full_example.py                          Python script executed to produce data treatment
+Full example of the data treatment starting from the instrument definitions provided in the XML file, through generation of normalization table using 8 software pixels, and to data conversion, rebinning and visualization. 
 
 
 +-------------------------------------------------------------------+------------------------------------------------------------------+
-|      .. literalinclude:: ../../Tutorials/Binning_data.py          |    .. Visualization_E_1_5:                                       |
-|         :lines: 4-22,25,28,31-                                    |                                                                  |
+|      .. literalinclude:: ../../Tutorials/Full_example.py          |    .. Visualization_E_1_5:                                       |
+|         :lines: 4-                                                |                                                                  |
 |         :language: python                                         |    .. figure:: ../../Tutorials/Visualization_E_1_5.png           |
 |         :linenos:                                                 |      :width: 90%                                                 |
 |                                                                   |                                                                  |

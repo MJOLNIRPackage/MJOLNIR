@@ -1,9 +1,13 @@
 import sys
-sys.path.append('..')
+sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 
 from MJOLNIR.Data import DataSet
+def test_Convert_Data(save=False):
+    DataFile = ['Data/camea2018n000137.hdf']
 
-DataFile = ['../TestData/1024/Magnon_ComponentA3Scan.h5.h5']
+    dataset = DataSet.DataSet(dataFiles=DataFile)
+    dataset.convertDataFile(saveLocation='Data/',saveFile=save)
 
-dataset = DataSet.DataSet(dataFiles=DataFile)
-dataset.convertDataFile(saveLocation='../TestData/1024/')
+
+if __name__ == '__main__':
+    test_Convert_Data(True)

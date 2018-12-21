@@ -1,12 +1,9 @@
-.. warning::
-    This Page is not up to date!
-
 Plotting all pixels binned in A3 and A4
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Instead of performing rebinning of the measured datapoints in to some sort of regular grid, one could instead try to create a grid that fits the data measured. This is the basis idea behind the plotA3A4 method. It takes a list of files, creates a commong tesselation using the voronoi method in A3-A4 coordinates and maps this into Q-space. 
 
  .. literalinclude:: ../../Tutorials/PlotA3A4.py
-     :lines: 4-  
+     :lines: 4-29,33- 
      :language: python
      :linenos:
 

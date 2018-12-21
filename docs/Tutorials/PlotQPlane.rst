@@ -3,7 +3,7 @@ Plotting of Q plane using binnings
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
  .. literalinclude:: ../../Tutorials/PlotQPlane.py
-     :lines: 4-  
+     :lines: 5-30,35- 
      :language: python
      :linenos:
 

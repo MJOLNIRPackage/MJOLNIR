@@ -24,7 +24,6 @@ The DataSet object is the interface between the data files and the data treatmen
     DataSet.DataSet.cutQELine
     DataSet.DataSet.plotCutQELine
     DataSet.binData3D
-    DataSet.binEdges
     DataSet.boundaryQ
     DataSet.calculateGrid3D
     DataSet.createRLUAxes
@@ -39,6 +38,7 @@ The DataSet object is the interface between the data files and the data treatmen
 
     DataSet.plotQPlane
 
+    DataFile.DataFile
 
 
 .. automodule:: Data
@@ -68,3 +68,14 @@ The following is a list of the available functions in the DataSet module. Some o
 .. automodule:: DataSet
    :members:
 
+
+DataFile Object and Methods
+---------------------------
+
+
+.. automodule:: DataFile
+
+.. _DataFile:
+
+.. autoclass:: DataFile
+    :members:

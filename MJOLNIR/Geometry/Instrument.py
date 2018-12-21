@@ -233,20 +233,20 @@ class Instrument(GeometryConcept.GeometryConcept):
         ang_1 = np.zeros((7,))
         ang_2 = np.zeros((6,))
 
-        ang_1[6]=-3.33
-        ang_1[5]=-2.22
-        ang_1[4]=-1.11
+        ang_1[6]=-3.3#3
+        ang_1[5]=-2.2#2
+        ang_1[4]=-1.1#1
         ang_1[3]=0
-        ang_1[2]=1.11
-        ang_1[1]=2.22
-        ang_1[0]=3.33
+        ang_1[2]=1.1#1
+        ang_1[1]=2.2#2
+        ang_1[0]=3.3#3
 
-        ang_2[5]=-2.775
-        ang_2[4]=-1.665
-        ang_2[3]=-0.555
-        ang_2[2]=0.555
-        ang_2[1]=1.665
-        ang_2[0]=2.775
+        ang_2[5]=-2.75#75
+        ang_2[4]=-1.65#65
+        ang_2[3]=-0.55#5
+        ang_2[2]=0.55#5
+        ang_2[1]=1.65#65
+        ang_2[0]=2.75#75
 
 
         z_an = np.zeros((8,))
@@ -267,7 +267,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         det_cen = 1.2
         wedges=8
 
-        offset = -4.835960288880082# offset such that last pixel of detector 0 is at 0
+        offset =0.0# -4.835960288880082# offset such that last pixel of detector 0 is at 0
 
 
         string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>\n"
@@ -275,23 +275,25 @@ class Instrument(GeometryConcept.GeometryConcept):
             
             string+="\t<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>\n"
             
-            Anaposx = -np.sin((W*7.5+offset)*np.pi/180)*z_an
-            Anaposy = np.cos((W*7.5+offset)*np.pi/180)*z_an
+            Anaposx = -np.sin((W*8.0+offset)*np.pi/180)*z_an
+            Anaposy = np.cos((W*8.0+offset)*np.pi/180)*z_an
             
             for i in range(len(z_an)):
-                string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
+                XX = Anaposx[i]/(np.sqrt(2)*z_an[i])
+                YY = Anaposy[i]/(np.sqrt(2)*z_an[i])
+                string+="\t\t<FlatAnalyser position='"+str(Anaposx[i])+','+str(Anaposy[i])+",0.0' direction='"+str(YY)+","+str(XX)+",0.0' d_spacing='3.354' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"
             
             
-            detx_1 = -np.sin((ang_1+W*7.5+offset)*np.pi/180)*det_cen
-            detz_1 = np.cos((ang_1+W*7.5+offset)*np.pi/180)*det_cen
+            detx_1 = -np.sin((ang_1+W*8.0+offset)*np.pi/180)*det_cen
+            detz_1 = np.cos((ang_1+W*8.0+offset)*np.pi/180)*det_cen
             
             
-            detx_2 = -np.sin((ang_2+W*7.5+offset)*np.pi/180)*det_cen
-            detz_2 = np.cos((ang_2+W*7.5+offset)*np.pi/180)*det_cen
+            detx_2 = -np.sin((ang_2+W*8.0+offset)*np.pi/180)*det_cen
+            detz_2 = np.cos((ang_2+W*8.0+offset)*np.pi/180)*det_cen
             for i in range(7):
-                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H2 if np.mod(W,2) else H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
                 if i<6:
-                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='452' length='0.883' diameter='0.02' split='71, 123, 176, 228, 281, 333, 388'></TubeDetector1D>\n"
+                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H1 if np.mod(W,2) else H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
             string+="\t</Wedge>\n"
             
         string+="</Instrument>"
@@ -303,7 +305,7 @@ class Instrument(GeometryConcept.GeometryConcept):
             f.write(string)
 
     @_tools.KwargChecker()
-    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False):
+    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False,mask=True):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
         Generates 4 different tables:
@@ -330,6 +332,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - plot (boolean): Set to True if pictures of all fit are to be stored in savelocation
 
+            - mask (boolean): If True the lower 100 pixels are set to 0
 
         .. warning::
             At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Guassian width of Vanadium peaks.
@@ -360,10 +363,14 @@ class Instrument(GeometryConcept.GeometryConcept):
             if savelocation[-1]!='/':
                 savelocation+='/'
             
-            Data = np.array(VanFileInstrument.get('detector/data')).transpose(1,0,2)
-            Ei = np.array(VanFileInstrument.get('monochromator/energy'))
+            Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)
+            
+            if True: #Mask pixels where spurion is present
+                Data[:,:,:100]=0
+
+            Ei = np.array(VanFileInstrument.get('monochromator/energy')).astype(float)
             analysers = 8
-            pixels = self.wedges[0].detectors[0].pixels#len(self.A4[0][0]) # <------------------- Change!
+            pixels = self.wedges[0].detectors[0].pixels
             detectors = len(self.A4[0])*len(self.A4)
             detectorsorInWedge = len(self.A4[0])
             wedges = len(self.A4)
@@ -416,23 +423,25 @@ class Instrument(GeometryConcept.GeometryConcept):
             for j in range(analysers):
                 peakPos[:,j],peakVal[:,j] = findPeak(dataSubtracted) # Find a peak in data
                 for i in range(detectors):
-                    guess = [peakVal[i,j],float(peakPos[i,j]),pixels/100.0,np.min(ESummedData[i])]
+                    guess = [peakVal[i,j],float(peakPos[i,j]),20,np.min(ESummedData[i])]
+                   
                     res = scipy.optimize.curve_fit(Gaussian,np.arange(ESummedData.shape[1]),dataSubtracted[i,:],p0=[guess])
                     peakPos[i,j] = res[0][1]
                     peakVal[i,j] = res[0][0]
                     peakWidth[i,j]= res[0][2]
-
+                    if peakPos[i,j]>ESummedData.shape[1]:
+                        raise ValueError('Peak found at {} for analyser {} and detector {}'.format(peakPos[i,j],j,i))
                     # Generate peak as the one fitted and subtract it from signal
                     x=np.arange(pixels)
                     y = Gaussian(x,peakVal[i,j],peakPos[i,j],peakWidth[i,j],peakBackg[i,j])
                     peak = y>peakVal[i,j]*0.05
                     dataSubtracted[i,peak]= 0
-
+            
             if plot: # pragma: no cover
-                plt.clf()
-                plt.suptitle('Fits')
                 x = np.arange(pixels)
                 for k in range(wedges):
+                    plt.clf()
+                    plt.suptitle('Fits')
                     for i in range(detectorsorInWedge):
                         y=np.zeros_like(x,dtype=float)
                         plt.subplot(4, 4, i+1)
@@ -443,12 +452,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.plot(x,y,'k')
                         plt.xlabel('Pixel')
                         plt.ylabel('Intensity [arg]')
-                        plt.title('Detector {}'.format(i))
+                        plt.title('Detector {}'.format(i+13*k))
                         plt.ylim(0,np.max(ESummedData[i+13*k])*1.1)
 
                     plt.tight_layout()
-                    plt.savefig(savelocation+'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
-                    print('Saving: {}'.format(savelocation+'/Raw/Fit_wedge_'+str(k)+'.png'))
+                    plt.savefig(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
+                    print('Saving: {}'.format(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png'))
 
             
             ## Sort the positions such that peak 1 is the furthermost left peak and assert diff(pos)>100
@@ -459,18 +468,17 @@ class Instrument(GeometryConcept.GeometryConcept):
             sortedPeakPosArg2 = np.argsort(sortedPeakPos,axis=1)
             sortedPeakPos.sort(axis=1)
 
-            differences = np.diff(sortedPeakPos,axis=1)
-            outliers = np.zeros_like(peakPos,dtype=bool)
-            outliers[:,:-1]=differences<pixels/10
-            sortedPeakPos[outliers]=5*pixels
+            #differences = np.diff(sortedPeakPos,axis=1)
+            #outliers = np.zeros_like(peakPos,dtype=bool)
+            #outliers[:,:-1]=differences<pixels/100
+            #sortedPeakPos[outliers]=5*pixels
             sortedPeakPosArg3 = np.argsort(sortedPeakPos,axis=1)
             argSort = np.array([sortedPeakPosArg[i,sortedPeakPosArg2[i,sortedPeakPosArg3[i,:]]] for i in range(detectors)])
             sortedPeakPos = np.sort(sortedPeakPos,axis=1)
-            peaks=np.sum(sortedPeakPos<5*pixels,axis=1) # Number of peaks found
-
+            peaks=np.sum(sortedPeakPos<7*pixels,axis=1) # Number of peaks found
 
             if np.any(peaks!=analysers):
-                raise ValueError('Wrong number of peaks, {} found in detector(s): {}\nIn total error in {} detector(s).'.format(peaks[peaks!=analysers],np.arange(peaks.shape[0])[peaks!=analysers],np.sum(peaks[peaks!=analysers])))
+                raise ValueError('Wrong number of peaks, {} found in detector(s): {}\nIn total error in {} detector(s).'.format(peaks[peaks!=analysers],np.arange(peaks.shape[0])[peaks!=analysers],np.sum(peaks!=analysers)))
 
             pixelpos  = np.array([peakPos[i,argSort[i]] for i in range(detectors)])
             widths    = np.array([peakWidth[i,argSort[i]] for i in range(detectors)])
@@ -537,31 +545,43 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.title('Detector {}, {} pixels'.format(i,detpixels))
                         x =np.linspace(0,detpixels,len(Ei))
                     for j in range(analysers):
-
                         center = int(round(sortedPeakPos[i,j]))
                         width = activePixels[i,j].sum()
                         pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
-                        
                         for k in range(detpixels):
                             binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
-                            guess = [np.max(binPixelData), Ei[np.argmax(binPixelData)],0.1,0]
+                            ECenter = Ei[np.argmax(binPixelData)]
+                            ECutLow = ECenter-0.4
+                            ECutHigh= ECenter+0.4
+                            TopId = np.argmin(np.abs(Ei-ECutHigh))
+                            BotId = np.argmin(np.abs(ECutLow-Ei))
+                            if TopId<BotId:
+                                _ = TopId
+                                TopId = BotId
+                                BotId = _
+                            binPixelData = binPixelData[BotId:TopId]
+                            EiLocal = Ei[BotId:TopId]
+                            Bg = np.min(binPixelData[[0,-1]])
+                            guess = np.array([np.max(binPixelData), ECenter,0.005,Bg],dtype=float)
                             try:
-                                res = scipy.optimize.curve_fit(Gaussian,Ei,binPixelData,p0=guess)
+                                res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
+                                
                             except:
                                 if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
                                     os.makedirs(savelocation+'/{}_pixels'.format(detpixels))
                                 if not plot:
                                     plt.ioff
                                 plt.figure()
-                                plt.scatter(Ei,binPixelData)
-                                plt.plot(Ei,Gaussian(Ei,guess[0],guess[1],guess[2],guess[3]))
-                                plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=300)
+                                plt.scatter(EiLocal,binPixelData)
+                                plt.plot(Ei,Gaussian(Ei,*guess))
+                            
+                                plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
                                 plt.close()
 
                             fittedParameters[i,j,k]=res[0]
                             if plot: # pragma: no cover
                                 plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
-                                plt.scatter(Ei,binPixelData,color=colors[:,k])
+                                plt.scatter(EiLocal,binPixelData,color=colors[:,k])
                         activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
                     activePixelDetector.append(activePixelAnalyser)
                     if plot: # pragma: no cover
@@ -569,11 +589,11 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.xlabel('Ei [meV]')
                         plt.ylabel('Weight [arb]')
                         plt.tight_layout(rect=(0,0,1,0.95))
-                        plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=300)
+                        plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=150)
                         print('Saving: {}'.format(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i)))
 
                 if not A4datafile is False: # pragma: no cover
-                # Perform A4 calibration
+                    # Perform A4 calibration
                     A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
                     EiFile = np.array(A4FileInstrument.get('monochromator/energy'))[0]
                     A4FileIntensity = np.array(A4FileInstrument.get('detector/data'))
@@ -628,7 +648,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     if plot==True: # pragma: no cover
                         if not os.path.exists(savelocation+'A4'):
                             os.makedirs(savelocation+'A4')
-                        plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=300)
+                        plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=150)
 
                     A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
 
@@ -637,19 +657,34 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.scatter(range(A4.shape[0]),A4FitValue)
                         plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
                         plt.legend(['File','Geometry'])
-                        plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=300)
+                        plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=150)
 
                         diff = A4FitValue-MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi#+2*theta*180.0/np.pi
                         plt.clf()
                         plt.scatter(range(A4.shape[0]),diff)
-                        plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=300)
+                        plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=150)
 
-                else: # Use nominal A4 values
-                    A4FitValue = []
-                    for i in range(8):
-                        for j in range(13):
-                            A4FitValue.append(-(i*8+j*0.55))
-                    A4FitValue = np.array(A4FitValue)
+                else: # Use nominal A4 values from calculation
+                    #A4FitValue = []
+                    #for i in range(8):
+                    #    for j in range(13):
+                    #        A4FitValue.append(-(i*8+j*0.55))
+                    #A4FitValue = np.array(A4FitValue)
+                    A4 = np.array(self.A4).reshape(104,1024)
+                    A4Pixel = []
+                    for i in range(len(fittedParameters)):
+                        for j in range(len(fittedParameters[i])):
+                            for k in range(len(fittedParameters[i][j])):
+                                #print(activePixelDetector[i][j][k],activePixelDetector[i][j][k+1])
+                                A4Pixel.append(np.mean(A4[i,activePixelDetector[i][j][k]:activePixelDetector[i][j][k+1]]))
+                    A4Pixel = np.array(A4Pixel).reshape(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
+                    #print(A4Pixel.shape)
+                    #print(len(activePixelDetector))
+                    #print(len(activePixelDetector[0]))
+                    #print(len(activePixelDetector[0][0]))
+                    #print(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
+                    #h=kk
+                    A4FitValue = np.rad2deg(A4Pixel)
 
                 fitParameters.append(fittedParameters)
                 activePixelRanges.append(np.array(activePixelDetector))
@@ -659,7 +694,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                         for k in range(len(fittedParameters[i][j])):
                             tableString+=str(i)+','+str(j)+','+str(k)+','+','.join([str(x) for x in fittedParameters[i][j][k]])
                             tableString+=','+str(activePixelRanges[-1][i][j][k])+','+str(activePixelRanges[-1][i][j][k+1])
-                            tableString+=','+str(A4FitValue[i])+'\n'
+                            tableString+=','+str(A4FitValue[i,j,k])+'\n'
                 tableName = 'Normalization_{}.calib'.format(detpixels)
                 print('Saving {} pixel data to {}'.format(detpixels,savelocation+tableName))
                 file = open(savelocation+tableName,mode='w')
@@ -771,7 +806,7 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): # pragma: no cover
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90]): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -788,6 +823,10 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
 
         - CalibrationFile (str or list of str): Location of calibration file(s) wanted in HdF file (defailt None)
 
+        - pixels (int): Number of pixels on detectors (default 1024)
+
+        - cell (list): Cell parameters passed into the hdf file (default [5,5,5,90,90,90])
+
     """
     def addMetaData(entry,title):
         dset = entry.create_dataset('start_time',(1,),dtype='<S70')
@@ -796,16 +835,48 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         dset = entry.create_dataset('end_time',(1,),dtype='<S70')
         dset[0] = b"2018-03-22T18:44:02+01:00"
 
+        dset = entry.create_dataset('experimental_identifier',(1,),dtype='<S70')
+        dset[0] = b"UNKNOWN"
+
+        dset = entry.create_dataset('instrument',(1,),dtype='<S70')
+        dset[0] = b"CAMEA"
+
+        dset = entry.create_dataset('comment',(1,),dtype='<S70')
+        dset[0] = b"I feel uncommented"
+
         dset = entry.create_dataset('title',(1,),dtype='<S70')
         dset[0] = np.string_(title)
 
         dset = entry.create_dataset('proposal_id',(1,),dtype='<S70')
         dset[0] = b"2018-00666"
 
+        dset = entry.create_dataset('proposal_title',(1,),dtype='<S70')
+        dset[0] = b"I need my Title!"
+
+        cont = entry.create_group('local_contact')
+        cont.attrs['NX_class'] = np.string_('NXuser')
+        dset = cont.create_dataset('name',(1,),dtype='S70')
+        dset[0] = b"UNKNOWN"
+
         us = entry.create_group('proposal_user')
         us.attrs['NX_class'] = np.string_('NXuser')
         dset = us.create_dataset('name',(1,),dtype='S70')
         dset[0] = b"Jakob Lass"
+        dset = us.create_dataset('email',(1,),dtype='S70')
+        dset[0] = b"jakob@lass.dk"
+
+        pus = entry.create_group('user')
+        pus.attrs['NX_class'] = np.string_('NXuser')
+        dset = pus.create_dataset('name',(1,),dtype='S70')
+        dset[0] = b"Jakob Lass"
+        dset = pus.create_dataset('email',(1,),dtype='S70')
+        dset[0] = b"jakob@lass.dk"
+        dset = pus.create_dataset('address',(1,),dtype='S70')
+        dset[0] = b"UNKNOWN"
+        dset = pus.create_dataset('affiliation',(1,),dtype='S70')
+        dset[0] = b"UNKNOWN"
+
+        
 
     def addMono(inst):
         mono = inst.create_group('monochromator')
@@ -818,19 +889,19 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         dset[0] = 3.354
         dset.attrs['units'] = 'anstrom'
 
-        dset = mono.create_dataset('curvature_horizontal',(1,),'float32')
+        dset = mono.create_dataset('horizontal_curvature',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
-        dset = mono.create_dataset('curvature_vertical',(1,),'float32')
+        dset = mono.create_dataset('vertical_curvatur',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
-        dset = mono.create_dataset('curvature_horizontal_zero',(1,),'float32')
+        dset = mono.create_dataset('horizontal_curvature_zero',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
-        dset = mono.create_dataset('curvature_vertical_zero',(1,),'float32')
+        dset = mono.create_dataset('vertical_curvature_zero',(1,),'float32')
         dset[0] = 0.0
         dset.attrs['units'] = 'meter'
 
@@ -869,7 +940,10 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
             dset = monoSlit.create_dataset(x+'_zero',(1,),'float32')
             dset[0] = 0.0
             dset.attrs['units'] = 'mm'
-
+        for x in ['x_gab','y_gab']:
+            dset = monoSlit.create_dataset(x,(1,),'float32')
+            dset[0] = 0.0
+            dset.attrs['units'] = 'mm'
 
     def addDetector(inst):
         det = inst.create_group('detector')
@@ -936,7 +1010,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
             data[n] = frame
         return data,a3,a4,ei
         
-    def addSample(entry,name):
+    def addSample(entry,name,cell):
         sam = entry.create_group('sample')
         sam.attrs['NX_class'] = np.string_('NXsample')
         dset = sam.create_dataset('name',(1,),dtype='S70')
@@ -952,16 +1026,16 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         normal[2] = 1.0
         dset = sam.create_dataset('plane_normal',data=normal)
 
-        cell = np.zeros((6,),dtype='float32')
-        cell[0] = 2.464
-        cell[1] = 2.464
-        cell[2] = 6.711
-        cell[3] = 90.
-        cell[4] = 90.
-        cell[5] = 120.
+        cell = np.array(cell,dtype='float32')
         dset = sam.create_dataset('unit_cell',data=cell)
 
-        dset = sam.create_dataset('temperature',data=0.0)
+        dset = sam.create_dataset('azimuthal_angle',data=0.0)
+        dset = sam.create_dataset('x',data=0.0)
+        dset = sam.create_dataset('y',data=0.0)
+
+        for x in ['sgu','sgl']:
+            dset = sam.create_dataset(x,data=0.0)
+            dset = sam.create_dataset(x+'_zero',data=0.0)
 
 
         
@@ -988,38 +1062,45 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
         det = entry['CAMEA/detector']
-        dset = det.create_dataset('data',data=data )
-        dset.attrs['target'] = np.string_('/entry/CAMEA/detector/data')
-        nxdata['data'] = dset
+        dset = det.create_dataset('counts',data=data )
+        dset.attrs['target'] = np.string_('/entry/CAMEA/detector/counts')
+        nxdata['counts'] = dset
 
-        online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
-        online.attrs['units']=np.string_('Boolean for detector state')
+        dset = det.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)))
+        dset.attrs['target'] = np.string_('/entry/CAMEA/detector/summed_counts')
+        nxdata['summed_counts'] = dset
+
+        #online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
+        #online.attrs['units']=np.string_('Boolean for detector state')
 
         sam = entry['sample']
 
         scanType='Unknown'
+        scanvars = ''
         if isVaried(a3):
             dset = sam.create_dataset('rotation_angle',data=a3)
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=0.0)
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([0.0]))
             nxdata['rotation_angle'] = dset
             nxdata['rotation_angle_zero'] = dset_zero
-            scanType = 'cscan a3 {} da3 {} n {}'.format(np.mean(a3),np.mean(np.diff(a3)),len(a3))
+            scanType = 'cscan a3 {} da3 {} np {} mn 10000'.format(np.mean(a3),np.mean(np.diff(a3)),len(a3))
+            scanvars+='a3'
         else:
             dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=0.0)
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([0.0]))
 
         dset.attrs['units'] = np.string_('degrees')
         dset_zero.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
-            dset = det.create_dataset('polar_angle',data=a4)
+            dset = sam.create_dataset('polar_angle',data=a4)
             nxdata['polar_angle'] = dset
-            dset_zero = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
+            dset_zero = sam.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
             nxdata['polar_angle_zero'] = dset_zero
-            scanType = 'cscan a4 {} da4 {} n {}'.format(np.mean(a4),np.mean(np.diff(a4)),len(a4))
+            scanType = 'cscan a4 {} da4 {} np {} mn 10000'.format(np.mean(a4),np.mean(np.diff(a4)),len(a4))
+            scanvars+='a4'
         else:
-            dset = det.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
-            dset_zero = det.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
+            dset = sam.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
+            dset_zero = sam.create_dataset('polar_angle_zero',(1,),dtype='float32',data=0.0)
         dset.attrs['units'] = np.string_('degrees')
         dset_zero.attrs['units'] = np.string_('degrees')
         
@@ -1031,31 +1112,31 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
             dset = mono.create_dataset('energy',data=ei)
             nxdata['incident_energy'] = dset
             mono.create_dataset('rotation_angle',data=theta);
-            sam.create_dataset('polar_angle',data=tth)
-            scanType = 'cscan ei {} dei {} n {}'.format(np.mean(ei),np.mean(np.diff(ei)),len(ei))
-
+            mono.create_dataset('polar_angle',data=tth)
+            scanType = 'cscan ei {} dei {} np {} mn 10000'.format(np.mean(ei),np.mean(np.diff(ei)),len(ei))
+            scanvars+='ei'
         else:
             dset = mono.create_dataset('energy',(1,),dtype='float32')
             dset[0] = ei[0]
             dset = mono.create_dataset('rotation_angle',(1,),dtype='float32')
             dset[0] = theta[0]
-            dset = sam.create_dataset('polar_angle',(1,),dtype='float32')
+            dset = mono.create_dataset('polar_angle',(1,),dtype='float32')
             dset[0] = tth[0]
         dset = entry['CAMEA/monochromator/rotation_angle']    
         dset.attrs['units'] = np.string_('degrees')
         dset = entry['sample/polar_angle']    
         dset.attrs['units'] = np.string_('degrees')
-        dset = sam.create_dataset('polar_angle_zero',data=0.0);
+        
 
         dset.attrs['units'] = np.string_('degrees')
 
-        dset = mono.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)));
-        dset.attrs['units'] = np.string_('counts')
+        #dset = mono.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)));
+        #dset.attrs['units'] = np.string_('counts')
         
         
         makeMonitor(entry,Numpoints)
         entry.create_dataset('scancommand',data=scanType)
-        
+        entry.create_dataset('scanvars',data=scanvars)
     def makeMonitor(entry,Numpoints):
         control = entry.create_group('control')
         control.attrs['NX_class'] = np.string_('NXmonitor')
@@ -1068,6 +1149,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
         time = [36.87]*Numpoints
         control.create_dataset('time',data=time,dtype='float32')
 
+        time = [36.87*1e9]*Numpoints
+        control.create_dataset('absolut_time',data=time,dtype='float32')
+        
+        pb = entry.create_group('proton_beam')
+        pb.attrs['NX_class'] = np.string_('NXmonitor')
+        vals = [0]*Numpoints
+        dset = pb.create_dataset('data',data=vals,dtype='int32')
 
     f = hdf.File(fileName,'w')
     f.attrs['file_name'] = np.string_(fileName)
@@ -1103,7 +1191,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024): 
     
     addDetector(inst)
     
-    addSample(entry,np.string_(sample))
+    addSample(entry,np.string_(sample),cell)
     import os
     Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
     data,a3,a4,ei = readScanData(fname,Numpoints)
@@ -1409,30 +1497,30 @@ def test_instrument_create_xml():
     assert(len(Instr2.wedges)==8)
 
 
-#@pytest.mark.unit
-#def test_Normalization_tables(quick):
+@pytest.mark.unit
+def test_Normalization_tables(quick):
 
-#    Instr = Instrument(fileName='TestData/1024/CAMEA_Full.xml')
-#    Instr.initialize()
+    Instr = Instrument(fileName='Data/CAMEA_Updated.xml')
+    Instr.initialize()
 
-#    NF = 'TestData/1024/EScanRunDoubleFocusHS.h5'
+    NF = 'Data/camea2018n000038.hdf'
     #AF = 'TestData/1024/A4Normalization.h5'
 
-#    try:
-#        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=[]) # No binning specified 
-#        assert False
-#    except AttributeError:
-#        assert True
+    try:
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=[]) # No binning specified 
+        assert False
+    except AttributeError:
+        assert True
 
-#    try:
-#        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Nothing?']) # Wrong binning
-#        assert False
-#    except AttributeError:
-#        assert True
+    try:
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=['Nothing?']) # Wrong binning
+        assert False
+    except AttributeError:
+        assert True
 
-    #if not quick==True:
-    #    Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='TestData/',plot=False,tables=['Single']) 
-    #Instr.generateCalibration(Vanadiumdatafile=NF ,A4datafile=AF,  savelocation='TestData',plot=False,tables=['PrismaticHighDefinition','PrismaticLowDefinition',2]) 
-    
+    if not quick==True:
+        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='Data/',plot=False,tables=['Single',3,8]) 
+    else:
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=['Single']) 
 
 

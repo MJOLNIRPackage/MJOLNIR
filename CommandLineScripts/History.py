@@ -68,7 +68,7 @@ else:
     
  
 
-extensions = ['.h5','.nxs']
+extensions = ['.hdf','.nxs']
 
 onlyfiles = np.sort([f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and os.path.splitext(f)[-1] in extensions])
 
@@ -84,15 +84,19 @@ def identicalPart(fileNames):
 
 
 
-string,lastMatch = identicalPart(onlyfiles)
+#string,lastMatch = identicalPart(onlyfiles)
     
 completePaths = [directory+'/'+x for x in onlyfiles]
 
 returnText = ''
-returnText +='Files, replacing {} with ^:\n'.format(string)
+#returnText +='Files, replacing {} with ^:\n'.format(string)
 for file in completePaths:
-    f = DataFile.DataFile(file)
-    returnText+=f.name.replace(string,'^')+'\n'
+    try:
+        f = DataFile.DataFile(file)
+    except:
+        returnText+=file.split('/')[-1]+' not correct format\n'
+    else:
+        returnText+=f.name+': '+f.scanCommand[0].decode()+'\t'+f.title[0].decode()+'\n'
 
 saveFile = args.save
 
