@@ -38,6 +38,7 @@ class DataFile(object):
                     self.Norm=np.array(f.get('entry/data/normalization'))
                     self.Monitor=np.array(f.get('entry/data/monitor'))
                     self.MonitorPreset=np.array(f.get('entry/control/preset'))
+                    self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
@@ -178,6 +179,7 @@ class DataFile(object):
                 self.__setattr__(key,dictionary[key])
 
     def __eq__(self,other):
+        print(self.difference(other))
         return len(self.difference(other))==0
     
     def difference(self,other,keys = set(['sample','instrument','Ei','I','_A3','_A4','binning','scanParameters'])):
