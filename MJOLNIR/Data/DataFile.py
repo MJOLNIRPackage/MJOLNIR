@@ -1,7 +1,7 @@
 import sys, os
-#sys.path.append('.')
-#sys.path.append('..')
-#sys.path.append('../..')
+sys.path.append('.')
+sys.path.append('..')
+sys.path.append('../..')
 import scipy
 import matplotlib.pyplot as plt
 import numpy as np

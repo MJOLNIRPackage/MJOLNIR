@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys, os
-#sys.path.append('.')
-#sys.path.append('..')
-#sys.path.append('../..')
+sys.path.append('.')
+sys.path.append('..')
+sys.path.append('../..')
 
 
 import numpy as np
