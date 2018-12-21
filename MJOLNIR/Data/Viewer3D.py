@@ -86,7 +86,6 @@ class Viewer3D(object):
             self.zlabel = r'E [meV]'
             self.rlu = False
         else:
-            #warnings.warn('If the provided axis is a RLU axis be aware of possibility of wrong visualization when cutting along Q!!')
             if isinstance(ax,plt.Axes): # Assuming only RLU - energy plot is provided
                 self.axRLU = ax
                 self.figure = ax.get_figure() # Get the correct figure
@@ -234,6 +233,8 @@ class Viewer3D(object):
             
         else:
             raise AttributeError('Axis provided not recognized. Should be 0, 1, or 2 but got {}'.format(axis))
+        #self.ax.format_coord = self._axes[axis].format_coord
+
         X=self.bins[axes[0]].transpose(axes)
         Y=self.bins[axes[1]].transpose(axes)
         Z=self.bins[axes[2]].transpose(axes)
@@ -250,7 +251,7 @@ class Viewer3D(object):
         self.upperLim = upperLim
         self.lowerLim = 0
         self.axis = axis
-        
+
 
         
     def stringValue(self):
@@ -258,7 +259,7 @@ class Viewer3D(object):
             unit = ' meV'
         else:
             if self.rlu:
-                unit = 'rlu'
+                unit = ''
             else:
                 unit = ' 1/AA'
         try:
@@ -377,6 +378,7 @@ def onkeypress(event,self): # pragma: no cover
             self.plot()
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
+    self.ax.set_navigate(True)
 
 
 def reloadslider(self,axis): # pragma: no cover
