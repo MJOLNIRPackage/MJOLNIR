@@ -1,13 +1,13 @@
 import sys,os
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 from MJOLNIR.Data import DataFile
-DataFile.assertFile('TestData/1024/Magnon_ComponentA3Scan.nxs')
+DataFile.assertFile('Data/camea2018n000137.nxs')
 from MJOLNIR.Data import DataSet
 from MJOLNIR import _tools
 def test_cut2D(show=False):
     import numpy as np
     import matplotlib.pyplot as plt
-    file = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
+    file = 'Data/camea2018n000137.hdf'
     DataObj = DataSet.DataSet(dataFiles=file)
     DataObj.convertDataFile()
     energy = DataObj.energy
@@ -29,8 +29,8 @@ def test_cut2D(show=False):
     if show:
         plt.show()
     else:
-        if os.path.exists('TestData/1024/Magnon_ComponentA3Scan.nxs'):
-            os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
+        if os.path.exists('Data/camea2018n000137.nxs'):
+            os.remove('Data/camea2018n000137.nxs')
 
 
 if __name__ == '__main__':
