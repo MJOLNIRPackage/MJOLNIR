@@ -6,7 +6,7 @@ def test_Binning_data(view = False):
     import numpy as np
     import h5py as hdf
     import matplotlib.pyplot as plt
-    fileName = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
+    fileName = 'Data/camea2018n000137.hdf'
     ds = DataSet.DataSet(dataFiles=fileName)
     ds.convertDataFile()
 
@@ -34,8 +34,8 @@ def test_Binning_data(view = False):
     if view:
         plt.show()
     else:
-        if os.path.exists('TestData/1024/Magnon_ComponentA3Scan.nxs'):
-            os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
+        if os.path.exists('Data/camea2018n000137.nxs'):
+            os.remove('Data/camea2018n000137.nxs')
 
 if __name__=='__main__':
     test_Binning_data(True)

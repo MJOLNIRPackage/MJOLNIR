@@ -6,7 +6,7 @@ def test_PlotA3A4(save=False):
     import matplotlib.pyplot as plt
     import numpy as np
 
-    File = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
+    File = 'Data/camea2018n000137.hdf'
     DS = DataSet.DataSet(dataFiles=File)
     DS.convertDataFile()
     files = DS.convertedFiles
@@ -28,8 +28,8 @@ def test_PlotA3A4(save=False):
     if save:
         plt.show()
     else:
-        if os.path.exists('TestData/1024/Magnon_ComponentA3Scan.nxs'):
-            os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
+        if os.path.exists('Data/camea2018n000137.nxs'):
+            os.remove('Data/camea2018n000137.nxs')
 
 if __name__=='__main__':
     test_PlotA3A4(True)

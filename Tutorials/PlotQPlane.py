@@ -6,7 +6,7 @@ from MJOLNIR.Data import DataSet
 def test_Plot_Q_Plane(save=False):
     import numpy as np
     import matplotlib.pyplot as plt
-    file = 'TestData/1024/Magnon_ComponentA3Scan.hdf'
+    file = 'Data/camea2018n000137.hdf'
     Data = DataSet.DataSet(dataFiles=file)
     Data.convertDataFile()
     EMin = np.min(Data.energy)+1.5
@@ -29,8 +29,8 @@ def test_Plot_Q_Plane(save=False):
         fig2.savefig('Tutorials/PlotQPlaneXY.png')
         plt.show()
     else:
-        if os.path.exists('TestData/1024/Magnon_ComponentA3Scan.nxs'):
-            os.remove('TestData/1024/Magnon_ComponentA3Scan.nxs')
+        if os.path.exists('Data/camea2018n000137.nxs'):
+            os.remove('Data/camea2018n000137.nxs')
 
 
 if __name__ == '__main__':

@@ -18,14 +18,14 @@ def test_cut2D(show=False):
     width = 0.1 # 1/A
     minPixel = 0.01
 
-    ax,DataList,qBnLit,centerPos,binDIstance = DataObj.plotCutQE(q1,q2,width,minPixel,EnergyBins)
+    ax,DataList,qBnLit,centerPos,binDIstance = DataObj.plotCutQE(q1,q2,width,minPixel,EnergyBins,rlu=False)
     plt.colorbar(ax.pmeshs[0])
 
     ax.set_clim(0,10)
     plt.tight_layout()
 
     ## Cut and plot 1D
-    ax2,DataList,Bins,binCenter,binDistance = DataObj.plotCut1D(q1,q2,width,minPixel,Emin = 0.2, Emax = 1.7,plotCoverage=True)
+    ax2,DataList,Bins,binCenter,binDistance = DataObj.plotCut1D(q1,q2,width,minPixel,rlu=False,Emin = 0.2, Emax = 1.7,plotCoverage=True)
     if show:
         plt.show()
     else:
