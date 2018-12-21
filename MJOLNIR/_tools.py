@@ -18,7 +18,7 @@ def KwargChecker(function=None,include=None):
 
         - AttributeError
     """
-    @functools.wraps(None)
+    #@functools.wraps(None)
     def KwargCheckerNone(func):
         @functools.wraps(func)
         def newFunc(*args,**kwargs):
