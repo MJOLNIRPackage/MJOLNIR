@@ -1475,9 +1475,9 @@ class DataSet(object):
             rluax = self.createRLUAxes()
             figure = rluax.get_figure()
             figure.delaxes(rluax)
-            qxEax = self.createQEAxes(axis=0,figure=figure)
+            qxEax = self.createQEAxes(axis=1,figure=figure)
             figure.delaxes(qxEax)
-            qyEax = self.createQEAxes(axis=1,figure=figure)
+            qyEax = self.createQEAxes(axis=0,figure=figure)
             figure.delaxes(qyEax)
             
             axes = [qxEax,qyEax,rluax]
