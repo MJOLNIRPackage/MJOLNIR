@@ -39,6 +39,7 @@ class DataFile(object):
                     self.Monitor=np.array(f.get('entry/data/monitor'))
                     self.MonitorPreset=np.array(f.get('entry/control/preset'))
                     self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
+                    self.Time = np.array(f.get('entry/control/time'))
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
@@ -97,6 +98,7 @@ class DataFile(object):
                     self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
                     self.scanCommand = np.array(f.get('entry/scancommand'))
                     self.title = np.array(f.get('entry/title'))
+                    self.Time = np.array(f.get('entry/control/time'))
                     ###################
                     self.I[:,:,:200]=0#
                     ###################
