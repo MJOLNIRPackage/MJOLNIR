@@ -1475,6 +1475,7 @@ class DataSet(object):
             rluax = self.createRLUAxes()
             figure = rluax.get_figure()
             figure.delaxes(rluax)
+
             qxEax = self.createQEAxes(axis=1,figure=figure)
             figure.delaxes(qxEax)
             qyEax = self.createQEAxes(axis=0,figure=figure)
@@ -1489,6 +1490,7 @@ class DataSet(object):
         warnings.simplefilter('ignore')
         Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
         warnings.simplefilter('once')
+
         Viewer = Viewer3D.Viewer3D(Data,bins,axis=axis,ax=axes,grid=grid,log=log)
         return Viewer
 
