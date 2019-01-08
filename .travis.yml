@@ -20,11 +20,7 @@ before_script: # configure a headless display to test plot generation
   - sleep 3 # give xvfb some time to start
 
 install:
-<<<<<<< HEAD
-  - pip install pytest>=3.6 pycodestyle python-coveralls pytest_cov==2.5 
-=======
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest_cov<2.6.0
->>>>>>> 2c0450bb1610aa66dd75401cacdb07560424a380
   - pip install .
 #  - pip install -r requirements.txt
 
