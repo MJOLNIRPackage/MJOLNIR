@@ -331,6 +331,11 @@ def onkeypress(event,self): # pragma: no cover
         increaseAxis(event,self)
     elif event.key in ['-','down']:
         decreaseAxis(event,self)
+    elif event.key in ['home']:
+        self.Energy_slider.set_val(self.Energy_slider.valmin)
+    elif event.key in ['end']:
+        self.Energy_slider.set_val(self.Energy_slider.valmax)
+
     elif event.key in ['0']:
         if self.axis!=0:
             reloadslider(self,0)
@@ -379,7 +384,7 @@ def onkeypress(event,self): # pragma: no cover
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
     self.ax.set_navigate(True)
-
+    
 
 def reloadslider(self,axis): # pragma: no cover
     self.Energy_slider.set_val(0)
