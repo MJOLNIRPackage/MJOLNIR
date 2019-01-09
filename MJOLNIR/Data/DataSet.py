@@ -304,16 +304,16 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
+                I = self.I.copy()
+                qx = self.qx.copy()
+                qy = self.qy.copy()
+                energy = self.energy.copy()
+                Norm = self.Norm.copy()
+                Monitor = self.Monitor.copy()
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
+            I,qx,qy,energy,Norm,Monitor, = DS.I.copy(),DS.qx.copy(),DS.qy.copy(),DS.energy.copy(),DS.Norm.copy(),DS.Monitor.copy()
             
 
         if rlu:
@@ -1988,7 +1988,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
 
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-@_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
+@_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'vmin','vmax'])
 def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax = None,**kwargs):
     """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
