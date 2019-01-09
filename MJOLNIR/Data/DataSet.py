@@ -1443,7 +1443,7 @@ class DataSet(object):
         return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
 
     @_tools.KwargChecker()
-    def View3D(self,dx,dy,dz,rlu=True, log=False,grid=False,axis=2):
+    def View3D(self,dx,dy,dz,rlu=True, log=False,grid=False):
         """View data in the Viewer3D object. 
 
         Args:
@@ -1460,8 +1460,6 @@ class DataSet(object):
 
             - log (Bool): If true logarithm of intensity is plotted
 
-            - axis (int): Axis shown initially (default 2)
-
         If one plots not using RLU, everything is plotted in real units (1/AA), and the Qx and QY is not rotated. That is, the
         x axis in energy is not along the projection vector. The cuts of constant Qx and Qy does not represent any symmetry directions in
         the sample.
@@ -1475,7 +1473,6 @@ class DataSet(object):
             rluax = self.createRLUAxes()
             figure = rluax.get_figure()
             figure.delaxes(rluax)
-
             qxEax = self.createQEAxes(axis=1,figure=figure)
             figure.delaxes(qxEax)
             qyEax = self.createQEAxes(axis=0,figure=figure)
@@ -1490,8 +1487,7 @@ class DataSet(object):
         warnings.simplefilter('ignore')
         Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
         warnings.simplefilter('once')
-
-        Viewer = Viewer3D.Viewer3D(Data,bins,axis=axis,ax=axes,grid=grid,log=log)
+        Viewer = Viewer3D.Viewer3D(Data,bins,axis=2,ax=axes,grid=grid,log=log)
         return Viewer
 
     def convertToQxQy(self,HKL):
@@ -2168,8 +2164,8 @@ def createQEAxes(Dataset,axis=0,figure = None):
     projectionVectorQY = np.dot(np.dot(projectionMatrix,[0,1]),np.array([v1,v2]))
     projectionVectorQX = DataFile.LengthOrder(projectionVectorQX)
     projectionVectorQY = DataFile.LengthOrder(projectionVectorQY)
-    projectionVectorQXLength = np.linalg.norm(np.dot(Dataset.sample.orientationMatrix,projectionVectorQX))
-    projectionVectorQYLength = np.linalg.norm(np.dot(Dataset.sample.orientationMatrix,projectionVectorQY))
+    projectionVectorQXLength = np.linalg.norm(np.dot(Dataset.sample.orientationMatrix,projectionVectorQY))
+    projectionVectorQYLength = np.linalg.norm(np.dot(Dataset.sample.orientationMatrix,projectionVectorQX))
     projectionVectorQXFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQX])
     projectionVectorQYFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQY])
     
@@ -3257,7 +3253,7 @@ def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0): # pragma: no cover
     A4Min = np.min(InstA4,axis=0)
     A4Max = np.max(InstA4,axis=0)
     
-    InstrumentEnergy = IC[:,4].reshape(energy.shape[1],-1)[:,plane]
+    InstrumentEnergy = IC[:,4].reshape(energy.shape[1],-1)[:,plane] # TODO: IC is not defined before usage! Should be loaded from instrument?
     
     kf = np.sqrt(InstrumentEnergy)*factorsqrtEK
        
