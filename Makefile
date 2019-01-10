@@ -13,6 +13,19 @@ tutorialtest:
 fulltest:
 	python -m pytest -vv MJOLNIR Tutorials
 
+
+wheel:
+	python setup.py sdist
+
+
+FILE := $(shell ls -t dist/* | head -1)
+version: 
+	make wheel
+	git tag -a $(shell python cut.py $(shell ls -t dist/* | head -1))
+	twine upload $(FILE) -r testpypi
+	twine upload $(FILE) -r pypi
+
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
@@ -30,4 +43,5 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
 
