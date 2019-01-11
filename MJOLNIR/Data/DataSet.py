@@ -1213,11 +1213,8 @@ class DataSet(object):
                 positionValues = binminmaxList[i]*direction+qstart
                 if rlu==True:
                     sample =self.convertedFiles[0].sample
-                    
-                    proj = sample.inv_tr(positionValues[0],positionValues[1]) # Convert into projected coordinates
-                    positionValues = np.dot(sample.orientationMatrix[:,:2],proj) # Convert to hkl
-
-                my_xticks.append('\n'.join(map(str,np.round(positionValues,tickRound))))
+                    positionValues = self.convertToHKL(positionValues)#np.dot(sample.orientationMatrix[:,:2],proj) # Convert to hkl
+                my_xticks.append('\n'.join([('{:.'+str(tickRound)+'f}').format(x) for x in positionValues]))
             
             xticks.append(binminmaxList[xvalues]*distanceChange +offset[-1]) # binDistanceAll[xvalues]
             xticklabels.append(my_xticks)
@@ -1506,6 +1503,18 @@ class DataSet(object):
         """
         return convertToQxQy(self.sample,HKL)
 
+    def convertToHKL(self,QxQy):
+        """Convert array or vector of QxQy point(s) to corresponding HKL
+
+        Args:
+
+            - QxQy (array): array or vector of QxQy point(s)
+
+        Returns
+
+            - HKL (array): Converted QxQy points in HKL
+        """
+        return convertToHKL(self.sample,QxQy)
 
 def load(filename):
     """Function to load an object from a pickled file.
@@ -2120,10 +2129,24 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     Returns:
         
         - ax (Matplotlib axes): Axes containing the RLU plot.
+
+    .. note::
+        When rlu axis is created, the orientation of Qx and Qy is assumed to be rotated as well. 
+        This is to be done in the self.View3D method call!
         
     """
-    sample = Dataset.sample
+    import copy
+    sample = copy.deepcopy(Dataset.sample)
     
+    sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
+    sample.convertinv = np.linalg.inv(sample.convert) # Convert from Qx, Qy to projX, projY
+
+    sample.convertHKL = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
+    sample.convertHKLINV = DataFile.invert(sample.convertHKL) # Convert from Qx, Qy to HKL
+
+    sample.orientationMatrixINV = np.linalg.inv(np.dot(sample.RotMat3D,sample.orientationMatrix))
+
+
     if figure is None:
         fig = plt.figure(figsize=(7, 4))
     else:
@@ -3646,7 +3669,41 @@ def convertToQxQy(sample,QPoints):
 
     return np.array([qx,qy]).T
 
+def convertToHKL(sample,QxQy):
+    """Convert a given list og QPoints to QxQy from UB matrix of sample
 
+    Args:
+
+        - sample (MJOLNIR.DataFile.Sample): Sample from which the UB matrix is to be used
+
+        - QxQy (list): List of HKL poinst to be converted
+
+    Returns:
+
+        - HKL (list): List of QxQy points in same shape as provided
+
+
+    """
+
+    QxQy = np.asarray(QxQy)
+    shape = QxQy.shape
+
+    if len(shape)==1: # One point given as [h,k,l]
+        if shape[0]!=2:
+            raise AttributeError('Provided QxQy point is not 3D. Recieved: {}'.format(QxQy))
+        QxQy = np.pad(QxQy, (0, 1), 'constant')
+        H,K,L = np.einsum('ij,j->i',sample.orientationMatrixINV,QxQy)
+    else:
+        if shape[-1]!=2:
+            raise AttributeError('Provided QxQy point is not 2D. Recieved: {}'.format(QxQy))
+        Shape = np.asarray(shape)
+        Shape[-1]=1
+        z  = np.zeros(Shape)
+        QxQy = np.concatenate([QxQy,z],axis=-1)
+        H,K,L = np.einsum('ij,...j->i...',sample.orientationMatrixINV,QxQy)
+
+
+    return np.array([H,K,L]).T
 
 #________________________________________________TESTS_____________________________________________
 
