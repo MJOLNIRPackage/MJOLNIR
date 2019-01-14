@@ -16,13 +16,14 @@ else:
 setup(
     name='MJOLNIR',
 
-    version='1.0.3',
+    version='1.0.4',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
     author_email='lass.jakob@gmail.com',
     url='https://github.com/jakob-lass/MJOLNIR',
     license='MPL-2.0',
+    data_files = [("", ["LICENSE.txt"])],
     packages=['MJOLNIR','MJOLNIR/Data','MJOLNIR/Geometry','MJOLNIR/Statistics'],
     python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,<3.8.*',
     install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest','pyperclip','shapely','decorator'],
