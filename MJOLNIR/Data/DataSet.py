@@ -2200,7 +2200,7 @@ def createQEAxes(Dataset,axis=0,figure = None):
         projectionVectorLengthORthogonal = projectionVectorQXLength
         projectionVectorFormated = projectionVectorQXFormated
         projectionVector = projectionVectorQX
-        projectionVectorOrthogonal = projectionVectorQX
+        projectionVectorOrthogonal = projectionVectorQY
     elif axis == 1:
         projectionVectorLength = projectionVectorQXLength
         projectionVectorFormated = projectionVectorQYFormated
