@@ -234,7 +234,8 @@ class Viewer3D(object):
         else:
             raise AttributeError('Axis provided not recognized. Should be 0, 1, or 2 but got {}'.format(axis))
         #self.ax.format_coord = self._axes[axis].format_coord
-
+        if hasattr(self.ax,'_step'):
+            self.ax._step=self.calculateValue()
         X=self.bins[axes[0]].transpose(axes)
         Y=self.bins[axes[1]].transpose(axes)
         Z=self.bins[axes[2]].transpose(axes)
@@ -252,7 +253,14 @@ class Viewer3D(object):
         self.lowerLim = 0
         self.axis = axis
 
-
+    def calculateValue(self):
+        try:
+            val = 0.5*(self.Z[0,0,self.value+1]+self.Z[0,0,self.value])
+        except:
+            val = 0.5*(2*self.Z[0,0,self.value]-self.Z[0,0,self.value-1])
+        if hasattr(self,'EnergySliderTransform'):
+            val/=self.EnergySliderTransform[self.axis]
+        return val
         
     def stringValue(self):
         if self.axis==2:
@@ -262,12 +270,7 @@ class Viewer3D(object):
                 unit = ''
             else:
                 unit = ' 1/AA'
-        try:
-            val = 0.5*(self.Z[0,0,self.value+1]+self.Z[0,0,self.value])
-        except:
-            val = 0.5*(2*self.Z[0,0,self.value]-self.Z[0,0,self.value-1])
-        if hasattr(self,'EnergySliderTransform'):
-            val/=self.EnergySliderTransform[self.axis]
+        val = self.calculateValue()
         return str(np.round(val,2))+unit
     
     
@@ -419,19 +422,20 @@ def decreaseAxis(event,self): # pragma: no cover
     
 
 def sliders_on_changed(self,val): # pragma: no cover
-        value = int(np.round(val))
+    value = int(np.round(val))
+    
+    if value>self.Energy_slider.valmax:
+        self.Energy_slider.set_val(self.Energy_slider.valmax)
         
-        if value>self.Energy_slider.valmax:
-            self.Energy_slider.set_val(self.Energy_slider.valmax)
+    elif value<self.Energy_slider.valmin:
+        self.Energy_slider.set_val(self.Energy_slider.valmin)
+    
+    if value<=self.Energy_slider.valmax and value>=self.Energy_slider.valmin:
+        if value!=val:
+            self.Energy_slider.set_val(value)
             
-        elif value<self.Energy_slider.valmin:
-            self.Energy_slider.set_val(self.Energy_slider.valmin)
-        
-        if value<=self.Energy_slider.valmax and value>=self.Energy_slider.valmin:
-            if value!=val:
-                self.Energy_slider.set_val(value)
-                
-            else:
-                self.value = val
-                self.plot()
-
+        else:
+            self.value = val
+            self.plot()
+    if hasattr(self.ax,'_step'):
+        self.ax._step=self.calculateValue()

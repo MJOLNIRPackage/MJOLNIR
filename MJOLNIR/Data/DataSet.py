@@ -2200,11 +2200,13 @@ def createQEAxes(Dataset,axis=0,figure = None):
         projectionVectorLengthORthogonal = projectionVectorQXLength
         projectionVectorFormated = projectionVectorQXFormated
         projectionVector = projectionVectorQX
+        projectionVectorOrthogonal = projectionVectorQX
     elif axis == 1:
         projectionVectorLength = projectionVectorQXLength
         projectionVectorFormated = projectionVectorQYFormated
         projectionVectorLengthORthogonal = projectionVectorQYLength
         projectionVector = projectionVectorQY
+        projectionVectorOrthogonal = projectionVectorQX
     else:
         raise AttributeError('Provided axis of {} is not allowed. Should be eiter 0 or 1.'.format(axis))
 
@@ -2230,16 +2232,23 @@ def createQEAxes(Dataset,axis=0,figure = None):
     #ax.set_aspect(1.)
     ax.grid(True, zorder=0)
     
-    def format_coord(l,v1,x,y): 
-        x, y = np.asarray(x)/l*v1, np.asarray(y)
+    def calculateRLU(l,v1,x,y,v,step):
+        return np.asarray(x)/l*v1+v*step, np.asarray(y)
+
+    def format_coord(x,y): # x is H,K,L and y is  energy
         xformated = ', '.join(['{} = {}'.format(Y[0],Y[1]) for Y in zip(['h','k','l'],['{:.4f}'.format(X) for X in x])])
         return '{}, E, {:.4f}'.format(xformated,y)
     
-    ax.format_coord = lambda x,y: format_coord(projectionVectorLength,projectionVector,x,y)
+    
     ax.set_xlabel('{} [RLU]'.format(projectionVectorFormated))
     
     ax.set_ylabel('E [meV]')
     ax._length = projectionVectorLengthORthogonal
+    ax._projectionVector = projectionVector 
+    ax._projectionVectorOrthogonal = projectionVectorOrthogonal
+    ax._step = 0.0
+    ax.calculateRLU = lambda x,y: calculateRLU(projectionVectorLength,ax._projectionVector,x,y,ax._projectionVectorOrthogonal,ax._step)
+    ax.format_coord = lambda x,y: format_coord(*ax.calculateRLU(x,y))
     return ax
 
 
