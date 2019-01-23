@@ -14,6 +14,7 @@ Welcome to MJOLNIR's documentation!
    MJOLNIR
    InDepthDocumentation/Documentation
    Optimizations/Optimization
+   TutorialsDepricated/Tutorial
 
 .. toctree::
    :maxdepth: 1

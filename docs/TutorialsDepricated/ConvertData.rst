@@ -2,7 +2,7 @@ Convert data to Q and Omega
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 With the above normalization table created, on can easily convert raw data files using the method in the :ref:`DataSet<DataSet>` called ConvertDatafile as 
 
-.. literalinclude:: ../../Tutorials/Convert_Data.py
+.. literalinclude:: ../../TutorialsDepricated/Convert_Data.py
     :lines: 4-
     :language: python 
     :linenos:  
