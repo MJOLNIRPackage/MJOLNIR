@@ -7,11 +7,15 @@ test:
 quicktest:
 	python -m pytest -vv MJOLNIR --quick
 
-tutorialtest:
-	python -m pytest -vv Tutorials
+tutorials:
+	rm docs/Tutorials/DataSet/*
+	rm docs/Tutorials/Instrument/*
+	rm docs/Tutorials/Tools/*
+	./Tutorials/tutorials
+	make html
 
 fulltest:
-	python -m pytest -vv MJOLNIR Tutorials
+	python -m pytest -vv MJOLNIR
 
 
 wheel:
