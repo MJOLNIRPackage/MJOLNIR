@@ -8,9 +8,10 @@ quicktest:
 	python -m pytest -vv MJOLNIR --quick
 
 tutorials:
-	rm docs/Tutorials/DataSet/*
-	rm docs/Tutorials/Instrument/*
-	rm docs/Tutorials/Tools/*
+	python clean.py docs/Tutorials/Advanced
+	python clean.py docs/Tutorials/Instrument
+	python clean.py docs/Tutorials/Quick
+	python clean.py docs/Tutorials/Tools
 	./Tutorials/tutorials
 	make html
 

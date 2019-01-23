@@ -34,17 +34,22 @@ def formatCode(text,indentChar = '>>> ', skipHeader=1):
             line = line[:startP] + "('figure{}.png',format='png')".format(figCounter) + line[endP+1:]
             figCounter+=1
             
+        if line.find('Instr = Instrument.Instrument(fileName=')!=-1:
+            start = line.find('fileName=')
+            end = line.find(')')
+            line = line[:start] + 'fileName=SimpleInstrument.xml' + line[end:]
             
         newText.append(line)
             
     return '\n'.join(newText)
 
 class Tutorial(object):
-    def __init__(self,name,introText,outroText,code,fileLocation=None):
+    def __init__(self,name,introText,outroText,code,fileLocation=None,dependentFiles = None):
         self.name = name
         self.introText = introText
         self.outroText = outroText
         self.code = code
+        self.dependentFiles = dependentFiles
         if not fileLocation is None:
             if fileLocation[-1] != '/':
                 fileLocation += '/'
@@ -56,6 +61,14 @@ class Tutorial(object):
         self.code()
         
     def generateTutorial(self):
+
+        if not self.dependentFiles is None:
+            
+            folder = '/'.join(self.fileLocation.split('/')[:-1])+'/'
+            print("Copying files to {}".format(folder))
+            from shutil import copyfile
+            for f in list(self.dependentFiles):
+                copyfile(f, folder+f.split('/')[-1])
         
         # Test if code is running
         codeLocation = inspect.getsourcefile(self.code)
