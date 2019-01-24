@@ -547,7 +547,7 @@ class DataSet(object):
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
         .. warning::
-        Depricated! Instead use the plotCutQELine tool with only two q points
+           Depricated! Instead use the plotCutQELine tool with only two q points
 
         .. note::
             Positions shown in tool tip reflect the closes bin center and are thus limited to the area where data is present.
@@ -1036,7 +1036,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator']]))
-    def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,**kwargs):
+    def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,fig=None,dataFiles=None,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
         Args:
@@ -1051,7 +1051,7 @@ class DataSet(object):
             
             - rlu (bool): If True, provided points are intepreted as (h,k,l) otherwise (qx,qy), (Deflault RLU)
             
-            - ax (matplotlib axis): Axis into wicht the data is plotted. If None a new will be created (default None).
+            - fig (matplotlib figure): Figure into wicht the data is plotted. If None a new will be created (default None).
             
             - dataFiles (DataFile(s)): DataFile or list of, from which data is to be taken. If None all datafiles in self is taken (default None).
             
@@ -1092,9 +1092,11 @@ class DataSet(object):
         else: # Do nothing
             positions = QPoints
                 
-        if ax is None:
+        if fig is None:
             plt.figure()
             ax = plt.gca()
+        else:
+            ax = fig.gca()    
 
         if len(EnergyBins.shape)==1 and not isinstance(EnergyBins[0],(list,np.ndarray)): # If a common energy binning is requested
             if not len(QPoints)==2:
@@ -4457,10 +4459,10 @@ def test_DataSet_plotCutQELine():
         assert True
 
 
-    ax = plt.figure().gca()
+    fig = plt.figure()
 
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,ax=ax,vmin=0.0,vmax=1.5e-6,ticks=10,log=True,seperatorWidth=3)
+        QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,fig=fig,vmin=0.0,vmax=1.5e-6,ticks=10,log=True,seperatorWidth=3)
 
 
     HKLPoints = np.array([[1.0,0.0,0.0],
