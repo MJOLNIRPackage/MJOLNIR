@@ -39,6 +39,10 @@ def formatCode(text,indentChar = '   ', skipHeader=1):
             start = line.find('fileName=')
             end = line.find(')')
             line = line[:start] + 'fileName=SimpleInstrument.xml' + line[end:]
+
+        if line.find('/home/lass/Dropbox/PhD/CAMEAData/')!=-1:
+            text = '/home/lass/Dropbox/PhD/CAMEAData/'
+            line = line[:line.find(text)]+'/Path/To/Data/'+line[line.find(text)+len(text):]
             
         newText.append(line)
             
