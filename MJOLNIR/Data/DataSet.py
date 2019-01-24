@@ -2169,21 +2169,37 @@ def createRLUAxes(Dataset,figure=None): # pragma: no cover
     return ax
 
 
-def createQEAxes(Dataset,axis=0,figure = None):
+def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, projectionVector2 = None):
     """Function to create Q E plot
 
     Kwargs:
 
+        - DataSet (DataSet): If provided and no projections vectors creates QE axis for main direction (default None)
+
         - axis (int): Whether to create axis 0 or 1 (projection vector 0 or orthogonal to this, default 0)
 
-        - figure
+        - figure (figure): If provided, this is used to create the axis withing (default None)
+
+        - projectionVector1 (vec): Projection vector along wich data is plotted. If not provided sample vector is used (default None)
+
+        - projectionVector2 (vec): Projection vector orthogonal to data. If not provided sample vector is used (default None)
 
 
     """
-    angle = Dataset.sample.projectionAngle
-    v1 = Dataset.sample.projectionVector1
-    v2 = Dataset.sample.projectionVector2
     
+    if projectionVector1 is None or projectionVector2 is None:
+        v1 = DataSet.sample.projectionVector1
+        v2 = DataSet.sample.projectionVector2
+        angle = DataSet.sample.projectionAngle
+        orientationMatrix = DataSet.sample.orientationMatrix
+    else:
+        v1 = np.asarray(projectionVector1)
+        v2 = np.asarray(projectionVector2)
+        if not np.all([x[0].shape==3 for x in [v1,v2]]) and not np.all([len(x.shape)==1 for x in [v1,v2]]):
+            raise AttributeError('Provided vector(s) is not 3D: projectionVector1.shape={} or projectionVector2.shape={}'.format(v1.shape,v2.shape))
+        angle = np.arccos(np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2)))
+        orientationMatrix = np.ones(3)
+
     v2Length = np.linalg.norm(v2)
     
     
@@ -2193,8 +2209,8 @@ def createQEAxes(Dataset,axis=0,figure = None):
     projectionVectorQY = np.dot(np.dot(projectionMatrix,[0,1]),np.array([v1,v2]))
     projectionVectorQX = DataFile.LengthOrder(projectionVectorQX)
     projectionVectorQY = DataFile.LengthOrder(projectionVectorQY)
-    projectionVectorQXLength = np.linalg.norm(np.dot(Dataset.sample.orientationMatrix,projectionVectorQY))
-    projectionVectorQYLength = np.linalg.norm(np.dot(Dataset.sample.orientationMatrix,projectionVectorQX))
+    projectionVectorQXLength = np.linalg.norm(np.dot(orientationMatrix,projectionVectorQY))
+    projectionVectorQYLength = np.linalg.norm(np.dot(orientationMatrix,projectionVectorQX))
     projectionVectorQXFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQX])
     projectionVectorQYFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQY])
     
