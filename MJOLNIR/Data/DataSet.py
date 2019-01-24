@@ -2077,11 +2077,13 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     for i in range(len(Int)):
         pmeshs.append(ax.pcolormesh(edgeQDistance[i], binEnergies[i], Int[i].T, **kwargs))
 
-    ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
+    def set_clim(VMin,VMax,pmeshs):
+        [pm.set_clim(VMin,VMax) for pm in pmeshs]
+    ax.set_clim = lambda VMin,VMax: set_clim(VMin,VMax,pmeshs)
     
     if not 'vmin' in kwargs or not 'vmax' in kwargs:
-        minVal = np.min(np.concatenate(Int))
-        maxVal = np.max(np.concatenate(Int))
+        minVal = np.nanmin(np.concatenate(Int))
+        maxVal = np.nanmax(np.concatenate(Int))
         ax.set_clim(minVal,maxVal)
 
     def format_coord(x,y,edgeQDistance,centerPos,Int):# pragma: no cover
@@ -2114,6 +2116,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     ax.set_xticklabels(xtick_labels, fontsize=8, multialignment="center", ha="center")
     ax.set_xlabel('$Q_h/A$\n$Q_k/A$', fontsize=8)
     ax.xaxis.set_label_coords(1.15, -0.025)
+    ax.get_figure().colorbar(pmeshs[0])
     ax.set_ylabel('E [meV]')
     plt.tight_layout()
     ax.pmeshs = pmeshs
