@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>
+<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>
+ <FlatAnalyser position='0.054020677125896165,0.9284297315590769,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <FlatAnalyser position='0.05773242042519161,0.9922218389210393,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <FlatAnalyser position='0.06139188564984909,1.0551154658976218,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <FlatAnalyser position='0.06502811617466747,1.1176097682584802,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <FlatAnalyser position='0.06869919874924452,1.1807030575429251,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <FlatAnalyser position='0.07235285529894223,1.2434968533655766,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <FlatAnalyser position='0.07608202462311699,1.3075884541893323,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <FlatAnalyser position='0.07985185467201017,1.3723788730906055,0.0' direction='0.707106781187,0.0,0.707106781187' d_spacing='3.35' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>
+ <TubeDetector1D position='0.13917281377075363,1.1919022308508072,0.7' direction='0.13917281377075363,1.1919022308508072,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.11605723555894083,1.1943746137935185,0.7' direction='0.11605723555894083,1.1943746137935185,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.09289810020961405,1.1963987391239779,0.7' direction='0.09289810020961405,1.1963987391239779,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.06970409951728537,1.1979738471730024,0.7' direction='0.06970409951728537,1.1979738471730024,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.04648393836168752,1.19909934679091,0.7' direction='0.04648393836168752,1.19909934679091,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.02324633144076829,1.1997748155693826,0.7' direction='0.02324633144076829,1.1997748155693826,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='-0.0,1.2,0.7' direction='-0.0,1.2,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.1276210119438152,1.1931944004689414,0.71' direction='0.1276210119438152,1.1931944004689414,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.10448256963424918,1.195442760086247,0.71' direction='0.10448256963424918,1.195442760086247,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.08130491424476227,1.1972424612081096,0.71' direction='0.08130491424476227,1.1972424612081096,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.05809674452057436,1.1985928283934086,0.71' direction='0.05809674452057436,1.1985928283934086,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.03486677065916047,1.1994933548393678,0.71' direction='0.03486677065916047,1.1994933548393678,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+ <TubeDetector1D position='0.011623711041249318,1.199943702571762,0.71' direction='0.011623711041249318,1.199943702571762,0.0' pixels='1024' length='0.883' diameter='0.02' split='55,158,278,397,515,634,755,877,973'></TubeDetector1D>
+	</Wedge>
+</Instrument>
+
+
+

@@ -13,20 +13,21 @@ import pytest
 import sys 
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 
-def formatCode(text,indentChar = '>>> ', skipHeader=1):
+def formatCode(text,indentChar = '   ', skipHeader=1):
     """Formater for raw code strings to doct string formation"""
     
     text= text.split('\n')[skipHeader:]
     
     newText = []
+    newText.append('.. code-block:: python\n   :linenos:\n')
     figCounter = 0
     for line in text:
         if line[:8] == ' '*8: # Replace initial blank with >>>
-            line = '>>> ' + line[8:]
+            line = indentChar + line[8:]
         elif line[:4] == ' '*4:
-            line = '>>> ' + line[4:]
+            line = indentChar + line[4:]
         elif len(line)==0:
-            line = '>>>  '
+            line = indentChar
             
         if line.find('savefig') != -1: # code contains a save function
             startP = line.find('(')
