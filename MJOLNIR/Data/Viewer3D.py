@@ -32,7 +32,7 @@ class Viewer3D(object):
 
             - grid (bool/int): If int, grid will be plotted with zorder=int, if True, grid is plotted at zorder=-10 (Default False).
 
-        For an example, see the quick plotting tutorial under scripting tutorials.
+        For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
         """
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
