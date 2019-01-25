@@ -1028,6 +1028,20 @@ class DataSet(object):
         for i in range(len(QPoints)-1):
             _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(positions[i],positions[i+1],width[i],minPixel[i],EnergyBins[i],rlu=False,dataFiles=dataFiles,extend=False)
             DataList.append(_DataList)
+            if rlu:
+                UB2D = self.sample.convertHKLINV # Matrix to calculate HKL from Qx,Qy
+                _BinListUpdated = []
+                _centerPositionUpdated = []
+                for i in range(len(_BinList)):
+                    Position,ortho,E = _BinList[i]
+                    pos = np.array([np.concatenate([np.dot(UB2D,x[:2]),[x[2]]],axis=0) for x in Position])
+                    orthogonal = [np.dot(UB2D,x) for x in ortho]
+                    _BinListUpdated.append([pos,orthogonal,E])
+
+                    cPos = [np.concatenate([np.dot(UB2D,x[:2]),[x[2]]],axis=0) for x in _centerPosition[i]]
+                    _centerPositionUpdated.append(cPos)
+                _BinList = _BinListUpdated
+                _centerPosition = _centerPositionUpdated
             BinList.append(_BinList)
             centerPosition.append(_centerPosition)
             binDistance.append(_binDistance)
@@ -1167,7 +1181,6 @@ class DataSet(object):
         
         offset = [0.0]
         idmax = len(DataList) # Number of segments
-        actualQPoints = []
         edgeQDistance = []
         
         for segID in range(idmax): # extract relevant data for current segment
@@ -1177,18 +1190,22 @@ class DataSet(object):
             binDistance = binDistanceTotal[segID]
             q1 = positions[segID]
             q2 = positions[segID+1]
+            if rlu:
+                q1 = np.dot(self.sample.convertHKLINV,q1)
+                q2 = np.dot(self.sample.convertHKLINV,q2)
             dirvec = np.array(q2)-np.array(q1)
-            leftEdgeBins = np.array([np.dot(BinList[i][0][0,:2],dirvec) for i in range(len(BinList))])
+            
+            leftEdgeBins = np.array([np.dot(BinList[i][0][0,:len(q1)],dirvec) for i in range(len(BinList))])
         
             leftEdgeIndex = np.argmin(leftEdgeBins)
 
-            binedges = [np.linalg.norm(BinList[i][0][:,:2]-BinList[leftEdgeIndex][0][0,:2],axis=1) for i in range(len(BinList))]
+            binedges = [np.linalg.norm(BinList[i][0][:,:len(q1)]-BinList[leftEdgeIndex][0][0,:len(q1)],axis=1) for i in range(len(BinList))]
             
             binenergies = [BinList[i][2] for i in range(len(BinList))]
 
             edgeQDistanceLocal = []
             for iE in range(len(centerPosition)):
-                p = BinList[iE][0][:,:2] - q1
+                p = BinList[iE][0][:,:len(q1)] - q1
                 q = np.dot(p, dirvec)
                 if not (np.sort(q) == q).all():
                     raise RuntimeError("edgeQDistance[{}] is not sorted".format(iE))
@@ -1216,14 +1233,17 @@ class DataSet(object):
             maximalDistanceIDEnergy = np.argmax([np.max(x) for x in binDistance])
             maximalDistanceID = np.argmax(binDistance[maximalDistanceIDEnergy])
             
-
-            qstart =centerPosition[minimalDistanceIDEnergy][minimalDistanceID][:2]
-            qstop = centerPosition[maximalDistanceIDEnergy][maximalDistanceID][:2]
-            actualQPoints.append([qstart,qstop])
             
+            qstart= centerPosition[minimalDistanceIDEnergy][minimalDistanceID][:len(q1)]
+            qstop = centerPosition[maximalDistanceIDEnergy][maximalDistanceID][:len(q1)]
             # Prepare the calculation of tick markers
             direction = (qstop-qstart)
             distanceChange = np.max(binDistance[maximalDistanceIDEnergy])-np.min(binDistance[minimalDistanceIDEnergy])
+            if rlu:
+                qstartQ,qstopQ = [np.dot(self.sample.convertHKL,x) for x in [qstart,qstop]]
+                dirLen = np.linalg.norm(direction)
+                dirLenQ = np.linalg.norm(qstopQ-qstartQ)
+                distanceChange*=dirLen/dirLenQ
             
             binminmaxList = np.linspace(0,1,100)
             ticksCurrentSeg = ticksInSegments[segID]
@@ -1237,11 +1257,9 @@ class DataSet(object):
                 xvalues = np.round(np.linspace(0,num-1-int(num/ticksCurrentSeg),ticksCurrentSeg)).astype(int)
 
             my_xticks=[]
+            print(xvalues)
             for i in xvalues:
                 positionValues = binminmaxList[i]*direction+qstart
-                if rlu==True:
-                    sample =self.convertedFiles[0].sample
-                    positionValues = self.convertToHKL(positionValues)# Convert to hkl
                 my_xticks.append('\n'.join([('{:.'+str(tickRound)+'f}').format(x+0.0) for x in positionValues]))
             
             xticks.append(binminmaxList[xvalues]*distanceChange +offset[-1]) # binDistanceAll[xvalues]
@@ -1301,8 +1319,7 @@ class DataSet(object):
                 qx, qy, E = centerPos[segID][Eindex][index]
                 return "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx+0.0,qy+0.0,E,Intensity)
             else:
-                qx, qy, E = centerPos[segID][Eindex][index]
-                H,K,L = self.convertToHKL([qx,qy])
+                H,K,L, E = centerPos[segID][Eindex][index]
                 return "h = {0:.3f}, h = {1:.3f}, l = {2:.3f}, E = {3:.3f}, I = {4:.3e}".format(H+0.0,K+0.0,L+0.0,E,Intensity)
 
         def calculateIndex(x,y,offset,EnergyBins,edgeQDistance,textReturn):
