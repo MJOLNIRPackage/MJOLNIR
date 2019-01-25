@@ -1038,7 +1038,7 @@ class DataSet(object):
                     orthogonal = [np.dot(UB2D,x) for x in ortho]
                     _BinListUpdated.append([pos,orthogonal,E])
 
-                    cPos = [np.concatenate([np.dot(UB2D,x[:2]),[x[2]]],axis=0) for x in _centerPosition[i]]
+                    cPos = np.array([np.concatenate([np.dot(UB2D,x[:2]),[x[2]]],axis=0) for x in _centerPosition[i]])
                     _centerPositionUpdated.append(cPos)
                 _BinList = _BinListUpdated
                 _centerPosition = _centerPositionUpdated
@@ -4431,7 +4431,7 @@ def test_DataSet_cutQELine():
         for j in range(DataList[i].shape[1]): # Loop through energies
             print("j="+str(j))   
             assert(np.all([DataList[i][k,j].shape == DataList[i][-1,j].shape for k in range(len(DataList[i])-1)])) # All list are of same size
-            assert(centerPosition[i,j].shape == (DataList[i][0,j].shape[0],3))
+            assert(centerPosition[i,j].shape == (DataList[i][0,j].shape[0],4))
             assert(centerPosition[i][j].shape[0] == binDistance[i][j].shape[0])
             
     assert(BinList.shape==(len(QPoints)-1,len(EnergyBins)-1,3))
