@@ -1,5 +1,5 @@
 Scripting Tutorials
--------------------
+===================
 
 In order to best make use of the MJOLNIR software, a set of tutorials has been written. They are ment to searve as examples of how one could go about 
 creating the most general graphs and how one uses the package in general. These tutorials are split into four different categories with different targets
@@ -15,32 +15,40 @@ create an issue at the `Git Hub-page <https://github.com/Jakob-Lass/MJOLNIR>`_ o
 
 
 Quick and simple examples
+-------------------------
 
 .. toctree::
    :glob:
+   :maxdepth: 1
 
    Quick/*
 
 Advanced and in-depth examples
+------------------------------
 
 .. toctree::
    :glob:
+   :maxdepth: 1
 
    Advanced/*
    
 
 Tools
+-----
 
 .. toctree::
    :glob:
+   :maxdepth: 1
 
    Tools/*
 
 
 Instrument relevant
+-------------------
 
 .. toctree::
    :glob:
+   :maxdepth: 1
 
    Instrument/*
 
