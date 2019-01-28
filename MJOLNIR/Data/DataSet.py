@@ -728,7 +728,7 @@ class DataSet(object):
 
         return cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
 
-    @_tools.KwargChecker(function=plt.pcolormesh)
+    @_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax'])
     def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
@@ -758,33 +758,64 @@ class DataSet(object):
             - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
 
         """
-        if dataFiles is None:
-            if len(self.convertedFiles)==0:
-                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
-            else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
 
-        else: 
-            DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-            
-        if len(qx.shape)==1 or len(qx.shape)==4:
-            
-            qx = np.concatenate(qx,axis=0)
-            qy = np.concatenate(qy,axis=0)
-            energy = np.concatenate(energy,axis=0)
-            I = np.concatenate(I,axis=0)
-            Norm = np.concatenate(Norm,axis=0)
-            Monitor = np.concatenate(Monitor,axis=0)
+        DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles)
+        [intensity,monitorCount,Normalization,NormCount] = DataList
+        warnings.simplefilter('ignore')
+        Int = [np.divide(intensity[i]*NormCount[i],monitorCount[i]*Normalization[i]) for i in range(len(EBinEdges)-1)]
+        warnings.simplefilter('once')
+        eMean = 0.5*(EBinEdges[:-1]+EBinEdges[1:])
         
-        positions = np.array([qx,qy,energy])
+        if ax is None:
+            plt.figure()
+            ax = plt.gca()
+        pmeshs = []
+        
+        for i in range(len(EBinEdges)-1):
+            if len(Int[i])==0:
+                continue
+            pmeshs.append(ax.pcolormesh(qbins[i],[EBinEdges[i],EBinEdges[i+1]],Int[i].reshape((len(qbins[i])-1,1)).T,**kwargs))
+        def calculateIndex(x,y,eMean,qBin):
+            EIndex = np.argmin(np.abs(y-eMean))
+            qIndex = np.argmin(np.abs(x-0.5*(qBin[EIndex][:-1]+qBin[EIndex][1:])))
+            return EIndex,qIndex
+        ax.calculateIndex = lambda x,y: calculateIndex(x,y,eMean,qbins)
 
-        return plotCutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin,ax,**kwargs)
+        def format_coord(x,y,ax,Int,qbins):# pragma: no cover
+            EIndex,qIndex = ax.calculateIndex(x,y)
+            Intensity = Int[EIndex][qIndex] 
+            return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(qbins[EIndex][qIndex],eMean[EIndex],Intensity)
+            
+        ax.format_coord = lambda x,y: format_coord(x,y,ax,Int,qbins)
+        ax.set_xlabel('|q| [1/A]')
+        ax.set_ylabel('E [meV]')
+        
+        def set_clim(VMin,VMax,pmesh):
+            for pm in pmeshs:
+                pm.set_clim(VMin,VMax)
+
+        ax.set_clim = lambda VMin,VMax: set_clim(VMin,VMax,pmeshs)
+        
+        def onclick(event,ax,DataList):
+            if ax.in_axes(event) and ax.get_figure().canvas.cursor().shape() == 0:
+                x = event.xdata
+                y = event.ydata
+                printString = ax.format_coord(x,y)
+                Eindex,index = ax.calculateIndex(x,y)
+                cts = int(DataList[0][Eindex][index])
+                Mon = int(DataList[1][Eindex][index])
+                Norm = float(DataList[2][Eindex][index])
+                NC = int(DataList[3][Eindex][index])
+                printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+                print(printString)
+
+        if not 'vmin' in kwargs or not 'vmax' in kwargs:
+            minVal = np.min(np.concatenate(Int))
+            maxVal = np.max(np.concatenate(Int))
+            ax.set_clim(minVal,maxVal)
+        ax.pmeshs = pmeshs
+        ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
+        return ax,[intensity,monitorCount,Normalization,NormCount],qbins
 
     def createRLUAxes(self,figure=None):
         """Wrapper for the createRLUAxes method.
@@ -1910,77 +1941,6 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
     
     return [intensity,monitorCount,Normalization,NormCount],qbins
 
-
-@_tools.KwargChecker(function=plt.pcolormesh)
-def plotCutPowder(positions, I,Norm,Monitor,EBinEdges,qMinBin=0.01,ax=None,**kwargs):
-    """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
-    
-    .. note::
-       Can only perform cuts for a constant energy plane of definable width.
-    
-    Args:
-
-        - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
-
-        - I (array): Flatten intensity array
-        
-        - Norm (array): Flatten normalization array
-        
-        - Monitor (array): Flatten monitor array
-        
-        - EBinEdges (list): Bin edges between which the cuts are performed.
-
-    Kwargs:
-        
-        - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
-        
-        - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
-        
-        - kwargs: All other keywords will be passed on to the ax.pcolormesh method.
-    
-    Returns:
-        
-        - ax (matplotlib axis): Matplotlib axis into which the plot was put.
-        
-        - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
-        
-        - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
-
-    """
-    
-    [intensity,monitorCount,Normalization,NormCount],qbins = cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
-    Int = [np.divide(intensity[i]*NormCount[i],monitorCount[i]*Normalization[i]) for i in range(len(EBinEdges)-1)]
-    
-    eMean = 0.5*(EBinEdges[:-1]+EBinEdges[1:])
-    
-    if ax is None:
-        plt.figure()
-        ax = plt.gca()
-    pmeshs = []
-    
-    for i in range(len(EBinEdges)-1):
-        pmeshs.append(ax.pcolormesh(qbins[i],[EBinEdges[i],EBinEdges[i+1]],Int[i].reshape((len(qbins[i])-1,1)).T,**kwargs))
-    
-    
-    def format_coord(x,y,qBin,eMean,Int):# pragma: no cover
-            EIndex = np.argmin(np.abs(y-eMean))
-            qIndex = np.argmin(np.abs(x-0.5*(qBin[EIndex][:-1]+qBin[EIndex][1:])))
-            Intensity = Int[EIndex][qIndex] 
-            return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(qBin[EIndex][qIndex],eMean[EIndex],Intensity)
-        
-    ax.format_coord = lambda x,y: format_coord(x,y,qbins,eMean,Int)
-    ax.set_xlabel('|q| [1/A]')
-    ax.set_ylabel('E [meV]')
-    
-    ax.set_clim = lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
-    
-    if not 'vmin' in kwargs or not 'vmax' in kwargs:
-        minVal = np.min(np.concatenate(Int))
-        maxVal = np.max(np.concatenate(Int))
-        ax.set_clim(minVal,maxVal)
-    ax.pmeshs = pmeshs
-    return ax,[intensity,monitorCount,Normalization,NormCount],qbins
- 
 
 @_tools.KwargChecker()
 def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
