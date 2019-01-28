@@ -394,6 +394,12 @@ class DataSet(object):
 
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
+            Data,[binpositionsTotal,orthopos,Earray] = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
+            binpositionsTotal = np.concatenate([self.convertToHKL(binpositionsTotal[:,:2]),binpositionsTotal[:,-1].reshape(-1,1)],axis=1)
+            orthopos = self.convertToHKL(orthopos)
+            return Data,[binpositionsTotal,orthopos,Earray]
+            
+
        
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
 
@@ -4112,13 +4118,25 @@ def test_DataSet_1Dcut():
     ax,D,P,binCenter,binDistance = ds.plotCut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
     D2,P2 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
-    assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
+
+    BinPos,OrthoPos,E = P2
+    BinPos = np.concatenate([ds.convertToQxQy(BinPos[:,:3]),BinPos[:,-1].reshape(-1,1)],axis=1)
+    OrthoPos = ds.convertToQxQy(OrthoPos)
+    P2 = [BinPos,OrthoPos,E]
+
+    assert(np.all(np.array([np.all(np.isclose(P[i],P2[i])) for i in range(len(P))]).flatten()))
 
     q1,q2 = ds.convertToQxQy([Q1,Q2])
     D1,P1 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
     D2,P2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
-    assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
-    assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
+
+    BinPos,OrthoPos,E = P1
+    BinPos = np.concatenate([ds.convertToQxQy(BinPos[:,:3]),BinPos[:,-1].reshape(-1,1)],axis=1)
+    OrthoPos = ds.convertToQxQy(OrthoPos)
+    P1 = [BinPos,OrthoPos,E]
+
+    assert(np.all(np.array([np.all(np.isclose(D[i],D2[i])) for i in range(len(D))]).flatten()))
+    assert(np.all(np.array([np.all(np.isclose(P[i],P2[i])) for i in range(len(P))]).flatten()))
     
 
 def test_DataSet_1DcutE():
