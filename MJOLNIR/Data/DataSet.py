@@ -403,7 +403,7 @@ class DataSet(object):
        
         return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
 
-    @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs) #Advanced KWargs checker for figures
+    @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound']) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
@@ -434,6 +434,10 @@ class DataSet(object):
             - kwargs: All other keywords will be passed on to the ax.errorbar method.
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+
+            - ticks (int): Number of tick marks to be used
+
+            - tickRound (int): Decimals to be used when creating ticks
         
         Returns:
             
@@ -449,36 +453,87 @@ class DataSet(object):
         """
         
         
-        if dataFiles is None:
-            if len(self.convertedFiles)==0:
-                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
-            else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
-
-        else: 
-            DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-            
-        if len(qx.shape)==1 or len(qx.shape)==4: # Check if multiple files are in the dat set
-            
-            qx = np.concatenate(qx,axis=0)
-            qy = np.concatenate(qy,axis=0)
-            energy = np.concatenate(energy,axis=0)
-            I = np.concatenate(I,axis=0)
-            Norm = np.concatenate(Norm,axis=0)
-            Monitor = np.concatenate(Monitor,axis=0)
         
-        positions = np.array([qx,qy,energy])
-        if rlu==True: # Recalculate H,K,L to qx
+        D,P = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,\
+        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles)
 
-            q1,q2 = self.convertToQxQy([q1,q2])
+        INT = np.divide(D[0]*D[3],D[1]*D[2])
+        INT_err = np.divide(np.sqrt(D[0])*D[3],D[1]*D[2])
+        
+        
+        binCenter = 0.5*(P[0][:-1]+P[0][1:])
+        num=len(binCenter)
+        
+       
+        if not 'ticks' in kwargs:
+            ticks = 5
+        else:
+            ticks = kwargs['ticks']
+            kwargs = _tools.without_keys(kwargs, 'ticks')
 
-        return plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,rlu=rlu,ax=ax,plotCoverage=plotCoverage,extend=extend,**kwargs)
+        if not 'tickRound' in kwargs:
+            tickRound = 3
+        else:
+            tickRound = kwargs['tickRound']
+            kwargs = _tools.without_keys(kwargs,'tickRound')
+
+        xvalues = np.round(np.linspace(0,num-1,ticks)).astype(int)
+        my_xticks=[]
+        for i in xvalues:
+            my_xticks.append('\n'.join(map(lambda x:('{:.'+str(tickRound)+'f}').format(x),[np.round(binCenter[i,j],tickRound) for j in range(len(binCenter[i]))])))
+        
+        binDistance = np.linalg.norm(binCenter[:,:-1]-P[0][0,:-1],axis=1)
+        
+        if ax is None:
+            plt.figure()
+            ax = plt.gca()
+        
+        ax.errorbar(binDistance,INT,yerr=INT_err,**kwargs)
+
+        ax.set_xticks(binDistance[xvalues])
+        ax.set_xticklabels(my_xticks,fontsize=10, multialignment="center",ha="center")
+        
+        def calculateIndex(binDistance,x):
+            return np.argmin(np.abs(binDistance-x))
+
+        ax.calculateIndex = lambda x: calculateIndex(binDistance,x)
+        
+        if rlu==False:
+            ax.set_xlabel('$Q_x/A$\n$Q_y/A$\nE/meV', fontsize=8)
+            def format_coord(x,y,ax,binCenter):# pragma: no cover
+                index = ax.calculateIndex(x)
+                qx,qy,E = binCenter[index]
+                return  "qx = {0:.3e}, qy = {1:.3e}, E = {2:.3f}, I = {3:0.4e}".format(qx,qy,E,y)
+        else:
+            def format_coord(x,y,ax,binCenter):# pragma: no cover
+                index = ax.calculateIndex(x)
+                h,k,l,E = binCenter[index]
+                return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}, I = {4:0.4e}".format(h,k,l,E,y)
+            ax.set_xlabel('$Q_h/A$\n$Q_k/A$\n$Q_l/A$\nE/meV', fontsize=8)
+
+        
+        def onclick(event,ax,DataList):
+            if ax.in_axes(event) and ax.get_figure().canvas.cursor().shape() == 0:
+                x = event.xdata
+                y = event.ydata
+                printString = ax.format_coord(x,y)
+                index = ax.calculateIndex(x)
+            
+                cts = int(DataList[0][index])
+                Mon = int(DataList[1][index][0])
+                Norm = float(DataList[2][index][0])
+                NC = int(DataList[3][index][0])
+                printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+            print(printString)
+
+
+        ax.xaxis.set_label_coords(1.15, -0.025)
+        ax.set_ylabel('Int [arb]')
+        plt.tight_layout()
+        
+        ax.format_coord = lambda x,y: format_coord(x,y,ax,binCenter)
+        ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,D))
+        return ax,D,P,binCenter,binDistance
 
     @_tools.KwargChecker()
     def cutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,extend=True,dataFiles=None):
@@ -1799,100 +1854,6 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
 
     return [intensity,MonitorCount,Normalization,normcounts],[bins]
 
-
-
-@_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
-def plotCut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,**kwargs):
-    """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
-    Adds the 3D position on the x axis with ticks.
-    
-    .. note::
-        Can only perform cuts for a constant energy plane of definable width.
-    
-    Args:
-
-        - positions (3 arrays): position in Qx, Qy, and E in flattend arrays.
-
-        - I (array): Flatten intensity array
-        
-        - Norm (array): Flatten normalization array
-        
-        - Monitor (array): Flatten monitor array
-
-        - q1 (2D vector): Starting position in (qx,qy)
-
-        - q2 (2D vector): Ending position in (qx,qy)
-
-        - width (float): Width of binning orthogonal to cut direction
-
-        - minPixel (float): Width of binning along cut direction
-
-        - Emin (float): Minimal energy of cut
-
-        - Emax (float): Maximal energy of cut
-
-    Kwargs:
-        
-        - rlu (bool): If True, extract points are plotted in RLU # TODO: Make this work
-
-        - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
-        
-        
-        - kwargs: All other keywords will be passed on to the ax.errorbar method.
-    
-    Returns:
-        
-        - ax (matplotlib axis): Matplotlib axis into which the plot was put.
-        
-        - Data list (4 arrays): Intensity, monitor count, normalization and normalization counts binned in the 1D cut.
-        
-        - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
-        
-        - binCenter (3D array): Array containing the position of the bin centers of size (n,3)
-        
-        - binDistance (array): Distance from centre of bins to start position.
-    """
-    
-    
-    q1 = np.array(q1)
-    q2 = np.array(q2)
-    
-    D,P = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage,extend=extend)
-    INT = np.divide(D[0]*D[3],D[1]*D[2])
-    INT_err = np.divide(np.sqrt(D[0])*D[3],D[1]*D[2])
-    
-    
-    binCenter = 0.5*(P[0][:-1]+P[0][1:])
-    num=len(binCenter)
-    
-    xvalues = np.round(np.linspace(0,num-1,5)).astype(int)
-    my_xticks=[]
-    for i in xvalues:
-        my_xticks.append('\n'.join(map(str,[np.round(binCenter[i,0],2),np.round(binCenter[i,1],2),np.round(binCenter[i,2],2)])))
-    
-    binDistance = np.linalg.norm(binCenter[:,:2]-P[0][0,:2],axis=1)
-    
-    if ax is None:
-        plt.figure()
-        ax = plt.gca()
-    
-    ax.errorbar(binDistance,INT,yerr=INT_err,**kwargs)
-
-    ax.set_xticks(binDistance[xvalues])
-    ax.set_xticklabels(my_xticks,fontsize=10, multialignment="center",ha="center")
-    ax.set_xlabel('$Q_h/A$\n$Q_k/A$\nE/meV', fontsize=10)
-    ax.xaxis.set_label_coords(1.15, -0.025)
-    ax.set_ylabel('Int [arb]')
-    plt.tight_layout()
-
-    def format_coord(x,y,binDistance,binCenter):# pragma: no cover
-        index = np.argmin(np.abs(binDistance-x))
-        qx,qy,E = binCenter[index]
-        return  "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:0.4e}".format(qx,qy,E,y)
-    
-    ax.format_coord = lambda x,y: format_coord(x,y,binDistance,binCenter)
-
-    return ax,D,P,binCenter,binDistance
 
 
 @_tools.KwargChecker()
@@ -4118,12 +4079,6 @@ def test_DataSet_1Dcut():
     ax,D,P,binCenter,binDistance = ds.plotCut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
     D2,P2 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
     assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
-
-    BinPos,OrthoPos,E = P2
-    BinPos = np.concatenate([ds.convertToQxQy(BinPos[:,:3]),BinPos[:,-1].reshape(-1,1)],axis=1)
-    OrthoPos = ds.convertToQxQy(OrthoPos)
-    P2 = [BinPos,OrthoPos,E]
-
     assert(np.all(np.array([np.all(np.isclose(P[i],P2[i])) for i in range(len(P))]).flatten()))
 
     q1,q2 = ds.convertToQxQy([Q1,Q2])
@@ -4136,7 +4091,7 @@ def test_DataSet_1Dcut():
     P1 = [BinPos,OrthoPos,E]
 
     assert(np.all(np.array([np.all(np.isclose(D[i],D2[i])) for i in range(len(D))]).flatten()))
-    assert(np.all(np.array([np.all(np.isclose(P[i],P2[i])) for i in range(len(P))]).flatten()))
+    assert(np.all(np.array([np.all(np.isclose(P1[i],P2[i])) for i in range(len(P))]).flatten()))
     
 
 def test_DataSet_1DcutE():
