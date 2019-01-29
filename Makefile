@@ -22,13 +22,16 @@ fulltest:
 wheel:
 	python setup.py sdist
 
-
-FILE := $(shell ls -t dist/* | head -1)
+version = $(shell python cut.py $(shell ls -t dist/* | head -1))
 version: 
-	git tag -a $(shell python cut.py $(shell ls -t dist/* | head -1))	
+	echo 'Creating version $(version)'
+	python Update.py $(version)
+	git add setup.py docs/conf.py
+	git commit -m 'Update version'
 	make wheel
-	twine upload $(FILE) -r testpypi
-	twine upload $(FILE) -r pypi
+	wine upload $(shell ls -t dist/* | head -1) -r testpypi
+	twine upload $(shell ls -t dist/* | head -1) -r pypi
+	git push --tags
 
 
 # You can set these variables from the command line.
