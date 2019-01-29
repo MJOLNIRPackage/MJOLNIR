@@ -26,8 +26,8 @@ install:
 
 script: 
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
-    then py.test MJOLNIR/  Tutorials/ -vv --cov MJOLNIR;
-    else py.test MJOLNIR/ Tutorials/ -vv;
+    then py.test MJOLNIR/ -vv --cov MJOLNIR;
+    else py.test MJOLNIR/ -vv;
     fi
 
 after_success:

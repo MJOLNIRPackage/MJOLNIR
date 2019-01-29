@@ -7,11 +7,34 @@ test:
 quicktest:
 	python -m pytest -vv MJOLNIR --quick
 
-tutorialtest:
-	python -m pytest -vv Tutorials
+tutorials:
+	python clean.py docs/Tutorials/Advanced
+	python clean.py docs/Tutorials/Instrument
+	python clean.py docs/Tutorials/Quick
+	python clean.py docs/Tutorials/Tools
+	./Tutorials/tutorials
+	make html
 
 fulltest:
-	python -m pytest -vv MJOLNIR Tutorials
+	python -m pytest -vv MJOLNIR
+
+
+wheel:
+	python setup.py sdist
+
+version = $(shell python cut.py $(shell ls -t dist/* | head -1))
+version: 
+	echo 'Creating version $(version)'
+	python Update.py $(version)
+	make tutorials
+	git add setup.py docs/conf.py docs/Tutorials/*
+	git commit -m 'Update version'
+	make wheel
+	twine upload $(shell ls -t dist/* | head -1) -r testpypi
+	twine upload $(shell ls -t dist/* | head -1) -r pypi
+	git push
+	git push --tags
+
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -30,4 +53,5 @@ help:
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
 %: Makefile
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
 

@@ -977,14 +977,15 @@ class Sample(object):
         theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
         self.RotMat = Rot(theta) # Create 2x2 rotation matrix
 
-        self.convert = np.einsum('ij,j...->i...',self.RotMat,self.convert)
+        #self.convert = np.einsum('ij,j...->i...',self.RotMat,self.convert)
         self.convertinv = np.linalg.inv(self.convert) # Convert from Qx, Qy to projX, projY
 
-        self.convertHKL = np.einsum('ij,j...->i...',self.RotMat,self.convert)
+        #self.convertHKL = np.einsum('ij,j...->i...',self.RotMat,self.convert)
         self.convertHKLINV = invert(self.convertHKL) # Convert from Qx, Qy to HKL
 
         self.RotMat3D = rotMatrix(self.planeNormal.astype(float),theta) # Rotation matrix for the UB
-        self.orientationMatrixINV = np.linalg.inv(np.dot(self.RotMat3D,UB))
+        #self.orientationMatrixINV = np.linalg.inv(np.dot(self.RotMat3D,UB))
+        self.orientationMatrixINV = np.linalg.inv(UB)
         
 
     def tr(self,p0,p1):
@@ -1273,6 +1274,9 @@ def calcProjectionVectors(R1,R2):
             
     V1 = LengthOrder(V1)
     V2 = LengthOrder(V2)
+    for V in [V1,V2]: # Flip sign if needed
+        maxArg = np.argmax(np.abs(V))
+        V*=np.sign(V[maxArg])
     return V1,V2
 
 

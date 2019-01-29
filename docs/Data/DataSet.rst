@@ -32,11 +32,7 @@ The DataSet object is the interface between the data files and the data treatmen
     DataSet.cutPowder
     DataSet.cutQE
 
-    DataSet.plotCut1D
-    DataSet.plotCutPowder
     DataSet.plotCutQE
-
-    DataSet.plotQPlane
 
     DataFile.DataFile
 

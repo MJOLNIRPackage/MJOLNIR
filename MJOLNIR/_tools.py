@@ -241,6 +241,9 @@ def binEdges(values,tolerance):
     return np.array(bin_edges)
 
 
+def without_keys(d, keys): # Remove key word argument from kwargs
+    return {x: d[x] for x in d if x not in keys}
+
 def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hdf'):
     """Function to generate list of data files.
     
@@ -319,3 +322,5 @@ def test_fileListGenerator():
         '/home/camea/camea2018n000021.hdf', '/home/camea/camea2018n000022.hdf', 
         '/home/camea/camea2018n000023.hdf', '/home/camea/camea2018n004000.hdf'])
     assert(np.all(filesCorrect == np.array(files)))
+
+
