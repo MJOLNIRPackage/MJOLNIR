@@ -8,7 +8,7 @@ For the initial overview of what has been measured and for viewing some features
    from MJOLNIR.Data import DataSet
    
    # Location of raw data file. Can also be given as a single string
-   fileName = ['/home/lass/Dropbox/PhD/CAMEAData/camea2018n000136.hdf','/home/lass/Dropbox/PhD/CAMEAData/camea2018n000137.hdf']
+   fileName = ['/Path/To/Data/camea2018n000136.hdf','/home/lass/Dropbox/PhD/CAMEAData/camea2018n000137.hdf']
    # Define the DataSet object and provide file(s)
    ds = DataSet.DataSet(dataFiles=fileName)
    # Run the converter. This automatically generates nxs-file(s) in location

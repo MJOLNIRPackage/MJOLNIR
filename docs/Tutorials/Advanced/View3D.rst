@@ -7,7 +7,7 @@ Assuming that the Quick visualization from the Quick tutorials is understood, th
 
    from MJOLNIR.Data import DataSet
    # Load and convert data
-   fileName = ['/home/lass/Dropbox/PhD/CAMEAData/camea2018n000136.hdf','/home/lass/Dropbox/PhD/CAMEAData/camea2018n000137.hdf']
+   fileName = ['/Path/To/Data/camea2018n000136.hdf','/home/lass/Dropbox/PhD/CAMEAData/camea2018n000137.hdf']
    ds = DataSet.DataSet(dataFiles=fileName)
    ds.convertDataFile(saveFile=False)
    
