@@ -25,8 +25,8 @@ wheel:
 
 FILE := $(shell ls -t dist/* | head -1)
 version: 
+	git tag -a $(shell python cut.py $(shell ls -t dist/* | head -1))	
 	make wheel
-	git tag -a $(shell python cut.py $(shell ls -t dist/* | head -1))
 	twine upload $(FILE) -r testpypi
 	twine upload $(FILE) -r pypi
 
