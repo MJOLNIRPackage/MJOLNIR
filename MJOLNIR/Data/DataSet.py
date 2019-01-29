@@ -4117,10 +4117,10 @@ def test_DataSet_binEdges():
     tolerance = 0.01
     Bins = _tools.binEdges(X,tolerance=tolerance)
 
-    assert(Bins[0]==X[0]-0.5*tolerance)
-    assert(Bins[-1]==X[-1]+0.5*tolerance)
+    assert(Bins[0]==X[0]-0.1*tolerance)
+    assert(Bins[-1]>=X[-1])
     assert(len(Bins)<=3.0/tolerance)
-    assert(np.all(np.diff(Bins[:-1])>tolerance))
+    assert(np.all(np.diff(Bins[:-1])>tolerance*0.99))
 
 def test_DataSet_1Dcut():
     q1 =  np.array([1.23,-1.51])
