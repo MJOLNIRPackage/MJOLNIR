@@ -844,8 +844,8 @@ class DataSet(object):
         """
         return createQEAxes(self,axis=axis,figure=figure)
     
-    #@_tools.KwargChecker(function=plt.pcolormesh,include=[])
-    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,RLUPlot=True,dataFiles=None,**kwargs):
+    @_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar'])
+    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
         
         Args:
@@ -868,7 +868,15 @@ class DataSet(object):
             
             - ax (matplotlib axes): Axes in which the data is plotted (default None). If None, the function creates a new axes object.
 
-            - RLUPlot (bool): If true and axis is None, a new reciprocal lattice axis is created and used for plotting (default True).
+            - rlu (bool): If true and axis is None, a new reciprocal lattice axis is created and used for plotting (default True).
+
+            - dataFiles (DataFile): If set, method uses these converted data files instead of the ones in self (default None)
+
+            - vmin (float): Lower limit for colorbar (default min(Intensity)).
+            
+            - vmax (float): Upper limit for colorbar (default max(Intensity)).
+
+            - colorbar (bool): If True, a colorbar is created in figure (default False)
             
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
@@ -895,8 +903,11 @@ class DataSet(object):
         else: 
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-        if ax is None and RLUPlot is True:
-            ax = self.createRLUAxes()
+        if ax is None:
+            if rlu is True:
+                ax = self.createRLUAxes()
+            else:
+                fig,ax = plt.subplots()
         
         if len(qx.shape)==1 or len(qx.shape)==4:
             
@@ -907,8 +918,115 @@ class DataSet(object):
             Norm = np.concatenate(Norm,axis=0)
             Monitor = np.concatenate(Monitor,axis=0)
         
-        positions = np.array([qx,qy,energy])
-        return plotQPlane(I,Monitor,Norm,positions,EMin,EMax,binning=binning,xBinTolerance=xBinTolerance,yBinTolerance=yBinTolerance,enlargen=enlargen,log=log,ax=ax,**kwargs)
+        
+        if rlu == True: # Rotate positions with taslib.misalignment to line up with RLU
+            positions = np.array([qx,qy])
+            qx,qy = np.einsum('ij,j...->i...',self.sample.RotMat,positions)
+            
+
+        binnings = ['xy','polar']
+        if not binning in binnings:
+            raise AttributeError('The provided binning is not understood, should be {}'.format(', '.join(binnings)))
+        if binning == 'polar':
+            
+            x = np.arctan2(qy,qx) # Gives values between -pi and pi
+            bins = 20
+            # Following block checks if measured area corresponds to alpha ~pi as arctan2 only gives
+            # values back in range -pi to pi.
+            if np.max(x.flatten())+xBinTolerance>np.pi and np.min(x.flatten())-xBinTolerance<-np.pi:
+                h = np.histogram(x.flatten(),bins = bins)
+                while np.max(h[0]==0) == False:
+                    bins *= 2
+                    h = np.histogram(x.flatten(),bins = bins)
+                    if bins > 200:
+                        break
+                if bins > 200: # If everyhting has been covered, do nothing.
+                    offset = 0.0
+                else:
+                    offset = 2*np.pi-h[1][np.argmax(h[0]==0)] # Move highest value of lump to fit 2pi
+                    x = np.mod(x+offset,2*np.pi)-np.pi # moves part above 2pi to lower than 2pi and make data fit in range -pi,pi
+                    offset-=np.pi # As x is moved by pi, so should the offset
+            else:
+                offset = 0.0
+
+            y = np.linalg.norm([qx,qy],axis=0)  
+            if not enlargen:
+                xBins = np.arange(-np.pi,np.pi+xBinTolerance*0.999,xBinTolerance) # Add tolerance as to ensure full coverage of parameter
+                yBins = np.arange(0,np.max(y)+yBinTolerance*0.999,yBinTolerance) # Add tolerance as to ensure full coverage of parameter
+            else:
+                xBins = _tools.binEdges(x,xBinTolerance)
+                yBins = _tools.binEdges(y,yBinTolerance)
+
+        elif binning == 'xy':
+            x = qx
+            y = qy
+            if not enlargen:
+                xBins = np.arange(np.min(x),np.max(x)+0.999*xBinTolerance,xBinTolerance) # Add tolerance as to ensure full coverage of parameter
+                yBins = np.arange(np.min(y),np.max(y)+0.999*yBinTolerance,yBinTolerance) # Add tolerance as to ensure full coverage of parameter
+            else:
+                xBins = _tools.binEdges(x,xBinTolerance)
+                yBins = _tools.binEdges(y,yBinTolerance)
+
+
+        EBinEdges = [EMin,EMax]
+
+        e_inside = np.logical_and(energy>EBinEdges[0],energy<=EBinEdges[1])
+        
+        X = x[e_inside]
+        Y = y[e_inside]
+        intensity = np.histogram2d(X,Y,bins=(xBins,yBins),weights=I[e_inside])[0].astype(I.dtype)
+        monitorCount = np.histogram2d(X,Y,bins=(xBins,yBins),weights=Monitor[e_inside])[0].astype(Monitor.dtype)
+        Normalization = np.histogram2d(X,Y,bins=(xBins,yBins),weights=Norm[e_inside])[0].astype(Norm.dtype)
+        NormCount = np.histogram2d(X,Y,bins=(xBins,yBins),weights=np.ones_like(I[e_inside]))[0].astype(I.dtype)
+            
+            
+
+        warnings.simplefilter('ignore')
+        Int = np.divide(intensity*NormCount,monitorCount*Normalization)
+        warnings.simplefilter('once')
+
+        if binning == 'polar':
+            Qx = np.outer(np.cos(xBins-offset),yBins)
+            Qy = np.outer(np.sin(xBins-offset),yBins)
+
+        elif binning == 'xy':
+            Qx = np.outer(xBins,np.ones_like(yBins))
+            Qy = np.outer(np.ones_like(xBins),yBins)
+            
+        
+        if 'vmin' in kwargs:
+            vmin = kwargs['vmin']
+            kwargs = _tools.without_keys(kwargs,'vmin')
+        else:
+            vmin = np.nanmin(Int)
+
+        if 'vmax' in kwargs:
+            vmax = kwargs['vmax']
+            kwargs = _tools.without_keys(kwargs,'vmax')
+        else:
+            vmax = np.nanmax(Int)
+
+        if 'colorbar' in kwargs:
+            colorbar = kwargs['colorbar']
+            kwargs = _tools.without_keys(kwargs,'colorbar')
+        else:
+            colorbar = False
+        pmeshs = []
+        if log:
+            Int = np.log(1e-20+np.array(Int))
+        
+        pmeshs = ax.pcolormesh(Qx,Qy,Int,zorder=10,**kwargs)
+        ax.set_aspect('equal', 'datalim')
+        ax.grid(True, zorder=0)
+        ax.set_clim = lambda vMin,vMax: pmeshs.set_clim(vMin,vMax)
+        ax.pmeshs = pmeshs
+
+        if colorbar:
+            ax.get_figure().colorbar(ax.pmeshs)
+
+        ax.set_clim(vmin,vmax)
+        return [I,Monitor,Norm,NormCount],positions,[xBins,yBins],ax
+
 
     @_tools.KwargChecker()
     def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
@@ -4183,10 +4301,12 @@ def test_DataSet_plotQPlane():
     Datset.convertDataFile()
     EMin = np.min(Datset.energy)
     EMax = EMin+0.5
-    ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,ax=None,RLUPlot=True)
-    ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,ax=None,RLUPlot=True)
-
+    Data,positions,[xBins,yBins],ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
+    Data,positions,[xBins,yBins],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
+    fig,AX = plt.subplots()
+    Data,positions,[xBins,yBins],ax3 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6)
     ax1.set_clim(-20,-15)
+    ax2.set_clim(0,1e-6)
 
     try:
         Datset.plotQPlane(EMin,EMax,binning='notABinningMethod')
