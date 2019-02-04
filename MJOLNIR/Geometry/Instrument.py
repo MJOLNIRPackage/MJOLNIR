@@ -341,7 +341,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         self.initialize()
         
         VanFile = hdf.File(Vanadiumdatafile,'r')
-        if not A4datafile == False:
+        if not A4datafile == False: # pragma: no cover
             A4File = hdf.File(A4datafile,'r')
             A4FileInstrument = getInstrument(A4File)
             A4FileInstrumentType = A4FileInstrument.name.split('/')[-1]
@@ -352,7 +352,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
         VanFileInstrumentType = VanFileInstrument.name.split('/')[-1]
         
-        if not A4datafile == False:
+        if not A4datafile == False: # pragma: no cover
             if VanFileInstrumentType == A4FileInstrumentType:
                 InstrumentType = VanFileInstrumentType
             else:
@@ -379,18 +379,10 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             bins = []
             for table in tables:
-                if table=='Unbinned':
-                    bins.append(pixels)
-                elif table=='PrismaticHighDefinition':
-                    bins.append(8)
-                elif table=='PrismaticLowDefinition':
-                    bins.append(3)
-                elif table=='Single':
-                    bins.append(1)
-                elif isinstance(table,int):
+                if isinstance(table,int):
                     bins.append(table)
                 else:
-                    raise AttributeError("Provided table attribute ({}) not recognized, should be 'Unbinned','PrismaticHighDefinition','PrismaticLowDefinition','Single', and/or integer.".format(table))
+                    raise AttributeError("Provided table attribute ({}) not recognized an integer.".format(table))
             if len(bins)==0:
                 raise AttributeError("No binning has been chosen for normalization routine.")
             # Initial finding of peaks
@@ -566,7 +558,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                             try:
                                 res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
                                 
-                            except:
+                            except: # pragma: no cover
                                 if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
                                     os.makedirs(savelocation+'/{}_pixels'.format(detpixels))
                                 if not plot:
@@ -702,7 +694,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 file.write(tableString)
                 file.close()
         VanFile.close()
-        if not A4datafile is False:
+        if not A4datafile is False: # pragma: no cover
             A4File.close()
 
 def parseXML(Instr,fileName):
@@ -1519,8 +1511,8 @@ def test_Normalization_tables(quick):
         assert True
 
     if not quick==True:
-        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='Data/',plot=False,tables=['Single',3,8]) 
+        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='Data/',plot=False,tables=[1,3,8]) 
     else:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=['Single']) 
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=[1]) 
 
 

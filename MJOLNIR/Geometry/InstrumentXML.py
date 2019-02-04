@@ -53,14 +53,7 @@ def parseXML(filename):
 			for attrib in item.keys():
 				attribVal = item.get(attrib).strip().split(',')
 				if len(attribVal)==1:
-					if(attrib=='split'):
-						try:
-							val=float(attribVal[0])
-						except ValueError:
-							val=[]
-						itemSettings[attrib]=val
-					else:
-						itemSettings[attrib]=float(attribVal[0])
+					itemSettings[attrib]=float(attribVal[0])
 				else:
 					if(attrib=='split'):
 						#print(type(attribVal))
@@ -188,7 +181,7 @@ def test_parseWrongXML():
 +"		<FlatAnalyser position='-0.0,1.1827,0.0' direction='0.7071067811865475,-0.0,0.0' d_spacing='3.354' mosaicity='60' width='0.05' height='0.1'></FlatAnalyser>\n"\
 +"		<TubeDetector1D position='-0.01151899615488017,1.1999447123628586,0.71' direction='-0.01151899615488017,1.1999447123628586,0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"\
 +"		<TubeDetector1D position='-0.0,1.2,0.7' direction='-0.0,1.2,0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"\
-+"		<TubeDetector1D position='0.01151899615488017,1.1999447123628586,0.71' direction='0.01151899615488017,1.1999447123628586,0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"\
++"		<TubeDetector1D split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"\
 +"	</Wedge>\n"\
 +"</Instrument>")
 	
