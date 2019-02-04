@@ -4089,8 +4089,11 @@ def test_DataSet_full_test():
     Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
     warnings.simplefilter('once')
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
-    viwer = dataset.View3D(0.08,0.08,0.25)
-    viwer = dataset.View3D(0.08,0.08,0.25,rlu=False)
+    viewer = dataset.View3D(0.08,0.08,0.25)
+    viewer = dataset.View3D(0.08,0.08,0.25,rlu=False)
+
+    viewer.setProjection(0)
+    viewer.setPlane(4)
     
     os.remove('Data/camea2018n000038.nxs')
     del viewer
