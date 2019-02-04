@@ -223,7 +223,7 @@ def binEdges(values,tolerance):
     unique_values = np.asarray(list(set(values_array)))
     unique_values.sort()
     if len(unique_values)==0:
-        raise ValueError()#return []
+        return []
     bin_edges = [unique_values[0] - tolerance * 0.1]
     add = 1
     current = 0
