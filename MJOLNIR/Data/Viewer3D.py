@@ -286,7 +286,14 @@ class Viewer3D(object):
 
 
 def onclick(self, event): # pragma: no cover
-    if event.xdata is not None and self.ax.in_axes(event) and self.figure.canvas.cursor().shape() == 0:
+    if event.xdata is not None and self.ax.in_axes(event):
+        try:
+            C = self.figure.canvas.cursor().shape() # Only works for pyQt5 backend
+        except:
+            pass
+        else:
+            if C != 0:
+                return
         idz = self.value
         axis = self.axis
 
