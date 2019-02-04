@@ -201,7 +201,7 @@ class DataFile(object):
                     if not np.all(np.isclose(skey,okey)):
                         if not np.all(np.isnan(skey),np.isnan(okey)):
                             dif.append(key)
-                except (TypeError, AttributeError):
+                except (TypeError, AttributeError,ValueError):
                     if np.all(skey!=okey):
                         dif.append(key)
             elif not np.all(self.__dict__[key]==other.__dict__[key]):
@@ -461,7 +461,7 @@ class DataFile(object):
         #return self
 
     @_tools.KwargChecker()
-    def calculateEdgePolygons(self,addEdge=True):
+    def calculateEdgePolygons(self,addEdge=True): # pragma: no cover
         """Method to calculate bounding polygon for all energies. The energies are split using the bin-edges method of DataSet. Hereafter,
         the outer most points are found in polar coordinates and a possible addition is made creating the padded bounding polygon.
         
@@ -1474,6 +1474,13 @@ def test_DataFile():
         assert False
     except:
         assert True
+
+    try:
+        DF= DataFile('Data/CAMEA_Full.xml') # Wrong file
+        assert False
+    except:
+        assert True
+
     files = ['Data/camea2018n000017.hdf',
              'Data/camea2018n000017.nxs']
     DF1 = DataFile(files[0])
@@ -1492,6 +1499,12 @@ def test_DataFile_equility():
 
     f3 = DataFile(f2)
     assert(f1==f3)
+
+    f3 = DataFile('Data/camea2018n000017.nxs')
+    assert(f1==f3)
+
+    f4 = DataFile('Data/camea2018n000038.hdf')
+    assert(f1!=f4)
 
 def test_DataFile_rotations():
     vectors = [np.array([0,0,3.0]),np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0]),np.random.rand(3)]
@@ -1612,8 +1625,10 @@ def test_DataFile_decodeString():
     a = b'String'
     b = 'String'
 
-    assert(decodeStr(a)==decodeStr(b))
+    c =1.1 # Float
 
+    assert(decodeStr(a)==decodeStr(b))
+    assert(c == decodeStr(c))
 
 def test_DataFile_ScanParameter():
 
@@ -1627,6 +1642,38 @@ def test_DataFile_ScanParameter():
         assert(len(dfile.scanParameters)==1)
         assert(dfile.scanUnits[0]=='degree')
         ##assert(np.all(dfile.scanValues==np.arange(0,150,1)))
+
+
+def test_DataFile_Error():
+    df = DataFile('Data/camea2018n000017.hdf')
+
+    # Not implimented
+    try:
+        df+df
+        assert False
+    except NotImplementedError:
+        assert True
+
+    df.instrument = 'WrongInstrument'
+    try:
+        df.convert(binning=1)
+        assert False
+    except AttributeError:
+        assert True
+    
+    df2 = DataFile('Data/camea2018n000017.nxs')
+    try:
+        df.saveNXsqom('Data/saving.nxs')
+        assert False
+    except AttributeError: # File does not have original_file attribute
+        assert True
+
+    df2.type = 'WrongType'
+    try:
+        df2.saveNXsqom('Data/saving.nxs')
+        assert False
+    except AttributeError: # Manually change type to wrong
+        assert True
 
 def test_DataFile_Sample_UB():
     df = DataFile('Data/camea2018n000136.hdf')
