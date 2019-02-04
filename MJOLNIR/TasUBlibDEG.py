@@ -173,3 +173,55 @@ def calcTasQH(UBINV,angles,Ei,Ef):
     return Q,QxQy[:,:,:,0],QxQy[:,:,:,1]
 
   return Q,QV
+
+def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating the UB matrices
+                #[a1,a2,a3,b1,b2,b3,alpha1,alpha2,alpha3,beta1,beta2,beta3]
+    
+    r1 = [ 1.0000000e+00,  0.0000000e+00,  0.0000000e+00,  8.4377825e-06,
+       -4.4549999e+01, -1.4062500e-05,  3.3378601e-06,  5.0000076e+00,
+        4.9678469e+00]
+    r2 = [ 0.0000000e+00, -1.0000000e+00,  0.0000000e+00, -6.0000084e+01,
+       -4.4549999e+01, -1.4062500e-05,  3.3378601e-06,  5.0000076e+00,
+        4.9678469e+00]
+
+    cellDeg = [6.11,   6.11,  11.35, 1.187430040454027, 1.1874300210500532, 0.5535845899562842, 90.  ,  90.  , 120., 90., 90., 60.]
+    #cell = [6.11,   6.11,  11.35, 1.187430040454027/(2*np.pi), 1.1874300210500532/(2*np.pi), 0.5535845899562842/(2*np.pi), 90.  ,  90.  , 120., 90., 90., 60.]
+
+    
+    UB = calcTasUBFromTwoReflections(cellDeg, r1, r2)
+    #UBDeg = calcTasUBFromTwoReflections(cellDeg, r1, r2)
+
+    UBFile = np.array([[ 1.7459887e-01,  2.4665387e-02,  2.1624945e-08],
+       [-7.2323568e-02, -1.8736884e-01, -5.1334577e-09],
+       [ 4.7066340e-08,  1.6969278e-08, -8.8105723e-02]])
+    
+    #test1 = np.all(np.isclose(UB,UBFile,atol=1e-6))
+    test = np.all(np.isclose(UB,2*np.pi*UBFile,atol=1e-6))
+    if not test:
+        print(cellDeg)
+        print('--------------')
+        print(UB)
+        print('--------------')
+        print(UBFile)
+        print('--------------')
+        assert(test)
+
+
+    # All UB matrices are equal up to 2 pi for Deg
+    UBInv = np.linalg.inv(UB)
+    A3,A4 = [-23,-55]
+    angles = np.array([A3,A4])
+    Ei = 5.05
+    Ef = 3.2
+    ## Values from SIX
+    qh =  1.174406
+    qk =  -0.127853
+    ql =  0.000000
+    qm =  1.325155
+
+    QH = calcTasQH(UBInv,angles,Ei,Ef)
+        
+    assert(np.all(np.isclose([QH[0]],[qh,qk,ql],atol=1e-4)))
+    #assert(np.all(np.isclose([QHDeg[0]],[qh,qk,ql],atol=1e-4)))
+
+    #assert(np.all(np.isclose(QH,QHDeg,atol=1e-8)))
