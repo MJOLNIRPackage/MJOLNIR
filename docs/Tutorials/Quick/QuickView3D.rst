@@ -34,7 +34,7 @@ For the initial overview of what has been measured and for viewing some features
    # Set title of plot
    Viewer.ax.set_title('Magnon ComponentA3Scan')
    
-   # Change to plane number 10. As default, the viewer cuts for contant energy
+   # Change to plane number 44. As default, the viewer cuts for contant energy
    # and with a binning of 8 pixels/segment around 64 planes are available.
    Viewer.setPlane(44)
    
