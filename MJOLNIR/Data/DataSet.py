@@ -844,18 +844,18 @@ class DataSet(object):
         """
         return createQEAxes(self,axis=axis,figure=figure)
     
-    @_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar'])
-    def plotQPlane(self,EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,**kwargs):
+    #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
+    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
-        
-        Args:
-            
-            - EMin (float): Lower energy limit.
-            
-            - EMax (float): Upper energy limit.
             
         Kwargs:
             
+            - EMin (float): Lower energy limit (Default None).
+            
+            - EMax (float): Upper energy limit (Default None).
+
+            - EBins (list): List of energy bins (Default None).
+
             - binning (str): Binning scheme, either 'xy' or 'polar' (default 'xy').
             
             - xBinTolerance (float): bin sizes along x direction (default 0.05). If enlargen is true, this is the minimum bin size.
@@ -877,18 +877,37 @@ class DataSet(object):
             - vmax (float): Upper limit for colorbar (default max(Intensity)).
 
             - colorbar (bool): If True, a colorbar is created in figure (default False)
+
+            - zorder (int): If provided decides the z ordering of plot (default 10)
             
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
         Returns:
             
-            - ax (matplotlib axes)
+            - dataList (list): List of all data points in format [Intensity, Monitor, Normalization, Normcount]
+
+            - bins (list): List of bin edges as function of plane in format [xBins,yBins].
+
+            - ax (matplotlib axes): Returns provided matplotlib axis
             
         .. note::
             The axes object has a new method denoted 'set_clim' taking two parameters (VMin and VMax) used to change axes coloring.
             
+        .. note::
+            If a 3D matplotlib axis is provided, the planes are plotted in 3D with the provided energy bins. As the method 
+            contourf is used and it needs X,Y, and Z to have same shape, x and y are found as middle of bins. 
             
         """
+        
+
+        if EMax is None or EMin is None:
+            if EBins is None:
+                raise AttributeError('Either minimal/maximal energy or the energy bins is to be given.')
+            else:
+                EBins = np.asarray(EBins)
+        else:
+            EBins = np.array([EMin,EMax])
+
         if dataFiles is None:
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
@@ -908,6 +927,13 @@ class DataSet(object):
                 ax = self.createRLUAxes()
             else:
                 fig,ax = plt.subplots()
+
+            _3D = False
+        else:
+            if ax.name =='3d':
+                _3D = True
+            else:
+                _3D = False
         
         if len(qx.shape)==1 or len(qx.shape)==4:
             
@@ -923,88 +949,112 @@ class DataSet(object):
             positions = np.array([qx,qy])
             qx,qy = np.einsum('ij,j...->i...',self.sample.RotMat,positions)
             
+        if 'zorder' in kwargs:
+            zorder = kwargs['zorder']
+            kwargs = _tools.without_keys(kwargs,'zorder')
+        else:
+            zorder = 10
+
+        if 'cmap' in kwargs:
+            cmap = kwargs['cmap']
+            kwargs = _tools.without_keys(kwargs,'cmap')
+        else:
+            cmap = None
+
+        intensity = []
+        monitorCount = []
+        Normalization = []
+        NormCount = []
+        Int = []
+        xBins = []
+        yBins = []
+        offset = [] # Only used for binning in polar
+        pmeshs = []
 
         binnings = ['xy','polar']
         if not binning in binnings:
             raise AttributeError('The provided binning is not understood, should be {}'.format(', '.join(binnings)))
-        if binning == 'polar':
-            
-            x = np.arctan2(qy,qx) # Gives values between -pi and pi
-            bins = 20
-            # Following block checks if measured area corresponds to alpha ~pi as arctan2 only gives
-            # values back in range -pi to pi.
-            if np.max(x.flatten())+xBinTolerance>np.pi and np.min(x.flatten())-xBinTolerance<-np.pi:
-                h = np.histogram(x.flatten(),bins = bins)
-                while np.max(h[0]==0) == False:
-                    bins *= 2
+
+        for i in range(len(EBins)-1):
+            #print('Binning {} to {}.'.format(EBins[i],EBins[i+1]))
+            EBinEdges = [EBins[i],EBins[i+1]]
+            e_inside = np.logical_and(energy>EBinEdges[0],energy<=EBinEdges[1])
+            if np.sum(e_inside)==0:
+                continue
+            if binning == 'polar':
+                
+                x = np.arctan2(qy[e_inside],qx[e_inside]) # Gives values between -pi and pi
+                bins = 20
+                # Following block checks if measured area corresponds to alpha ~pi as arctan2 only gives
+                # values back in range -pi to pi.
+                if np.max(x.flatten())+xBinTolerance>np.pi and np.min(x.flatten())-xBinTolerance<-np.pi:
                     h = np.histogram(x.flatten(),bins = bins)
-                    if bins > 200:
-                        break
-                if bins > 200: # If everyhting has been covered, do nothing.
-                    offset = 0.0
+                    while np.max(h[0]==0) == False:
+                        bins *= 2
+                        h = np.histogram(x.flatten(),bins = bins)
+                        if bins > 200:
+                            break
+                    if bins > 200: # If everyhting has been covered, do nothing.
+                        offset.append(0.0)
+                    else:
+                        offset.append(2*np.pi-h[1][np.argmax(h[0]==0)]) # Move highest value of lump to fit 2pi
+                        x = np.mod(x+offset[-1],2*np.pi)-np.pi # moves part above 2pi to lower than 2pi and make data fit in range -pi,pi
+                        offset[-1]-=np.pi # As x is moved by pi, so should the offset
                 else:
-                    offset = 2*np.pi-h[1][np.argmax(h[0]==0)] # Move highest value of lump to fit 2pi
-                    x = np.mod(x+offset,2*np.pi)-np.pi # moves part above 2pi to lower than 2pi and make data fit in range -pi,pi
-                    offset-=np.pi # As x is moved by pi, so should the offset
-            else:
-                offset = 0.0
+                    offset.append(0.0)
 
-            y = np.linalg.norm([qx,qy],axis=0)  
-            if not enlargen:
-                xBins = np.arange(-np.pi,np.pi+xBinTolerance*0.999,xBinTolerance) # Add tolerance as to ensure full coverage of parameter
-                yBins = np.arange(0,np.max(y)+yBinTolerance*0.999,yBinTolerance) # Add tolerance as to ensure full coverage of parameter
-            else:
-                xBins = _tools.binEdges(x,xBinTolerance)
-                yBins = _tools.binEdges(y,yBinTolerance)
+                y = np.linalg.norm([qx[e_inside],qy[e_inside]],axis=0)  
+                if not enlargen:
+                    xBins.append(np.arange(-np.pi,np.pi+xBinTolerance*0.999,xBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                    yBins.append(np.arange(0,np.max(y)+yBinTolerance*0.999,yBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                else:
+                    xBins.append(_tools.binEdges(x,xBinTolerance))
+                    yBins.append(_tools.binEdges(y,yBinTolerance))
 
-        elif binning == 'xy':
-            x = qx
-            y = qy
-            if not enlargen:
-                xBins = np.arange(np.min(x),np.max(x)+0.999*xBinTolerance,xBinTolerance) # Add tolerance as to ensure full coverage of parameter
-                yBins = np.arange(np.min(y),np.max(y)+0.999*yBinTolerance,yBinTolerance) # Add tolerance as to ensure full coverage of parameter
-            else:
-                xBins = _tools.binEdges(x,xBinTolerance)
-                yBins = _tools.binEdges(y,yBinTolerance)
-
-
-        EBinEdges = [EMin,EMax]
-
-        e_inside = np.logical_and(energy>EBinEdges[0],energy<=EBinEdges[1])
-        
-        X = x[e_inside]
-        Y = y[e_inside]
-        intensity = np.histogram2d(X,Y,bins=(xBins,yBins),weights=I[e_inside])[0].astype(I.dtype)
-        monitorCount = np.histogram2d(X,Y,bins=(xBins,yBins),weights=Monitor[e_inside])[0].astype(Monitor.dtype)
-        Normalization = np.histogram2d(X,Y,bins=(xBins,yBins),weights=Norm[e_inside])[0].astype(Norm.dtype)
-        NormCount = np.histogram2d(X,Y,bins=(xBins,yBins),weights=np.ones_like(I[e_inside]))[0].astype(I.dtype)
+            elif binning == 'xy':
+                x = qx[e_inside]
+                y = qy[e_inside]
+                if not enlargen:
+                    xBins.append(np.arange(np.min(x),np.max(x)+0.999*xBinTolerance,xBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                    yBins.append(np.arange(np.min(y),np.max(y)+0.999*yBinTolerance,yBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                else:
+                    xBins.append(_tools.binEdges(x,xBinTolerance))
+                    yBins.append(_tools.binEdges(y,yBinTolerance))
             
+            X = x.flatten()
+            Y = y.flatten()
             
+            intensity.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=I[e_inside])[0].astype(I.dtype))
+            monitorCount.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=Monitor[e_inside])[0].astype(Monitor.dtype))
+            Normalization.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=Norm[e_inside])[0].astype(Norm.dtype))
+            NormCount.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=np.ones_like(I[e_inside]))[0].astype(I.dtype))
+                
+                
 
-        warnings.simplefilter('ignore')
-        Int = np.divide(intensity*NormCount,monitorCount*Normalization)
-        warnings.simplefilter('once')
+            warnings.simplefilter('ignore')
+            Int.append(np.divide(intensity[i]*NormCount[i],monitorCount[i]*Normalization[i]))
+            warnings.simplefilter('once')
 
         if binning == 'polar':
-            Qx = np.outer(np.cos(xBins-offset),yBins)
-            Qy = np.outer(np.sin(xBins-offset),yBins)
+            Qx = [np.outer(np.cos(xBins[i]-offset[i]),yBins[i]) for i in range(len(intensity))]
+            Qy = [np.outer(np.sin(xBins[i]-offset[i]),yBins[i]) for i in range(len(intensity))]
 
         elif binning == 'xy':
-            Qx = np.outer(xBins,np.ones_like(yBins))
-            Qy = np.outer(np.ones_like(xBins),yBins)
+            Qx =[np.outer(xBins[i],np.ones_like(yBins[i])) for i in range(len(intensity))]
+            Qy =[np.outer(np.ones_like(xBins[i]),yBins[i]) for i in range(len(intensity))]
             
         
         if 'vmin' in kwargs:
             vmin = kwargs['vmin']
             kwargs = _tools.without_keys(kwargs,'vmin')
         else:
-            vmin = np.nanmin(Int)
+            vmin = np.min([np.nanmin(Int[i]) for i in range(len(Int))])
 
         if 'vmax' in kwargs:
             vmax = kwargs['vmax']
             kwargs = _tools.without_keys(kwargs,'vmax')
         else:
-            vmax = np.nanmax(Int)
+            vmax = np.max([np.nanmax(Int[i]) for i in range(len(Int))])
 
         if 'colorbar' in kwargs:
             colorbar = kwargs['colorbar']
@@ -1013,19 +1063,39 @@ class DataSet(object):
             colorbar = False
         pmeshs = []
         if log:
-            Int = np.log(1e-20+np.array(Int))
-        
-        pmeshs = ax.pcolormesh(Qx,Qy,Int,zorder=10,**kwargs)
-        ax.set_aspect('equal', 'datalim')
+            Int = [np.log(1e-20+np.array(Int[i])) for i in range(len(Int))]
+
+        for i in range(len(EBins)-1):
+            if _3D:
+
+                QX = np.array(np.array(Qx[i])[1:,1:])
+                QY = np.array(np.array(Qy[i])[1:,1:])
+                I = np.array(Int[i])
+                levels = np.linspace(vmin,vmax,50)
+                pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
+            else:
+                pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i],zorder=zorder,cmap=cmap,**kwargs))
+        ax.set_aspect('equal')
         ax.grid(True, zorder=0)
-        ax.set_clim = lambda vMin,vMax: pmeshs.set_clim(vMin,vMax)
+        def set_clim(pmeshs,vmin,vmax):
+            for pmesh in pmeshs:
+                pmesh.set_clim(vmin,vmax)
+        ax.set_clim = lambda vMin,vMax: set_clim(pmeshs,vMin,vMax)
         ax.pmeshs = pmeshs
 
         if colorbar:
             ax.get_figure().colorbar(ax.pmeshs)
 
         ax.set_clim(vmin,vmax)
-        return [I,Monitor,Norm,NormCount],positions,[xBins,yBins],ax
+        if _3D:
+            ax.set_zlim(np.min(EBins),np.max(EBins))
+        xmin = np.min([np.min(Qx[i]) for i in range(len(Qx))])
+        xmax = np.max([np.max(Qx[i]) for i in range(len(Qx))])
+        ymin = np.min([np.min(Qy[i]) for i in range(len(Qy))])
+        ymax = np.max([np.max(Qy[i]) for i in range(len(Qy))])
+        ax.set_xlim(xmin,xmax)#np.min(Qx),np.max(Qx))
+        ax.set_ylim(ymin,ymax)#np.min(Qy),np.max(Qy))
+        return [I,Monitor,Norm,NormCount],[xBins,yBins],ax
 
 
     @_tools.KwargChecker()
