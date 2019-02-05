@@ -1007,8 +1007,24 @@ class Sample(object):
 
     def format_coord(self,x,y): # Convert from Qx,Qy to HKL
         x, y = np.asarray(x), np.asarray(y)
-        rlu = np.dot(self.orientationMatrixINV,np.array([x,y,0]))
+        rlu = self.calculateQxQyToHKL(x,y)#np.dot(self.orientationMatrixINV,np.array([x,y,0]))
         return "h = {0:.3f}, k = {1:.3f}, l = {2:.3f}".format(rlu[0],rlu[1],rlu[2])
+
+    def calculateQxQyToHKL(self,x,y): # convert from Qx,Qy to HKL
+        pos = np.array([x,y,np.zeros_like(x)])
+        return np.einsum('ij,j...->i...',self.orientationMatrixINV,pos)
+
+    def calculateHKLToQxQy(self,H,K,L): # convert HKL to Qx,Qy
+        pos = np.array([H,K,L])
+        return np.einsum('ij,j...->i...',self.orientationMatrix,pos)[:2]
+
+    def calculateHKLtoProjection(self,H,K,L):
+        HKL = np.array([H,K,L])
+        Proj1 = self.projectionVector1/np.linalg.norm(self.projectionVector1)**2
+        Proj2 = self.projectionVector2/np.linalg.norm(self.projectionVector2)**2
+        points = np.einsum('ij,j...->i...',np.array([Proj1,Proj2]),HKL)
+        return points
+
 
     def __str__(self):
         returnStr = 'Sample ' + self.name + '\n'
