@@ -4411,7 +4411,7 @@ def test_DataSet_plotQPlane():
     Dataset = DataSet(dataFiles=convertFiles)
     for d in Dataset.dataFiles:
         d.A3Off +=180 # rotate data to fall into problem of arctan2
-    Data,positions,[xBins,yBins],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
+    Data,[xBins,yBins],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
 
     try:
         Datset.plotQPlane(EMin,EMax,binning='notABinningMethod')
