@@ -4401,10 +4401,10 @@ def test_DataSet_plotQPlane():
     Datset.convertDataFile()
     EMin = np.min(Datset.energy)
     EMax = EMin+0.5
-    Data,positions,[xBins,yBins],ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
-    Data,positions,[xBins,yBins],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
+    Data,[xBins,yBins],ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
+    Data,[xBins,yBins],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
     fig,AX = plt.subplots()
-    Data,positions,[xBins,yBins],ax3 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6)
+    Data,[xBins,yBins],ax3 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6)
     ax1.set_clim(-20,-15)
     ax2.set_clim(0,1e-6)
 
