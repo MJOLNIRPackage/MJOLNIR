@@ -2354,7 +2354,7 @@ def createRLUAxes(Dataset,figure=None):
     sample.convertHKLINV = DataFile.invert(sample.convertHKL) # Convert from Qx, Qy to HKL
 
     sample.orientationMatrixINV = np.linalg.inv(np.dot(sample.RotMat3D,sample.orientationMatrix))
-
+    
 
     if figure is None:
         fig = plt.figure(figsize=(7, 4))
@@ -2364,12 +2364,31 @@ def createRLUAxes(Dataset,figure=None):
     grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr))
     
     ax = Subplot(fig, 1, 1, 1, grid_helper=grid_helper)
-  
+    ax.sample = sample
+    
+    def set_axis(ax,v1,v2,*args):
+        if not args is ():
+            points = np.concatenate([[v1,v2],[x for x in args]],axis=0)
+        else:
+            points = np.array([v1,v2])
+            
+        if points.shape[1] == 3:
+            points = ax.sample.calculateHKLtoProjection(points[:,0],points[:,1],points[:,2]).T
+        boundaries = np.array([ax.sample.inv_tr(x[0],x[1]) for x in points])
+        ax.set_xlim(boundaries[:,0].min(),boundaries[:,0].max())
+        ax.set_ylim(boundaries[:,1].min(),boundaries[:,1].max())
+
+
     fig.add_subplot(ax)
     ax.set_aspect(1.)
     ax.grid(True, zorder=0)
     
+    if not np.isclose(sample.projectionAngle,np.pi):
+        ax.axis["top"].major_ticklabels.set_visible(True)
+        ax.axis["right"].major_ticklabels.set_visible(True)
+
     ax.format_coord = sample.format_coord
+    ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
     ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector1.astype(int)])))
     ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector2.astype(int)])))
     return ax
