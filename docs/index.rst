@@ -30,11 +30,11 @@ Welcome to MJOLNIR's documentation!
     Python 3.4 is believed to be compatible but is not tested due to updates in testing framework.
     Python 3.7 is supported by the package but some of the dependencies might not be supported on all operating systems.
 
-.. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=0.7
+.. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=1.0.9'
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
 
-.. |coverall| image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=0.7
-    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR?branch=0.7
+.. |coverall| image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=1.0.9'
+    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR?branch=1.0.9'
 
 .. |python27| image:: https://img.shields.io/badge/python-2.7-brightgreen.svg 
     :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
