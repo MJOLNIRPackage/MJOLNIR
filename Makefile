@@ -27,7 +27,7 @@ version:
 	echo 'Creating version $(version)'
 	python Update.py $(version)
 	make tutorials
-	git add setup.py docs/conf.py docs/Tutorials/*
+	git add setup.py docs/conf.py docs/Tutorials/* docs/index.rst
 	git commit -m 'Update version'
 	make wheel
 	twine upload $(shell ls -t dist/* | head -1) -r testpypi
