@@ -1084,7 +1084,7 @@ class DataSet(object):
         ax.pmeshs = pmeshs
 
         if colorbar:
-            ax.get_figure().colorbar(ax.pmeshs)
+            ax.get_figure().colorbar(ax.pmeshs[0])
 
         ax.set_clim(vmin,vmax)
         if _3D:
