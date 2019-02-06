@@ -43,9 +43,9 @@ with open('docs/index.rst') as f:
 	lines = f.readlines()
 	writeLines = ''
 	for l in lines:
-		if l.find("branch='")!=-1:
+		if l.find("branch=")!=-1:
 			idx = l.find('branch=')
-			l = l[:idx] + version+"'\n"
+			l = l[:idx] + 'branch='+version+"'\n"
 		writeLines+=l
         
 with open('docs/index.rst','w') as f:
