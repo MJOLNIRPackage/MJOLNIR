@@ -34,10 +34,10 @@ After the initial viewing of the data acquired through `Viewer3D <Viewer3D>`_ th
    EnergyBins = np.linspace(np.min(Energies),np.max(Energies),31)
    
    fig = plt.figure(figsize=(14,6))
-   
+   ax = fig.gca()
    ax,DataLists,Bins,BinCenters,Offsets = \
    ds.plotCutQELine(QPoints=QPoints, width=width, minPixel=minPixel, \
-                fig=fig, EnergyBins=EnergyBins)
+                ax=ax, EnergyBins=EnergyBins)
    
    # Change the colorbar of the plot
    ax.set_clim(0,2e-5)

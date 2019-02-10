@@ -16,7 +16,7 @@ else:
 setup(
     name='MJOLNIR',
 
-    version='1.0.9',
+    version='1.0.10',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
