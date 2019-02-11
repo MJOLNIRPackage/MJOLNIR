@@ -36,10 +36,11 @@ def Tester():
     
     # Create figure into which the plot is made
     fig = plt.figure(figsize=(14,6))
-    
+    ax = fig.gca()
+
     ax,DataLists,BinListTotal,centerPositionTotal,binDistanceTotal = \
     ds.plotCutQELine(QPoints=QPoints, width=width, minPixel=minPixel, \
-                     fig=fig, EnergyBins=EnergyBins, ticks = 12,\
+                     ax=ax, EnergyBins=EnergyBins, ticks = 12,\
                      vmin=1e-8, vmax=2.5e-5, tickRound = 4, plotSeperator = True,
                      seperatorWidth=0.5,zorder=10)
     ax.grid(True,zorder=0,c='k')
