@@ -1067,7 +1067,7 @@ class DataSet(object):
             colorbar = False
         pmeshs = []
         if log:
-            Int = [np.log(1e-20+np.array(Int[i])) for i in range(len(Int))]
+            Int = [np.log10(1e-20+np.array(Int[i])) for i in range(len(Int))]
 
         for i in range(len(EBins)-1):
             if _3D:
@@ -1536,7 +1536,7 @@ class DataSet(object):
                 # plot intensity with provied kwargs
                 for i in range(len(Int)):
                     if log==True:
-                        pmeshs.append(ax.pcolormesh(binedges[i]+offset[-1],binenergies[i],np.log(Int[i].T+1e-20),**kwargs))
+                        pmeshs.append(ax.pcolormesh(binedges[i]+offset[-1],binenergies[i],np.log10(Int[i].T+1e-20),**kwargs))
                     else:
                         pmeshs.append(ax.pcolormesh(binedges[i]+offset[-1],binenergies[i],Int[i].T,**kwargs))   
                 if plotSeperator == True:
@@ -1609,14 +1609,14 @@ class DataSet(object):
             
             if not 'vmin' in kwargs:
                 if log==True:
-                    vmin = np.nanmin(np.log(np.concatenate(Int)+1e-20))
+                    vmin = np.nanmin(np.log10(np.concatenate(Int)+1e-20))
                 else:
                     vmin = np.nanmin(np.concatenate(Int))
             else:
                 vmin = kwargs['vmin']
             if not 'vmax' in kwargs:
                 if log==True:
-                    vmax = np.nanmax(np.log(np.concatenate(Int)+1e-20))
+                    vmax = np.nanmax(np.log10(np.concatenate(Int)+1e-20))
                 else:
                     vmax = np.nanmax(np.concatenate(Int))
             else:
@@ -2712,7 +2712,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
 #   
 #    pmeshs = []
 #    if log:
-#        Int = [np.log(1e-20+np.array(Int[i])) for i in range(len(Int))]
+#        Int = [np.log10(1e-20+np.array(Int[i])) for i in range(len(Int))]
 #    for i in range(len(intensity)):
 #        pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i].reshape((len(Int[i]),1)),zorder=10,**kwargs))
 #    ax.set_aspect('equal', 'datalim')
@@ -3057,7 +3057,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         #@_tools.my_timer_N()
         #def plotter(pcollection,currentInt,counter,ax,QXlim,QYlim,E,plotPlane,plane,subplanes):
         if log==True:
-            pcollection.set_array(np.log(currentInt+1e-20))
+            pcollection.set_array(np.log10(currentInt+1e-20))
         else:
             pcollection.set_array(currentInt)
         if returnPatches:
@@ -3367,7 +3367,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 #        QYlim = np.max(np.abs([qymin,qymax]))
 #        
 #        if log==True:
-#            pcollection.set_array(np.log(currentInt+1e-20))
+#            pcollection.set_array(np.log10(currentInt+1e-20))
 #        else:
 #            pcollection.set_array(currentInt)
 #        
