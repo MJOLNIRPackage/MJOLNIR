@@ -1101,7 +1101,7 @@ class DataSet(object):
         ax.set_clim = lambda vMin,vMax: set_clim(ax.pmeshs,vMin,vMax)
 
         if colorbar:
-            ax.get_figure().colorbar(ax.pmeshs[0])
+            ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
 
         ax.set_clim(vmin,vmax)
         if _3D:
@@ -1640,7 +1640,7 @@ class DataSet(object):
             
             ax.xaxis.set_label_coords(1.15, -0.025)
             ax.set_ylabel('E [meV]')
-            ax.get_figure().colorbar(pmeshs[0])
+            ax.get_figure().colorbar(pmeshs[0],pad=0.1)
             plt.tight_layout()
             if 'pmeshs' in ax.__dict__:
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
@@ -2463,7 +2463,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     ax.set_xticklabels(xtick_labels, fontsize=8, multialignment="center", ha="center")
     ax.set_xlabel('$Q_h/A$\n$Q_k/A$', fontsize=8)
     ax.xaxis.set_label_coords(1.15, -0.025)
-    ax.get_figure().colorbar(pmeshs[0])
+    ax.get_figure().colorbar(pmeshs[0],pad=0.1)
     ax.set_ylabel('E [meV]')
     plt.tight_layout()
     ax.pmeshs = pmeshs
