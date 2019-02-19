@@ -797,7 +797,14 @@ class DataSet(object):
         ax.set_clim = lambda VMin,VMax: set_clim(VMin,VMax,pmeshs)
         
         def onclick(event,ax,DataList):# pragma: no cover
-            if ax.in_axes(event) and ax.get_figure().canvas.cursor().shape() == 0:
+            if ax.in_axes(event):
+                try: 
+                    c = ax.get_figure().canvas.cursor().shape()
+                except:
+                    pass
+                else:
+                    if c!=0:
+                        return
                 x = event.xdata
                 y = event.ydata
                 printString = ax.format_coord(x,y)
@@ -1104,6 +1111,47 @@ class DataSet(object):
                 ax.set_zlim(minEBins,maxEBins)
             else:
                 ax.set_zlim(minEBins-0.1,maxEBins+0.1)
+        else:
+            def onclick(ax, event,Qx,Qy,data): # pragma: no cover
+                if event.xdata is not None and ax.in_axes(event):
+                    try:
+                        C = self.figure.canvas.cursor().shape() # Only works for pyQt5 backend
+                    except:
+                        pass
+                    else:
+                        if C != 0:
+                            return
+                if not ax.in_axes(event):
+                    return
+                printString = ''
+                printString+=ax.format_coord(event.xdata, event.ydata)+', '
+                QX = np.array(Qx[0])
+                QY = np.array(Qy[0])
+                
+                Qx = 0.25*(QX[1:,1:]+QX[:-1,:-1]+QX[1:,:-1]+QX[:-1,1:])
+                Qy = 0.25*(QY[1:,1:]+QY[:-1,:-1]+QY[1:,:-1]+QY[:-1,1:])
+
+                arg = np.argmin(np.linalg.norm(np.array([Qx,Qy])-np.array([event.xdata,event.ydata]).reshape(2,1,1),axis=0))
+                arg2D = np.unravel_index(arg,Qx.shape)
+                
+                cts = data[0][0][arg2D[0],arg2D[1]]
+                Norm = data[1][0][arg2D[0],arg2D[1]]
+                Mon = data[2][0][arg2D[0],arg2D[1]]
+                NC = data[3][0][arg2D[0],arg2D[1]]
+                warnings.simplefilter('ignore')
+                Intensity = np.divide(cts*NC,Norm*Mon)
+                warnings.simplefilter('once')
+                localSize = np.linalg.norm(np.array([QX[arg2D[0],arg2D[1]]-Qx[arg2D[0],arg2D[1]],QY[arg2D[0],arg2D[1]]-Qy[arg2D[0],arg2D[1]]]))
+
+                if not np.isfinite(Intensity) or np.linalg.norm(np.array([Qx[arg2D[0],arg2D[1]]-event.xdata,Qy[arg2D[0],arg2D[1]]-event.ydata]))>localSize:
+                    printString+='I = NaN'
+                else:
+                    printString+='I = {:.4E}'.format(Intensity)
+                    printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+
+                print(printString)
+            ax.cid = ax.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(ax,x,Qx,Qy,[intensity,monitorCount,Normalization,NormCount]))
+            
         if len(Qx)!=0:
             xmin = np.min([np.min(Qx[i]) for i in range(len(Qx))])
             xmax = np.max([np.max(Qx[i]) for i in range(len(Qx))])
@@ -1113,8 +1161,7 @@ class DataSet(object):
             ymin = np.min([np.min(Qy[i]) for i in range(len(Qy))])
             ymax = np.max([np.max(Qy[i]) for i in range(len(Qy))])
             ax.set_ylim(ymin,ymax)#np.min(Qy),np.max(Qy))
-        return [I,Monitor,Norm,NormCount],[xBins,yBins],ax
-
+        return [intensity,monitorCount,Normalization,NormCount],[Qx,Qy],ax
 
     @_tools.KwargChecker()
     def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
@@ -4495,18 +4542,21 @@ def test_DataSet_plotQPlane():
     Datset.convertDataFile()
     EMin = np.min(Datset.energy)
     EMax = EMin+0.5
-    Data,[xBins,yBins],ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
-    Data,[xBins,yBins],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
+    Data,[Qx,Qy],ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
+    Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
     fig,AX = plt.subplots()
-    Data,[xBins,yBins],ax3 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6)
+    Data,[Qx,Qy],ax3 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6)
     ax1.set_clim(-20,-15)
     ax2.set_clim(0,1e-6)
 
     Dataset = DataSet(dataFiles=convertFiles)
     for d in Dataset.dataFiles:
         d.A3Off +=180 # rotate data to fall into problem of arctan2
-    Data,[xBins,yBins],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
-
+    Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
+    QxShape = np.array(Qx[0]).shape
+    QyShape = np.array(Qy[0]).shape
+    assert(QxShape==QyShape)
+    assert(np.all(np.array(Data[0][0]).shape == np.array(QxShape)-np.array([1,1])))
     try:
         Datset.plotQPlane(EMin,EMax,binning='notABinningMethod')
         assert False
