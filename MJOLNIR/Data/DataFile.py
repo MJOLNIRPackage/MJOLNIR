@@ -1290,9 +1290,9 @@ def calcProjectionVectors(R1,R2):
             
     V1 = LengthOrder(V1)
     V2 = LengthOrder(V2)
-    for V in [V1,V2]: # Flip sign if needed
-        maxArg = np.argmax(np.abs(V))
-        V*=np.sign(V[maxArg])
+    #for V in [V1,V2]: # Flip sign if needed
+    #    maxArg = np.argmax(np.abs(V))
+    #    V*=np.sign(V[maxArg])
     return V1,V2
 
 
