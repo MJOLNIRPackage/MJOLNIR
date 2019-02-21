@@ -959,6 +959,7 @@ class Sample(object):
 
         
         UB= self.orientationMatrix
+        self.UB = UB
 
         self.orientationMatrixINV = np.linalg.inv(UB)
         self.reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC]).T
@@ -974,8 +975,8 @@ class Sample(object):
         self.convertHKL = np.dot(p23,UB) # Convert from HKL to Qx, Qy
 
         # Calculate 'misalignment' of the projection vector 1
-        theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
-        self.RotMat = Rot(theta) # Create 2x2 rotation matrix
+        self.theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
+        self.RotMat = Rot(self.theta) # Create 2x2 rotation matrix
 
         #self.convert = np.einsum('ij,j...->i...',self.RotMat,self.convert)
         self.convertinv = np.linalg.inv(self.convert) # Convert from Qx, Qy to projX, projY
@@ -983,7 +984,7 @@ class Sample(object):
         #self.convertHKL = np.einsum('ij,j...->i...',self.RotMat,self.convert)
         self.convertHKLINV = invert(self.convertHKL) # Convert from Qx, Qy to HKL
 
-        self.RotMat3D = rotMatrix(self.planeNormal.astype(float),theta) # Rotation matrix for the UB
+        self.RotMat3D = rotMatrix(self.planeNormal.astype(float),self.theta) # Rotation matrix for the UB
         #self.orientationMatrixINV = np.linalg.inv(np.dot(self.RotMat3D,UB))
         self.orientationMatrixINV = np.linalg.inv(UB)
         
