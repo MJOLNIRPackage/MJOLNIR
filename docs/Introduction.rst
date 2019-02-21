@@ -5,7 +5,7 @@ This is the introductonary page for the MOLJNIR software package. The main purpo
 
 The software is currently developed solely by Jakob Lass, PhD student at both the Niels Bohr Institute, Copenhagen - Denmark, and the Paul Scherrer Institute, Villigen - Switzerland, and is not developed by a professional team. The software is intended to be used for data treatment and visualization for the CAMEA upgrad at the RITA II instrument at SINQ, PSI Villigen - Switzerland. 
 
-The software is found at GitHub_ and is intended to be used together with Python versions 2.7, (3.4,) 3.5, and 3.6. This compability is ensured by the use of automated unit test through the Travis project (Travis_). Python 3.4 is no longer tested due to updates in the Travis testing frameworl. Further than just testing, as to ensure a thorough testing the coverage of these are monitored using Coverals (Coveralls_). However, certain algorithms and methods are not suited to be tested through simple tests. This includes graphical methods where one for example uses a plotting routine to generate a specific output. Though the visual inspection is far outside of the testing scope for this software, some of the methods are still tested by simple run through test. That is, if they can be run and generate a plot without crashing and throwing an error, it is believed that they work as intended. This is where acutal user testing is needed. 
+The software is found at GitHub_ and is intended to be used together with Python versions 2.7, (3.4,) 3.5, 3.6, and 3.7. This compability is ensured by the use of automated unit test through the Travis project (Travis_). Python 3.4 is no longer tested due to updates in the Travis testing frameworl. Further than just testing, as to ensure a thorough testing the coverage of these are monitored using Coverals (Coveralls_). However, certain algorithms and methods are not suited to be tested through simple tests. This includes graphical methods where one for example uses a plotting routine to generate a specific output. Though the visual inspection is far outside of the testing scope for this software, some of the methods are still tested by simple run through test. That is, if they can be run and generate a plot without crashing and throwing an error, it is believed that they work as intended. This is where acutal user testing is needed. 
 
 .. Module documentation
 .. ^^^^^^^^^^^^^^^^^^^^
@@ -21,24 +21,32 @@ The software is devided into individual modules being Instrument, DataSet, and S
 
 Installation
 ^^^^^^^^^^^^
-The inteded way for the software to be installed on a computer is currently to navigate to the github page GitHub_ and download the latest release, usually found in the main branch. For an up to date version with new features, the 1.0.0 branch can be used, but is not to be assumed complete. It is recommended to create a new Anaconda environment or similar for the installation, but this is not required. By utilizing the pip package manager:
+
+The MJOLNIR software package is available for download an installation through the python package installer `PyPI <https://pypi.org/>`_. This then allows for an installation by 
+simply writing in a terminal 
 
 .. code-block:: bash
 
-   cd MJOLNIR
-   pip install .
+   pip install MJOLNIR
 
 
-Alternatively one can install it directly by running 
+Depending on the setup on the computer, one recomendation is to install MJOLNIR in a virtual environment through the use of e.g. conda or Anaconda with different packages. Currently, MJOLNIR
+is not installable through conda thus one needs to first set up the virtual environment and afterwards install the package through PyPI
 
 .. code-block:: bash
 
-   cd MJOLNIR
-   python install.py install
+   conda create --name MJOLNIR python=3.6 spyder=3.1.4
+   pip install MJOLNIR
 
+The specific version of python is not a requirement but merely a suggestion. The same is valid for `Spyder <https://www.spyder-ide.org/>`_ which is a recommendable IDE for python and more. 
+The specific version is the last that supports running scripts in interactive python environments.
 
-Both of the above methods installs the software to the specified environment. If only a temporary local build is wanted, the latter aproach can be used with 'install' replaced  by 'build.
+For a nightly-build version of MJOLNIR, that are currently being developed on the `Develop branch <https://github.com/Jakob-Lass/MJOLNIR/tree/develop>`_ one needs only to change 
+an argument to PyPI
 
+.. code-block:: bash
+
+   pip install -i https://test.pypi.org/simple/ MJOLNIR
 
 
 License
@@ -68,7 +76,7 @@ Bug Report
 ^^^^^^^^^^
 If an un error or unexpected behaviour of the software is observed, or if a feature is needed, you are more than welcome to create an issue or feature request at the GitHub page (Issues_). Dealing and fixing the reported bugs will be most easily done if both operation system, software version, a minimal working example, and other relevant informations are provided. Further as time goes by, it is hoped that this page will also contain explanations and answers to the most frequently asked question of the software. 
 
-Currently there are the following open issues |open| and closed |closed|
+Currently there are the following open |open| and closed |closed| issues.
 
 .. |open| image:: https://img.shields.io/github/issues/Jakob-Lass/MJOLNIR.svg?style=plastic 
     :alt: Open GitHub issues

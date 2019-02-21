@@ -5,6 +5,14 @@
 
 Welcome to MJOLNIR's documentation!
 ===================================
+Welcome to the documentation page of the MJOLNIR software package developed for data treatment, conversion, and visualization for multiplexing neutron scattering 
+spectrometers. With the increased point density measured during a single experiment, flexible and versatile software is needed to deal with this new data. This 
+software package tries to both introduce an easy-to-use scripting interface to visualization and treatment while still offering customizable plotting features.
+
+Table of contents
+-----------------
+Below is an overview of the provided documentation containing everything from physical/mathematical explanations of different concets through code specific references to 
+tutorials and guides on how to make use of MJOLNIR.
 
 .. toctree::
    :maxdepth: 2
@@ -14,7 +22,7 @@ Welcome to MJOLNIR's documentation!
    MJOLNIR
    InDepthDocumentation/Documentation
    Optimizations/Optimization
-   TutorialsDepricated/Tutorial
+
 
 .. toctree::
    :maxdepth: 1
@@ -23,6 +31,8 @@ Welcome to MJOLNIR's documentation!
 
 
 | 
+
+As the software is to be used by a broad user group, it is of great importance to support a wide range of python versions. Below is the current list of supported vesions.
 
 |travis| |coverall| |python27| |python34| * |python35| |python36| |python37| *
 
