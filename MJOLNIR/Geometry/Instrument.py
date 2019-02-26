@@ -1054,7 +1054,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
         det = entry['CAMEA/detector']
-        dset = det.create_dataset('counts',data=data )
+        dset = det.create_dataset('counts',data=data, compression="gzip", compression_opts=9)
         dset.attrs['target'] = np.string_('/entry/CAMEA/detector/counts')
         nxdata['counts'] = dset
 
