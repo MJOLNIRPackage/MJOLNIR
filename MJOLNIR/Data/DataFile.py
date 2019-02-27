@@ -50,13 +50,18 @@ class DataFile(object):
                     self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
                     self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                    Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
-                    width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
-                    bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
-                    amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
-                    self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
-                    self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
-                    self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
+                    calibrations = []
+                    for binning in self.possibleBinnings:
+                        Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
+                        width = np.array(instr.get('calib{}/width'.format(str(binning))))
+                        bg = np.array(instr.get('calib{}/background'.format(str(binning))))
+                        amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
+                        EfTable = np.array([amp,Ef,width,bg]).T
+                        A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
+                        bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
+                        calibrations.append([EfTable,A4,bound])
+                    self.instrumentCalibrations = np.array(calibrations)
+                    self.loadBinning(self.binning)
                     self.temperature = np.array(sample.get('temperature'))
                     self.magneticField = np.array(sample.get('magnetic_field'))
                     self.electricField = np.array(sample.get('electric_field'))
@@ -86,13 +91,21 @@ class DataFile(object):
                     self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
                     self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     self.binning=1 # Choose standard binning 1
-                    Ef = np.array(instr.get('calib{}/final_energy'.format(str(self.binning))))
-                    width = np.array(instr.get('calib{}/width'.format(str(self.binning))))
-                    bg = np.array(instr.get('calib{}/background'.format(str(self.binning))))
-                    amp = np.array(instr.get('calib{}/amplitude'.format(str(self.binning))))
-                    self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
-                    self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(self.binning))))
-                    self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(self.binning))))
+
+                    calibrations = []
+                    for binning in self.possibleBinnings:
+                        Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
+                        width = np.array(instr.get('calib{}/width'.format(str(binning))))
+                        bg = np.array(instr.get('calib{}/background'.format(str(binning))))
+                        amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
+                        EfTable = np.array([amp,Ef,width,bg]).T
+                        A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
+                        bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
+                        calibrations.append([EfTable,A4,bound])
+                    self.instrumentCalibrations = np.array(calibrations)
+                    self.instrumentCalibrationEf = self.instrumentCalibrations[0][0]
+                    self.instrumentCalibrationA4 = self.instrumentCalibrations[0][1]
+                    self.instrumentCalibrationEdges = self.instrumentCalibrations[0][2]
                     self.temperature = np.array(sample.get('temperature'))
                     self.magneticField = np.array(sample.get('magnetic_field'))
                     self.electricField = np.array(sample.get('electric_field'))
@@ -434,31 +447,15 @@ class DataFile(object):
         """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
 
 
-        if binning is None or binning == self.binning:
+        if binning is None or (binning == self.binning and hasattr(self,'instrumentCalibrationEf')):
             binning = self.binning
         else:
-            with hdf.File(self.fileLocation) as f:
-                # Check if binning is in file
-                instr = getInstrument(f)
-                
-                binningsPossible = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])#np.array([int(x.split('_')[0]) for x in np.array(f.get('entry/calibration'))])
-                if not binning in binningsPossible:
-                    raise AttributeError('The provided binning ({}) is not present in the data file.'.format(binning))
-                
-                #self.instrumentCalibrationEf = np.array(f.get('entry/calibration/{}_pixels/ef'.format(str(self.binning))))
-                #self.instrumentCalibrationA4 = np.array(f.get('entry/calibration/{}_pixels/a4'.format(str(self.binning))))
-                #self.instrumentCalibrationEdges = np.array(f.get('entry/calibration/{}_pixels/edges'.format(str(self.binning))))
-                Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
-                width = np.array(instr.get('calib{}/width'.format(str(binning))))
-                bg = np.array(instr.get('calib{}/background'.format(str(binning))))
-                amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
-                self.instrumentCalibrationEf = np.array([amp,Ef,width,bg]).T
-                self.instrumentCalibrationA4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
-                if self.instrumentCalibrationA4 is None:
-                    print('self.instrumentCalibrationA4 is NONE with binning {}!!'.format(binning))
-                self.instrumentCalibrationEdges = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
-                self.binning = binning 
-        #return self
+            if not binning in self.possibleBinnings:
+                raise AttributeError('Wanted binning not in possible binnings!')
+            binID = list(self.possibleBinnings).index(binning)
+            
+            self.instrumentCalibrationEf,self.instrumentCalibrationA4,self.instrumentCalibrationEdges = self.instrumentCalibrations[binID]
+            self.binning = binning
 
     @_tools.KwargChecker()
     def calculateEdgePolygons(self,addEdge=True): # pragma: no cover
@@ -768,7 +765,7 @@ class Sample(object):
     @_tools.KwargChecker()
     def __init__(self,a=None,b=None,c=None,alpha=90,beta=90,gamma=90,sample=None,name='Unknown'):
         if isinstance(sample,hdf._hl.group.Group):
-            self.name = str(np.array(sample.get('name'))[0])
+            self.name = str(np.array(sample.get('name'))[0].decode())
             self.orientationMatrix = np.array(sample.get('orientation_matrix'))*2*np.pi
             #for i in range(len(self.orientationMatrix)): # Normalize orientation matrix
             #    self.orientationMatrix[i]/=np.linalg.norm(self.orientationMatrix[i])
