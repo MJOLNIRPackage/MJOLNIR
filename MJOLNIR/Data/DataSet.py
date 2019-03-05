@@ -62,6 +62,7 @@ class DataSet(object):
         self._normalizationfiles = []
         self._convertedFiles = []
         self._calibrationfiles = []
+        self._mask = False
 
 
         if dataFiles is not None:
@@ -158,6 +159,21 @@ class DataSet(object):
             self._calibrationfiles = isListOfStrings(calibrationfiles)
         except Exception as e:
             raise(e)
+
+    @property
+    def mask(self):
+        return self._mask
+
+    @mask.getter
+    def mask(self):
+        return self._mask
+
+    @mask.setter
+    def mask(self,mask):
+        self._mask = mask
+        for att in self.__dict__.values():
+            if hasattr(att,'extractData'):
+                att.mask = mask
 
     @property
     def settings(self):
@@ -304,25 +320,19 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                I = self.I.copy()
-                qx = self.qx.copy()
-                qy = self.qy.copy()
-                energy = self.energy.copy()
-                Norm = self.Norm.copy()
-                Monitor = self.Monitor.copy()
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I.copy(),DS.qx.copy(),DS.qy.copy(),DS.energy.copy(),DS.Norm.copy(),DS.Monitor.copy()
-            
-
+            I,qx,qy,energy,Norm,Monitor, = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
         if rlu:
-            for i in range(len(self.convertedFiles)):
-                qx[i],qy[i] = np.einsum('ij,j...->i...',self.sample.RotMat,np.array([qx[i],qy[i]]))
-        pos=[np.concatenate(qx,axis=0).flatten(),np.concatenate(qy,axis=0).flatten(),np.concatenate(energy,axis=0).flatten()]
-        I = np.concatenate(I,axis=0)
-        Monitor = np.concatenate(Monitor,axis=0)
-        Norm = np.concatenate(Norm,axis=0)
+            qx,qy = np.einsum('ij,j...->i...',self.sample.RotMat,np.array([qx,qy]))
+        pos=[qx,qy,energy]
         returnData,bins = binData3D(dx,dy,dz,pos,I,norm=Norm,mon=Monitor)
 
         return returnData,bins
@@ -371,25 +381,16 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-        if len(qx.shape)==1 or len(qx.shape)==4: # Check if there are multiple files in data set
-            
-            qx = np.concatenate(qx,axis=0)
-            qy = np.concatenate(qy,axis=0)
-            energy = np.concatenate(energy,axis=0)
-            I = np.concatenate(I,axis=0)
-            Norm = np.concatenate(Norm,axis=0)
-            Monitor = np.concatenate(Monitor,axis=0)
-        
+            I,qx,qy,energy,Norm,Monitor, = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
         positions = np.array([qx,qy,energy])
 
         if rlu==True: # Recalculate H,K,L to qx
@@ -575,26 +576,17 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
 
         else: 
             #dataFiles = isListOfDataFiles(dataFiles)
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-
-        if len(qx.shape)==1 or len(qx.shape)==4:
-            
-            qx = np.concatenate(qx,axis=0)
-            qy = np.concatenate(qy,axis=0)
-            energy = np.concatenate(energy,axis=0)
-            I = np.concatenate(I,axis=0)
-            Norm = np.concatenate(Norm,axis=0)
-            Monitor = np.concatenate(Monitor,axis=0)
+            I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
         
         positions = np.array([qx,qy,energy])
         if rlu==True: # Recalculate H,K,L to qx
@@ -661,8 +653,8 @@ class DataSet(object):
                 Monitor = self.Monitor
 
         else: 
-            dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData()
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
             
         if len(qx.shape)==1 or len(qx.shape)==4:
             
@@ -705,24 +697,16 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
 
         else: 
-            dataFiles = isListOfDataFiles(dataFiles)
-            I,qx,qy,energy,Norm,Monitor = dataFiles.extractData()
-        if len(qx.shape)==1 or len(qx.shape)==4:
-            
-            qx = np.concatenate(qx,axis=0)
-            qy = np.concatenate(qy,axis=0)
-            energy = np.concatenate(energy,axis=0)
-            I = np.concatenate(I,axis=0)
-            Norm = np.concatenate(Norm,axis=0)
-            Monitor = np.concatenate(Monitor,axis=0)
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
         
         positions = np.array([qx,qy,energy])
 
@@ -1406,7 +1390,9 @@ class DataSet(object):
         
         Kwargs:
             
-            - width (float): Width in Q-direction for cuts (default 0.01)
+            - width (float): Width perpendicular to Q-direction for cuts (default 0.1)
+
+            - minPixel (float): Minimum size of pixel for cut (default 0.01)
             
             - rlu (bool): If True, provided points are intepreted as (h,k,l) otherwise (qx,qy), (Deflault RLU)
             
@@ -2246,12 +2232,6 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
 
     """
     qx,qy,energy = positions
-    qx = np.concatenate(qx,axis=0)
-    qy = np.concatenate(qy,axis=0)
-    energy = np.concatenate(energy,axis=0)
-    I = np.concatenate(I,axis=0)
-    Norm = np.concatenate(Norm,axis=0)
-    Monitor = np.concatenate(Monitor,axis=0)
 
     q = np.linalg.norm([qx,qy],axis=0)
     intensity = []
@@ -3808,8 +3788,9 @@ def calculateGrid3D(X,Y,Z):
     Now XX is a 21x11x67 array containing all x coordinates of the edges exactly midway bewteen the points. Same goes for YY and ZZ with y and z coordinates respectively.
     """
 
-    xshape = X.shape
-    
+    xshape = np.array(X.shape)
+    if np.any(xshape <= 1):
+        raise AttributeError('Provided array has dimension(s) {} of size <= 1'.format(np.arange(xshape)[xshape<=1]))
     XT = np.zeros((xshape[0]+1,xshape[1]+1,xshape[2]+1))
     YT = np.zeros_like(XT)
     ZT = np.zeros_like(XT)
@@ -4849,11 +4830,6 @@ def test_DataSet_extractDetectorData():
         assert(DatAllRaw[0][i].shape==DatAllRaw[1][i].shape and DatAllRaw[0][i].shape==DatAllRaw[2][i].shape) # Check that 3 list have same shape
         assert(DatAllRaw[0][i].shape==DatAll[i].shape) 
         
-        size = DatAll[i].shape #  steps, 104, 8
-        assert(DatOne[i].shape==(size[0],size[2])) # If A4 is provided shape is number of steps
-        assert(DatOne2[i].shape==size[:2]) # If Ef4 is provided shape is number of steps
-        assert(DatBoth[i].shape==(size[0],))
-
     os.remove('Data/camea2018n000038.nxs')
 
 def test_DataSet_OxfordList():

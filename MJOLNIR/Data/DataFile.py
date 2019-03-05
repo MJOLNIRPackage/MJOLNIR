@@ -13,6 +13,7 @@ import math
 import shapely
 from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
+from MJOLNIR._tools import array
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
@@ -28,15 +29,15 @@ class DataFile(object):
                 with hdf.File(fileLocation) as f:
                     sample=f.get('/entry/sample')
                     self.sample = Sample(sample=f.get('/entry/sample'))
-                    self.I=np.array(f.get('entry/data/intensity'))
-                    self.qx=np.array(f.get('entry/data/qx'))
-                    self.qy=np.array(f.get('entry/data/qy'))
-                    self.h=np.array(f.get('entry/data/h'))
-                    self.k=np.array(f.get('entry/data/k'))
-                    self.l=np.array(f.get('entry/data/l'))
-                    self.energy=np.array(f.get('entry/data/en'))
-                    self.Norm=np.array(f.get('entry/data/normalization'))
-                    self.Monitor=np.array(f.get('entry/data/monitor'))
+                    self.I=array(f.get('entry/data/intensity'))
+                    self.qx=array(f.get('entry/data/qx'))
+                    self.qy=array(f.get('entry/data/qy'))
+                    self.h=array(f.get('entry/data/h'))
+                    self.k=array(f.get('entry/data/k'))
+                    self.l=array(f.get('entry/data/l'))
+                    self.energy=array(f.get('entry/data/en'))
+                    self.Norm=array(f.get('entry/data/normalization'))
+                    self.Monitor=array(f.get('entry/data/monitor'))
                     self.MonitorPreset=np.array(f.get('entry/control/preset'))
                     self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
                     self.Time = np.array(f.get('entry/control/time'))
@@ -44,11 +45,11 @@ class DataFile(object):
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                    self.Ei = np.array(instr.get('monochromator/energy'))
-                    self.A3 = np.array(f.get('entry/sample/rotation_angle')).reshape(-1)
-                    self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
+                    self.Ei = array(instr.get('monochromator/energy'))
+                    self.A3 = array(f.get('entry/sample/rotation_angle')).reshape(-1)
+                    self.A4 = array(instr.get('analyzer/polar_angle')).reshape(-1)
                     self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
-                    self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
+                    self.A4Off = array(instr.get('analyzer/polar_angle_offset'))
                     self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
                     calibrations = []
                     for binning in self.possibleBinnings:
@@ -76,7 +77,7 @@ class DataFile(object):
                     sample=f.get('/entry/sample')
                     self.sample = Sample(sample=f.get('/entry/sample'))
                     self.MonitorPreset=np.array(f.get('entry/control/preset'))
-                    self.Monitor = np.array(f.get('entry/control/data'))
+                    self.Monitor = array(f.get('entry/control/data'))
                     self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
                     if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
                         if self.Monitor[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
@@ -84,12 +85,12 @@ class DataFile(object):
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                    self.Ei = np.array(instr.get('monochromator/energy'))
-                    self.I = np.array(instr.get('detector/counts')).swapaxes(1,2)
-                    self.A3 = np.array(f.get('entry/sample/rotation_angle'))
-                    self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
+                    self.Ei = array(instr.get('monochromator/energy'))
+                    self.I = array(instr.get('detector/counts')).swapaxes(1,2)
+                    self.A3 = array(f.get('entry/sample/rotation_angle'))
+                    self.A4 = array(instr.get('analyzer/polar_angle')).reshape(-1)
                     self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
-                    self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
+                    self.A4Off = array(instr.get('analyzer/polar_angle_offset'))
                     self.binning=1 # Choose standard binning 1
 
                     calibrations = []
@@ -1120,31 +1121,29 @@ def extractData(files):
         instrumentCalibrationA4.append(datafile.instrumentCalibrationA4)
         instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
         
-    I = np.array(I)
+    I = array(np.concatenate(I,axis=0))
     if(files[0].type!='hdf'):
-        qx = np.array(qx)
-        qy = np.array(qy)
-        H = np.array(H)
-        K = np.array(K)
-        L = np.array(L)
-        energy = np.array(energy)
+        qx = array(np.concatenate(qx,axis=0))
+        qy = array(np.concatenate(qy,axis=0))
+        H = array(np.concatenate(H,axis=0))
+        K = array(np.concatenate(K,axis=0))
+        L = array(np.concatenate(L,axis=0))
+        energy = array(np.concatenate(energy,axis=0))
+        Norm = array(np.concatenate(Norm,axis=0))
+    else:  
+        Norm = array(Norm)
+        
+    Monitor = array(np.concatenate(Monitor,axis=0))
 
-    scanParameters = scanParameters
-    scanParamValue = scanParamValue
-    scanParamUnit = scanParamUnit
+    a3 = array(np.concatenate(a3,axis=0))
+    a4 = array(np.concatenate(a4,axis=0))
 
-    Norm = np.array(Norm)
-    Monitor = np.array(Monitor)
-
-    a3 = np.array(a3)
-    a4 = np.array(a4)
-
-    a3Off = np.array(a3Off)
-    a4Off = np.array(a4Off)
+    a3Off = array(a3Off)
+    a4Off = array(a4Off)
     instrumentCalibrationEf = np.array(instrumentCalibrationEf)
     instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
     instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
-    Ei = np.array(Ei)
+    Ei = array(Ei)
     if files[0].type!='hdf':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L

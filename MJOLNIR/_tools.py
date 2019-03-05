@@ -300,6 +300,18 @@ def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hd
     return list(np.concatenate(dataFiles))
 
 
+class array(np.ma.MaskedArray):
+    """Subclass of Numpy's masked array with added extractData method"""
+    def __new__(cls, data=None, **kwargs):
+        obj = np.asarray(data).view(cls)
+        return obj
+
+    def extractData(self):
+        if self.mask.shape == ():
+            return self.data.flatten()
+        else:
+            return self.data[self.mask == False].flatten()
+
 def test_binEdges():
     values = np.exp(np.linspace(-0.1,1,101)) # Generate non-linear points
     #values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
