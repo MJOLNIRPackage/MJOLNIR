@@ -139,7 +139,7 @@ def calcTasQAngles(UB,planeNormal,ss,A3Off,qe):
     A3 = om + ss*theta + A3Off
     A3 = np.mod(A3 + ss*180.0,360.0) - ss*180.0
     
-    return A3,A4,sgu,sgl
+    return -A3,-A4,sgu,sgl
     
 
 def calcTasMisalignment(UB,planeNormal,qe):
@@ -148,10 +148,10 @@ def calcTasMisalignment(UB,planeNormal,qe):
     return om
 
 
-def calcTasQH(UBINV,angles,Ei,Ef):
+def calcTasQH(UBINV,angles,Ei,Ef,A3Off=0):
 
   A3,A4 = angles
-  r = [0,0,0,A3,A4,0.0,0.0,Ei,Ef]
+  r = [0,0,0,A3+A3Off,A4,0.0,0.0,Ei,Ef]
   
   ki = np.sqrt(Ei)*factorsqrtEK
   kf = np.sqrt(Ef)*factorsqrtEK
@@ -237,7 +237,7 @@ def test_TasUBDeg_CreateUB():
     assert(np.all(np.isclose(UBFile,UB,atol=4)))
 
 def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one needs to do the trick with a3 to calculate anything correctly...
-    cell = [6.11,   6.11,  11.35, 1.187430040454027, 1.1874300210500532, 0.5535845899562842, 90.  ,  90.  , 120., 90., 90., 120.]
+    cell = [6.11,   6.11,  11.35, 1.187430040454027, 1.1874300210500532, 0.5535845899562842, 90.  ,  90.  , 120., 90., 90., 60.]
     B = calculateBMatrix(cell)
     OM = 0.00 # Offset known 
     sgu = 0.0
@@ -246,7 +246,7 @@ def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one need
 
     planeNormal = np.array([0,0,1.0])
     qe = np.array([1.0,0.0,0.0,5.0,5])
-    ss = -1 # Scattering sense
+    ss = 1 # Scattering sense
     A3Off = 0.0
     
     UBINV = np.linalg.inv(UB)
@@ -254,12 +254,10 @@ def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one need
                    [0.0,0.5,0.0,8.0,9.2],
                    [-1.1,-0.1,0.0,5.4,4.4]])
     for qe in QE:
+
         a3,a4,sgu,sgl = calcTasQAngles(UB,planeNormal,ss,A3Off,qe)
-        
-        if a3>180:
-            a3 = 360-a3
-        #a3 = np.mod(a3,360)
-        print('------------------\n{}, {}'.format(a3,a4))
+
+        print('------------------\nA3:{}\nA4{}'.format(a3,a4))
         hkl = calcTasQH(UBINV,[a3,a4],qe[3],qe[4])[0]
         print('{}'.format(hkl))
         assert(np.all(np.isclose([sgu,sgl],0.0))) # Sgu and sgl are 0 by definition
