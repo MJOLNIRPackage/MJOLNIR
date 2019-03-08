@@ -300,7 +300,7 @@ def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hd
     return list(np.concatenate(dataFiles))
 
 
-class array(np.ma.MaskedArray):
+class Marray(np.ma.MaskedArray):
     """Subclass of Numpy's masked array with added extractData method"""
     def __new__(cls, data=None, **kwargs):
         obj = np.asarray(data).view(cls)
