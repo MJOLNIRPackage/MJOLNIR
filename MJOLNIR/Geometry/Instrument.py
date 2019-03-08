@@ -936,6 +936,23 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             dset = monoSlit.create_dataset(x,(1,),'float32')
             dset[0] = 0.0
             dset.attrs['units'] = 'mm'
+    
+    def addAna(inst):
+        ana = inst.create_group('analyzer')
+        ana.attrs['NX_class'] = np.string_('NXcrystal')
+
+        dset = ana.create_dataset('type',(1,),dtype='S70')
+        dset[0] = b"Pyrolithic Graphite"
+        
+        dset = ana.create_dataset('d_spacing',(1,),'float32')
+        dset[0] = 3.354
+        dset.attrs['units'] = 'anstrom'
+
+        dset = ana.create_dataset('nominal_energy',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'mev'
+
+        
 
     def addDetector(inst):
         det = inst.create_group('detector')
@@ -1062,9 +1079,6 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         dset.attrs['target'] = np.string_('/entry/CAMEA/detector/summed_counts')
         nxdata['summed_counts'] = dset
 
-        #online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
-        #online.attrs['units']=np.string_('Boolean for detector state')
-
         sam = entry['sample']
 
         scanType='Unknown'
@@ -1180,6 +1194,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             
     
     addMono(inst)
+    addAna(inst)
     
     addDetector(inst)
     
