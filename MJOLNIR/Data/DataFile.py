@@ -89,7 +89,10 @@ class DataFile(object):
                     self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
                     self.A3 = Marray(f.get('entry/sample/rotation_angle'))
                     self.A4 = Marray(instr.get('analyzer/polar_angle')).reshape(-1)
-                    self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
+                    try:
+                        self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))  
+                    except:
+                        self.A3Off = [0.0]
                     self.A4Off = Marray(instr.get('analyzer/polar_angle_offset'))
                     self.binning=1 # Choose standard binning 1
 
@@ -110,13 +113,16 @@ class DataFile(object):
                     self.temperature = np.array(sample.get('temperature'))
                     self.magneticField = np.array(sample.get('magnetic_field'))
                     self.electricField = np.array(sample.get('electric_field'))
-                    self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                    try:
+                        self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                    except:
+                        pass
                     self.scanCommand = np.array(f.get('entry/scancommand'))
                     self.title = np.array(f.get('entry/title'))
                     self.Time = np.array(f.get('entry/control/time'))
 
                     ###################
-                    self.I[:,:,:200]=0#
+                    #self.I[:,:,:200]=0#
                     ###################
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
@@ -326,7 +332,7 @@ class DataFile(object):
 
        
         ###########################
-        Monitor[:,:,:binning] = 0 #
+        #Monitor[:,:,:binning] = 0 #
         ###########################
 
 
@@ -779,7 +785,7 @@ class Sample(object):
             
             self.A3Off = np.array([0.0])#
             if not np.isclose(np.linalg.norm(self.plane_vector1[:3].astype(float)),0.0) or not np.isclose(np.linalg.norm(self.plane_vector2[:3].astype(float)),0.0): # If vectors are not zero
-                self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1,self.plane_vector2)
+                self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))
             else:
                 self.projectionVector1,self.projectionVector2 = [np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0])]
             
