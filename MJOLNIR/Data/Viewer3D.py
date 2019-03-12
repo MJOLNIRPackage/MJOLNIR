@@ -169,7 +169,7 @@ class Viewer3D(object):
 
         self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(self,x))
         
-        self.caxis = self.dataLimits
+        self.caxis = (self.masked_array.min(),self.masked_array.max())
         self.ax.grid(self.grid,zorder=self.gridZOrder)
 
     @property 
