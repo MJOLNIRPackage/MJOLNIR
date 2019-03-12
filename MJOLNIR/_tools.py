@@ -312,6 +312,61 @@ class Marray(np.ma.MaskedArray):
         else:
             return self.data[self.mask == False].flatten()
 
+def RoundBinning(X,deltas,Data=None):
+    """ Bin points to nearest delta value in D dimensions and reorder Data.
+    
+    Args:
+        
+         - X (np.array): Input points in shape (D,N) for D dimensions.
+        
+         - deltas (float or list): binning size(s)
+        
+    Kwargs:
+        
+         - Data (list/array): List of data or data list of shape (N) to be binned like X (default None).
+        
+    Returns:
+        
+         - BinnedPoints (list): ND list of binned unique positions of points
+        
+         - indices (list): Inverse indices from which points-array can be created from unique points
+        
+         - count (list): Number of points going into each bin
+        
+        (- returnData: Rebinned data as according to points being binned) 
+        
+    Algorithm takes the data points and rebins them into points closest to delta in N dimensions. If deltas=[0.05,0.05] and 2D points are given, points will be binned to closest 0.05 (...-0.1,-0.05,0.0,0.05,0.1...) in both directions. Data lists are also reshuffeled to match.
+    
+    
+    """
+    points = np.array(X)
+    deltas = np.array([deltas]).squeeze()
+    if len(deltas.shape)==0 and points.shape[0]!=1:
+        binning = np.ones([points.shape[0],1])*deltas
+    else:
+        binning = np.array([deltas]).reshape(-1,1)
+        if not points.shape[0]==binning.shape[0]:
+            raise AttributeError('Shape mismatch between X and deltas. Expected {} deltas for X with shape {}, recieved {}'.format(points.shape[0],points.shape,deltas))
+        
+    binningLog = np.log10(binning)
+    binningOrder = np.floor(binningLog)
+    binningScale = np.power(10,(binningOrder-binningLog)).reshape(-1,1)
+    
+    Scale = np.multiply(points,binningScale)
+    
+    binPoints,indices,count = np.unique(np.round(Scale*np.power(10,-binningOrder)),axis=1,return_inverse=True,return_counts=True)
+    
+    BinnedPoints = binPoints*np.power(10,binningOrder)/binningScale
+    
+    if not Data is None:
+        if isinstance(Data,list):
+            returnData = [np.histogram(indices,bins=BinnedPoints.shape[1],weights=x)[0] for x in Data]
+        else:
+            returnData = np.histogram(indices,bins=BinnedPoints.shape[1],weights=Data)[0]
+        return BinnedPoints,indices,count,returnData
+    
+    return BinnedPoints,indices,count
+    
 def test_binEdges():
     values = np.exp(np.linspace(-0.1,1,101)) # Generate non-linear points
     #values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
@@ -342,3 +397,22 @@ def test_fileListGenerator():
     assert(np.all(filesCorrect == np.array(files)))
 
 
+def test_RoundBinning():
+    
+    X = np.random.rand(2,3000)
+    binning = [0.05,0.1,0.2]
+    try:
+        RoundBinning(X,binning)
+    except AttributeError:
+        assert True
+    
+    binning = [0.05,0.05]
+    BP, I, C  = RoundBinning(X,binning)
+
+    Int = np.random.rand(3000)
+    BP2,I2,C2,Data = RoundBinning(X,binning[0],Int)
+
+    assert(np.all(BP==BP2))
+    assert(np.all(I==I2))
+    assert(np.all(C==C2))
+    assert(np.all(Data.shape[0]==BP.shape[1]))
