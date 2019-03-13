@@ -14,6 +14,22 @@ The software is found at GitHub_ and is intended to be used together with Python
 .. some possitive synagy is possible....
 
 
+IPython
+^^^^^^^
+
+The MJOLNIR software package makes use of many features of the interactive part of matplotlib. Thus, if the code/tutorials are run through an IPython kernel, these might be absent. However, including the following code snippet to the top of the scripts changes the IPython matplotlib backend to be interactie:
+
+.. code-block:: python
+
+    try:
+        import IPython
+        shell = IPython.get_ipython()
+        shell.enable_matplotlib(gui='qt')
+    except:
+        pass
+
+This block can in principal also be included for regular python kernels as it will then through an exception and pass. If the 'qt' backend is not available, one could try a number of others; For a list run "matplotlib.rcsetup.interactive_bk" after import of matplotlib. 
+
 Software Structure
 ^^^^^^^^^^^^^^^^^^
 
