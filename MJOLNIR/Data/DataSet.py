@@ -1396,7 +1396,7 @@ class DataSet(object):
             
             - rlu (bool): If True, provided points are intepreted as (h,k,l) otherwise (qx,qy), (Deflault RLU)
             
-            - fig (matplotlib figure): Figure into wicht the data is plotted. If None a new will be created (default None).
+            - ax (matplotlib axis): Axis into wicht the data is plotted. If None a new will be created (default None).
             
             - dataFiles (DataFile(s)): DataFile or list of, from which data is to be taken. If None all datafiles in self is taken (default None).
             
@@ -1455,10 +1455,15 @@ class DataSet(object):
             _3D = False
         else:
             ax = ax
-            if ax.name == '3d':
-                _3D = True
-            else:
+            try:
+                ax.name
+            except:
                 _3D = False
+            else:
+                if ax.name == '3d':
+                    _3D = True
+                else:
+                    _3D = False
         if _3D == False:
             if len(EnergyBins.shape)==1 and not isinstance(EnergyBins[0],(list,np.ndarray)): # If a common energy binning is requested
                 if not len(QPoints)==2:
