@@ -365,7 +365,7 @@ class Instrument(GeometryConcept.GeometryConcept):
             
             Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)
             
-            if True: #Mask pixels where spurion is present
+            if False: #Mask pixels where spurion is present
                 Data[:,:,:100]=0
 
             Ei = np.array(VanFileInstrument.get('monochromator/energy')).astype(float)
@@ -798,7 +798,7 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90]): # pragma: no cover
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90],factor=10000): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -818,6 +818,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         - pixels (int): Number of pixels on detectors (default 1024)
 
         - cell (list): Cell parameters passed into the hdf file (default [5,5,5,90,90,90])
+
+        - factor (float): Overall scale factor for intensity
 
     """
     def addMetaData(entry,title):
@@ -967,7 +969,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         fin.close()
         return detlist
 
-    def readDetFile(fname,pixels=1024):
+    def readDetFile(fname,pixels=1024,factor=10000):
         detdata = np.zeros((pixels),dtype='int32')
         f = open(fname,'r')
         psddata = f.readlines()
@@ -988,31 +990,32 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
                 break
             idx = idx + 1
         detind = 0
-
         for i in range(idx+1,pixels+idx-1):
             l = psddata[i].split()
 
-            detdata[detind] = int(round(10000.*float(l[1])))
+            detdata[detind] = int(round(factor*float(l[1])))
+            #if l[1]!='0':
+            #    print(float(l[1])*factor)
             detind = detind + 1
         return detdata,a3,a4,ei
 
-    def readScanPointData(dir,detlist,Numpoints,pixels=1024):
+    def readScanPointData(dir,detlist,Numpoints,pixels=1024,factor=10000):
         frame = np.zeros((104,pixels),dtype='int32')
         i = 0
         for detfile in detlist:
-            detdata, a3, a4, ei = readDetFile(dir +'/' + str(Numpoints) + '/' + detfile)
+            detdata, a3, a4, ei = readDetFile(dir +'/' + str(Numpoints) + '/' + detfile,factor=factor)
             frame[i] = detdata
             i = i + 1
         return frame,a3,a4,ei
 
-    def readScanData(dir,Numpoints,pixels=1024):
+    def readScanData(dir,Numpoints,pixels=1024,factor=10000):
         detlist = readDetSequence()
         data = np.zeros((Numpoints,104,pixels),dtype='int32')
         a3 = []
         a4 = []
         ei = []
         for n in range(Numpoints):
-            frame, a3n, a4n, ein = readScanPointData(dir,detlist,n)
+            frame, a3n, a4n, ein = readScanPointData(dir,detlist,n,factor=factor)
             a3.append(a3n)
             a4.append(a4n)
             ei.append(ein)
@@ -1030,6 +1033,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         ub[1,1] = 1.
         ub[2,2] = 1.
         dset = sam.create_dataset('orientation_matrix',data=ub)
+        dset = sam.create_dataset('plane_vector_1',data=[1,0,0,0,0,0,0])
+        dset = sam.create_dataset('plane_vector_2',data=[0,1,0,0,0,0,0])
 
         normal = np.zeros((3,),dtype='float32')
         normal[2] = 1.0
@@ -1201,9 +1206,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
     addSample(entry,np.string_(sample),cell)
     import os
     Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
-    data,a3,a4,ei = readScanData(fname,Numpoints)
+    data,a3,a4,ei = readScanData(fname,Numpoints,factor=factor)
     storeScanData(entry,data,a3,a4,ei)
-
     f.close()
 
 
