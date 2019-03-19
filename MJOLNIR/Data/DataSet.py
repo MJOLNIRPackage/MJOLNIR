@@ -16,7 +16,7 @@ from MJOLNIR.Data import DataFile,Viewer3D
 from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
-from mpl_toolkits.axisartist import Subplot
+from mpl_toolkits.axisartist import SubplotHost
 import pytest
 from scipy.ndimage import filters
 import scipy.optimize
@@ -1416,7 +1416,7 @@ class DataSet(object):
         return np.array(DataList),np.array(BinList),np.array(centerPosition),np.array(binDistance)
 
 
-    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar']]))
+    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar','edgecolors']]))
     def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
@@ -1677,7 +1677,7 @@ class DataSet(object):
             ax.xaxis.set_label_coords(1.15, -0.025)
             ax.set_ylabel('E [meV]')
             if colorbar:
-                ax.get_figure().colorbar(pmeshs[0],pad=0.1)
+                ax.colorbar = ax.get_figure().colorbar(pmeshs[0],pad=0.1,format='%.2E')
             plt.tight_layout()
             if 'pmeshs' in ax.__dict__:
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
@@ -2537,7 +2537,7 @@ def createRLUAxes(Dataset,figure=None,ids=[1, 1, 1]):
     
     
 
-    ax = Subplot(fig, *ids, grid_helper=grid_helper)
+    ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
     ax.sample = sample
     
     def set_axis(ax,v1,v2,*args):
@@ -2644,7 +2644,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
                                         lambda x,y:tr(projectionVectorLength,x,y)))
     
-    ax = Subplot(figure, 1, 1, 1, grid_helper=grid_helper)
+    ax = SubplotHost(figure, 1, 1, 1, grid_helper=grid_helper)
     
     figure.add_subplot(ax)
     #ax.set_aspect(1.)
