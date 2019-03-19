@@ -122,7 +122,7 @@ class DataFile(object):
                     self.Time = np.array(f.get('entry/control/time'))
 
                     ###################
-                    #self.I[:,:,:200]=0#
+                    self.I[:,:,:200]=0#
                     ###################
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
@@ -296,7 +296,7 @@ class DataFile(object):
                     Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
 
         EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
-        EfNormalization = (EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
+        EfNormalization = EfNormalization[:,0].reshape(1,A4.shape[0],EPrDetector*binning)#(EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
         A3 = np.deg2rad(np.array(self.A3))+A3Zero #file.get('/entry/sample/rotation_angle/')
         if A3.shape[0]==1:
             A3 = A3*np.ones((steps))
@@ -332,7 +332,7 @@ class DataFile(object):
 
        
         ###########################
-        #Monitor[:,:,:binning] = 0 #
+        Monitor[:,:,:binning] = 0 #
         ###########################
 
 
