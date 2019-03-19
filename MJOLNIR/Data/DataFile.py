@@ -25,109 +25,89 @@ class DataFile(object):
             if not os.path.isfile(fileLocation):
                 raise AttributeError('File location does not exist({}).'.format(fileLocation))
             if fileLocation.split('.')[-1]=='nxs':
-                self.type='nxs'
-                with hdf.File(fileLocation) as f:
-                    sample=f.get('/entry/sample')
-                    self.sample = Sample(sample=f.get('/entry/sample'))
-                    self.I=Marray(f.get('entry/data/intensity'))
-                    self.qx=Marray(f.get('entry/data/qx'))
-                    self.qy=Marray(f.get('entry/data/qy'))
-                    self.h=Marray(f.get('entry/data/h'))
-                    self.k=Marray(f.get('entry/data/k'))
-                    self.l=Marray(f.get('entry/data/l'))
-                    self.energy=Marray(f.get('entry/data/en'))
-                    self.Norm=Marray(f.get('entry/data/normalization'))
-                    self.Monitor=Marray(f.get('entry/data/monitor'))
-                    self.MonitorPreset=np.array(f.get('entry/control/preset'))
-                    self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
-                    self.Time = np.array(f.get('entry/control/time'))
-
-                    instr = getInstrument(f)
-                    self.instrument = instr.name.split('/')[-1]
-                    self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                    self.Ei = Marray(instr.get('monochromator/energy'))
-                    self.A3 = Marray(f.get('entry/sample/rotation_angle')).reshape(-1)
-                    self.A4 = Marray(instr.get('analyzer/polar_angle')).reshape(-1)
-                    self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))
-                    self.A4Off = Marray(instr.get('analyzer/polar_angle_offset'))
-                    self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                    calibrations = []
-                    for binning in self.possibleBinnings:
-                        Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
-                        width = np.array(instr.get('calib{}/width'.format(str(binning))))
-                        bg = np.array(instr.get('calib{}/background'.format(str(binning))))
-                        amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
-                        EfTable = np.array([amp,Ef,width,bg]).T
-                        A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
-                        bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
-                        calibrations.append([EfTable,A4,bound])
-                    self.instrumentCalibrations = np.array(calibrations)
-                    self.loadBinning(self.binning)
-                    self.temperature = np.array(sample.get('temperature'))
-                    self.magneticField = np.array(sample.get('magnetic_field'))
-                    self.electricField = np.array(sample.get('electric_field'))
-                    self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
-                    self.scanCommand = np.array(f.get('entry/scancommand'))
-                    self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
-                    self.title = np.array(f.get('entry/title'))
-
+    	        self.type='nxs'
+        
             elif fileLocation.split('.')[-1]=='hdf':
-                self.type='hdf'
-                with hdf.File(fileLocation) as f:
-                    sample=f.get('/entry/sample')
-                    self.sample = Sample(sample=f.get('/entry/sample'))
-                    self.MonitorPreset=np.array(f.get('entry/control/preset'))
-                    self.Monitor = Marray(f.get('entry/control/data'))
-                    self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
-                    if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
-                        if self.Monitor[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
-                            self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
-                    instr = getInstrument(f)
-                    self.instrument = instr.name.split('/')[-1]
-                    self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                    self.Ei = Marray(instr.get('monochromator/energy'))
-                    self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
-                    self.A3 = Marray(f.get('entry/sample/rotation_angle'))
-                    self.A4 = Marray(instr.get('analyzer/polar_angle')).reshape(-1)
-                    try:
-                        self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))  
-                    except:
-                        self.A3Off = [0.0]
-                    self.A4Off = Marray(instr.get('analyzer/polar_angle_offset'))
-                    self.binning=1 # Choose standard binning 1
-
-                    calibrations = []
-                    for binning in self.possibleBinnings:
-                        Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
-                        width = np.array(instr.get('calib{}/width'.format(str(binning))))
-                        bg = np.array(instr.get('calib{}/background'.format(str(binning))))
-                        amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
-                        EfTable = np.array([amp,Ef,width,bg]).T
-                        A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
-                        bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
-                        calibrations.append([EfTable,A4,bound])
-                    self.instrumentCalibrations = np.array(calibrations)
-                    self.instrumentCalibrationEf = self.instrumentCalibrations[0][0]
-                    self.instrumentCalibrationA4 = self.instrumentCalibrations[0][1]
-                    self.instrumentCalibrationEdges = self.instrumentCalibrations[0][2]
-                    self.temperature = np.array(sample.get('temperature'))
-                    self.magneticField = np.array(sample.get('magnetic_field'))
-                    self.electricField = np.array(sample.get('electric_field'))
-                    try:
-                        self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
-                    except:
-                        pass
-                    self.scanCommand = np.array(f.get('entry/scancommand'))
-                    self.title = np.array(f.get('entry/title'))
-                    self.Time = np.array(f.get('entry/control/time'))
-
-                    ###################
-                    self.I[:,:,:200]=0#
-                    ###################
+	            self.type='hdf'
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
             self.name = fileLocation.split('/')[-1]
-            self.fileLocation = os.path.abspath(fileLocation)
+            self.fileLocation = os.path.abspath(fileLocation)		
+			
+            with hdf.File(fileLocation) as f:
+			
+                sample=f.get('/entry/sample')
+                self.sample = Sample(sample=f.get('/entry/sample'))
+                instr = getInstrument(f)
+                if self.type == 'hdf':
+                    self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
+                else:
+                    self.I=Marray(f.get('entry/data/intensity'))
+                self.qx=Marray(f.get('entry/data/qx'))
+                self.qy=Marray(f.get('entry/data/qy'))
+                self.h=Marray(f.get('entry/data/h'))
+                self.k=Marray(f.get('entry/data/k'))
+                self.l=Marray(f.get('entry/data/l'))
+                self.energy=Marray(f.get('entry/data/en'))
+                self.Norm=Marray(f.get('entry/data/normalization'))
+                self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
+                self.MonitorPreset=np.array(f.get('entry/control/preset'))                
+                if self.type == 'hdf':
+                    self.Monitor = Marray(f.get('entry/control/data'))
+                    if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
+                        if self.Monitor.flatten()[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
+                            self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
+                else:
+                    self.Monitor=Marray(f.get('entry/data/monitor'))
+                self.Time = np.array(f.get('entry/control/time'))
+
+                instr = getInstrument(f)
+                self.instrument = instr.name.split('/')[-1]
+                self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
+                self.Ei = Marray(instr.get('monochromator/energy'))
+                self.A3 = Marray(f.get('entry/sample/rotation_angle'))
+                self.A4 = Marray(instr.get('analyzer/polar_angle')).reshape(-1)
+                try:
+                    self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))  
+                except:
+                    self.A3Off = [0.0]
+                self.A4Off = Marray(instr.get('analyzer/polar_angle_offset'))
+                if self.type == 'hdf':
+                    self.binning=1 # Choose standard binning 1
+                else:
+                    self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
+                calibrations = []
+                for binning in self.possibleBinnings:
+                    Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
+                    width = np.array(instr.get('calib{}/width'.format(str(binning))))
+                    bg = np.array(instr.get('calib{}/background'.format(str(binning))))
+                    amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
+                    EfTable = np.array([amp,Ef,width,bg]).T
+                    A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
+                    bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
+                    calibrations.append([EfTable,A4,bound])
+                self.instrumentCalibrations = np.array(calibrations)
+                self.loadBinning(self.binning)
+                
+                self.temperature = np.array(sample.get('temperature'))
+                self.magneticField = np.array(sample.get('magnetic_field'))
+                self.electricField = np.array(sample.get('electric_field'))
+                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                self.scanCommand = np.array(f.get('entry/scancommand'))
+                if self.type == 'nxs':
+                    self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
+                self.title = np.array(f.get('entry/title'))
+
+                try:
+                    self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                except:
+                    pass
+
+                if self.type == 'hdf':
+                    ###################
+                    self.I[:,:,:200]=0#
+                    ###################
+                
             for key in ['magneticField','temperature','electricField']:
                 if self.__dict__[key].dtype ==object: # Is np nan object
                     self.__dict__[key] = None
@@ -1513,15 +1493,16 @@ def test_DataFile():
 
 def test_DataFile_equility():
     f1 = DataFile('Data/camea2018n000017.hdf')
+    print('----------')
     f2 = DataFile('Data/camea2018n000017.hdf')
     assert(f1==f2)
-
+    print('----------')
     f3 = DataFile(f2)
     assert(f1==f3)
-
+    print('----------')
     f3 = DataFile('Data/camea2018n000017.nxs')
     assert(f1==f3)
-
+    print('----------')
     f4 = DataFile('Data/camea2018n000038.hdf')
     assert(f1!=f4)
 
