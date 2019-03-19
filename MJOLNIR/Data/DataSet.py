@@ -4,40 +4,35 @@ sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../..')
 
-
+import datetime
+import h5py as hdf
 import numpy as np
 import pickle as pickle
-import h5py as hdf
-
-from scipy.ndimage import filters
-import scipy.optimize
-from scipy.spatial import Voronoi,ConvexHull,KDTree
-
-from shapely.geometry import Polygon as PolygonS
-from shapely.geometry import Point as PointS
-from shapely.vectorized import contains
-
 import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection,PolyCollection
+import matplotlib.ticker as ticker
+from matplotlib.patches import Polygon
+from MJOLNIR.Data import DataFile,Viewer3D
+from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
 from mpl_toolkits.axisartist import Subplot
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection,PolyCollection
-import matplotlib.ticker as ticker
-
-import datetime
-import warnings
-from MJOLNIR.Data import DataFile,Viewer3D
-from MJOLNIR import _tools
-
-import time
 import pytest
+from scipy.ndimage import filters
+import scipy.optimize
+from scipy.spatial import Voronoi,ConvexHull,KDTree
+from shapely.geometry import Polygon as PolygonS
+from shapely.geometry import Point as PointS
+from shapely.vectorized import contains
+import time
+import warnings
 
 
 
 class DataSet(object):
-    @_tools.KwargChecker(include=['Author']) # Not used as excess kwargs are input as settings
-    def __init__(self, dataFiles=None, normalizationfiles=None, calibrationfiles=None, convertedFiles=None, **kwargs):
+    @_tools.KwargChecker(include=['Author']) 
+    def __init__(self, dataFiles=None, normalizationfiles=None, 
+                 calibrationfiles=None, convertedFiles=None, **kwargs):
         """DataSet object to hold all informations about data.
         
         Kwargs:
@@ -808,7 +803,7 @@ class DataSet(object):
         ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
         return ax,[intensity,monitorCount,Normalization,NormCount],qbins
 
-    def createRLUAxes(self,figure=None):
+    def createRLUAxes(self,figure=None,ids=[1,1,1]):
         """Wrapper for the createRLUAxes method.
 
         Returns:
@@ -819,7 +814,7 @@ class DataSet(object):
            Uses sample from the first converted data file. However, this should be taken care of by the comparison of datafiles to ensure same sample and settings.
 
         """
-        return createRLUAxes(self,figure=figure)
+        return createRLUAxes(self,figure=figure,ids=ids)
 
 
     def createQEAxes(self,axis=0,figure=None):
@@ -907,12 +902,12 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
+                I = self.I.extractData()#
+                qx = self.qx.extractData()#
+                qy = self.qy.extractData()#
+                energy = self.energy.extractData()#
+                Norm = self.Norm.extractData()#
+                Monitor = self.Monitor.extractData()#
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
@@ -930,14 +925,14 @@ class DataSet(object):
             else:
                 _3D = False
         
-        if len(qx.shape)==1 or len(qx.shape)==4:
-            
-            qx = np.concatenate(qx,axis=0)
-            qy = np.concatenate(qy,axis=0)
-            energy = np.concatenate(energy,axis=0)
-            I = np.concatenate(I,axis=0)
-            Norm = np.concatenate(Norm,axis=0)
-            Monitor = np.concatenate(Monitor,axis=0)
+        #if len(qx.shape)==1 or len(qx.shape)==4:
+        #    
+        #    qx = np.concatenate(qx,axis=0)
+        #    qy = np.concatenate(qy,axis=0)
+        #    energy = np.concatenate(energy,axis=0)
+        #    I = np.concatenate(I,axis=0)
+        #    Norm = np.concatenate(Norm,axis=0)
+        #    Monitor = np.concatenate(Monitor,axis=0)
         
         
         if rlu == True: # Rotate positions with taslib.misalignment to line up with RLU
@@ -1378,7 +1373,7 @@ class DataSet(object):
         return np.array(DataList),np.array(BinList),np.array(centerPosition),np.array(binDistance)
 
 
-    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap']]))
+    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar']]))
     def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
@@ -1526,6 +1521,13 @@ class DataSet(object):
                 log = kwargs['log']
                 del kwargs['log']
                 
+            if not 'colorbar' in kwargs:
+                colorbar = True
+            else:
+                colorbar = kwargs['colorbar']
+                del kwargs['colorbar']
+                
+            
 
             pmeshs = []
             xticks = []
@@ -1631,7 +1633,8 @@ class DataSet(object):
             
             ax.xaxis.set_label_coords(1.15, -0.025)
             ax.set_ylabel('E [meV]')
-            ax.get_figure().colorbar(pmeshs[0],pad=0.1)
+            if colorbar:
+                ax.get_figure().colorbar(pmeshs[0],pad=0.1)
             plt.tight_layout()
             if 'pmeshs' in ax.__dict__:
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
@@ -2454,7 +2457,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     ax.pmeshs = pmeshs
     return ax,[intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-def createRLUAxes(Dataset,figure=None):
+def createRLUAxes(Dataset,figure=None,ids=[1, 1, 1]):
     """Create a reciprocal lattice plot for a given DataSet object.
     
     Args:
@@ -2486,10 +2489,12 @@ def createRLUAxes(Dataset,figure=None):
         fig = plt.figure(figsize=(7, 4))
     else:
         fig = figure
-        fig.clf()
+        #fig.clf()
     grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr))
     
-    ax = Subplot(fig, 1, 1, 1, grid_helper=grid_helper)
+    
+
+    ax = Subplot(fig, *ids, grid_helper=grid_helper)
     ax.sample = sample
     
     def set_axis(ax,v1,v2,*args):
@@ -2509,9 +2514,9 @@ def createRLUAxes(Dataset,figure=None):
     ax.set_aspect(1.)
     ax.grid(True, zorder=0)
     
-    if not np.isclose(sample.projectionAngle,np.pi):
-        ax.axis["top"].major_ticklabels.set_visible(True)
-        ax.axis["right"].major_ticklabels.set_visible(True)
+    #if not np.isclose(sample.projectionAngle,np.pi/2.0,atol=0.001):
+    #    ax.axis["top"].major_ticklabels.set_visible(True)
+    #    ax.axis["right"].major_ticklabels.set_visible(True)
 
     ax.format_coord = sample.format_coord
     ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
