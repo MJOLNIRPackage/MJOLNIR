@@ -58,6 +58,7 @@ class DataSet(object):
         self._convertedFiles = []
         self._calibrationfiles = []
         self._mask = False
+        self.index = 0
 
 
         if dataFiles is not None:
@@ -205,6 +206,48 @@ class DataSet(object):
             string+='{}:\t{}\n'.format(attrib,self.__dict__[attrib])
         string+='\n'    
         return string
+
+    def __getitem__(self,index):
+        try:
+            return self.dataFiles[index]
+        except IndexError:
+            raise MJOLNIRError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
+
+    def __len__(self):
+        return len(self.dataFiles)
+    
+    def __iter__(self):
+        self._index=0
+        return self
+    
+    def __next__(self):
+        if self._index >= len(self):
+            raise StopIteration
+        result = self.dataFiles[self._index]
+        self._index += 1
+        return result
+    
+    def append(self,item):
+        try:
+            correctDataFiles = isListOfDataFiles(item)
+            [self._dataFiles.append(file) for file in correctDataFiles if file.type=='hdf']
+            [self._convertedFiles.append(file) for file in correctDataFiles if file.type=='nxs']
+        except Exception as e:
+            raise(e)
+        self._getData
+    
+    def __reversed__(self):
+        return self[::-1]
+    
+    def __delitem__(self,index):
+        try:
+            del self.dataFiles[index]
+        except IndexError:
+            raise MJOLNIRError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
+        self._getData
+
+
+
 
     @_tools.KwargChecker()
     def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None,saveFile=True):
@@ -4198,6 +4241,30 @@ def test_DataSet_Error():
 
 
     ds.dataFiles = 'Data/camea2018n000038.hdf'
+
+def test_DataSet_Pythonic():
+    dataFiles = ['Data/camea2018n000038.hdf','Data/camea2018n000017.hdf']
+    dataset = DataSet(dataFiles=dataFiles)
+    assert(len(dataset)==2)
+    for df in dataset:
+        print(df)
+    initShape = dataset.I.shape
+    names = [dataset[i].name for i in range(len(dataset))]
+    names.reverse()
+    for i,df in enumerate(list(reversed(dataset))):
+        names[i]==df.name
+
+    dataset.append(dataFiles)
+    assert(len(dataset)==4)
+    secondShape = dataset.Monitor.shape
+    assert(np.all(secondShape!=initShape))
+    del dataset[3]
+    del dataset[2]
+    dataset.append(DataFile.DataFile(dataFiles[0]))
+    assert(len(dataset)==3)
+    assert(dataset.I.shape!=secondShape)
+
+
 
 def test_DataSet_Equality():
     D1 = DataSet(dataFiles='Data/camea2018n000038.hdf')#,convertedFiles=['TestData/VanNormalization.nxs'])
