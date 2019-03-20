@@ -226,6 +226,9 @@ class DataSet(object):
         result = self.dataFiles[self._index]
         self._index += 1
         return result
+
+    def next(self):
+        return self.__next__()
     
     def append(self,item):
         try:
