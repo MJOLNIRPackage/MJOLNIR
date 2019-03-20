@@ -846,18 +846,109 @@ class DataSet(object):
         ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
         return ax,[intensity,monitorCount,Normalization,NormCount],qbins
 
-    def createRLUAxes(self,figure=None,ids=[1,1,1]):
-        """Wrapper for the createRLUAxes method.
+    def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=None,basey=None):
+        """Create a reciprocal lattice plot for a given DataSet object.
+        
+        Args:
+            
+            - Dataset (DataSet): DataSet object for which the RLU plot is to be made.
+
+        Kwargs:
+
+            - figure: Matplotlib figure in which the axis is to be put (default None)
+
+            - ids (array): List of integer numbers provided to the SubplotHost ids attribute (default [1,1,1])
+            
+            - nbinsx (int): Number of bins used along the x-axis (default around 5 - depends on angle between projection vectors)
+
+            - nbinsy (int): Number of bins used along the y-axis (default None)
+
+            - basex (float): Ticks are positioned at multiples of this value along x (default None)
+
+            - basey (float): Ticks are positioned at multiples of this value along y (default None)
 
         Returns:
-
-            - ax (Matplotlib axes): Created reciprocal lattice axes.
+            
+            - ax (Matplotlib axes): Axes containing the RLU plot.
 
         .. note::
-           Uses sample from the first converted data file. However, this should be taken care of by the comparison of datafiles to ensure same sample and settings.
+            When rlu axis is created, the orientation of Qx and Qy is assumed to be rotated as well. 
+            This is to be done in the self.View3D method call!
 
+        .. note::
+            The number of ticks and their location cannot be changed after the initiation of the axis due to current stage of experimental development
+            of the GridHelperCurveLinear object. Provide either nbinsy, (nbinsx,nbinsy), basex, or (basex,basey). If none is provided 0.25 is used as base 
+            in both directions.
+            
         """
-        return createRLUAxes(self,figure=figure,ids=ids)
+        import copy
+        sample = copy.deepcopy(self.sample)
+        
+        sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
+        sample.convertinv = np.linalg.inv(sample.convert) # Convert from Qx, Qy to projX, projY
+
+        sample.convertHKL = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
+        sample.convertHKLINV = DataFile.invert(sample.convertHKL) # Convert from Qx, Qy to HKL
+
+        sample.orientationMatrixINV = np.linalg.inv(np.dot(sample.RotMat3D,sample.orientationMatrix))
+        
+
+        if figure is None:
+            fig = plt.figure(figsize=(7, 4))
+        else:
+            fig = figure
+
+        if not nbinsx is None or not nbinsy is None: # Either nbinsx or nbinsy is provided (or both)
+            if not nbinsy is None and nbinsx is None:
+                nbinsx = int(np.round(nbinsy/np.sin(sample.projectionAngle)))
+            elif not nbinsx is None and nbinsy is None:
+                nbinsy = int(np.round(nbinsx*np.sin(sample.projectionAngle)))
+            grid_locator1 = MaxNLocator(nbins=nbinsx)
+            grid_locator2 = MaxNLocator(nbins=nbinsy)
+            
+        elif not basex is None or not basey is None: # Either basex or basey is provided (or both)
+            if basex is None:
+                basex = basey
+            elif basey is None:
+                basey = basex
+            grid_locator1 = MultipleLocator(base=basex)
+            grid_locator2 = MultipleLocator(base=basey)
+        else:
+            basex = basey = 0.25
+            grid_locator1 = MultipleLocator(base=basex)
+            grid_locator2 = MultipleLocator(base=basey)
+
+        grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr),grid_locator1=grid_locator1,grid_locator2=grid_locator2)
+        
+        ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
+        ax.sample = sample
+        
+        def set_axis(ax,v1,v2,*args):
+            if not args is ():
+                points = np.concatenate([[v1,v2],[x for x in args]],axis=0)
+            else:
+                points = np.array([v1,v2])
+                
+            if points.shape[1] == 3:
+                points = ax.sample.calculateHKLtoProjection(points[:,0],points[:,1],points[:,2]).T
+            boundaries = np.array([ax.sample.inv_tr(x[0],x[1]) for x in points])
+            ax.set_xlim(boundaries[:,0].min(),boundaries[:,0].max())
+            ax.set_ylim(boundaries[:,1].min(),boundaries[:,1].max())
+
+
+        fig.add_subplot(ax)
+        ax.set_aspect(1.)
+        ax.grid(True, zorder=0)
+        
+        if not np.isclose(sample.projectionAngle,np.pi/2.0,atol=0.001):
+            ax.axis["top"].major_ticklabels.set_visible(True)
+            ax.axis["right"].major_ticklabels.set_visible(True)
+
+        ax.format_coord = sample.format_coord
+        ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
+        ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector1.astype(int)])))
+        ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector2.astype(int)])))
+        return ax
 
 
     def createQEAxes(self,axis=0,figure=None):
@@ -2500,72 +2591,56 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     ax.pmeshs = pmeshs
     return ax,[intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-def createRLUAxes(Dataset,figure=None,ids=[1, 1, 1]):
-    """Create a reciprocal lattice plot for a given DataSet object.
-    
-    Args:
-        
-        - Dataset (DataSet): DataSet object for which the RLU plot is to be made.
-        
-    Returns:
-        
-        - ax (Matplotlib axes): Axes containing the RLU plot.
 
-    .. note::
-        When rlu axis is created, the orientation of Qx and Qy is assumed to be rotated as well. 
-        This is to be done in the self.View3D method call!
-        
-    """
-    import copy
-    sample = copy.deepcopy(Dataset.sample)
-    
-    sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
-    sample.convertinv = np.linalg.inv(sample.convert) # Convert from Qx, Qy to projX, projY
+import matplotlib.ticker as mticker
+class MaxNLocator(mticker.MaxNLocator):
+    def __init__(self, nbins=10, steps=None,
+                 trim=True,
+                 integer=False,
+                 symmetric=False,
+                 prune=None):
+        # trim argument has no effect. It has been left for API compatibility
+        mticker.MaxNLocator.__init__(self, nbins, steps=steps,
+                                     integer=integer,
+                                     symmetric=symmetric, prune=prune)
+        self.create_dummy_axis()
+        self._factor = None
 
-    sample.convertHKL = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
-    sample.convertHKLINV = DataFile.invert(sample.convertHKL) # Convert from Qx, Qy to HKL
-
-    sample.orientationMatrixINV = np.linalg.inv(np.dot(sample.RotMat3D,sample.orientationMatrix))
-    
-
-    if figure is None:
-        fig = plt.figure(figsize=(7, 4))
-    else:
-        fig = figure
-        #fig.clf()
-    grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr))
-    
-    
-
-    ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
-    ax.sample = sample
-    
-    def set_axis(ax,v1,v2,*args):
-        if not args is ():
-            points = np.concatenate([[v1,v2],[x for x in args]],axis=0)
+    def __call__(self, v1, v2):
+        if self._factor is not None:
+            self.set_bounds(v1*self._factor, v2*self._factor)
+            locs = mticker.MaxNLocator.__call__(self)
+            return np.array(locs), len(locs), self._factor
         else:
-            points = np.array([v1,v2])
-            
-        if points.shape[1] == 3:
-            points = ax.sample.calculateHKLtoProjection(points[:,0],points[:,1],points[:,2]).T
-        boundaries = np.array([ax.sample.inv_tr(x[0],x[1]) for x in points])
-        ax.set_xlim(boundaries[:,0].min(),boundaries[:,0].max())
-        ax.set_ylim(boundaries[:,1].min(),boundaries[:,1].max())
+            self.set_bounds(v1, v2)
+            locs = mticker.MaxNLocator.__call__(self)
+            return np.array(locs), len(locs), None
+
+    def set_factor(self, f):
+        self._factor = f
 
 
-    fig.add_subplot(ax)
-    ax.set_aspect(1.)
-    ax.grid(True, zorder=0)
-    
-    #if not np.isclose(sample.projectionAngle,np.pi/2.0,atol=0.001):
-    #    ax.axis["top"].major_ticklabels.set_visible(True)
-    #    ax.axis["right"].major_ticklabels.set_visible(True)
+class MultipleLocator(mticker.MultipleLocator):
+    def __init__(self,base=0.25):
+        
+        mticker.MultipleLocator.__init__(self, base)
+        self.create_dummy_axis()
+        self._factor = None
 
-    ax.format_coord = sample.format_coord
-    ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
-    ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector1.astype(int)])))
-    ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector2.astype(int)])))
-    return ax
+    def __call__(self, v1, v2):
+        if self._factor is not None:
+            self.set_bounds(v1*self._factor, v2*self._factor)
+            locs = mticker.MultipleLocator.__call__(self)
+            return np.array(locs), len(locs), self._factor
+        else:
+            self.set_bounds(v1, v2)
+            locs = mticker.MultipleLocator.__call__(self)
+            return np.array(locs), len(locs), None
+
+    def set_factor(self, f):
+        self._factor = f
+
+
 
 
 def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, projectionVector2 = None):
