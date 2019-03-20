@@ -18,6 +18,7 @@ tutorials and guides on how to make use of MJOLNIR.
    :maxdepth: 2
 
    Introduction
+   faq
    Tutorials/Tutorial
    MJOLNIR
    InDepthDocumentation/Documentation
