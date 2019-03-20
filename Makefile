@@ -23,6 +23,12 @@ wheel:
 	python setup.py sdist
 
 version = $(shell python cut.py $(shell ls -t dist/* | head -1))
+
+upload:
+	twine upload $(shell ls -t dist/* | head -1) -r testpypi
+	twine upload $(shell ls -t dist/* | head -1) -r pypi
+
+
 version: 
 	echo 'Creating version $(version)'
 	python Update.py $(version)
@@ -30,8 +36,6 @@ version:
 	git add setup.py docs/conf.py docs/Tutorials/* docs/index.rst
 	git commit -m 'Update version'
 	make wheel
-	twine upload $(shell ls -t dist/* | head -1) -r testpypi
-	twine upload $(shell ls -t dist/* | head -1) -r pypi
 	git push
 	git push --tags
 
