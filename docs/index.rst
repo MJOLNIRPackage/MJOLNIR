@@ -15,7 +15,7 @@ Below is an overview of the provided documentation containing everything from ph
 tutorials and guides on how to make use of MJOLNIR.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    Introduction
    faq
