@@ -1,14 +1,20 @@
-import sys, os
+import os
+import sys
+
 sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../..')
-import matplotlib.pyplot as plt
+
+import warnings
+
 import matplotlib.cm as cm
+import matplotlib.gridspec
+import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
-import matplotlib.gridspec
 from MJOLNIR import _tools
-import warnings
+
+
 
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
@@ -169,7 +175,9 @@ class Viewer3D(object):
 
         self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(self,x))
         
-        self.caxis = (self.masked_array.min(),self.masked_array.max())
+
+        maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
+        self.caxis = [np.nanmin(self.masked_array),maxVal]
         self.ax.grid(self.grid,zorder=self.gridZOrder)
 
     @property 
@@ -182,6 +190,11 @@ class Viewer3D(object):
 
     @caxis.setter
     def caxis(self,caxis):
+        ErrMsg = 'Provided caxis is not of correct format. Expected 2 values but recieved "{}" of type {}'
+        if not isinstance(caxis,(list,np.ndarray,tuple)):
+            raise AttributeError(ErrMsg.format(caxis,type(caxis)))
+        if len(list(caxis))!=2:
+            raise AttributeError(ErrMsg.format(caxis,type(caxis)))
         self._caxis = caxis
         self.im.set_clim(caxis)
         self.colorbar.update_bruteforce(self.im)
