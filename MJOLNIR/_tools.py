@@ -367,6 +367,25 @@ def RoundBinning(X,deltas,Data=None):
     
     return BinnedPoints,indices,count
     
+
+def invert(M):
+    """Invert non-square matrices as described on https://en.wikipedia.org/wiki/Generalized_inverse.
+    
+    Args:
+        
+        - M (matrix): Matrix in question.
+        
+    Returns:
+        
+        - Left or right inverse matrix depending on shape of provided matrix.
+    """
+    s = M.shape
+    if s[0]>s[1]:
+        return np.dot(np.linalg.inv(np.dot(M.T,M)),M.T)
+    else:
+        return np.dot(M.T,np.linalg.inv(np.dot(M,M.T)))
+
+
 def test_binEdges():
     values = np.exp(np.linspace(-0.1,1,101)) # Generate non-linear points
     #values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
