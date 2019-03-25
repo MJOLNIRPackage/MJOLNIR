@@ -175,8 +175,10 @@ class Viewer3D(object):
 
         self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(self,x))
         
-
-        maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
+        try:
+            maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
+        except ValueError:
+            maxVal = 1
         self.caxis = [np.nanmin(self.masked_array),maxVal]
         self.ax.grid(self.grid,zorder=self.gridZOrder)
 
