@@ -26,6 +26,7 @@ from shapely.geometry import Point as PointS
 from shapely.vectorized import contains
 import time
 import warnings
+from . import RLUAxes
 
 
 
@@ -884,75 +885,7 @@ class DataSet(object):
             in both directions.
             
         """
-        import copy
-        sample = copy.deepcopy(self.sample)
-        
-        sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
-        sample.convertinv = np.linalg.inv(sample.convert) # Convert from Qx, Qy to projX, projY
-
-        sample.convertHKL = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
-        sample.convertHKLINV = DataFile.invert(sample.convertHKL) # Convert from Qx, Qy to HKL
-
-        sample.orientationMatrixINV = np.linalg.inv(np.dot(sample.RotMat3D,sample.orientationMatrix))
-        
-
-        if figure is None:
-            fig = plt.figure(figsize=(7, 4))
-        else:
-            fig = figure
-
-        if not nbinsx is None or not nbinsy is None: # Either nbinsx or nbinsy is provided (or both)
-            if not nbinsy is None and nbinsx is None:
-                nbinsx = int(np.round(nbinsy/np.sin(sample.projectionAngle)))
-            elif not nbinsx is None and nbinsy is None:
-                nbinsy = int(np.round(nbinsx*np.sin(sample.projectionAngle)))
-            grid_locator1 = MaxNLocator(nbins=nbinsx)
-            grid_locator2 = MaxNLocator(nbins=nbinsy)
-            
-        elif not basex is None or not basey is None: # Either basex or basey is provided (or both)
-            if basex is None:
-                basex = basey
-            elif basey is None:
-                basey = basex
-            grid_locator1 = MultipleLocator(base=basex)
-            grid_locator2 = MultipleLocator(base=basey)
-        else:
-            basex = basey = 0.25
-            grid_locator1 = MultipleLocator(base=basex)
-            grid_locator2 = MultipleLocator(base=basey)
-
-        grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr),grid_locator1=grid_locator1,grid_locator2=grid_locator2)
-        
-        ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
-        ax.sample = sample
-        
-        def set_axis(ax,v1,v2,*args):
-            if not args is ():
-                points = np.concatenate([[v1,v2],[x for x in args]],axis=0)
-            else:
-                points = np.array([v1,v2])
-                
-            if points.shape[1] == 3:
-                points = ax.sample.calculateHKLtoProjection(points[:,0],points[:,1],points[:,2]).T
-            boundaries = np.array([ax.sample.inv_tr(x[0],x[1]) for x in points])
-            ax.set_xlim(boundaries[:,0].min(),boundaries[:,0].max())
-            ax.set_ylim(boundaries[:,1].min(),boundaries[:,1].max())
-
-
-        fig.add_subplot(ax)
-        ax.set_aspect(1.)
-        ax.grid(True, zorder=0)
-        
-        if not np.isclose(sample.projectionAngle,np.pi/2.0,atol=0.001):
-            ax.axis["top"].major_ticklabels.set_visible(True)
-            ax.axis["right"].major_ticklabels.set_visible(True)
-
-        ax.format_coord = sample.format_coord
-        ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
-        ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector1.astype(int)])))
-        ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector2.astype(int)])))
-        return ax
-
+        return RLUAxes.createRLUAxes(self,figure,ids,nbinsx,nbinsy,basex,basey)
 
     def createQEAxes(self,axis=0,figure=None):
         """Wrapper for the createRLUAxes method.
@@ -1675,6 +1608,9 @@ class DataSet(object):
             idmax = len(DataList) # Number of segments
             edgeQDistance = []
             
+            actualEnergy = [np.concatenate([[x[0] for x in BinListTotal[i][:,2]],[BinListTotal[i][-1,2][1]]]) for i in range(len(BinListTotal))]
+            
+
             for segID in range(idmax): # extract relevant data for current segment
                 [intensityArray,monitorArray,normalizationArray,normcountArray] = DataList[segID]#[i] for i in range(4)]
                 BinList = BinListTotal[segID]
@@ -1848,11 +1784,11 @@ class DataSet(object):
                     else:
                         return -1,-1,-1
 
-                ax.calculateIndex = lambda x,y: calculateIndex(x,y,offset,EnergyBins,edgeQDistance,textReturn=False)
+    
                 index = edgeQDistance[segID][Eindex].searchsorted(xInSegment) - 1
                 
                 return segID,Eindex,index
-
+            ax.calculateIndex = lambda x,y: calculateIndex(x,y,offset,actualEnergy,edgeQDistance,textReturn=False)#EnergyBins
             def onclick(event,ax,DataList): # pragma: no cover
                 if ax.in_axes(event) and ax.get_figure().canvas.cursor().shape() == 0:
                     x = event.xdata
@@ -1866,7 +1802,7 @@ class DataSet(object):
                         NC = int(DataList[segID][3][Eindex][index][0])
                         printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
                     print(printString)
-            ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPositionTotal,EnergyBins,IntTotal,rlu,offset,self)
+            ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPositionTotal,actualEnergy,IntTotal,rlu,offset,self)#EnergyBins
             ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
         else:
             import matplotlib.colors
@@ -2076,8 +2012,8 @@ class DataSet(object):
 
         return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
 
-    @_tools.KwargChecker()
-    def View3D(self,dx,dy,dz,rlu=True, log=False,grid=False,axis=2):
+    @_tools.KwargChecker(function=createRLUAxes)
+    def View3D(self,dx,dy,dz,rlu=True, log=False,grid=False,axis=2,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2098,6 +2034,8 @@ class DataSet(object):
 
             - axis (int): Axis shown initially (default 2)
 
+            - kwargs: The remaining kwargs are given to the createRLUAxes method, inteded for tick mark positioning (see createRLUAxes)
+
         If one plots not using RLU, everything is plotted in real units (1/AA), and the Qx and QY is not rotated. That is, the
         x axis in energy is not along the projection vector. The cuts of constant Qx and Qy does not represent any symmetry directions in
         the sample.
@@ -2108,7 +2046,7 @@ class DataSet(object):
         """
 
         if rlu:
-            rluax = self.createRLUAxes()
+            rluax = self.createRLUAxes(**kwargs)
             figure = rluax.get_figure()
             figure.delaxes(rluax)
             qxEax = self.createQEAxes(axis=1,figure=figure)
@@ -2594,54 +2532,6 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     ax.pmeshs = pmeshs
     return ax,[intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
-
-import matplotlib.ticker as mticker
-class MaxNLocator(mticker.MaxNLocator):
-    def __init__(self, nbins=10, steps=None,
-                 trim=True,
-                 integer=False,
-                 symmetric=False,
-                 prune=None):
-        # trim argument has no effect. It has been left for API compatibility
-        mticker.MaxNLocator.__init__(self, nbins, steps=steps,
-                                     integer=integer,
-                                     symmetric=symmetric, prune=prune)
-        self.create_dummy_axis()
-        self._factor = None
-
-    def __call__(self, v1, v2):
-        if self._factor is not None:
-            self.set_bounds(v1*self._factor, v2*self._factor)
-            locs = mticker.MaxNLocator.__call__(self)
-            return np.array(locs), len(locs), self._factor
-        else:
-            self.set_bounds(v1, v2)
-            locs = mticker.MaxNLocator.__call__(self)
-            return np.array(locs), len(locs), None
-
-    def set_factor(self, f):
-        self._factor = f
-
-
-class MultipleLocator(mticker.MultipleLocator):
-    def __init__(self,base=0.25):
-        
-        mticker.MultipleLocator.__init__(self, base)
-        self.create_dummy_axis()
-        self._factor = None
-
-    def __call__(self, v1, v2):
-        if self._factor is not None:
-            self.set_bounds(v1*self._factor, v2*self._factor)
-            locs = mticker.MultipleLocator.__call__(self)
-            return np.array(locs), len(locs), self._factor
-        else:
-            self.set_bounds(v1, v2)
-            locs = mticker.MultipleLocator.__call__(self)
-            return np.array(locs), len(locs), None
-
-    def set_factor(self, f):
-        self._factor = f
 
 
 
