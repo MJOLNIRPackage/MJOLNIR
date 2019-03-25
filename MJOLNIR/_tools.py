@@ -139,7 +139,7 @@ def logMethod(self,original_function):  # pragma: no cover
     new_function.original_function= original_function                                   
     return new_function  
 
-def logAttribute(self,original_attribute):      
+def logAttribute(self,original_attribute): # pragma: no cover
     self._log.info('Calling attribute {}'.format(str(original_attribute)))                                     
     
 
@@ -393,7 +393,7 @@ def overWritingFunctionDecorator(overWritingFunction):
 
 
 
-def calRefVector(points):
+def calRefVector(points):# pragma: no cover
     """ Calcualte reference vector as vector pointing from mean point to geometric center. For half moon shape this is anti-radially.
     
     Args:
@@ -544,7 +544,7 @@ def Rot(theta,deg=True):
 
 
 
-def clockwiseangle_and_distance(point,origin=[0,0],refvec = [0,1]):
+def clockwiseangle_and_distance(point,origin=[0,0],refvec = [0,1]): # pragma: no cover
     """Sort points clockwise. Taken from https://stackoverflow.com/questions/41855695/sorting-list-of-two-dimensional-coordinates-by-clockwise-angle-using-python
     
     Args:
@@ -579,6 +579,23 @@ def clockwiseangle_and_distance(point,origin=[0,0],refvec = [0,1]):
     return angle, lenvector
 
 ############# TESTING
+
+def test_minMax():
+    L = np.random.rand(10,2,2)
+    minmax = minMax(L)
+    
+    assert(len(minmax)==2)
+    assert(np.isclose(minmax[0],np.min(L)))
+    assert(np.isclose(minmax[1],np.max(L)))
+
+    minmax = minMax(L,axis=-1)
+    assert(minmax.shape==(10,2,2))
+
+def test_unitVector():
+    V = np.array([1.0,2.0,3.0])
+    v = unitVector(V)
+    assert(np.isclose(np.linalg.norm(v),1.0))
+
 
 def test_rotations():
     vectors = [np.array([0,0,3.0]),np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0]),np.random.rand(3)]
