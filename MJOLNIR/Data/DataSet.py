@@ -850,55 +850,15 @@ class DataSet(object):
         ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
         return ax,[intensity,monitorCount,Normalization,NormCount],qbins
 
-    def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=None,basey=None):
-        """Create a reciprocal lattice plot for a given DataSet object.
-        
-        Args:
-            
-            - Dataset (DataSet): DataSet object for which the RLU plot is to be made.
+    @_tools.KwargChecker()
+    @_tools.overWritingFunctionDecorator(RLUAxes.createRLUAxes)
+    def createRLUAxes(*args,**kwargs): # pragma: no cover
+        raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createRLUAxes))
 
-        Kwargs:
-
-            - figure: Matplotlib figure in which the axis is to be put (default None)
-
-            - ids (array): List of integer numbers provided to the SubplotHost ids attribute (default [1,1,1])
-            
-            - nbinsx (int): Number of bins used along the x-axis (default around 5 - depends on angle between projection vectors)
-
-            - nbinsy (int): Number of bins used along the y-axis (default None)
-
-            - basex (float): Ticks are positioned at multiples of this value along x (default None)
-
-            - basey (float): Ticks are positioned at multiples of this value along y (default None)
-
-        Returns:
-            
-            - ax (Matplotlib axes): Axes containing the RLU plot.
-
-        .. note::
-            When rlu axis is created, the orientation of Qx and Qy is assumed to be rotated as well. 
-            This is to be done in the self.View3D method call!
-
-        .. note::
-            The number of ticks and their location cannot be changed after the initiation of the axis due to current stage of experimental development
-            of the GridHelperCurveLinear object. Provide either nbinsy, (nbinsx,nbinsy), basex, or (basex,basey). If none is provided 0.25 is used as base 
-            in both directions.
-            
-        """
-        return RLUAxes.createRLUAxes(self,figure,ids,nbinsx,nbinsy,basex,basey)
-
-    def createQEAxes(self,axis=0,figure=None):
-        """Wrapper for the createRLUAxes method.
-
-        Returns:
-
-            - ax (Matplotlib axes): Created reciprocal lattice axes.
-
-        .. note::
-           Uses sample from the first converted data file. However, this should be taken care of by the comparison of datafiles to ensure same sample and settings.
-
-        """
-        return createQEAxes(self,axis=axis,figure=figure)
+    @_tools.KwargChecker()
+    @_tools.overWritingFunctionDecorator(RLUAxes.createQEAxes)
+    def createQEAxes(*args,**kwargs): # pragma: no cover
+        raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQEAxes))
     
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
     def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,**kwargs):
@@ -2533,109 +2493,6 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     return ax,[intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
 
-
-
-
-def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, projectionVector2 = None):
-    """Function to create Q E plot
-
-    Kwargs:
-
-        - DataSet (DataSet): If provided and no projections vectors creates QE axis for main direction (default None)
-
-        - axis (int): Whether to create axis 0 or 1 (projection vector 0 or orthogonal to this, default 0)
-
-        - figure (figure): If provided, this is used to create the axis withing (default None)
-
-        - projectionVector1 (vec): Projection vector along wich data is plotted. If not provided sample vector is used (default None)
-
-        - projectionVector2 (vec): Projection vector orthogonal to data. If not provided sample vector is used (default None)
-
-
-    """
-    
-    if projectionVector1 is None or projectionVector2 is None:
-        v1 = DataSet.sample.projectionVector1
-        v2 = DataSet.sample.projectionVector2
-        angle = DataSet.sample.projectionAngle
-        orientationMatrix = DataSet.sample.orientationMatrix
-    else:
-        v1 = np.asarray(projectionVector1)
-        v2 = np.asarray(projectionVector2)
-        if not np.all([x[0].shape==3 for x in [v1,v2]]) and not np.all([len(x.shape)==1 for x in [v1,v2]]):
-            raise AttributeError('Provided vector(s) is not 3D: projectionVector1.shape={} or projectionVector2.shape={}'.format(v1.shape,v2.shape))
-        angle = np.arccos(np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2)))
-        orientationMatrix = np.ones(3)
-
-    v2Length = np.linalg.norm(v2)
-    
-    
-    projectionMatrix = np.linalg.inv(np.array([[1,0],[np.cos(angle)*v2Length,np.sin(angle)*v2Length]]).T)
-    
-    projectionVectorQX = np.dot(np.dot(projectionMatrix,[1,0]),np.array([v1,v2]))
-    projectionVectorQY = np.dot(np.dot(projectionMatrix,[0,1]),np.array([v1,v2]))
-    projectionVectorQX = DataFile.LengthOrder(projectionVectorQX)
-    projectionVectorQY = DataFile.LengthOrder(projectionVectorQY)
-    projectionVectorQXLength = np.linalg.norm(np.dot(orientationMatrix,projectionVectorQY))
-    projectionVectorQYLength = np.linalg.norm(np.dot(orientationMatrix,projectionVectorQX))
-    projectionVectorQXFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQX])
-    projectionVectorQYFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQY])
-    
-    if axis == 0:
-        projectionVectorLength = projectionVectorQYLength
-        projectionVectorLengthORthogonal = projectionVectorQXLength
-        projectionVectorFormated = projectionVectorQXFormated
-        projectionVector = projectionVectorQX
-        projectionVectorOrthogonal = projectionVectorQY
-    elif axis == 1:
-        projectionVectorLength = projectionVectorQXLength
-        projectionVectorFormated = projectionVectorQYFormated
-        projectionVectorLengthORthogonal = projectionVectorQYLength
-        projectionVector = projectionVectorQY
-        projectionVectorOrthogonal = projectionVectorQX
-    else:
-        raise AttributeError('Provided axis of {} is not allowed. Should be eiter 0 or 1.'.format(axis))
-
-    if figure is None:
-        
-        figure = plt.figure(figsize=(7, 4))
-    else:
-        figure.clf()
-    def inv_tr(l,x,y):
-        return x*l,y
-    
-    def tr(l,x,y):
-        return x/l,y
-    
-    
-    
-    grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
-                                        lambda x,y:tr(projectionVectorLength,x,y)))
-    
-    ax = SubplotHost(figure, 1, 1, 1, grid_helper=grid_helper)
-    
-    figure.add_subplot(ax)
-    #ax.set_aspect(1.)
-    ax.grid(True, zorder=0)
-    
-    def calculateRLU(l,v1,x,y,v,step):
-        return np.asarray(x)/l*v1+v*step, np.asarray(y)
-
-    def format_coord(x,y): # pragma: no cover # x is H,K,L and y is  energy
-        xformated = ', '.join(['{} = {}'.format(Y[0],Y[1]) for Y in zip(['h','k','l'],['{:.4f}'.format(X) for X in x])])
-        return '{}, E, {:.4f}'.format(xformated,y)
-    
-    
-    ax.set_xlabel('{} [RLU]'.format(projectionVectorFormated))
-    
-    ax.set_ylabel('E [meV]')
-    ax._length = projectionVectorLengthORthogonal
-    ax._projectionVector = projectionVector 
-    ax._projectionVectorOrthogonal = projectionVectorOrthogonal
-    ax._step = 0.0
-    ax.calculateRLU = lambda x,y: calculateRLU(projectionVectorLength,ax._projectionVector,x,y,ax._projectionVectorOrthogonal,ax._step)
-    ax.format_coord = lambda x,y: format_coord(*ax.calculateRLU(x,y))
-    return ax
 
 
 
