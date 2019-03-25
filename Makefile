@@ -35,6 +35,7 @@ version:
 	make tutorials
 	git add setup.py docs/conf.py docs/Tutorials/* docs/index.rst
 	git commit -m 'Update version'
+	git tag -a $(version) -m \'$(version)\'
 	make wheel
 	git push
 	git push --tags
