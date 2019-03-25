@@ -4,6 +4,7 @@ import numpy as np
 from difflib import SequenceMatcher
 import functools
 import logging
+import math
 MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
 def KwargChecker(function=None,include=None):
@@ -389,6 +390,204 @@ def overWritingFunctionDecorator(overWritingFunction):
     def overWriter(func):
         return overWritingFunction
     return overWriter
+
+
+
+def calRefVector(points):
+    """ Calcualte reference vector as vector pointing from mean point to geometric center. For half moon shape this is anti-radially.
+    
+    Args:
+        
+        - points (list): list of points for which reference vector is calcualted, shape is 2xN
+        
+    Returns:
+        
+        vector: Reference vector
+    
+    """
+    center = np.mean(points,axis=1).reshape(2,1)
+    argMinDist = np.argmin(np.linalg.norm(center-points,axis=0))
+    return center-points[:,argMinDist].reshape(2,1),center
+
+
+def minMax(x,axis=None):
+    """Return minimal and maximal of list.
+    
+    Args:
+        
+        - x (list): Object from which min and max is to be found.
+        
+    Kwargs:
+        
+        - axis (int): Axis or axes along which to operate (default 0)
+      
+    Returns:
+        
+        - min: Minimal value
+        
+        - max: Maximal value
+        
+    """
+    return np.min(x,axis=axis),np.max(x,axis=axis)
+
+
+def unitVector(v):
+    """Returns vector of unit length"""
+    return v/np.linalg.norm(v)
+
+def rotate2X(v):
+    if np.isclose(v[2]/np.linalg.norm(v),1): # v is along z
+        return rotMatrix([0,1,0],np.pi/2,deg=False)
+    # Find axis perp to v and proj v into x-y plane -> rotate 2 plane and then to x
+    vRotInPlane = np.array([-v[1],v[0],0])
+    vPlan = np.array([v[0],v[1],0])
+    ## TODO: Check this!
+    #if np.isclose(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)),1.0):
+    #    return rotMatrix([1,0,0],0.0)
+    theta = np.arccos(np.dot(v,vPlan)/(np.linalg.norm(v)*np.linalg.norm(vPlan)))
+    R = rotMatrix(vRotInPlane,theta,deg=False)
+    v2 = np.dot(R,v)
+    theta2 = np.arccos(np.dot(v2,np.array([1,0,0]))/np.linalg.norm(v2))
+    R2 = rotMatrix(np.array([0,0,1.0]),-theta2,deg=False)
+    
+    Rotation = np.dot(R2,R)
+    return Rotation
+
+def LengthOrder(v):
+    
+    nonZeroPos = np.logical_not(np.isclose(v,0.0))
+    if np.sum(nonZeroPos)==1:
+        Rv = v/np.linalg.norm(v)
+        return Rv
+    if np.sum(nonZeroPos)==0:
+        raise AttributeError('Provided vector is zero vector!')
+    
+    if np.sum(nonZeroPos)==3:
+        v1 = Norm2D(v[:2])
+        ratio = v1[0]/v[0]
+        v2 = Norm2D(np.array([v1[0],v[2]*ratio]))
+        ratio2 = v2[0]/v1[0]
+        Rv = np.array([v2[0],v1[1]*ratio2,v2[1]])
+    else:
+        Rv = np.zeros(3)
+        nonZeros = v[nonZeroPos]
+        Rv[nonZeroPos] = Norm2D(nonZeros)
+    
+    if not np.isclose(np.dot(Rv,v)/(np.linalg.norm(Rv)*np.linalg.norm(v)),1.0):
+        raise AttributeError('The found vector is not parallel to original vector: {}, {}',format(Rv,v))
+    return Rv
+
+
+
+def Norm2D(v):
+    reciprocal = np.abs(1/v)
+    if np.isclose(reciprocal[0],reciprocal[1]):
+        return v*reciprocal[0]
+    
+    ratio = np.max(reciprocal)/np.min(reciprocal)
+    if np.isclose(np.mod(ratio,1),0.0) or np.isclose(np.mod(ratio,1),1.0):
+        return v*np.min(reciprocal)*ratio
+    else:
+        return v
+
+
+def rotMatrix(v,theta,deg=True):
+    """ Generalized rotation matrix.
+    
+    Args:
+        
+        - v (list): Rotation axis around which matrix rotates
+        
+        - theta (float): Rotation angle (by default in degrees)
+        
+    Kwargs:
+        
+        - deg (bool): Whether or not angle is in degrees or radians (Default True)
+        
+    Returns:
+        
+        - 3x3 matrix rotating points around vector v by amount theta.
+    """
+    if deg==True:
+        theta = np.deg2rad(theta)
+    v/=np.linalg.norm(v)
+    m11 = np.cos(theta)+v[0]**2*(1-np.cos(theta))
+    m12 = v[0]*v[1]*(1-np.cos(theta))-v[2]*np.sin(theta)
+    m13 = v[0]*v[2]*(1-np.cos(theta))+v[1]*np.sin(theta)
+    m21 = v[0]*v[1]*(1-np.cos(theta))+v[2]*np.sin(theta)
+    m22 = np.cos(theta)+v[1]**2*(1-np.cos(theta))
+    m23 = v[1]*v[2]*(1-np.cos(theta))-v[0]*np.sin(theta)
+    m31 = v[0]*v[2]*(1-np.cos(theta))-v[1]*np.sin(theta)
+    m32 = v[1]*v[2]*(1-np.cos(theta))+v[0]*np.sin(theta)
+    m33 = np.cos(theta)+v[2]**2*(1-np.cos(theta))
+    return np.array([[m11,m12,m13],[m21,m22,m23],[m31,m32,m33]])
+
+def Rot(theta,deg=True):
+    """Create 2D rotation matrix
+    
+    Args:
+        
+        - theta (float): Rotation angle (by default in degrees)
+        
+    Kwargs:
+        
+        - deg (bool): Whether or not number provided is degree or radian (default True)
+      
+    Returns:
+        
+        - 2x2 rotation matrix definde with -sin in row 0 column 1
+        
+    """
+    if deg==True:
+        theta = np.deg2rad(theta)
+    return np.array([[np.cos(theta),-np.sin(theta)],[np.sin(theta),np.cos(theta)]])
+
+
+
+def clockwiseangle_and_distance(point,origin=[0,0],refvec = [0,1]):
+    """Sort points clockwise. Taken from https://stackoverflow.com/questions/41855695/sorting-list-of-two-dimensional-coordinates-by-clockwise-angle-using-python
+    
+    Args:
+        
+        - point (list): List of points in 2D of size 2xN
+        
+    Kwargs:
+        
+        - origin (list): Location of origin from which the points are to be sorted (default [0,0])
+        
+        - refvec (list): Vector direction for definition of zero point (default [0,1])
+        
+    """
+    # Vector between point and the origin: v = p - o
+    vector = [point[0]-origin[0], point[1]-origin[1]]
+    # Length of vector: ||v||
+    lenvector = math.hypot(vector[0], vector[1])
+    # If length is zero there is no angle
+    if lenvector == 0:
+        return -math.pi, 0
+    # Normalize vector: v/||v||
+    normalized = [vector[0]/lenvector, vector[1]/lenvector]
+    dotprod  = normalized[0]*refvec[0] + normalized[1]*refvec[1]     # x1*x2 + y1*y2
+    diffprod = refvec[1]*normalized[0] - refvec[0]*normalized[1]     # x1*y2 - y1*x2
+    angle = math.atan2(diffprod, dotprod)
+    # Negative angles represent counter-clockwise angles so we need to subtract them 
+    # from 2*pi (360 degrees)
+    if angle < 0:
+        return 2*math.pi+angle, lenvector
+    # I return first the angle because that's the primary sorting criterium
+    # but if two vectors have the same angle then the shorter distance should come first.
+    return angle, lenvector
+
+############# TESTING
+
+def test_rotations():
+    vectors = [np.array([0,0,3.0]),np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0]),np.random.rand(3)]
+    rotations = [rotate2X(v) for v in vectors]
+    rotVector = [np.dot(rotations[i],vectors[i]) for i in range(len(vectors))]
+    for i in range(len(rotVector)):
+        assert(np.isclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i])))
+        print(rotVector[i][0],np.linalg.norm(rotVector[i]))
+        assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
 
 
 def test_binEdges():
