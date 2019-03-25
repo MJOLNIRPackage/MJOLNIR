@@ -18,7 +18,6 @@ def KwargChecker(function=None,include=None):
 
         - AttributeError
     """
-    #@functools.wraps(None)
     def KwargCheckerNone(func):
         @functools.wraps(func)
         def newFunc(*args,**kwargs):
@@ -384,6 +383,12 @@ def invert(M):
         return np.dot(np.linalg.inv(np.dot(M.T,M)),M.T)
     else:
         return np.dot(M.T,np.linalg.inv(np.dot(M,M.T)))
+
+
+def overWritingFunctionDecorator(overWritingFunction):
+    def overWriter(func):
+        return overWritingFunction
+    return overWriter
 
 
 def test_binEdges():
