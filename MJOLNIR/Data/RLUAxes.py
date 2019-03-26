@@ -193,7 +193,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
                     ybase = calculateBase(l2,yspan,yticks)
                 else:
                     ybase = ax.ybase
-                l2._base._base = ybase
+                l2.set_params(ybase)
 
             if direction.lower() == 'x' or direction.lower()=='both':
                 if not hasattr(axis,'xticks'):
@@ -211,7 +211,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
                     xbase = calculateBase(l1,xspan,xticks)
                 else:
                     xbase = ax.xbase
-                l1._base._base = xbase
+                l1.set_params(xbase)
 
             
         elif axis.locatorGrid:
