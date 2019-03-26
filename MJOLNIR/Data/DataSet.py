@@ -4203,11 +4203,18 @@ def test_DataSet_full_test():
     warnings.simplefilter('once')
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
     viewer = dataset.View3D(0.08,0.08,0.25)
-    viewer = dataset.View3D(0.08,0.08,0.25,rlu=False)
+    
+
+    viewer.ax.set_xticks_number(5)
+    viewer.ax.set_yticks_number(10)
+
+    viewer.ax.set_xticks_base(0.5)
+    viewer.ax.set_yticks_base(0.5)
 
     viewer.setProjection(0)
     viewer.setPlane(4)
-    
+    del viewer 
+    viewer = dataset.View3D(0.08,0.08,0.25,rlu=False)
     os.remove('Data/camea2018n000038.nxs')
     del viewer
     plt.close('all')
