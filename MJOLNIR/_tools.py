@@ -581,15 +581,18 @@ def clockwiseangle_and_distance(point,origin=[0,0],refvec = [0,1]): # pragma: no
 ############# TESTING
 
 def test_minMax():
-    L = np.random.rand(10,2,2)
+    L = np.random.rand(10,3,2)
     minmax = minMax(L)
     
     assert(len(minmax)==2)
     assert(np.isclose(minmax[0],np.min(L)))
     assert(np.isclose(minmax[1],np.max(L)))
 
-    minmax = minMax(L,axis=-1)
-    assert(minmax.shape==(10,2,2))
+    minmax = np.array(minMax(L,axis=-1))
+    assert(minmax.shape==(2,10,3))
+
+    minmax = np.array(minMax(L,axis=0))
+    assert(minmax.shape==(2,3,2))
 
 def test_unitVector():
     V = np.array([1.0,2.0,3.0])
