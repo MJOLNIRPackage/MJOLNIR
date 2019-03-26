@@ -22,3 +22,25 @@ to prevent you from saving a conversion on top of another involuntarily. To  sil
 once or use the 'saveFile=False' flag in the DataSet.convertDataFile() method to not save the converted data.
 
 
+I do not want to make use of the features in MJOLNIR but only convert and extract my data. How do I do this?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is definitely possible to convert and extract the data from MJOLNIR without many trouples. Below is a code example:
+
+.. code-block:: python
+   :linenos:
+
+    from MJOLNIR.Data import DataSet
+    fileName = ['/Path/To/Data/camea2018n000136.hdf','/Path/To/Data/camea2018n000137.hdf']
+    ds = DataSet.DataSet(dataFiles=fileName)
+    ds.convertDataFile(binning=3,saveFile=False)
+
+    Int = np.divide(ds.I,ds.Monitor*ds.Norm) # Calcualte floating point intensity
+
+    data = np.array([ds.h.extractData(),ds.k.extractData(),ds.l.extractData(),Int.flatten()])
+
+    saveFile = '/Path/To/Data/Data.csv'
+    np.savetxt(saveFile,data,delimiter=',')
+
+However, a small warning. The data file created from this can be of several hundred MB.
+
