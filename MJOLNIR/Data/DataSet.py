@@ -380,7 +380,7 @@ class DataSet(object):
         return returnData,bins
 
     @_tools.KwargChecker()
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None):
+    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None,constantBins=False):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -410,6 +410,8 @@ class DataSet(object):
             - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
         
         
         Returns:
@@ -437,17 +439,17 @@ class DataSet(object):
 
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
-            Data,[binpositionsTotal,orthopos,Earray] = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
+            Data,[binpositionsTotal,orthopos,Earray] = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
             binpositionsTotal = np.concatenate([self.convertToHKL(binpositionsTotal[:,:2]),binpositionsTotal[:,-1].reshape(-1,1)],axis=1)
             orthopos = self.convertToHKL(orthopos)
             return Data,[binpositionsTotal,orthopos,Earray]
             
 
        
-        return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend)
+        return cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
 
     @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound']) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
         
@@ -481,6 +483,8 @@ class DataSet(object):
             - ticks (int): Number of tick marks to be used
 
             - tickRound (int): Decimals to be used when creating ticks
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
         
         Returns:
             
@@ -498,7 +502,7 @@ class DataSet(object):
         
         
         D,P = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,\
-        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles)
+        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
 
         INT = np.divide(D[0]*D[3],D[1]*D[2])
         INT_err = np.divide(np.sqrt(D[0])*D[3],D[1]*D[2])
@@ -579,7 +583,7 @@ class DataSet(object):
         return ax,D,P,binCenter,binDistance
 
     @_tools.KwargChecker()
-    def cutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,extend=True,dataFiles=None):
+    def cutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,extend=True,dataFiles=None,constantBins=False):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
         Args:
@@ -602,6 +606,8 @@ class DataSet(object):
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
     
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
+
 
         Returns:
             
@@ -634,11 +640,11 @@ class DataSet(object):
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
 
-        return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend)
+        return cutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,extend=extend,constantBins=constantBins)
 
  
     @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
-    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,ax=None,dataFiles=None,**kwargs): 
+    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
         .. warning::
@@ -666,6 +672,8 @@ class DataSet(object):
             - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
         
             - kwargs: All other keywords will be passed on to the ax.errorbar method.
         
@@ -711,10 +719,10 @@ class DataSet(object):
             q1,q2 = self.convertToQxQy([q1,q2])
 
         positions = np.array([qx,qy,energy])
-        return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,rlu=rlu,ax = ax,**kwargs)
+        return plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPixel,EnergyBins,rlu=rlu,ax = ax,constantBins=constantBins,**kwargs)
 
     @_tools.KwargChecker()
-    def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None):
+    def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,constantBins=False):
         """Cut data powder map with intensity as function of the length of q and energy. 
 
         Args:
@@ -726,6 +734,8 @@ class DataSet(object):
             - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
 
 
         Returns:
@@ -752,10 +762,10 @@ class DataSet(object):
         
         positions = np.array([qx,qy,energy])
 
-        return cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin)
+        return cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin,constantBins=constantBins)
 
     @_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax'])
-    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,**kwargs):
+    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
         .. note::
@@ -773,6 +783,8 @@ class DataSet(object):
             
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
+
             - kwargs: All other keywords will be passed on to the ax.pcolormesh method.
         
         Returns:
@@ -785,8 +797,8 @@ class DataSet(object):
 
         """
 
-        DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles)
-        [intensity,monitorCount,Normalization,NormCount] = DataList
+        DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins)
+        intensity,monitorCount,Normalization,NormCount = DataList
         warnings.simplefilter('ignore')
         Int = [np.divide(intensity[i]*NormCount[i],monitorCount[i]*Normalization[i]) for i in range(len(EBinEdges)-1)]
         warnings.simplefilter('once')
@@ -1309,7 +1321,7 @@ class DataSet(object):
 #        magneticField_err=magneticField_err,electricField_err=electricField_err)
 
     @_tools.KwargChecker()
-    def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,dataFiles=None):
+    def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,dataFiles=None,constantBins=False):
         """
         Method to perform Q-energy cuts from a variable number of points. The function takes both qx/qy or hkl positions. In the case of using only two Q points,
         the method is equivalent to cutQE.
@@ -1329,6 +1341,8 @@ class DataSet(object):
             - rlu (bool): If True, provided QPoints are interpreted as (h,k,l) otherwise as (qx,qy), (default True).
         
             - dataFiles (list): List of dataFiles to cut. If none, the ones in the object will be used (default None).
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
         
         .. warning::
             The way the binning works is by extending the end points with 0.5*minPixel, but the method sorts away points not between the two Q points given and thus the start and end
@@ -1380,7 +1394,7 @@ class DataSet(object):
         centerPosition = []
         binDistance = []
         for i in range(len(QPoints)-1):
-            _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(positions[i],positions[i+1],width[i],minPixel[i],EnergyBins[i],rlu=False,dataFiles=dataFiles,extend=False)
+            _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(positions[i],positions[i+1],width[i],minPixel[i],EnergyBins[i],rlu=False,dataFiles=dataFiles,extend=False,constantBins=constantBins)
             DataList.append(_DataList)
             if rlu:
                 UB2D = self.sample.convertHKLINV # Matrix to calculate HKL from Qx,Qy
@@ -1404,7 +1418,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar','edgecolors']]))
-    def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,**kwargs):
+    def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
         Args:
@@ -1439,6 +1453,8 @@ class DataSet(object):
             
             - log (bool): If true the plotted intensity is the logarithm of the intensity (default False)
 
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
+
         Return:  m = Q points, n = energy bins
             
             - ax: matplotlib axis in which the data is plotted
@@ -1456,7 +1472,7 @@ class DataSet(object):
             The ax.set_clim function is created to change the color scale. It takes inputs vmin,vmax. This function does however not work in 3D....
 
         """
-        DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles)
+        DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
         if rlu==True: # Recalculate q points into qx and qy points
             positions = self.convertToQxQy(QPoints)
         else: # Do nothing
@@ -1668,7 +1684,7 @@ class DataSet(object):
             ax.set_ylabel('E [meV]')
             if colorbar:
                 ax.colorbar = ax.get_figure().colorbar(pmeshs[0],pad=0.1,format='%.2E')
-            plt.tight_layout()
+            #plt.tight_layout()
             if 'pmeshs' in ax.__dict__:
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
             else:
@@ -1900,7 +1916,7 @@ class DataSet(object):
         return returnData
 
     @_tools.KwargChecker()
-    def cut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None):
+    def cut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
@@ -1924,6 +1940,8 @@ class DataSet(object):
             - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
             
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
             
         Returns:
             
@@ -1970,7 +1988,7 @@ class DataSet(object):
             Q = np.array(q)
 
 
-        return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel)
+        return cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel,constantBins=constantBins)
 
     @_tools.KwargChecker(function=createRLUAxes)
     def View3D(self,dx,dy,dz,rlu=True, log=False,grid=False,axis=2,**kwargs):
@@ -2071,7 +2089,7 @@ def load(filename):
         return tmp_dict
 
 @_tools.KwargChecker()
-def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True):
+def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=False,extend=True,constantBins=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
     the minimum step sizes is given by minPixel.
     
@@ -2105,6 +2123,8 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
         - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
 
         - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
+
+        - constantBins (bool): If True only bins of size minPixel is used (default False)
     
     Returns:
         
@@ -2135,7 +2155,11 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     orthobins = [-width/2.0,width/2.0]
     insideWidth = np.logical_and(propos[1]<orthobins[1],propos[1]>orthobins[0])
     
-    lenbins = np.array(_tools.binEdges(propos[0][insideWidth],minPixel))
+    if constantBins==False:
+        lenbins = np.array(_tools.binEdges(propos[0][insideWidth],minPixel))
+    else:
+        Min,Max = _tools.minMax(propos[0][insideWidth])
+        lenbins = np.arange(Min,Max+0.5*minPixel,minPixel)
     orthopos = np.outer(orthobins,orthovec)
     binpositions = np.outer(lenbins,dirvec)+q1
     
@@ -2176,7 +2200,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
 
-def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False):
+def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#,plotCoverage=False):
     """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
     the width attribute. 
     
@@ -2206,6 +2230,10 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
         - Emin (float): Minimal energy to include in cut.
         
         - Emax (float): Maximal energy to include in cut
+
+    Kwargs:
+
+        - constantBins (bool): If True only bins of size minPixel is used (default False)
         
     Returns:
         
@@ -2231,8 +2259,11 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
     allInside = np.logical_and(inside,insideEnergy)
     Energies = positions[2][allInside]
     
-    
-    bins = np.array(_tools.binEdges(Energies,minPixel))
+    if constantBins==False:
+        bins = np.array(_tools.binEdges(Energies,minPixel))
+    else:
+        Min,Max = _tools.minMax(Energies)
+        bins = np.arange(Min,Max+0.5*minPixel,minPixel)
     
     if len(bins)==0:
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[[E1,E2]]
@@ -2248,7 +2279,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel):#,plotCoverage=False
 
 
 @_tools.KwargChecker()
-def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
+def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False):
     """Cut data powder map with intensity as function of the length of q and energy. 
 
     Args:
@@ -2266,6 +2297,8 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
     Kwargs:
 
         - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
+
+        - constantBins (bool): If True only bins of size minPixel is used (default False)
 
     Returns:
         
@@ -2286,7 +2319,11 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
     for i in range(len(EBinEdges)-1):
         e_inside = np.logical_and(energy>EBinEdges[i],energy<=EBinEdges[i+1])
         q_inside = q[e_inside]
-        qbins.append(np.array(_tools.binEdges(q_inside,tolerance=qMinBin)))
+        if constantBins==False:
+            qbins.append(np.array(_tools.binEdges(q_inside,tolerance=qMinBin)))
+        else:
+            Min,Max = _tools.minMax(q_inside)
+            qbins.append(np.arange(Min,Max+0.5*qMinBin,qMinBin))
             
         intensity.append(np.histogram(q_inside,bins=qbins[-1],weights=I[e_inside].flatten())[0].astype(I.dtype))
         monitorCount.append(np.histogram(q_inside,bins=qbins[-1],weights=Monitor[e_inside].flatten())[0].astype(Monitor.dtype))
@@ -2297,7 +2334,7 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01):
 
 
 @_tools.KwargChecker()
-def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
+def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True,constantBins=False):
     """Cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
 
     Args:
@@ -2324,6 +2361,8 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
 
         - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
 
+        - constantBins (bool): If True only bins of size minPixel is used (default False)
+
     Returns:
         
         - Data list (n * 4 arrays): n instances of [Intensity, monitor count, normalization and normalization counts].
@@ -2347,7 +2386,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
     dirvec /= np.linalg.norm(dirvec)
 
     for i in np.arange(len(EnergyBins)-1):
-        [intensity,MonitorCount,Normalization,normcounts],position = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins[i],EnergyBins[i+1],plotCoverage=False,extend=extend)
+        [intensity,MonitorCount,Normalization,normcounts],position = cut1D(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins[i],EnergyBins[i+1],plotCoverage=False,extend=extend,constantBins=constantBins)
         if len(intensity)==0:
             continue
         returnpositions.append(position)
@@ -2364,7 +2403,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True):
     return [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance
 
 @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'vmin','vmax'])
-def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax = None,**kwargs):
+def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax = None,constantBins=False,**kwargs):
     """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
     .. warning::
@@ -2400,6 +2439,8 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
         - rlu (bool): If True, data is plotted in RLU. # TODO: Make this work!
         
         - kwargs: All other keywords will be passed on to the ax.errorbar method.
+
+        - constantBins (bool): If True only bins of size minPixel is used (default False)
     
     Returns:
         
@@ -2415,7 +2456,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     """
     warnings.warn("The plotCutQE is being depricated. Use instead the plotCutQELine width only two QPoints",DeprecationWarning)
 
-    [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance = cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins)
+    [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance = cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,constantBins=constantBins)
 
     if len(returnpositions) < 1:
         raise RuntimeError("Expect at least one slice in energy dimension")
