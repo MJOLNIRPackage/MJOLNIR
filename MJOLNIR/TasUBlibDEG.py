@@ -174,6 +174,73 @@ def calcTasQH(UBINV,angles,Ei,Ef,A3Off=0):
 
   return Q,QV
 
+def addAuxReflection(sample,r1,r2,ss=1.0):
+    h,k,l = r2[:3]#np.array([0,0,1])
+    
+    Ei,Ef = r1[-2:]
+    
+    ki,kf = np.sqrt([Ei,Ef])*factorsqrtEK
+    
+    B = calculateBMatrix(sample.cell)
+    
+    #qe = np.array([h,k,l,Ei,Ef])
+    
+    
+    stt1 = r1[4]
+    ### makeAuxReflection
+    theta = calcTheta(ki,kf,stt1)
+    om = r1[3]-ss*theta
+    
+    
+    def calTwoTheta(B,qe,ss):
+        
+        h,k,l,Ei,Ef = qe
+        ki,kf = np.sqrt([Ei,Ef])*factorsqrtEK
+        
+        
+        QC = np.dot(B,qe[:3])
+    
+        q = np.linalg.norm(QC);
+        #q = 2. * PI * vectorLength(QC);
+    
+        cos2t = (ki * ki + kf * kf - q * q) /\
+                (2. * np.abs(ki) * np.abs(kf))
+        
+        return ss * np.rad2deg(np.arccos(cos2t))
+    
+    
+    #stt = calTwoTheta(B,qe,1.0)
+    
+    def tasAngleBetweenReflections(B,r1,r2):
+        ## Angle between the two reflections
+        H1 = r1[:3]
+        H2 = r2[:3]
+        chi1 = np.dot(B,H1)
+        chi2 = np.dot(B,H2)
+        angle = np.rad2deg(np.arccos(np.dot(chi1,chi2)/(np.linalg.norm(chi1)*np.linalg.norm(chi2))))
+        return angle
+    
+    
+    
+    om+= tasAngleBetweenReflections(B,sample.plane_vector1,[h,k,l])
+    
+    
+    QC = np.dot(B,[h,k,l])
+    q = np.linalg.norm(QC)
+    
+    cos2t = (ki * ki + kf * kf - q * q) /\
+                (2. * np.abs(ki) * np.abs(kf))
+    r2stt = np.rad2deg(np.arccos(cos2t))
+    
+    r2A3 = om+ss*theta
+    r2A3 = np.mod(r2A3+ss*180.0,360.0)-ss*180.0
+    
+    r2 = np.array([h,k,l,r2A3,r2stt,0.0,0.0,Ei,Ef])
+
+    return r2
+
+
+
 def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating the UB matrices
                 
     
