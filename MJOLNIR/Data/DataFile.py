@@ -15,13 +15,21 @@ from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
 
+factorsqrtEK = 0.694692
+
+def cosd(x):
+    return np.cos(np.deg2rad(x))
+
+def sind(x):
+    return np.sin(np.deg2rad(x))
+
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
-    def __init__(self,fileLocation):
+    def __init__(self,fileLocation=None):
         # Check if file exists
         if isinstance(fileLocation,DataFile): # Copy everything in provided file
             self.updateProperty(fileLocation.__dict__)
-        else:
+        elif isinstance(fileLocation,str) :
             if not os.path.isfile(fileLocation):
                 raise AttributeError('File location does not exist({}).'.format(fileLocation))
             if fileLocation.split('.')[-1]=='nxs':
@@ -43,13 +51,14 @@ class DataFile(object):
                     self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
                 else:
                     self.I=Marray(f.get('entry/data/intensity'))
-                self.qx=Marray(f.get('entry/data/qx'))
-                self.qy=Marray(f.get('entry/data/qy'))
-                self.h=Marray(f.get('entry/data/h'))
-                self.k=Marray(f.get('entry/data/k'))
-                self.l=Marray(f.get('entry/data/l'))
-                self.energy=Marray(f.get('entry/data/en'))
-                self.Norm=Marray(f.get('entry/data/normalization'))
+                    self.counts = Marray(instr.get('detector/counts')).swapaxes(1,2)
+                    self.qx=Marray(f.get('entry/data/qx'))
+                    self.qy=Marray(f.get('entry/data/qy'))
+                    self.h=Marray(f.get('entry/data/h'))
+                    self.k=Marray(f.get('entry/data/k'))
+                    self.l=Marray(f.get('entry/data/l'))
+                    self.energy=Marray(f.get('entry/data/en'))
+                    self.Norm=Marray(f.get('entry/data/normalization'))
                 self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
                 self.MonitorPreset=np.array(f.get('entry/control/preset'))                
                 if self.type == 'hdf':
@@ -105,14 +114,15 @@ class DataFile(object):
 
                 if self.type == 'hdf':
                     ###################
-                    self.I[:,:,:200]=0#
+                    #self.I[:,:,:150]=0#
                     ###################
                     pass
                 
             for key in ['magneticField','temperature','electricField']:
                 if self.__dict__[key].dtype ==object: # Is np nan object
                     self.__dict__[key] = None
-
+        else:
+            pass
         
 
     @property
@@ -262,8 +272,6 @@ class DataFile(object):
         A4=A4.reshape(detectors,binning*EPrDetector,order='C')
 
         PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
-        factorsqrtEK = 0.694692
-        
         A4File = self.A4
         
         A4File = A4File.reshape((-1,1,1))
@@ -301,8 +309,6 @@ class DataFile(object):
             -np.rad2deg(A4Mean)],Ei.squeeze().reshape(-1,1,1),EfMean.squeeze())
             H,K,L = np.swapaxes(np.swapaxes(HKL,1,2),0,3)
             self.sample.B = TasUBlib.calculateBMatrix(self.sample.cell)
-            self.sample.offAngle1 = TasUBlib.calcTasMisalignment(UB,self.sample.planeNormal,self.sample.plane_vector1)
-            self.sample.offAngle2 = TasUBlib.calcTasMisalignment(UB,self.sample.planeNormal,self.sample.plane_vector2)
 
         DeltaE = Ei-EfMean
         if DeltaE.shape[0]==1:
@@ -313,7 +319,7 @@ class DataFile(object):
 
        
         ###########################
-        Monitor[:,:,:binning] = 0 #
+        #Monitor[:,:,:binning] = 0 #
         ###########################
 
 
@@ -751,51 +757,76 @@ def getScanParameter(f):
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
     @_tools.KwargChecker()
-    def __init__(self,a=None,b=None,c=None,alpha=90,beta=90,gamma=90,sample=None,name='Unknown'):
+    def __init__(self,a=1.0,b=1.0,c=1.0,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0].decode())
             self.orientationMatrix = np.array(sample.get('orientation_matrix'))*2*np.pi
-            #for i in range(len(self.orientationMatrix)): # Normalize orientation matrix
-            #    self.orientationMatrix[i]/=np.linalg.norm(self.orientationMatrix[i])
+
             self.planeNormal = np.array(sample.get('plane_normal'))
+            
             self.polarAngle = np.array(sample.get('polar_angle'))
             self.rotationAngle = np.array(sample.get('rotation_angle'))
             self.unitCell = np.array(sample.get('unit_cell'))
             self.plane_vector1 = np.array(sample.get('plane_vector_1'))
             self.plane_vector2 = np.array(sample.get('plane_vector_2'))
-            
+            self.planeNormal = np.cross(self.plane_vector1[:3],self.plane_vector2[:3])
             self.A3Off = np.array([0.0])#
             if not np.isclose(np.linalg.norm(self.plane_vector1[:3].astype(float)),0.0) or not np.isclose(np.linalg.norm(self.plane_vector2[:3].astype(float)),0.0): # If vectors are not zero
                 self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))
             else:
                 self.projectionVector1,self.projectionVector2 = [np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0])]
-            
+            self.initialize()
             self.calculateProjections()
 
-            bv1,bv2,bv3 = self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC
-            a1,a2,a3,alpha1,alpha2,alpha3= self.unitCell
             
-            b1,b2,b3 = [np.linalg.norm(x) for x in [bv1,bv2,bv3]]
-            beta1 = np.rad2deg(vectorAngle(bv2,bv3))
-            beta2 = np.rad2deg(vectorAngle(bv3,bv1))
-            beta3 = np.rad2deg(vectorAngle(bv1,bv2))
-            self.cell = [a1,a2,a3,b1,b2,b3,alpha1,alpha2,alpha3,beta1,beta2,beta3]
             
         elif np.all([a is not None,b is not None, c is not None]):
             self.unitCell = np.array([a,b,c,alpha,beta,gamma])
-            self.orientationMatrix = np.array([[1.0,0.0,0.0],[0.0,1.0,0.0],[0.0,0.0,1.0]])
-            self.planeNormal = np.array([0,0,1])
+           
             self.polarAngle = np.array(0)
             self.rotationAngle = np.array(0)
             self.name=name
-            self.projectionVector1,self.projectionVector2 = [np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0])]
+            if projectionVector1 is None or projectionVector2 is None:
+                vector1,vector2 = [np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0])]
+            else:
+                vector1 = np.array(projectionVector1)
+                vector2 = -np.array(projectionVector2)
+
+            self.planeNormal = np.cross(vector1,vector2)
+            
+            self.planeNormal=self.planeNormal/np.linalg.norm(self.planeNormal)
+            
+            self.initialize()
+            
+            # Calcualte angles for plane vectors
+            Ei = 5.0 
+            k = np.sqrt(Ei)*factorsqrtEK
+            
+            tau1 = np.linalg.norm(np.dot(self.B,vector1))
+            tau2 = np.linalg.norm(np.dot(self.B,vector2))
+            
+
+            STT1 = 2 * np.rad2deg(np.arcsin(tau1/(2.0*k)))
+            theta1 = TasUBlib.calcTheta(k,k,STT1)
+
+            H1,K1,L1 = vector1
+
+            self.plane_vector1 = np.array([H1,K1,L1, theta1, STT1, 0.0,0.0, Ei,Ei])
+
+            r2 = TasUBlib.addAuxReflection(self.cell,self.plane_vector1,vector2)
+            STT2 = r2[4]
+            theta2 = r2[3]
+            self.plane_vector2 = r2
+
+            self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell,self.plane_vector1,self.plane_vector2)
+            self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))#,self.planeNormal.astype(float))
             self.calculateProjections()
         else:
             print(sample)
             print(a,b,c,alpha,beta,gamma)
             raise AttributeError('Sample not understood')
-            
 
+            
     @property
     def unitCell(self):
         return self._unitCelll
@@ -912,15 +943,13 @@ class Sample(object):
         return np.all([self.name==other.name,np.all(self.unitCell==other.unitCell)])#,\
         #np.all(self.orientationMatrix==other.orientationMatrix)])
 
-    def calculateProjections(self):
-        """Calculate projections and generate projection angles."""
-        checks = np.array(['unitCell','orientationMatrix','projectionVector1','projectionVector2'])
-        boolcheck = np.logical_not(np.array([hasattr(self,x) for x in checks]))
-        if np.any(boolcheck):
-            raise AttributeError('Sample object is missing: {}.'.format(', '.join(str(x) for x in checks[boolcheck])))
+    def initialize(self):
+
+        # From http://gisaxs.com/index.php/Unit_cell
         self.realVectorA = np.array([self.a,0,0])
-        self.realVectorB = np.dot(np.array([self.b,0,0]),rotationMatrix(0,0,self.gamma))
-        self.realVectorC = np.dot(np.array([self.c,0,0]),rotationMatrix(0,self.beta,0))
+        self.realVectorB = self.b*np.array([cosd(self.gamma),sind(self.gamma),0.0])#np.dot(np.array([self.b,0,0]),rotationMatrix(0,0,self.gamma))
+        self.realVectorC = self.c*np.array([cosd(self.beta),(cosd(self.alpha)-cosd(self.beta)*cosd(self.gamma))/sind(self.gamma),
+        np.sqrt(1-cosd(self.beta)**2-((cosd(self.alpha)-cosd(self.beta)*cosd(self.gamma))/sind(self.gamma))**2)])#np.dot(np.array([self.c,0,0]),rotationMatrix(0,self.beta,0))
         
         self.volume = np.abs(np.dot(self.realVectorA,np.cross(self.realVectorB,self.realVectorC)))
         self.reciprocalVectorA = 2*np.pi*np.cross(self.realVectorB,self.realVectorC)/self.volume
@@ -928,15 +957,34 @@ class Sample(object):
         self.reciprocalVectorC = 2*np.pi*np.cross(self.realVectorA,self.realVectorB)/self.volume
         ## Ensure that aStar is along the x-axis
         RotMatrix = _tools.rotate2X(self.reciprocalVectorA)
-        self.reciprocalVectorA=np.dot(RotMatrix,self.reciprocalVectorA)
-        self.reciprocalVectorB=np.dot(RotMatrix,self.reciprocalVectorB)
-        self.reciprocalVectorC=np.dot(RotMatrix,self.reciprocalVectorC)
+        #self.reciprocalVectorA=np.dot(RotMatrix,self.reciprocalVectorA)
+        #self.reciprocalVectorB=np.dot(RotMatrix,self.reciprocalVectorB)
+        #self.reciprocalVectorC=np.dot(RotMatrix,self.reciprocalVectorC)
 
-        reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC])
-        V1 = self.projectionVector1
-        V2 = self.projectionVector2
-        pV1Q = np.dot(V1,reciprocalMatrix)
-        pV2Q = np.dot(V2,reciprocalMatrix)
+        bv1,bv2,bv3 = self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC
+        a1,a2,a3,alpha1,alpha2,alpha3= self.unitCell
+        
+        b1,b2,b3 = [np.linalg.norm(x) for x in [bv1,bv2,bv3]]
+        beta1 = np.rad2deg(vectorAngle(bv2,bv3))
+        beta2 = np.rad2deg(vectorAngle(bv3,bv1))
+        beta3 = np.rad2deg(vectorAngle(bv1,bv2))
+        self.cell = [a1,a2,a3,b1,b2,b3,alpha1,alpha2,alpha3,beta1,beta2,beta3]
+        self.B = TasUBlib.calculateBMatrix(self.cell)
+        #self.reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC]).T
+
+    def calculateProjections(self):
+        """Calculate projections and generate projection angles."""
+        checks = np.array(['unitCell','orientationMatrix','projectionVector1','projectionVector2']) # 
+        boolcheck = np.logical_not(np.array([hasattr(self,x) for x in checks]))
+        if np.any(boolcheck):
+            raise AttributeError('Sample object is missing: {}.'.format(', '.join(str(x) for x in checks[boolcheck])))
+        
+        V1 = self.projectionVector1.copy()
+        #V1/=np.linalg.norm(V1)
+        V2 = self.projectionVector2.copy()
+        #V2/=np.linalg.norm(V2)
+        pV1Q = np.dot(self.B,V1)
+        pV2Q = np.dot(self.B,V2)
         self.projectionAngle = vectorAngle(pV1Q,pV2Q)
 
         if np.isclose(0.0,self.projectionAngle):
@@ -947,31 +995,29 @@ class Sample(object):
         self.UB = UB
 
         self.orientationMatrixINV = np.linalg.inv(UB)
-        self.reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC]).T
-
-        # Set sign of largest component to plus and correct lengths
-        self.projV1=V1#*np.sign(V1[np.argmax(np.abs(V1))])#/(np.linalg.norm(pV1Q)**2)
-        self.projV2=V2#*np.sign(V2[np.argmax(np.abs(V2))])#/(np.linalg.norm(pV2Q)**2)
+        
 
         p23 = np.array([[1,0,0],[0,1,0]]) # To extract Qx, Qy only
-        PM = np.array([self.projV1,self.projV2]).T # Projection matrix
-
+        PM = np.array([V1,V2]).T # Projection matrix
+        self.PM = PM
         self.convert = np.dot(p23,np.einsum('ij,jk->ik',UB,PM)) # Convert from projX,projY to Qx, Qy
         self.convertHKL = np.dot(p23,UB) # Convert from HKL to Qx, Qy
 
         # Calculate 'misalignment' of the projection vector 1
         self.theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
+        
         self.RotMat = _tools.Rot(self.theta) # Create 2x2 rotation matrix
-
-        #self.convert = np.einsum('ij,j...->i...',self.RotMat,self.convert)
+        
         self.convertinv = np.linalg.inv(self.convert) # Convert from Qx, Qy to projX, projY
 
-        #self.convertHKL = np.einsum('ij,j...->i...',self.RotMat,self.convert)
         self.convertHKLINV = _tools.invert(self.convertHKL) # Convert from Qx, Qy to HKL
 
-        self.RotMat3D = _tools.rotMatrix(self.planeNormal.astype(float),self.theta) # Rotation matrix for the UB
+        # Calcualte RotationMatrix for UB as block diagonal matrix. Only Qx,Qy part rotates as'
+        # calculated in RotMat
+        self.RotMat3D = np.eye(3)
+        self.RotMat3D[:2,:2] = self.RotMat
         #self.orientationMatrixINV = np.linalg.inv(np.dot(self.RotMat3D,UB))
-        self.orientationMatrixINV = np.linalg.inv(UB)
+        self.orientationMatrixINV = np.linalg.inv(self.UB)
         
 
     def tr(self,p0,p1):
@@ -1022,6 +1068,69 @@ class Sample(object):
 
         return returnStr
 
+    @_tools.KwargChecker()
+    def CurratAxe(self,Ei,Ef,Bragg,spurionType='Monochromator',HKL=False,Projection=False):
+        """Function to calculate Currat-Axe position in QxQy coordinate system.
+    
+        Args:
+            
+            - sample (DataFile.Sample): Sample object for which Currat-Axe is to be calculated.
+            
+            - Ei (float/list): Incoming energy in meV.
+            
+            - Ef (float/list): Outgoing energy in meV.
+            
+            - Bragg (list): Bragg peak in HKL or list of.
+            
+        Kwargs:
+            
+            - spurionType (str): Either "Monochromator" or "Analyser" for origin of "wrong" energy (default "Monochromator").
+            
+            - HKL (bool): Whether or not to recalculate to HKL instead of Qx, Qy, Qz (default False).
+            
+            - Projection (Bool): Whether or not to recalculate to Projection vectors instead of Qx, Qy, Qz (default False).
+            
+        Returns:
+            
+            - Position (list): List of size (len(Bragg),len(Ei),len(Ef),3), where last axis is Qx, Qy, Qz
+            
+        """
+        A3Off = self.theta
+        
+        Ei = np.asarray(Ei).flatten() # Shape (m)
+        Ef = np.asarray(Ef).flatten() # Shape (n)
+        Bragg = np.asarray(Bragg).reshape(-1,3) # shape (l,3)
+
+        Ql = []
+        QlLocal = []
+        if spurionType.lower() == 'monochromator':
+            for B in Bragg:
+                Angles = np.array([TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,A3Off,np.array([B[0],B[1],B[2],e,e]))[:2] for e in Ef])
+                for ei in Ei:
+                    Ql.append(np.array([TasUBlib.calcTasQH(self.orientationMatrixINV,angle,ei,e,0) for angle,e in zip(Angles,Ef)])[:,1])
+                QlLocal.append(Ql)
+        elif spurionType.lower() == 'analyser':
+            for B in Bragg:
+                for ei in Ei:
+                    Angles2 = np.array(TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,A3Off,np.array([B[0],B[1],B[2],ei,ei]))[:2])
+                    Ql.append(np.array([TasUBlib.calcTasQH(self.orientationMatrixINV,Angles2,ei,e,A3Off*0.0) for e in Ef])[:,1]) # Extract Qx,Qy
+                QlLocal.append(Ql)
+        else:
+            raise AttributeError('Provided spurionType not understood. Expected "Monochromator" or "Analyser" but recieved "{}".'.format(spurionType))
+
+        returnVal = np.array(QlLocal) # Shape (l,m,n,3)
+        
+        if HKL == True or Projection == True: # need to calculate HKL for Projection calculation
+            returnValShape = np.array(returnVal.shape)
+            returnVal = self.calculateQxQyToHKL(returnVal[:,:,:,0].flatten(),returnVal[:,:,:,1].flatten())
+            if Projection == True:
+                
+                toProjection = self.calculateHKLtoProjection(returnVal[0],returnVal[1],returnVal[2])
+                returnVal = np.array(self.inv_tr(toProjection[0],toProjection[1]))
+                returnValShape[-1]=2 # reshape Qx,Qy,Qz dimension to P1,P2 (3 -> 2)
+            
+            returnVal.shape = returnValShape # Shape (l,m,n,3) or (l,m,n,2)
+        return returnVal
     
 
 
@@ -1159,10 +1268,13 @@ def extractData(files):
 
 
     
-def calcProjectionVectors(R1,R2):
+def calcProjectionVectors(R1,R2,norm=None):
     r1 = R1[:3]
     r2 = R2[:3]
-    NV = np.cross(r1,r2)
+    if not norm is None:
+        NV = norm
+    else:
+        NV = np.cross(r1,r2)
     NV/= np.linalg.norm(NV)
     
     Zeros = np.isclose(NV,0.0)
@@ -1237,6 +1349,15 @@ def test_sample_exceptions():
     except:
         assert True
 
+def test_Sample_CurratAxe():
+    Ei = [5,7,9]
+    Ef = np.array([[4,4,4],[5,5,5]])
+    Bragg = [[1,0,0],[0,1,0]]
+
+    s = Sample()
+
+    #position = 
+
 def test_vectorAngle():
     v1 = np.array([1,0,0])
     v2 = np.array([0,1,0])
@@ -1304,8 +1425,8 @@ def test_DataFile():
     except:
         assert True
 
-    files = ['Data/camea2018n000017.hdf',
-             'Data/camea2018n000017.nxs']
+    files = ['Data/camea2018n000137.hdf',
+             'Data/camea2018n000137.nxs']
     DF1 = DataFile(files[0])
     assertFile(files[1])
     DF2 = DataFile(files[1])
@@ -1316,25 +1437,25 @@ def test_DataFile():
     assert(DF1.sample == DF2.sample)
 
 def test_DataFile_equility():
-    f1 = DataFile('Data/camea2018n000017.hdf')
+    f1 = DataFile('Data/camea2018n000136.hdf')
     print('----------')
-    f2 = DataFile('Data/camea2018n000017.hdf')
+    f2 = DataFile('Data/camea2018n000136.hdf')
     assert(f1==f2)
     print('----------')
     f3 = DataFile(f2)
     assert(f1==f3)
     print('----------')
-    f3 = DataFile('Data/camea2018n000017.nxs')
+    f3 = DataFile('Data/camea2018n000136.nxs')
     assert(f1==f3)
     print('----------')
-    f4 = DataFile('Data/camea2018n000038.hdf')
+    f4 = DataFile('Data/camea2018n000137.hdf')
     assert(f1!=f4)
 
 
 def test_DataFile_plotA4():
     plt.ioff()
-    fileName = 'Data/camea2018n000017.hdf'
-    fileName2= 'Data/camea2018n000017.nxs'
+    fileName = 'Data/camea2018n000136.hdf'
+    fileName2= 'Data/camea2018n000136.nxs'
     file = DataFile(fileName)
     
 
@@ -1360,8 +1481,8 @@ def test_DataFile_plotA4():
     
 def test_DataFile_plotEf():
     plt.ioff()
-    fileName = 'Data/camea2018n000017.hdf'
-    fileName2= 'Data/camea2018n000017.nxs'
+    fileName = 'Data/camea2018n000136.hdf'
+    fileName2= 'Data/camea2018n000136.nxs'
     assertFile(fileName2)
     file = DataFile(fileName)
 
@@ -1386,8 +1507,8 @@ def test_DataFile_plotEf():
 
 def test_DataFile_plotEfOverview():
     plt.ioff()
-    fileName = 'Data/camea2018n000017.hdf'
-    fileName2= 'Data/camea2018n000017.nxs'
+    fileName = 'Data/camea2018n000136.hdf'
+    fileName2= 'Data/camea2018n000136.nxs'
     assertFile(fileName2)
 
     file = DataFile(fileName)
@@ -1413,8 +1534,8 @@ def test_DataFile_plotEfOverview():
 
 def test_DataFile_plotNormalization():
     plt.ioff()
-    fileName = 'Data/camea2018n000017.hdf'
-    fileName2= 'Data/camea2018n000017.nxs'
+    fileName = 'Data/camea2018n000136.hdf'
+    fileName2= 'Data/camea2018n000136.nxs'
     file = DataFile(fileName)
     assertFile(fileName2)
 
@@ -1448,7 +1569,7 @@ def test_DataFile_decodeString():
 
 def test_DataFile_ScanParameter():
 
-    files = ['Data/camea2018n000017.hdf','Data/camea2018n000017.nxs']
+    files = ['Data/camea2018n000136.hdf','Data/camea2018n000136.nxs']
     assertFile(files[1])
     for file in files:
         dfile = DataFile(file)
@@ -1461,7 +1582,7 @@ def test_DataFile_ScanParameter():
 
 
 def test_DataFile_Error():
-    df = DataFile('Data/camea2018n000017.hdf')
+    df = DataFile('Data/camea2018n000136.hdf')
 
     # Not implimented
     try:
@@ -1477,7 +1598,7 @@ def test_DataFile_Error():
     except AttributeError:
         assert True
     
-    df2 = DataFile('Data/camea2018n000017.nxs')
+    df2 = DataFile('Data/camea2018n000136.nxs')
     try:
         df.saveNXsqom('Data/saving.nxs')
         assert False
