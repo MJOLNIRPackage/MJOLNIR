@@ -50,7 +50,7 @@ def matFromTwoVectors(v1,v2):
     a3 = np.cross(a1,a2)
     a3/=np.linalg.norm(a3)
     a2 = np.cross(a1,a3)
-    return np.array([a1,a2,a3])
+    return np.array([a1,a2,a3]).T
 
 
 def calcTheta(ki,kf,stt):
@@ -174,14 +174,14 @@ def calcTasQH(UBINV,angles,Ei,Ef,A3Off=0):
 
   return Q,QV
 
-def addAuxReflection(sample,r1,r2,ss=1.0):
+def addAuxReflection(cell,r1,r2,ss=1.0):
     h,k,l = r2[:3]#np.array([0,0,1])
     
     Ei,Ef = r1[-2:]
     
     ki,kf = np.sqrt([Ei,Ef])*factorsqrtEK
     
-    B = calculateBMatrix(sample.cell)
+    B = calculateBMatrix(cell)
     
     #qe = np.array([h,k,l,Ei,Ef])
     
@@ -191,38 +191,8 @@ def addAuxReflection(sample,r1,r2,ss=1.0):
     theta = calcTheta(ki,kf,stt1)
     om = r1[3]-ss*theta
     
-    
-    def calTwoTheta(B,qe,ss):
-        
-        h,k,l,Ei,Ef = qe
-        ki,kf = np.sqrt([Ei,Ef])*factorsqrtEK
-        
-        
-        QC = np.dot(B,qe[:3])
-    
-        q = np.linalg.norm(QC);
-        #q = 2. * PI * vectorLength(QC);
-    
-        cos2t = (ki * ki + kf * kf - q * q) /\
-                (2. * np.abs(ki) * np.abs(kf))
-        
-        return ss * np.rad2deg(np.arccos(cos2t))
-    
-    
-    #stt = calTwoTheta(B,qe,1.0)
-    
-    def tasAngleBetweenReflections(B,r1,r2):
-        ## Angle between the two reflections
-        H1 = r1[:3]
-        H2 = r2[:3]
-        chi1 = np.dot(B,H1)
-        chi2 = np.dot(B,H2)
-        angle = np.rad2deg(np.arccos(np.dot(chi1,chi2)/(np.linalg.norm(chi1)*np.linalg.norm(chi2))))
-        return angle
-    
-    
-    
-    om+= tasAngleBetweenReflections(B,sample.plane_vector1,[h,k,l])
+
+    om+= tasAngleBetweenReflections(B,r1[:3],[h,k,l])
     
     
     QC = np.dot(B,[h,k,l])
@@ -239,7 +209,27 @@ def addAuxReflection(sample,r1,r2,ss=1.0):
 
     return r2
 
+def calTwoTheta(B,qe,ss):
 
+  h,k,l,Ei,Ef = qe
+  ki,kf = np.sqrt([Ei,Ef])*factorsqrtEK
+  QC = np.dot(B,qe[:3])
+  
+  q = np.linalg.norm(QC);
+ 
+  cos2t = (ki * ki + kf * kf - q * q) /\
+              (2. * np.abs(ki) * np.abs(kf))
+      
+  return ss * np.rad2deg(np.arccos(cos2t))
+ 
+def tasAngleBetweenReflections(B,r1,r2):
+  ## Angle between the two reflections
+  H1 = r1[:3]
+  H2 = r2[:3]
+  chi1 = np.dot(B,H1)
+  chi2 = np.dot(B,H2)
+  angle = np.rad2deg(np.arccos(np.dot(chi1,chi2)/(np.linalg.norm(chi1)*np.linalg.norm(chi2))))
+  return angle
 
 def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating the UB matrices
                 
