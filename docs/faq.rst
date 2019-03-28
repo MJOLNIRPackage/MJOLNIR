@@ -44,3 +44,29 @@ It is definitely possible to convert and extract the data from MJOLNIR without m
 
 However, a small warning. The data file created from this can be of several hundred MB.
 
+
+
+My data has annoying lines for constant energy that looks like background
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The reason for this can be that the normalziation file has not converged for all prismatic pixels. Due to a spurion, the lowest energy pixels across all 
+detector tubes are wrongly fitted resulting in them being moved and normalized with a wrong value. This is, however only a temporary problem and does also 
+only apply to data sets that are converted with binning = 8. To counter this, apply a mask to the data masking out 
+the bottom 2 prismatic pixels as:
+
+.. code-block:: python
+   :linenos:
+
+    from MJOLNIR.Data import DataSet
+    fileName = ['/Path/To/Data/camea2018n000136.hdf']
+    ds = DataSet.DataSet(dataFiles=fileName)
+    ds.convertDataFile(binning=8,saveFile=False)
+
+    # Create a masks that has the same shape like e.g. the intensity
+    mask = np.zeros_like(DS.I.data,dtype=bool) # Make it boolean as well (not explicitly necessary)
+    mask[:,:,:2] = True # Remember the shape of I being (#ScanSteps,#Detectors,#Binning*#Analysers)
+
+    # The #Detectors is 104 and there are #Analysers = 8 analysers
+
+    # Apply the mask to the DataSet object.
+    ds.mask = mask
