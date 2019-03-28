@@ -509,7 +509,7 @@ def rotMatrix(v,theta,deg=True):
         - 3x3 matrix rotating points around vector v by amount theta.
     """
     if deg==True:
-        theta = np.deg2rad(theta)
+        theta = np.deg2rad(theta.copy())
     v/=np.linalg.norm(v)
     m11 = np.cos(theta)+v[0]**2*(1-np.cos(theta))
     m12 = v[0]*v[1]*(1-np.cos(theta))-v[2]*np.sin(theta)
