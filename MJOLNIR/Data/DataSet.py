@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection,PolyCollection
 import matplotlib.ticker as ticker
 from matplotlib.patches import Polygon
-from MJOLNIR.Data import DataFile,Viewer3D
+from MJOLNIR.Data import DataFile,Viewer3D,RLUAxes
 from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
@@ -26,7 +26,6 @@ from shapely.geometry import Point as PointS
 from shapely.vectorized import contains
 import time
 import warnings
-from . import RLUAxes
 
 
 
