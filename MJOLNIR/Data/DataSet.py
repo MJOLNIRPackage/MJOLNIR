@@ -167,6 +167,10 @@ class DataSet(object):
 
     @mask.setter
     def mask(self,mask):
+        if np.sum(mask)==0:
+            warnings.warn('Provided mask has no masked elements!')
+        elif np.sum(mask)==self.I.size:
+            warnings.warn('Provided mask masks all elements!')
         self._mask = mask
         for att in self.__dict__.values():
             if hasattr(att,'extractData'):
