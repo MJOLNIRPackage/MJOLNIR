@@ -61,10 +61,8 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
     sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
     sample.convertinv = np.linalg.inv(sample.convert) # Convert from Qx, Qy to projX, projY
 
-    sample.convertHKL = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
-    sample.convertHKLINV = _tools.invert(sample.convertHKL) # Convert from Qx, Qy to HKL
-
-    sample.orientationMatrixINV = np.linalg.inv(np.dot(sample.RotMat3D,sample.orientationMatrix))
+    sample.orientationMatrix = np.dot(sample.RotMat3D,sample.orientationMatrix)
+    sample.orientationMatrixINV = np.linalg.inv(sample.orientationMatrix)
     
 
     if figure is None:
