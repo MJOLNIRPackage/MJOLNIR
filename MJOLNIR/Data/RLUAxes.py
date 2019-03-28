@@ -63,7 +63,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
 
     sample.orientationMatrix = np.dot(sample.RotMat3D,sample.orientationMatrix)
     sample.orientationMatrixINV = np.linalg.inv(sample.orientationMatrix)
-    
+    sample.theta = 0.0
 
     if figure is None:
         fig = plt.figure(figsize=(7, 4))
