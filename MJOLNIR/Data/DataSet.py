@@ -4017,11 +4017,11 @@ def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
     del emptyDataset
-    DataFile.assertFile('Data/camea2018n000038.nxs')
-    dataset = DataSet(dataFiles=['Data/camea2018n000038.hdf'],convertedFiles='Data/camea2018n000038.nxs',calibrationfiles=[])
+    DataFile.assertFile('Data/camea2018n000136.nxs')
+    dataset = DataSet(dataFiles=['Data/camea2018n000136.hdf'],convertedFiles='Data/camea2018n000136.nxs',calibrationfiles=[])
     
-    assert(dataset.dataFiles[0].name=='camea2018n000038.hdf')
-    assert(dataset.convertedFiles[0].name=='camea2018n000038.nxs')
+    assert(dataset.dataFiles[0].name=='camea2018n000136.hdf')
+    assert(dataset.convertedFiles[0].name=='camea2018n000136.nxs')
     assert(dataset.normalizationfiles == [])
     Str = str(dataset)
 
@@ -4106,10 +4106,10 @@ def test_DataSet_Error():
         assert True
 
 
-    ds.dataFiles = 'Data/camea2018n000038.hdf'
+    ds.dataFiles = 'Data/camea2018n000136.hdf'
 
 def test_DataSet_Pythonic():
-    dataFiles = ['Data/camea2018n000038.hdf','Data/camea2018n000017.hdf']
+    dataFiles = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
     dataset = DataSet(dataFiles=dataFiles)
     assert(len(dataset)==2)
     for df in dataset:
@@ -4133,12 +4133,12 @@ def test_DataSet_Pythonic():
 
 
 def test_DataSet_Equality():
-    D1 = DataSet(dataFiles='Data/camea2018n000038.hdf')#,convertedFiles=['TestData/VanNormalization.nxs'])
+    D1 = DataSet(dataFiles='Data/camea2018n000136.hdf')#,convertedFiles=['TestData/VanNormalization.nxs'])
     assert(D1==D1)
 
 def test_DataSet_SaveLoad():
     
-    D1 = DataSet(dataFiles='Data/camea2018n000038.hdf')#,convertedFiles = 'TestData/VanNormalization.nxs')
+    D1 = DataSet(dataFiles='Data/camea2018n000136.hdf')#,convertedFiles = 'TestData/VanNormalization.nxs')
 
     temp = 'temporary.bin'
 
@@ -4148,13 +4148,13 @@ def test_DataSet_SaveLoad():
     assert(D1==D2) 
 
 def test_DataSet_str():
-    D1 = DataSet(dataFiles='Data/camea2018n000038.hdf')#,normalizationfiles = 'TestData/VanNormalization.hdf')
+    D1 = DataSet(dataFiles='Data/camea2018n000136.hdf')#,normalizationfiles = 'TestData/VanNormalization.hdf')
     string = str(D1)
     print(string)
 
 
 def test_DataSet_Convert_Data():
-    dataFiles = 'Data/camea2018n000038.hdf'
+    dataFiles = 'Data/camea2018n000136.hdf'
     dataset = DataSet(dataFiles=dataFiles)
     
 
@@ -4171,7 +4171,7 @@ def test_DataSet_Convert_Data():
         assert True
 
     try:
-        os.remove('Data/camea2018n000038.nxs')
+        os.remove('Data/camea2018n000136.nxs')
     except:
         pass
     dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='Data/',saveFile=True)
@@ -4179,7 +4179,7 @@ def test_DataSet_Convert_Data():
     
     otherFile = DataFile.DataFile(dataFiles.replace('.hdf','.nxs'))
     assert(convertedFile==otherFile)
-    os.remove('Data/camea2018n000038.nxs')
+    os.remove('Data/camea2018n000136.nxs')
     
 
 
@@ -4232,7 +4232,7 @@ def test_DataSet_full_test():
     import matplotlib.pyplot as plt
     import os
     plt.ioff()
-    DataFile = ['Data/camea2018n000038.hdf']
+    DataFile = ['Data/camea2018n000136.hdf']
 
     dataset = DataSet(dataFiles=DataFile)
     dataset.convertDataFile(saveLocation='Data/')
@@ -4256,20 +4256,20 @@ def test_DataSet_full_test():
     viewer.setPlane(4)
     del viewer 
     viewer = dataset.View3D(0.08,0.08,0.25,rlu=False)
-    os.remove('Data/camea2018n000038.nxs')
+    os.remove('Data/camea2018n000137.nxs')
     del viewer
     plt.close('all')
 
 def test_DataSet_Visualization():
     import warnings
     from MJOLNIR.Data import Viewer3D,DataFile
-    DataFiles = ['Data/camea2018n000017.hdf']
+    DataFiles = ['Data/camea2018n000136.hdf']
 
     dataset = DataSet(dataFiles=DataFiles)
     dataset.convertDataFile(saveLocation='Data')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
-    Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [DataFile.DataFile('Data/camea2018n000017.nxs')])
+    Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [DataFile.DataFile('Data/camea2018n000136.nxs')])
     
     plt.ioff()
     warnings.simplefilter('ignore')
@@ -4279,7 +4279,7 @@ def test_DataSet_Visualization():
     viewer.caxis = (0,100)
     plt.plot()
     plt.close('all')
-    os.remove('Data/camea2018n000017.nxs')
+    os.remove('Data/camea2018n000136.nxs')
 
 def test_DataSet_binEdges():
     X = np.random.rand(100)*3 # array between 0 and 3 -ish
@@ -4438,7 +4438,7 @@ def test_DataSet_cutPowder():
     Tolerance = 0.01
 
     plt.ioff()
-    convertFiles = ['Data/camea2018n000017.hdf']
+    convertFiles = ['Data/camea2018n000136.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
@@ -4456,7 +4456,7 @@ def test_DataSet_cutPowder():
 
 def test_DataSet_createRLUAxes():
     plt.ioff()
-    convertFiles = ['Data/camea2018n000017.hdf']
+    convertFiles = ['Data/camea2018n000136.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
@@ -4730,7 +4730,7 @@ def test_DataSet_plotCutQELine():
 
 
 def test_DataSet_extractDetectorData():
-    DataFile = ['Data/camea2018n000038.hdf','Data/camea2018n000038.hdf']#['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
+    DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']#['TestData/ManuallyChangedData/A3.nxs','TestData/ManuallyChangedData/A3.nxs']
     dataset = DataSet(DataFile)
 
     binning = 1
@@ -4780,7 +4780,6 @@ def test_DataSet_extractDetectorData():
         assert(DatAllRaw[0][i].shape==DatAllRaw[1][i].shape and DatAllRaw[0][i].shape==DatAllRaw[2][i].shape) # Check that 3 list have same shape
         assert(DatAllRaw[0][i].shape==DatAll[i].shape) 
         
-    os.remove('Data/camea2018n000038.nxs')
 
 def test_DataSet_OxfordList():
     l = ['Apples','Pears']
