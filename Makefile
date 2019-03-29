@@ -33,7 +33,7 @@ version:
 	echo 'Creating version $(version)'
 	python Update.py $(version)
 	make tutorials
-	git add setup.py docs/conf.py docs/Tutorials/* docs/index.rst
+	git add setup.py docs/conf.py docs/Tutorials/* docs/index.rst MJOLNIR/__init__.py
 	git commit -m 'Update version'
 	git tag -a $(version) -m \'$(version)\'
 	make wheel
