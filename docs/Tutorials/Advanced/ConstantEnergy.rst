@@ -16,7 +16,9 @@ Plotting the data acquired in 3D is made possible through the plotQPlane method 
    
    ds = DataSet.DataSet(fileList)
    ds.convertDataFile(saveFile=False)
-   
+   mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+   mask[:,:,:3]=True
+   ds.mask = mask
    
    fig = plt.figure(figsize=(10,11))
    ax = fig.add_subplot(111, projection='3d')
@@ -36,7 +38,7 @@ Plotting the data acquired in 3D is made possible through the plotQPlane method 
    
    [I,Monitor,Norm,NormCount],[xBins,yBins],ax = \
    ds.plotQPlane(EBins=E,ax = ax,xBinTolerance=0.03,yBinTolerance=0.03,
-             binning='polar',vmin=5e-7,vmax=5e-5,antialiased=True,cmap=cmap)
+             binning='polar',vmin=2e-7,vmax=2e-5,antialiased=True,cmap=cmap)
    
    ax.set_xlabel('$Q_x$ [1/AA]')
    ax.set_ylabel('$Q_y$ [1/AA]')

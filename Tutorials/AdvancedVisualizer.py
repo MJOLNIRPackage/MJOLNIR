@@ -54,6 +54,9 @@ def Tester():
     fileName = _tools.fileListGenerator(numbers,folder='/home/lass/Dropbox/PhD/CAMEAData/',year=2018)
     ds = DataSet.DataSet(dataFiles=fileName)
     ds.convertDataFile(saveFile=False)
+    mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+    mask[:,:,:3]=True
+    ds.mask = mask
 
     # Plotting data quickly in equi-sized voxels can be done by
     Viewer = ds.View3D(0.03,0.03,0.09,grid=9,rlu=True)
@@ -62,7 +65,7 @@ def Tester():
     # as a number the zorder of the grid is specified (Data is plotted at 10).
     # It is also possible to plot data without making use of reciprocal lattice
     # units, choosen by rlu = True or False.
-    Viewer.caxis=(1e-7,2.5e-6)
+    Viewer.caxis=(1e-8,5e-7)
     nFrames = Viewer.Z.shape[-1] # Number of energy planes
     frames = np.arange(3,nFrames-3)
     frames = np.concatenate([frames,np.flip(frames[1:-1])]) # 

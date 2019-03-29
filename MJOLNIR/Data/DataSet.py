@@ -1586,8 +1586,19 @@ class DataSet(object):
             offset = [0.0]
             idmax = len(DataList) # Number of segments
             edgeQDistance = []
-            
-            actualEnergy = [np.concatenate([[x[0] for x in BinListTotal[i][:,2]],[BinListTotal[i][-1,2][1]]]) for i in range(len(BinListTotal))]
+            actualEnergy = []
+            for i in range(len(BinListTotal)):
+                localE = []
+                for j in range(len(BinListTotal[i])):
+                    localE.append(BinListTotal[i][j][2][0])
+                
+                localE.append(BinListTotal[i][-1][2][1])
+                
+                actualEnergy.append(localE)
+                
+                #[print(len(BinListTotal[i][x][2])) for x in range(len(BinListTotal[i]))]
+                
+            #actualEnergy = [np.concatenate([[x[0] for x in BinListTotal[i][:,2]],[BinListTotal[i][-1,2][1]]]) for i in range(len(BinListTotal))]
             
 
             for segID in range(idmax): # extract relevant data for current segment
@@ -1739,7 +1750,7 @@ class DataSet(object):
                     else:
                         return -1,-1,-1
                 segID = (np.arange(len(offset)-1)[[x>offset[i] and x<offset[i+1] for i in range(len(offset)-1)]])[0]
-                Eindex = EnergyBins[segID].searchsorted(y) - 1
+                Eindex = np.array(EnergyBins[segID]).searchsorted(y) - 1
                 minspan = np.min(np.concatenate(edgeQDistance[segID]))
                 maxspan = np.max(np.concatenate(edgeQDistance[segID]))
                 xInSegment = (x-offset[segID])/(offset[segID+1]-offset[segID])*(maxspan-minspan)+minspan

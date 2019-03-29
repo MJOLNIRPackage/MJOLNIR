@@ -6,6 +6,7 @@ from Tutorial_Class import Tutorial
 
 def Tester():
     from MJOLNIR.Data import DataSet
+    import numpy as np
     
     # Location of raw data file. Can also be given as a single string
     fileName = ['/home/lass/Dropbox/PhD/CAMEAData/camea2018n000136.hdf','/home/lass/Dropbox/PhD/CAMEAData/camea2018n000137.hdf']
@@ -17,7 +18,9 @@ def Tester():
     
     # With saveFile = False, converted files are not saved to disk but stays
     # only in RAM. 
-
+    mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+    mask[:,:,:3]=True
+    ds.mask = mask
 
     # Plotting data quickly in equi-sized voxels can be done by
     Viewer = ds.View3D(0.03,0.03,0.05)

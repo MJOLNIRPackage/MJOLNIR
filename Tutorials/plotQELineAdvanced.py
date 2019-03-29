@@ -15,6 +15,9 @@ def Tester():
     
     ds = DataSet.DataSet(fileList)
     ds.convertDataFile(saveFile=False)
+    mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+    mask[:,:,:3]=True
+    ds.mask = mask
     
     # Define the positions to be cut through
     Q1 = np.array([0,0,0])
@@ -41,7 +44,7 @@ def Tester():
     ax,DataLists,BinListTotal,centerPositionTotal,binDistanceTotal = \
     ds.plotCutQELine(QPoints=QPoints, width=width, minPixel=minPixel, \
                      ax=ax, EnergyBins=EnergyBins, ticks = 12,\
-                     vmin=1e-8, vmax=2.5e-5, tickRound = 4, plotSeperator = True,
+                     vmin=1e-8, vmax=1e-5, tickRound = 4, plotSeperator = True,
                      seperatorWidth=0.5,zorder=10)
     ax.grid(True,zorder=0,c='k')
     fig.savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/plotCutQELineMnF2.png',format='png',dpi=300)

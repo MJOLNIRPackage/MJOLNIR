@@ -7,6 +7,7 @@ from Tutorial_Class import Tutorial
 def Tester():
     from MJOLNIR.Data import DataSet
     from MJOLNIR import _tools # Usefull tools useful across MJOLNIR 
+    import numpy as np
     
     numbers = '483-489,494-500' # String of data numbers
     fileList = _tools.fileListGenerator(numbers,'/home/lass/Dropbox/PhD/CAMEAData/',2018) # Create file list from 2018 in specified folder
@@ -14,12 +15,15 @@ def Tester():
     # Create the data set
     ds = DataSet.DataSet(fileList)
     ds.convertDataFile(saveFile=False)
+    mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+    mask[:,:,:3]=True
+    ds.mask = mask
     
     # Choose energy limits for binning
     EMin = 3.5
     EMax = 4.0
     # Generate a figure making use of binning in polar coordinates
-    Data,Bins,ax = ds.plotQPlane(EMin=EMin, EMax=EMax,xBinTolerance=0.03,yBinTolerance=0.03,binning='polar',vmin=5e-7,vmax=5e-5)
+    Data,Bins,ax = ds.plotQPlane(EMin=EMin, EMax=EMax,xBinTolerance=0.03,yBinTolerance=0.03,binning='polar',vmin=2e-7,vmax=2e-5)
     
     fig = ax.get_figure() # Extract figure from returned axis
     fig.colorbar(ax.pmeshs[0]) # Create colorbar from plot

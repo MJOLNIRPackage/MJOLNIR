@@ -16,6 +16,9 @@ def Tester():
     
     ds = DataSet.DataSet(fileList)
     ds.convertDataFile(saveFile=False)
+    mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+    mask[:,:,:3]=True
+    ds.mask = mask
     
     # Create RLU axis
     ax = ds.createRLUAxes()
@@ -49,7 +52,7 @@ def Tester():
     ax.legend()
     
     ax.grid(True)
-    fig.tight_layout()
+    
     fig.savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Tools/RLUAxis.png',format='png',dpi=300)
     
     ############### Second example ###############
@@ -70,7 +73,7 @@ def Tester():
     ax.set_axis(v1,v2)
     
     ax.grid(True)
-    fig.tight_layout()
+    
     fig.savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Tools/RLUAxis2.png',format='png',dpi=300)
     
     

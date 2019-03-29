@@ -16,6 +16,9 @@ This axis is created to easily plot data in RLU for all crystals in the scatteri
    
    ds = DataSet.DataSet(fileList)
    ds.convertDataFile(saveFile=False)
+   mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+   mask[:,:,:3]=True
+   ds.mask = mask
    
    # Create RLU axis
    ax = ds.createRLUAxes()
@@ -49,7 +52,7 @@ This axis is created to easily plot data in RLU for all crystals in the scatteri
    ax.legend()
    
    ax.grid(True)
-   fig.tight_layout()
+   
    fig.savefig('figure0.png',format='png')
    
    ############### Second example ###############
@@ -70,7 +73,7 @@ This axis is created to easily plot data in RLU for all crystals in the scatteri
    ax.set_axis(v1,v2)
    
    ax.grid(True)
-   fig.tight_layout()
+   
    fig.savefig('figure1.png',format='png')
    
 
