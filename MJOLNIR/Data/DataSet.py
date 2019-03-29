@@ -1481,18 +1481,6 @@ class DataSet(object):
         else: # Do nothing
             positions = QPoints
         
-        if not 'vmin' in kwargs:
-            vmin = 0
-        else:
-            vmin = kwargs['vmin']
-            del kwargs['vmin']
-
-        if not 'vmax' in kwargs:
-            vmax = 1e-5
-        else:
-            vmax = kwargs['vmax']
-            del kwargs['vmax']
-
         if ax is None:
             plt.figure()
             ax = plt.gca()
@@ -4032,10 +4020,10 @@ def test_Dataset_Initialization():
     emptyDataset = DataSet()
     del emptyDataset
     DataFile.assertFile('Data/camea2018n000136.nxs')
-    dataset = DataSet(dataFiles=['Data/camea2018n000136.hdf'],convertedFiles='Data/camea2018n000136.nxs',calibrationfiles=[])
+    dataset = DataSet(dataFiles=['Data/camea2018n000136.hdf'],convertedFiles='Data/camea2018n000137.nxs',calibrationfiles=[])
     
     assert(dataset.dataFiles[0].name=='camea2018n000136.hdf')
-    assert(dataset.convertedFiles[0].name=='camea2018n000136.nxs')
+    assert(dataset.convertedFiles[0].name=='camea2018n000137.nxs')
     assert(dataset.normalizationfiles == [])
     Str = str(dataset)
 
