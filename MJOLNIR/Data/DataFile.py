@@ -1369,7 +1369,7 @@ def test_Sample_conversions():
 
 
 def test_Sample_CurratAxe():
-    df = DataFile('/home/lass/Dropbox/PhD/Software/MJOLNIR/Data/camea2018n000178.hdf')
+    df = DataFile('Data/camea2018n000178.hdf')
     sample = df.sample
 
     Ei = [5,7,9]
