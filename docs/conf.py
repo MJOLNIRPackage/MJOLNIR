@@ -31,9 +31,9 @@ copyright = u'2019, Jakob Lass'
 author = u'Jakob Lass'
 
 # The short X.Y version
-version = u'1.0.13'
+version = u'1.0.14'
 # The full version, including alpha/beta/rc tags
-release = u'1.0.13'
+release = u'1.0.14'
 
 
 
