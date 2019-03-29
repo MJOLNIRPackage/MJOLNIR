@@ -74,7 +74,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
         if round:
             return np.array(np.round(val),dtype=int)
         else:
-            val
+            return val
 
 
     if not nbinsx is None or not nbinsy is None: # Either nbinsx or nbinsy is provided (or both)

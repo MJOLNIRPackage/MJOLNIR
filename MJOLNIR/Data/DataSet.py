@@ -4464,7 +4464,34 @@ def test_DataSet_createRLUAxes():
     ds.convertDataFile()
 
     ax = ds.createRLUAxes()
+    ax = ds.createRLUAxes(nbinsx=5)
+    ax = ds.createRLUAxes(nbinsy=5)
+    ax = ds.createRLUAxes(basex=0.5)
+    ax = ds.createRLUAxes(basey=0.5)
+
+    ax.set_xticks_number(5)
+    ax.set_yticks_number(8)
+
     plt.close('all')
+
+
+def test_DataSet_createQEAxes():
+    plt.ioff()
+    convertFiles = ['Data/camea2018n000136.hdf']
+    
+    ds = DataSet(dataFiles = convertFiles)
+    ds.convertDataFile()
+
+    ax = ds.createQEAxes(projectionVector1=ds.sample.projectionVector1,projectionVector2=ds.sample.projectionVector2)
+
+    try:
+        ax = ds.createQEAxes(axis=2) # Axis only allowed to be 0 or 1
+    except AttributeError:
+        assert True
+    
+    
+    plt.close('all')
+
 
 
 def test_DataSet_plotQPlane():
