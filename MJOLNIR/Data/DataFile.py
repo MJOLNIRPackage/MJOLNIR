@@ -801,15 +801,11 @@ class Sample(object):
             # Calcualte angles for plane vectors
             Ei = 5.0 
             k = np.sqrt(Ei)*factorsqrtEK
-            
-            tau1 = np.linalg.norm(np.dot(self.B,vector1))
-            tau2 = np.linalg.norm(np.dot(self.B,vector2))
-            
-
-            STT1 = 2 * np.rad2deg(np.arcsin(tau1/(2.0*k)))
-            theta1 = TasUBlib.calcTheta(k,k,STT1)
-
             H1,K1,L1 = vector1
+
+            STT1 = TasUBlib.calTwoTheta(self.B,[H1,K1,L1,Ei,Ei],1.0)
+            
+            theta1 = TasUBlib.calcTheta(k,k,STT1)
 
             self.plane_vector1 = np.array([H1,K1,L1, theta1, STT1, 0.0,0.0, Ei,Ei])
 
@@ -817,7 +813,8 @@ class Sample(object):
             STT2 = r2[4]
             theta2 = r2[3]
             self.plane_vector2 = r2
-
+            print(self.plane_vector1)
+            print(self.plane_vector2)
             self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell,self.plane_vector1,self.plane_vector2)
             self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))#,self.planeNormal.astype(float))
             self.calculateProjections()
@@ -1052,9 +1049,7 @@ class Sample(object):
 
     def calculateHKLtoProjection(self,H,K,L):
         HKL = np.array([H,K,L])
-        Proj1 = self.projectionVector1/np.linalg.norm(self.projectionVector1)**2
-        Proj2 = self.projectionVector2/np.linalg.norm(self.projectionVector2)**2
-        points = np.einsum('ij,j...->i...',np.array([Proj1,Proj2]),HKL)
+        points = np.einsum('i...,ij...->i...',HKL,self.PM)
         return points
 
 
@@ -1100,17 +1095,19 @@ class Sample(object):
         Ei = np.asarray(Ei).flatten() # Shape (m)
         Ef = np.asarray(Ef).flatten() # Shape (n)
         Bragg = np.asarray(Bragg).reshape(-1,3) # shape (l,3)
-
-        Ql = []
+        print(Bragg.shape,Ei.size,Ef.size)
+        
         QlLocal = []
         if spurionType.lower() == 'monochromator':
             for B in Bragg:
+                Ql = []
                 Angles = np.array([TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,A3Off,np.array([B[0],B[1],B[2],e,e]))[:2] for e in Ef])
                 for ei in Ei:
                     Ql.append(np.array([TasUBlib.calcTasQH(self.orientationMatrixINV,angle,ei,e,0) for angle,e in zip(Angles,Ef)])[:,1])
                 QlLocal.append(Ql)
         elif spurionType.lower() == 'analyser':
             for B in Bragg:
+                Ql = []
                 for ei in Ei:
                     Angles2 = np.array(TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,A3Off,np.array([B[0],B[1],B[2],ei,ei]))[:2])
                     Ql.append(np.array([TasUBlib.calcTasQH(self.orientationMatrixINV,Angles2,ei,e,A3Off*0.0) for e in Ef])[:,1]) # Extract Qx,Qy
@@ -1349,14 +1346,143 @@ def test_sample_exceptions():
     except:
         assert True
 
+def test_Sample_conversions():
+    df = DataFile('Data/camea2018n000178.hdf')
+    sample = df.sample
+
+    # Check that tr and inv_tr results in the same
+    p0,p1 = 2.25,-1.23
+    Qx,Qy = sample.tr(p0,p1)
+    P0,P1 = sample.inv_tr(Qx,Qy)
+
+    assert(np.all(np.isclose([p0,p1],[P0,P1])))
+
+    # Check that format_coord prints something
+    string = sample.format_coord(Qx,Qy) # format is h = ??, k = ??, l = ??
+    hkl = [float(x.split('=')[-1]) for x in string.split(',')]
+    print(string)
+    print(hkl)
+
+    QxQyFromSample = sample.calculateHKLToQxQy(*hkl)
+    print(QxQyFromSample)
+    assert(np.all(np.isclose(QxQyFromSample,[Qx,Qy],atol=1e-3)))
+
+
 def test_Sample_CurratAxe():
+    df = DataFile('/home/lass/Dropbox/PhD/Software/MJOLNIR/Data/camea2018n000178.hdf')
+    sample = df.sample
+
     Ei = [5,7,9]
     Ef = np.array([[4,4,4],[5,5,5]])
-    Bragg = [[1,0,0],[0,1,0]]
+    Bragg = [[1,0,0],[0,1,1]]
 
-    s = Sample()
 
-    #position = 
+    pos = sample.CurratAxe(Ei,Ef,Bragg)
+
+    assert(pos.shape == (len(Bragg),np.array(Ei).size,Ef.size,3))
+
+    assert(np.all(np.isclose(pos[:,:,:,2],0.0))) # All Qz are to be zero
+
+
+    POS = np.array([[[[ 1.59337451e-01,  6.96316473e-01,  0.00000000e+00],
+            [ 1.59337451e-01,  6.96316473e-01,  0.00000000e+00],
+            [ 1.59337451e-01,  6.96316473e-01,  0.00000000e+00],
+            [-1.20179144e-08,  6.57512083e-01, -0.00000000e+00],
+            [-1.20179144e-08,  6.57512083e-01, -0.00000000e+00],
+            [-1.20179144e-08,  6.57512083e-01, -0.00000000e+00]],
+
+            [[ 4.35859084e-01,  7.63659414e-01,  0.00000000e+00],
+            [ 4.35859084e-01,  7.63659414e-01,  0.00000000e+00],
+            [ 4.35859084e-01,  7.63659414e-01,  0.00000000e+00],
+            [ 2.78156829e-01,  7.17745441e-01,  0.00000000e+00],
+            [ 2.78156829e-01,  7.17745441e-01,  0.00000000e+00],
+            [ 2.78156829e-01,  7.17745441e-01,  0.00000000e+00]],
+
+            [[ 6.74964311e-01,  8.21890116e-01,  0.00000000e+00],
+            [ 6.74964311e-01,  8.21890116e-01,  0.00000000e+00],
+            [ 6.74964311e-01,  8.21890116e-01,  0.00000000e+00],
+            [ 5.18676001e-01,  7.69828565e-01,  0.00000000e+00],
+            [ 5.18676001e-01,  7.69828565e-01,  0.00000000e+00],
+            [ 5.18676001e-01,  7.69828565e-01,  0.00000000e+00]]],
+
+
+        [[[ 1.11373538e+00,  4.08688259e-01,  0.00000000e+00],
+            [ 1.11373538e+00,  4.08688259e-01,  0.00000000e+00],
+            [ 1.11373538e+00,  4.08688259e-01,  0.00000000e+00],
+            [ 9.86285477e-01,  5.11890634e-01,  0.00000000e+00],
+            [ 9.86285477e-01,  5.11890634e-01,  0.00000000e+00],
+            [ 9.86285477e-01,  5.11890634e-01,  0.00000000e+00]],
+
+            [[ 1.33491786e+00,  2.29586062e-01,  0.00000000e+00],
+            [ 1.33491786e+00,  2.29586062e-01,  0.00000000e+00],
+            [ 1.33491786e+00,  2.29586062e-01,  0.00000000e+00],
+            [ 1.19906946e+00,  3.22887295e-01,  0.00000000e+00],
+            [ 1.19906946e+00,  3.22887295e-01,  0.00000000e+00],
+            [ 1.19906946e+00,  3.22887295e-01,  0.00000000e+00]],
+
+            [[ 1.52617192e+00,  7.47183562e-02,  0.00000000e+00],
+            [ 1.52617192e+00,  7.47183562e-02,  0.00000000e+00],
+            [ 1.52617192e+00,  7.47183562e-02,  0.00000000e+00],
+            [ 1.38306144e+00,  1.59458179e-01,  0.00000000e+00],
+            [ 1.38306144e+00,  1.59458179e-01,  0.00000000e+00],
+            [ 1.38306144e+00,  1.59458179e-01,  0.00000000e+00]]]])
+
+    assert(np.all(np.isclose(pos,POS)))
+
+    POSAnalyser = np.array([[[[ 1.60279692e-01,  6.22804387e-01,  0.00000000e+00],
+            [ 1.60279692e-01,  6.22804387e-01,  0.00000000e+00],
+            [ 1.60279692e-01,  6.22804387e-01,  0.00000000e+00],
+            [-1.20179144e-08,  6.57512083e-01, -0.00000000e+00],
+            [-1.20179144e-08,  6.57512083e-01, -0.00000000e+00],
+            [-1.20179144e-08,  6.57512083e-01, -0.00000000e+00]],
+
+            [[ 4.41363759e-01,  5.77272258e-01,  0.00000000e+00],
+            [ 4.41363759e-01,  5.77272258e-01,  0.00000000e+00],
+            [ 4.41363759e-01,  5.77272258e-01,  0.00000000e+00],
+            [ 2.80013947e-01,  6.06605614e-01,  0.00000000e+00],
+            [ 2.80013947e-01,  6.06605614e-01,  0.00000000e+00],
+            [ 2.80013947e-01,  6.06605614e-01,  0.00000000e+00]],
+
+            [[ 6.85994178e-01,  5.47926749e-01,  0.00000000e+00],
+            [ 6.85994178e-01,  5.47926749e-01,  0.00000000e+00],
+            [ 6.85994178e-01,  5.47926749e-01,  0.00000000e+00],
+            [ 5.24052917e-01,  5.73796337e-01,  0.00000000e+00],
+            [ 5.24052917e-01,  5.73796337e-01,  0.00000000e+00],
+            [ 5.24052917e-01,  5.73796337e-01,  0.00000000e+00]]],
+
+
+        [[[ 1.00477106e+00,  3.48941284e-01,  0.00000000e+00],
+            [ 1.00477106e+00,  3.48941284e-01,  0.00000000e+00],
+            [ 1.00477106e+00,  3.48941284e-01,  0.00000000e+00],
+            [ 9.86285477e-01,  5.11890634e-01,  0.00000000e+00],
+            [ 9.86285477e-01,  5.11890634e-01,  0.00000000e+00],
+            [ 9.86285477e-01,  5.11890634e-01,  0.00000000e+00]],
+
+            [[ 1.06290681e+00,  6.98843240e-02,  0.00000000e+00],
+            [ 1.06290681e+00,  6.98843240e-02,  0.00000000e+00],
+            [ 1.06290681e+00,  6.98843240e-02,  0.00000000e+00],
+            [ 1.03489627e+00,  2.31469030e-01,  0.00000000e+00],
+            [ 1.03489627e+00,  2.31469030e-01,  0.00000000e+00],
+            [ 1.03489627e+00,  2.31469030e-01,  0.00000000e+00]],
+
+            [[ 1.13033943e+00, -1.67701473e-01,  0.00000000e+00],
+            [ 1.13033943e+00, -1.67701473e-01,  0.00000000e+00],
+            [ 1.13033943e+00, -1.67701473e-01,  0.00000000e+00],
+            [ 1.09633291e+00, -7.27153902e-03,  0.00000000e+00],
+            [ 1.09633291e+00, -7.27153902e-03,  0.00000000e+00],
+            [ 1.09633291e+00, -7.27153902e-03,  0.00000000e+00]]]])
+
+
+    posAna = sample.CurratAxe(Ei,Ef,Bragg,spurionType='ANAlYser')
+
+    assert(np.all(np.isclose(posAna[:,:,:,2],0.0))) # All Qz are to be zero
+    assert(np.all(np.isclose(posAna,POSAnalyser)))
+
+
+    posMonoProjection = sample.CurratAxe(Ei,Ef,Bragg,spurionType='monoChrOmaTOR',Projection=True)
+    posMonoHKL = sample.CurratAxe(Ei,Ef,Bragg,spurionType='monoChrOmaTOR',HKL=True)
+    assert(posMonoProjection.shape == (len(Bragg),np.array(Ei).size,Ef.size,2))
+    assert(posMonoHKL.shape == (len(Bragg),np.array(Ei).size,Ef.size,3))
 
 def test_vectorAngle():
     v1 = np.array([1,0,0])

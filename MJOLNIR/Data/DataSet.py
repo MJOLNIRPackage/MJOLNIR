@@ -4458,6 +4458,7 @@ def test_DataSet_cutPowder():
 
 def test_DataSet_createRLUAxes():
     plt.ioff()
+    fig = plt.figure()
     convertFiles = ['Data/camea2018n000136.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
@@ -4466,11 +4467,17 @@ def test_DataSet_createRLUAxes():
     ax = ds.createRLUAxes()
     ax = ds.createRLUAxes(nbinsx=5)
     ax = ds.createRLUAxes(nbinsy=5)
-    ax = ds.createRLUAxes(basex=0.5)
+    ax = ds.createRLUAxes(basex=0.5,figure=fig)
     ax = ds.createRLUAxes(basey=0.5)
 
     ax.set_xticks_number(5)
     ax.set_yticks_number(8)
+
+    ax.set_xticks_base(0.2)
+    ax.set_yticks_base(0.5)
+
+    V1,V2 = [2,0,0],[-2,3,0]
+    ax.set_axis(V1,V2)
 
     plt.close('all')
 
@@ -4489,7 +4496,10 @@ def test_DataSet_createQEAxes():
     except AttributeError:
         assert True
     
-    
+    try:
+        ax = ds.createQEAxes(projectionVector1=[1,0,0],projectionVector2=[1,2,3,4,5]) # Wrong shape of vector
+    except AttributeError:
+        assert True
     plt.close('all')
 
 

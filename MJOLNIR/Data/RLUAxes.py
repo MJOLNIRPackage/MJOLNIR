@@ -311,9 +311,10 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
         angle = DataSet.sample.projectionAngle
         orientationMatrix = DataSet.sample.orientationMatrix
     else:
-        v1 = np.asarray(projectionVector1)
-        v2 = np.asarray(projectionVector2)
-        if not np.all([x[0].shape==3 for x in [v1,v2]]) and not np.all([len(x.shape)==1 for x in [v1,v2]]):
+        v1 = np.array(projectionVector1)
+        v2 = np.array(projectionVector2)
+        
+        if not np.all([x.shape==(3,) for x in [v1,v2]]) or not np.all([len(x.shape)==1 for x in [v1,v2]]):
             raise AttributeError('Provided vector(s) is not 3D: projectionVector1.shape={} or projectionVector2.shape={}'.format(v1.shape,v2.shape))
         angle = np.arccos(np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2)))
         orientationMatrix = np.ones(3)
