@@ -250,7 +250,7 @@ class DataSet(object):
         try:
             del self.dataFiles[index]
         except IndexError:
-            raise MJOLNIRError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
+            raise IndexError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
         self._getData
 
 
@@ -709,15 +709,6 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
             
-        if len(qx.shape)==1 or len(qx.shape)==4:
-            
-            qx = np.concatenate(qx,axis=0)
-            qy = np.concatenate(qy,axis=0)
-            energy = np.concatenate(energy,axis=0)
-            I = np.concatenate(I,axis=0)
-            Norm = np.concatenate(Norm,axis=0)
-            Monitor = np.concatenate(Monitor,axis=0)
-        
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
 
@@ -1782,7 +1773,8 @@ class DataSet(object):
                     print(printString)
             ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPositionTotal,actualEnergy,IntTotal,rlu,offset,self)#EnergyBins
             ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
-        else:
+        else: # pragma: no cover
+            # TODO: Make test!!!
             import matplotlib.colors
             ax.norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
             if not 'cmap' in kwargs:
@@ -4128,6 +4120,16 @@ def test_DataSet_Pythonic():
     assert(np.all(secondShape!=initShape))
     del dataset[3]
     del dataset[2]
+    try:
+        del dataset[10]
+    except IndexError:
+        assert True
+
+    try:
+        dataset.append('NoFile')
+    except:
+        assert True
+    
     dataset.append(DataFile.DataFile(dataFiles[0]))
     assert(len(dataset)==3)
     assert(dataset.I.shape!=secondShape)
@@ -4444,6 +4446,12 @@ def test_DataSet_cutPowder():
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
+    mask = np.ones_like(Datset.I.data)
+
+    Datset.mask = mask
+    Datset.mask = np.logical_not(mask)
+    
+
     eBins = _tools.binEdges(Datset.energy,0.25)
 
     ax,D,q = Datset.plotCutPowder(eBins,Tolerance)# Remove to improve test ,vmin=0,vmax=1e-6)
@@ -4510,19 +4518,48 @@ def test_DataSet_plotQPlane():
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
+
+    EmptyDS = DataSet()
+    try:
+        Datset.plotQPlane() # No Bins, Emin or Emax
+        assert False
+    except AttributeError:
+        assert True
+    try:
+        Datset.plotQPlane(Ebins=[10]) # Length of bins is 1
+        assert False
+    except AttributeError:
+        assert True
+    
+    try:
+        Datset.plotQPlane(EMin=20,EMax=10) # EMin>EMax
+        assert False
+    except AttributeError:
+        assert True
+    
+    try:
+        EmptyDS.plotQPlane(EMin=2,EMax=3) # Empty DataSet
+        assert False
+    except AttributeError:
+        assert True
+
+
     EMin = np.min(Datset.energy)
     EMax = EMin+0.5
     Data,[Qx,Qy],ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
     Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
     fig,AX = plt.subplots()
-    Data,[Qx,Qy],ax3 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6)
+    Data,[Qx,Qy],ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6,zorder=10)
     ax1.set_clim(-20,-15)
     ax2.set_clim(0,1e-6)
 
+    
+    cmap = plt.cm.coolwarm
+
     Dataset = DataSet(dataFiles=convertFiles)
     for d in Dataset.dataFiles:
-        d.A3Off +=180 # rotate data to fall into problem of arctan2
-    Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
+        d.A3Off +=90 # rotate data to fall into problem of arctan2
+    Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True,cmap=cmap)
     QxShape = np.array(Qx[0]).shape
     QyShape = np.array(Qy[0]).shape
     assert(QxShape==QyShape)
@@ -4694,6 +4731,11 @@ def test_DataSet_cutQELine():
         assert False
     except AttributeError:
         assert True
+    try: # No Q-points
+        dataset.cutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=42) # Wrong RLU-input
+        assert False
+    except AttributeError:
+        assert True
 
     DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
     DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPointsHKL,EnergyBins,width=width,minPixel=minPixel,rlu=True)
@@ -4763,7 +4805,7 @@ def test_DataSet_plotCutQELine():
 
 
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,tickRound=1)
+        HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,ticks=1,tickRound=1,colorbar=True)
 
     plt.close('all')
 
