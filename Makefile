@@ -3,9 +3,13 @@
 
 test:
 	python -m pytest -vv MJOLNIR
+	coverage report
+	coverage html
 
 quicktest:
-	python -m pytest -vv MJOLNIR --quick
+	coverage run -m pytest -vv MJOLNIR --quick
+	coverage report
+	coverage html
 
 tutorials:
 	python clean.py docs/Tutorials/Advanced
