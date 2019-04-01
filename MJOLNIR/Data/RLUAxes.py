@@ -440,7 +440,7 @@ class MaxNLocator(mticker.MaxNLocator):
         self.create_dummy_axis()
         self._factor = None
 
-    def __call__(self, v1, v2):
+    def __call__(self, v1, v2): # pragma: no cover
         if self._factor is not None:
             self.set_bounds(v1*self._factor, v2*self._factor)
             locs = mticker.MaxNLocator.__call__(self)
@@ -477,7 +477,7 @@ class MultipleLocator(mticker.MultipleLocator):
         self.multiples = 1.0/multiplerVals
 
 
-    def __call__(self, v1, v2):
+    def __call__(self, v1, v2): # pragma: no cover
         if self._factor is not None:
             self.set_bounds(v1*self._factor, v2*self._factor)
             locs = mticker.MultipleLocator.__call__(self)
