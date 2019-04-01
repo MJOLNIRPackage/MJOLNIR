@@ -215,7 +215,7 @@ class DataSet(object):
         try:
             return self.dataFiles[index]
         except IndexError:
-            raise MJOLNIRError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
+            raise IndexError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
 
     def __len__(self):
         return len(self.dataFiles)
@@ -1776,6 +1776,23 @@ class DataSet(object):
         else: # pragma: no cover
             # TODO: Make test!!!
             import matplotlib.colors
+
+            if not 'vmin' in kwargs:
+                if log==True:
+                    vmin = np.nanmin(np.log10(np.concatenate(Int)+1e-20))
+                else:
+                    vmin = np.nanmin(np.concatenate(Int))
+            else:
+                vmin = kwargs['vmin']
+            if not 'vmax' in kwargs:
+                if log==True:
+                    vmax = np.nanmax(np.log10(np.concatenate(Int)+1e-20))
+                else:
+                    vmax = np.nanmax(np.concatenate(Int))
+            else:
+                vmax = kwargs['vmax']
+
+
             ax.norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
             if not 'cmap' in kwargs:
                 from matplotlib.colors import ListedColormap
@@ -2662,7 +2679,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
 #    return ax
 
 @_tools.KwargChecker()
-def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
+def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2): # pragma: no cover
     """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
     This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
     binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
@@ -4121,7 +4138,14 @@ def test_DataSet_Pythonic():
     del dataset[3]
     del dataset[2]
     try:
+        dataset[10]
+        assert False
+    except IndexError:
+        assert True
+    
+    try:
         del dataset[10]
+        assert False
     except IndexError:
         assert True
 
@@ -4367,8 +4391,8 @@ def test_DataSet_1Dcut():
 def test_DataSet_1DcutE():
     q =  np.array([1.23,-1.25]).reshape(2,1)
     width = 0.1
-    Emin = 0.5
-    Emax = 1.5
+    Emin = 1.5
+    Emax = 2.5
     plt.ioff()
     convertFiles = ['Data/camea2018n000137.hdf']
     Datset = DataSet(dataFiles = convertFiles)
@@ -4387,6 +4411,14 @@ def test_DataSet_1DcutE():
     assert(intensity.shape==MonitorCount.shape) # Check that all matrices are cut equally
     assert(intensity.shape==Normalization.shape)
     assert(intensity.shape==normcounts.shape)
+
+    [intensity,MonitorCount,Normalization,normcounts],[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=width,minPixel=0.01,rlu=False)
+    
+    Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
+    
+    assert(np.all(np.isclose(np.diff(bins),0.01)))
+    assert(bins.min()>=Emin)
+    assert(bins.max()<=Emax)
 
     try: # no points inside energy interval
         cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=500,E2=700,q=q,width=width,minPixel=0.01)
@@ -4417,6 +4449,7 @@ def test_DataSet_2Dcut():
     Datset.convertDataFile(saveFile=False)
     ax,Data,pos,cpos,distance = Datset.plotCutQE(q1,q2,width,minPixel,EnergyBins,rlu=False)# Remove to improve test coverage ,vmin=0.0 , vmax= 5e-06)
     Data2,pos2,cpos2,distance2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins,rlu=False)
+    
     for i in range(len(Data)):
         for j in range(len(Data[i])):
             assert(np.all(Data[i][j]==Data2[i][j]))
@@ -4548,7 +4581,7 @@ def test_DataSet_plotQPlane():
     except AttributeError:
         assert True
     try:
-        Datset.plotQPlane(Ebins=[10]) # Length of bins is 1
+        Datset.plotQPlane(EBins=[10]) # Length of bins is 1
         assert False
     except AttributeError:
         assert True
@@ -4572,9 +4605,10 @@ def test_DataSet_plotQPlane():
     Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
     fig,AX = plt.subplots()
     Data,[Qx,Qy],ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6,zorder=10)
+    
     ax1.set_clim(-20,-15)
     ax2.set_clim(0,1e-6)
-
+    Data,[Qx,Qy],ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05)
     
     cmap = plt.cm.coolwarm
 
@@ -4591,6 +4625,25 @@ def test_DataSet_plotQPlane():
         assert False
     except:
         assert True
+
+    # 3D
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib.colors import ListedColormap
+    cmap = plt.cm.coolwarm
+    my_cmap = cmap(np.arange(cmap.N))
+    my_cmap[:,-1] = np.linspace(0, 1, cmap.N)
+    my_cmap = ListedColormap(my_cmap)
+
+    fig = plt.figure(figsize=(10,11))
+    ax = fig.add_subplot(111, projection='3d')
+
+    Energies = np.concatenate(Datset.energy,axis=0)
+    E = np.arange(Energies.min()+0.35,Energies.max(),0.35)
+
+
+    [I,Monitor,Norm,NormCount],[xBins,yBins],ax = \
+    Datset.plotQPlane(EBins=E,ax = ax,xBinTolerance=0.03,yBinTolerance=0.03,
+            binning='polar',vmin=7.5e-7,vmax=7e-6,antialiased=True,cmap=cmap,rlu=True,extend='max')
     plt.close('all')
 
 @pytest.mark.unit
@@ -4753,8 +4806,8 @@ def test_DataSet_cutQELine():
         assert False
     except AttributeError:
         assert True
-    try: # No Q-points
-        dataset.cutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=42) # Wrong RLU-input
+    try: # Wrong RLU-input
+        dataset.cutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu='42') # Wrong RLU-input
         assert False
     except AttributeError:
         assert True
@@ -4816,7 +4869,7 @@ def test_DataSet_plotCutQELine():
     ax = fig.gca()
 
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,ax=ax,vmin=0.0,vmax=1.5e-6,ticks=10,log=True,seperatorWidth=3)
+        QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,ax=ax,vmin=0.0,vmax=1.5e-6,log=True,seperatorWidth=3)
 
 
     HKLPoints = np.array([[1.0,0.0,0.0],
@@ -4827,7 +4880,27 @@ def test_DataSet_plotCutQELine():
 
 
     ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,ticks=1,tickRound=1,colorbar=True)
+        HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,ticks=1,tickRound=1,colorbar=True,log=True)
+
+
+    # 3D
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib.colors import ListedColormap
+    cmap = plt.cm.coolwarm
+    my_cmap = cmap(np.arange(cmap.N))
+    my_cmap[:,-1] = np.linspace(0, 1, cmap.N)
+    my_cmap = ListedColormap(my_cmap)
+
+    fig = plt.figure(figsize=(10,11))
+    ax = fig.add_subplot(111, projection='3d')
+
+    Energies = np.concatenate(dataset.energy,axis=0)
+    E = np.arange(Energies.min()+0.35,Energies.max(),0.35)
+    
+
+    ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = \
+    dataset.plotCutQELine(QPoints=HKLPoints,EnergyBins=E,ax = ax,width=0.05,minPixel=0.01,
+            vmin=7.5e-7,vmax=7e-6,cmap=cmap,rlu=True)
 
     plt.close('all')
 
