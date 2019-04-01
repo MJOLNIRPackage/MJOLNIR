@@ -4281,6 +4281,24 @@ def test_DataSet_Visualization():
     warnings.simplefilter('once')
     viewer = Viewer3D.Viewer3D(Intensity,bins)
     viewer.caxis = (0,100)
+    try:
+        viewer.caxis = 'Wrong type'
+        assert False
+    except AttributeError:
+        assert True
+    
+    try:
+        viewer.caxis = [0,1,2,3,4] # Too long input
+        assert False
+    except AttributeError:
+        assert True
+    
+    try:
+        viewer.setAxis(20) # Must bee 0,1, or 2
+        assert False
+    except AttributeError:
+        assert True
+
     plt.plot()
     plt.close('all')
     os.remove('Data/camea2018n000136.nxs')
@@ -4484,8 +4502,12 @@ def test_DataSet_createRLUAxes():
     ax.set_xticks_base(0.2)
     ax.set_yticks_base(0.5)
 
-    V1,V2 = [2,0,0],[-2,3,0]
+    ax.set_xticks_number(5)
+    ax.set_yticks_number(8)
+
+    V1,V2,V3 = [2,0,0],[-2,3,0],[2,-3,0]
     ax.set_axis(V1,V2)
+    ax.set_axis(V1,V2,V3)
 
     plt.close('all')
 
