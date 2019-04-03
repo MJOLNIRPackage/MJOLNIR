@@ -754,6 +754,125 @@ def getScanParameter(f):
     return scanParameters,scanValues,scanUnits
 
 
+
+@_tools.KwargChecker()
+def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
+                        title='EmptyDataFileTitle', name='EmptyDataFile',
+                        temperature = None, electricField = None, magneticField = None,
+                        detectors = 104, pixels = 1024, normalizationFiles = None):
+    """Create an empty data file with a given sample and measurement parameters.
+
+    Args:
+
+        - A3 (list or float): Value(s) of measurement A3.
+
+        - A4 (list or float): Value(s) of measurement A4.
+
+        - Ei (list or float): Value(s) of measurement Ei.
+
+        - sample (MJOLNIR Sample): Sample measured in data file.
+
+    Kwargs:
+
+        - Monitor (int): Monitor count for datafile (default 50 000)
+
+        - A3Off (float): Offset in A3 used in datafile (default 0.0)
+
+        - A4Off (float): Offset in A4 used in datafile (default 0.0)
+
+        - title (string): Title of datafile (default EmptyDataFileTitle)
+
+        - name (string): name of datafile (default EmptyDataFile)
+
+        - temperature (double): Sample temperature (default None)
+        
+        - electricField (double): Sample electricField (default None)
+
+        - magneticField (double): Sample magneticField (default None)
+
+        - detectors (int): Number of detectors in spectrometer (default 104)
+
+        - pixels (int): Number of pixels/detector in spectrometer (default 1024)
+
+        - normalizationFiles (list or string): List or string to normalization file (default None)
+
+    .. warning::
+        If no normalization file(s) is/are provided, the resulting data file cannot be converted to HKL!
+
+    """
+    df = DataFile()
+        
+    A3 = np.asarray([A3]).flatten()
+    A4 = np.asarray([A4]).flatten()
+    Ei = np.asarray([Ei]).flatten()
+    isChanging = np.array([len(A3)>1,len(A4)>1,len(Ei)>1])
+    isChangingData = np.array([A3,A4,Ei])[isChanging]
+    
+    if np.sum(isChanging)>1:
+            # Check if all arrays then have same shape
+            if not np.all([x.shape == isChangingData[0].shape for x in isChangingData[1:]]):
+                    names = np.array(['A3','A4','Ei'])
+                    raise AttributeError('More than one parameter is changing but they do not have the same shape! Chaning: {}'.format(', '.join(str(x) for x in names[isChanging])))
+    elif np.sum(isChanging)==0:
+        raise AttributeError('No parameter is changing. At least one parameter must be chaning through the scan.')
+    steps = len(isChangingData[0])
+    
+    Monitor = np.asarray([Monitor]*steps)
+    
+    df.A3Off = Marray(A3Off)
+    df.A4Off = Marray(A4Off)
+    df.Monitor = Marray(Monitor)
+    df.MonitorPreset = Monitor[0]
+    df.MonitorMode = 'm'
+
+
+
+    df.sample = sample
+    df.title = title
+    df.name = name
+    df.fileLocation = 'Unknown'
+    
+    df.temperature = temperature
+    df.electricField = electricField
+    df.magneticField = magneticField
+    
+    units = np.array(['degree','degree','meV'])
+    params= np.array(['a3','a4','ei'])
+    df.scanUnits = units[isChanging]
+    df.scanParameters = params[isChanging]
+    
+    df.type = 'hdf'
+    df.scanCommand = 'Unknown'
+    df.scanValues = isChangingData
+    df.instrument = 'CAMEA'
+    
+    df.Time = df.Monitor*0.0013011099243 # Typical measurement time RITA2 in 2018
+    
+    df.Ei = Marray(Ei)
+    df.A3 = Marray(A3)
+    df.A4 = Marray(A4)
+    
+    df.I = Marray(np.zeros((steps,detectors,pixels)))
+    df.binning = None
+    
+    if not normalizationFiles is None:
+            calib = []
+            binning = []
+            for f in normalizationFiles:
+                    data = np.loadtxt(f,skiprows=3,delimiter=',')
+                    
+                    EfTable = data[:,[3,4,5,6]]
+                    A4 = data[:,-1]
+                    bound = data[:,[7,8]]
+                    calib.append([EfTable,A4,bound])
+                    binning.append(len(A4)/(104*8))
+            df.instrumentCalibrations = np.array(calib)
+            df.possibleBinnings = binning
+            df.loadBinning(1)
+    
+    return df
+
+
 class Sample(object):
     """Sample object to store all infortion of the sample from the experiment"""
     @_tools.KwargChecker()
@@ -813,8 +932,6 @@ class Sample(object):
             STT2 = r2[4]
             theta2 = r2[3]
             self.plane_vector2 = r2
-            print(self.plane_vector1)
-            print(self.plane_vector2)
             self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell,self.plane_vector1,self.plane_vector2)
             self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))#,self.planeNormal.astype(float))
             self.calculateProjections()
@@ -1049,7 +1166,8 @@ class Sample(object):
 
     def calculateHKLtoProjection(self,H,K,L):
         HKL = np.array([H,K,L])
-        points = np.einsum('i...,ij...->i...',HKL,self.PM)
+        #points = np.einsum('i...,ij...->i...',HKL,self.PM)
+        points = np.einsum('ij,j...->i...',_tools.invert(self.PM),HKL)
         return points
 
 
@@ -1095,7 +1213,6 @@ class Sample(object):
         Ei = np.asarray(Ei).flatten() # Shape (m)
         Ef = np.asarray(Ef).flatten() # Shape (n)
         Bragg = np.asarray(Bragg).reshape(-1,3) # shape (l,3)
-        print(Bragg.shape,Ei.size,Ef.size)
         
         QlLocal = []
         if spurionType.lower() == 'monochromator':
@@ -1755,6 +1872,36 @@ def test_DataFile_Sample_UB():
     print(np.round(UBCalc,5))
     print(np.round(s.orientationMatrix,5))
     assert(np.all(comparison))
+
+def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
+    nf = np.array(['Data/Normalization_1.calib',
+    'Data/Normalization_3.calib','Data/Normalization_8.calib'])
+
+    A3 = np.linspace(0,180,181)
+    A4 = -16
+    Ei = 5.5
+    Monitor = 1e5
+    sample = Sample(a=6.0,b=6.0,c=12.2,projectionVector2=[1,0,0],projectionVector1=[0,2,1],gamma=120.,beta=80.,alpha=90.)
+
+    try:
+        _ = createEmptyDataFile(A3=10,A4=10,Ei=10,sample=sample) # No change in any parameter
+        assert False
+    except AttributeError:
+        assert True
+    
+    try:
+        _ = createEmptyDataFile(A3=[10,11],A4=[10,11,12],Ei=10,sample=sample) # Two parameters change but not with the same shape
+        assert False
+    except AttributeError:
+        assert True
+    
+
+    df = createEmptyDataFile(A3=A3,A4=A4,Ei=Ei,sample=sample,Monitor=Monitor,normalizationFiles = nf)
+    
+    # Check the contents of df
+    assert(df.sample == sample)
+    assert(len(df.possibleBinnings)==len(nf))
+    #assert(False)
 
 def test_DataFile_Sample_Projection():
     df = DataFile('Data/camea2018n000136.hdf') # In A-B plane
