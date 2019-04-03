@@ -70,3 +70,15 @@ the bottom 2 prismatic pixels as:
 
     # Apply the mask to the DataSet object.
     ds.mask = mask
+
+
+When I save my nice figures as .eps white lines appear around all pixels
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This has to do with how Matplotlib shows figures in contrast to how the eps engine saves the file. To remove the lines add the key word argument 
+
+.. code-block:: python
+
+    edgecolors='face'
+
+to the plotting function. This then forces the eps backend to draw the surrounding edges as the face color instead of white/transparent.
