@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection,PolyCollection
 import matplotlib.ticker as ticker
 from matplotlib.patches import Polygon
-from MJOLNIR.Data import DataFile,Viewer3D,RLUAxes
+from MJOLNIR.Data import DataFile,Sample,Viewer3D,RLUAxes
 from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
@@ -3943,7 +3943,7 @@ def convertToQxQy(sample,QPoints):
 
     Args:
 
-        - sample (MJOLNIR.DataFile.Sample): Sample from which the UB matrix is to be used
+        - sample (MJOLNIR.Sample.Sample): Sample from which the UB matrix is to be used
 
         - QPoints (list): List of HKL poinst to be converted
 
@@ -3974,7 +3974,7 @@ def convertToHKL(sample,QxQy):
 
     Args:
 
-        - sample (MJOLNIR.DataFile.Sample): Sample from which the UB matrix is to be used
+        - sample (MJOLNIR.Sample.Sample): Sample from which the UB matrix is to be used
 
         - QxQy (list): List of HKL poinst to be converted
 
