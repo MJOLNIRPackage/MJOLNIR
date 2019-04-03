@@ -8,6 +8,7 @@ Something about the functionality of the Data module
    :caption: Contents:
 
    DataSet
+   DataFile
    Gui
 
 

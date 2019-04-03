@@ -1,9 +1,9 @@
-.. :DataModule:
+.. :DataSet:
 
-Data Module
-===========
+Data Set
+========
 
-.. currentmodule:: Data
+.. currentmodule:: Data.DataSet
 
 The DataSet object is the interface between the data files and the data treatment and visualziation. It is both responsible for the conversion of raw '.h5'-files into '.nxs'-files as well as plotting these. Extracting values from this object results in a list of values where the first dimension is determined from the number of data files provided.
 
@@ -26,7 +26,6 @@ The DataSet object is the interface between the data files and the data treatmen
     DataSet.binData3D
     DataSet.boundaryQ
     DataSet.calculateGrid3D
-    DataSet.createRLUAxes
     DataSet.cut1D
     DataSet.cut1DE
     DataSet.cutPowder
@@ -34,7 +33,6 @@ The DataSet object is the interface between the data files and the data treatmen
 
     DataSet.plotCutQE
 
-    DataFile.DataFile
 
 
 .. automodule:: Data
@@ -61,17 +59,24 @@ Module Functions
 
 The following is a list of the available functions in the DataSet module. Some of them have wrappers in the DataSet-object methods.
 
-.. automodule:: DataSet
-   :members:
+.. autofunction:: DataSet.binData3D
+
+.. autofunction:: DataSet.boundaryQ
+
+.. autofunction:: DataSet.calculateGrid3D
+
+.. autofunction:: DataSet.createRLUAxes
+
+.. autofunction:: DataSet.cut1D
+
+.. autofunction:: DataSet.cut1DE
+
+.. autofunction:: DataSet.cutPowder
+
+.. autofunction:: DataSet.cutQE
+
+.. autofunction:: DataSet.plotCutQE
+
+..   :members:
 
 
-DataFile Object and Methods
----------------------------
-
-
-.. automodule:: DataFile
-
-.. _DataFile:
-
-.. autoclass:: DataFile
-    :members:
