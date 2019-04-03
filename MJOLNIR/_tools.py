@@ -214,6 +214,13 @@ def binEdges(values,tolerance,startPoint=None,endPoint=None):
         
         - tolerance (float): Minimum length of bin sizes.
         
+
+    Kwargs:
+
+        - startPoint (float): Minimum position from wicht to start (default None)
+
+        - endPoint (float): Maximal end bin position (default None)
+        
     Returns:
         
         - bins (array)
