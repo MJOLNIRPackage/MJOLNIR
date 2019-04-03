@@ -1502,14 +1502,11 @@ class DataSet(object):
             
             BinNums = [np.max([np.max(binDistanceTotal[i][j]) for j in range(len(binDistanceTotal[i]))]) for i in range(len(binDistanceTotal))]
             
-            def without_keys(d, keys): # Remove key word argument from kwargs
-                return {x: d[x] for x in d if x not in keys}
-            
             if not 'ticks' in kwargs:
                 ticks = 8
             else:
                 ticks = kwargs['ticks']
-                kwargs = without_keys(kwargs, 'ticks')
+                kwargs = _tools.without_keys(kwargs, 'ticks')
                 
             
             NumQPointTicks = len(QPoints)
@@ -1575,11 +1572,6 @@ class DataSet(object):
                 
                 actualEnergy.append(localE)
                 
-                #[print(len(BinListTotal[i][x][2])) for x in range(len(BinListTotal[i]))]
-                
-            #actualEnergy = [np.concatenate([[x[0] for x in BinListTotal[i][:,2]],[BinListTotal[i][-1,2][1]]]) for i in range(len(BinListTotal))]
-            
-
             for segID in range(idmax): # extract relevant data for current segment
                 [intensityArray,monitorArray,normalizationArray,normcountArray] = DataList[segID]#[i] for i in range(4)]
                 BinList = BinListTotal[segID]
@@ -2159,7 +2151,10 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     propos = np.dot(ProjectMatrix,positions2D-q1.reshape(2,1))
     
     if extend==False: # Only take points between the given q points
-        insideQ = np.logical_and(propos[0]>0,propos[0]<dirLength)
+        if constantBins==False:
+            insideQ = np.logical_and(propos[0]>-0.05,propos[0]<dirLength*1.05)
+        else:
+            insideQ = np.logical_and(propos[0]>0.0,propos[0]<dirLength)
         propos = propos[:,insideQ]
 
 
@@ -2167,7 +2162,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     insideWidth = np.logical_and(propos[1]<orthobins[1],propos[1]>orthobins[0])
     
     if constantBins==False:
-        lenbins = np.array(_tools.binEdges(propos[0][insideWidth],minPixel))
+        lenbins = np.array(_tools.binEdges(propos[0][insideWidth],minPixel,startPoint=0.0,endPoint=dirLength))
     else:
         Min,Max = _tools.minMax(propos[0][insideWidth])
         lenbins = np.arange(Min,Max+0.5*minPixel,minPixel)
