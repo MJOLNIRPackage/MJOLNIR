@@ -867,7 +867,7 @@ class DataSet(object):
         raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQEAxes))
     
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
-    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,**kwargs):
+    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,xScale=1.0,yScale=1.0,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
             
         Kwargs:
@@ -1093,8 +1093,8 @@ class DataSet(object):
 
         for i in range(len(EBins)-1):
             if _3D:
-                QX = 0.25*np.array(np.array(Qx[i])[1:,1:]+np.array(Qx[i])[:-1,1:]+np.array(Qx[i])[1:,:-1]+np.array(Qx[i])[:-1,:-1])
-                QY = 0.25*np.array(np.array(Qy[i])[1:,1:]+np.array(Qy[i])[:-1,1:]+np.array(Qy[i])[1:,:-1]+np.array(Qy[i])[:-1,:-1])
+                QX = 0.25*np.array(np.array(Qx[i])[1:,1:]+np.array(Qx[i])[:-1,1:]+np.array(Qx[i])[1:,:-1]+np.array(Qx[i])[:-1,:-1])/xScale
+                QY = 0.25*np.array(np.array(Qy[i])[1:,1:]+np.array(Qy[i])[:-1,1:]+np.array(Qy[i])[1:,:-1]+np.array(Qy[i])[:-1,:-1])/yScale
                 #QY = np.array(np.array(Qy[i])[1:,1:])
                 I = np.array(Int[i])
                 levels = np.linspace(vmin,vmax,50)
@@ -1799,33 +1799,33 @@ class DataSet(object):
                 energies = len(bins)
                 
                 
-                energyEdges = np.array([bins[i][2] for i in range(energies)])
+                energyEdges = np.array([bins[idx][2] for idx in range(energies)])
                 ELength = np.array([len(x[0][:,0]) for x in bins])
                 ELengthCummu = np.concatenate([[0],np.cumsum(ELength)],axis=0)
-                H = np.concatenate([bins[i][0][:,0] for i in range(energies)],axis=0)
-                K = np.concatenate([bins[i][0][:,1] for i in range(energies)],axis=0)
-                L = np.concatenate([bins[i][0][:,2] for i in range(energies)],axis=0)
+                H = np.concatenate([bins[idx][0][:,0] for idx in range(energies)],axis=0)
+                K = np.concatenate([bins[idx][0][:,1] for idx in range(energies)],axis=0)
+                L = np.concatenate([bins[idx][0][:,2] for idx in range(energies)],axis=0)
                 P0,P1 = self.sample.calculateHKLToQxQy(H,K,L)
-                P0,P1 = np.einsum('ij,j...->i...',self.sample.RotMat,[P0,P1])
+                P0,P1 = np.einsum('mj,j...->m...',self.sample.RotMat,[P0,P1])
                 
-                
+                print(i,len(BinListTotal))
                 Data = np.array([np.concatenate(x,axis=0) for x in DataList[i]]).squeeze()
                 INT = np.divide(Data[0]*Data[3],Data[2]*Data[1])
                 IntCommu = np.concatenate([[0],np.cumsum(ELength-1)],axis=0)
                 
-                E = np.concatenate([bins[i][0][:,3] for i in range(energies)],axis=0)
-                EBins = np.array([bins[i][2] for i in range(energies)])
+                E = np.concatenate([bins[idx][0][:,3] for idx in range(energies)],axis=0)
+                EBins = np.array([bins[idx][2] for idx in range(energies)])
                 
-                for i in range(energies):
-                    X = P0[ELengthCummu[i]:ELengthCummu[i+1]].reshape(-1,1).repeat(2,axis=1)
-                    Y = P1[ELengthCummu[i]:ELengthCummu[i+1]].reshape(-1,1).repeat(2,axis=1)
-                    Z = np.ones_like(X)*EBins[i].reshape(1,2)
+                for E in range(energies):
+                    X = P0[ELengthCummu[E]:ELengthCummu[E+1]].reshape(-1,1).repeat(2,axis=1)
+                    Y = P1[ELengthCummu[E]:ELengthCummu[E+1]].reshape(-1,1).repeat(2,axis=1)
+                    Z = np.ones_like(X)*EBins[E].reshape(1,2)
                     
-                    if IntCommu[i+1]-IntCommu[i]==0: # If segment is empty
+                    if IntCommu[E+1]-IntCommu[E]==0: # If segment is empty
                         continue
                     
                     #normColor = np.divide(INT[IntCommu[i]:IntCommu[i+1]]-vmin,vmax-vmin).reshape(-1,1).repeat(2,axis=1)
-                    normColor = INT[IntCommu[i]:IntCommu[i+1]].reshape(-1,1).repeat(2,axis=1)
+                    normColor = INT[IntCommu[E]:IntCommu[E+1]].reshape(-1,1).repeat(2,axis=1)
                     normColor = np.concatenate([normColor,[normColor[-1]]])
                     if len(normColor)!=X.shape[0]:
                         continue
