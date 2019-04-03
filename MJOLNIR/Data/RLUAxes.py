@@ -199,7 +199,10 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
                         yticks
                     except:
                         yticks = 7
-                    xticks = int(0.60*axis.calculateTicks(yticks)/(axis.get_aspect_ratio()))
+                    aspect = axis.get_aspect_ratio()
+                    if aspect <= 0:
+                        aspect = 1 
+                    xticks = int(0.60*axis.calculateTicks(yticks)/aspect)
                 else:
                     xticks = axis.xticks
                 axis._oldXlimDiff = xlimDiff
