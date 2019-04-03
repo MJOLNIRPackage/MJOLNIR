@@ -65,7 +65,7 @@ Assuming that the Quick visualization from the Quick tutorials is understood, th
    # as a number the zorder of the grid is specified (Data is plotted at 10).
    # It is also possible to plot data without making use of reciprocal lattice
    # units, choosen by rlu = True or False.
-   Viewer.caxis=(1e-7,2.2e-6)
+   Viewer.caxis=(1e-8,5e-7)
    nFrames = Viewer.Z.shape[-1] # Number of energy planes
    frames = np.arange(3,nFrames-3)
    frames = np.concatenate([frames,np.flip(frames[1:-1])]) # 
