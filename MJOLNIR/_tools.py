@@ -205,7 +205,7 @@ def logClass(parent=None,log=__name__,stream=sys.stdout,level=logging.CRITICAL):
     return track_all_class_methods
 
 
-def binEdges(values,tolerance):
+def binEdges(values,tolerance,startPoint=None,endPoint=None):
     """Generate binning of values array with minimum bin size of tolerance. Binning starts at values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
     
     Args:
@@ -244,7 +244,15 @@ def binEdges(values,tolerance):
     else:
         bin_edges.append(unique_values[-1]+0.1*tolerance)
     
-    return np.array(bin_edges)
+    bin_edges = np.array(bin_edges)
+
+    if not endPoint is None:
+        if endPoint-bin_edges[-1]<tolerance:
+            bin_edges = np.concatenate([bin_edges[:np.sum(bin_edges<endPoint)],[endPoint]])
+    if not startPoint is None:
+        if bin_edges[0]-startPoint<tolerance or bin_edges[0]<startPoint:
+            bin_edges = np.concatenate([[startPoint],bin_edges[np.sum(bin_edges<startPoint):]])
+    return bin_edges
 
 
 def without_keys(d, keys): # Remove key word argument from kwargs
@@ -620,6 +628,21 @@ def test_binEdges():
     assert(bins[-1]>=values[-1]+0.1*minBin) # Last bin ends at values[-1]+tolerance*0.1
     assert(np.all(np.diff(bins)>=minBin*0.99)) # Assert that all bins are at least of size minBin
 
+    binsCut = binEdges(values,0.01,startPoint=0.0)
+    assert(binsCut[0]>=0.0)
+
+    binsCut = binEdges(values+np.min(values)+0.0099,0.01,startPoint=0.0,endPoint=0.5)
+    assert(binsCut[0]>=0.0)
+    assert(binsCut[-1]<=0.5)
+
+    binsCut = binEdges(values+np.min(values)+0.0101,0.01,startPoint=0.0,endPoint=0.5)
+    assert(binsCut[0]>0.01)
+
+    binsCut = binEdges(np.linspace(0,0.95,101),0.01,startPoint=0.0,endPoint=1.0101)
+    assert(binsCut[-1]<=1.0)
+
+    binsCut = binEdges(values-np.max(values)+1.0,0.01,startPoint=0.0,endPoint=1.01)
+    assert(binsCut[-1]<=1.01)
 def test_fileListGenerator():
     numberStr = '0,20-23-24,4000'
     year = 2018
