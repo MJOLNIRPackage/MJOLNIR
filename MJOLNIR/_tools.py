@@ -220,7 +220,7 @@ def binEdges(values,tolerance,startPoint=None,endPoint=None):
         - startPoint (float): Minimum position from wicht to start (default None)
 
         - endPoint (float): Maximal end bin position (default None)
-        
+
     Returns:
         
         - bins (array)
@@ -593,6 +593,25 @@ def clockwiseangle_and_distance(point,origin=[0,0],refvec = [0,1]): # pragma: no
     # but if two vectors have the same angle then the shorter distance should come first.
     return angle, lenvector
 
+
+
+@KwargChecker()
+def rotationMatrix(alpha,beta,gamma,format='deg'):
+    if format=='deg':
+        alpha = np.deg2rad(alpha)
+        beta = np.deg2rad(beta)
+        gamma = np.deg2rad(gamma)
+    Rx = np.array([[1,0,0],[0,np.cos(alpha),-np.sin(alpha)],[0,np.sin(alpha),np.cos(alpha)]])
+    Ry = np.array([[np.cos(beta),0,np.sin(beta)],[0,1,0],[-np.sin(beta),0,np.cos(beta)]])
+    Rz = np.array([[np.cos(gamma),-np.sin(gamma),0],[np.sin(gamma),np.cos(gamma),0],[0,0,1]])
+    return np.dot(Rz,np.dot(Ry,Rx))
+
+@KwargChecker()
+def vectorAngle(V1,V2):
+    return np.arccos(np.dot(V1,V2.T)/(np.linalg.norm(V1)*np.linalg.norm(V2)))
+
+
+
 ############# TESTING
 
 def test_minMax():
@@ -623,6 +642,36 @@ def test_rotations():
         assert(np.isclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i])))
         print(rotVector[i][0],np.linalg.norm(rotVector[i]))
         assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
+
+
+def test_vectorAngle():
+    v1 = np.array([1,0,0])
+    v2 = np.array([0,1,0])
+    v3 = np.array([1,1,1])
+    theta1 = vectorAngle(v1,v2)
+    theta2 = vectorAngle(v1,v3)
+    theta3 = vectorAngle(v2,v3)
+    print(theta2)
+    assert(np.isclose(theta1,np.pi/2))
+    assert(np.isclose(theta2,theta3))
+    assert(np.isclose(theta2,0.955316618125))
+    
+def test_Rotation_matrix():
+    M1 = rotationMatrix(0,0,0)
+
+    assert(np.all(np.isclose(M1,np.identity(3))))
+
+    M2 = rotationMatrix(90,0,0)
+    M3 = rotationMatrix(np.pi/2,np.pi/3,np.pi/4,format='rad')
+    M4 = rotationMatrix(90,60,45)
+    
+    assert(np.all(np.isclose(M2,np.array([[1,0,0],[0,0,-1],[0,1,0]]))))
+    assert(np.all(np.isclose(M3,M4)))
+    
+    M4_check = np.array([[3.53553391e-01,6.12372436e-01,7.07106781e-01],[3.53553391e-01,6.12372436e-01,-7.07106781e-01],[-8.66025404e-01,5.00000000e-01,3.06161700e-17]])
+    assert(np.all(np.isclose(M4,M4_check)))
+
+
 
 
 def test_binEdges():
