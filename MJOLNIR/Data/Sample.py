@@ -14,7 +14,7 @@ import shapely
 from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
-from MJOLNIR.Data import DataFile
+import MJOLNIR.Data.DataFile
 
 factorsqrtEK = 0.694692
 
@@ -477,7 +477,7 @@ def test_sample_exceptions():
         assert True
 
 def test_Sample_conversions():
-    df = DataFile.DataFile('Data/camea2018n000178.hdf')
+    df = MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000178.hdf')
     sample = df.sample
 
     # Check that tr and inv_tr results in the same
@@ -527,7 +527,7 @@ def test_calculateProjections(): # TODO: Update test
     #assert(string=='h = 3.500, k = 7.200, l = 0.000')
 
 def test_DataFile_Sample_UB():
-    df = DataFile.DataFile('Data/camea2018n000136.hdf')
+    df = MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000136.hdf')
     s = df.sample
     b1,b2,b3 = [np.linalg.norm(x) for x in [s.reciprocalVectorA,s.reciprocalVectorB,s.reciprocalVectorC]]
     a1,a2,a3 = [np.linalg.norm(x) for x in [s.realVectorA,s.realVectorB,s.realVectorC]]
@@ -546,19 +546,19 @@ def test_DataFile_Sample_UB():
 
 
 def test_DataFile_Sample_Projection():
-    df = DataFile.DataFile('Data/camea2018n000136.hdf') # In A-B plane
+    df = MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000136.hdf') # In A-B plane
     print(df.sample.projectionVector1,df.sample.projectionVector2)
     assert(np.all(np.isclose(df.sample.projectionVector1,np.array([1.0,0.0,0.0]))))
     assert(np.all(np.isclose(df.sample.projectionVector2,np.array([0.0,1.0,0.0]))))
 
-    df2 = DataFile.DataFile('Data/camea2018n000178.hdf') # in 1 1 0 and 0 0 1 plane
+    df2 = MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000178.hdf') # in 1 1 0 and 0 0 1 plane
     assert(np.all(np.isclose(df2.sample.projectionVector1,np.array([0.0,0.0,1.0]))))
     assert(np.all(np.isclose(df2.sample.projectionVector2,np.array([1.0,1.0,0.0]))))
 
 
 
 def test_Sample_CurratAxe():
-    df = DataFile.DataFile('Data/camea2018n000178.hdf')
+    df = MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000178.hdf')
     sample = df.sample
 
     Ei = [5,7,9]

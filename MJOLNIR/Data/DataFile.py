@@ -14,7 +14,7 @@ import shapely
 from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
-from MJOLNIR.Data import Sample
+import MJOLNIR.Data.Sample
 
 factorsqrtEK = 0.694692
 
@@ -46,7 +46,7 @@ class DataFile(object):
             with hdf.File(fileLocation) as f:
 			
                 sample=f.get('/entry/sample')
-                self.sample = Sample.Sample(sample=f.get('/entry/sample'))
+                self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
                 instr = getInstrument(f)
                 if self.type == 'hdf':
                     self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
@@ -1198,7 +1198,7 @@ def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
     A4 = -16
     Ei = 5.5
     Monitor = 1e5
-    sample = Sample.Sample(a=6.0,b=6.0,c=12.2,projectionVector2=[1,0,0],projectionVector1=[0,2,1],gamma=120.,beta=80.,alpha=90.)
+    sample = MJOLNIR.Data.Sample.Sample(a=6.0,b=6.0,c=12.2,projectionVector2=[1,0,0],projectionVector1=[0,2,1],gamma=120.,beta=80.,alpha=90.)
 
     try:
         _ = createEmptyDataFile(A3=10,A4=10,Ei=10,sample=sample) # No change in any parameter

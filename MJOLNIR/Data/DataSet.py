@@ -12,7 +12,9 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import PatchCollection,PolyCollection
 import matplotlib.ticker as ticker
 from matplotlib.patches import Polygon
-from MJOLNIR.Data import DataFile,Sample,Viewer3D,RLUAxes
+from MJOLNIR.Data import Viewer3D,RLUAxes
+import MJOLNIR.Data.DataFile
+import MJOLNIR.Data.Sample
 from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
@@ -326,11 +328,11 @@ class DataSet(object):
         if len(self.convertedFiles)!=0:
             self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l = DataFile.extractData(self.convertedFiles)
+            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l = MJOLNIR.Data.DataFile.extractData(self.convertedFiles)
         else:
             self.I,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits = DataFile.extractData(self.dataFiles)
+            self.scanParameterValues,self.scanParameterUnits = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
 
     @_tools.KwargChecker()
     def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None):
@@ -3670,17 +3672,17 @@ def isListOfDataFiles(inputFiles):
     returnList = []
     if isinstance(inputFiles,(list,np.ndarray)):
         for file in inputFiles:
-            if isinstance(file,DataFile.DataFile):
+            if isinstance(file,MJOLNIR.Data.DataFile.DataFile):
                 returnList.append(file)
             elif isinstance(file,str):
                 # Check if file exists
                 if not os.path.isfile(file):
                     raise AttributeError('Following file does not exist:\n{}'.format(file))
-                returnList.append(DataFile.DataFile(file))
-    elif isinstance(inputFiles,DataFile.DataFile):
+                returnList.append(MJOLNIR.Data.DataFile.DataFile(file))
+    elif isinstance(inputFiles,MJOLNIR.Data.DataFile.DataFile):
         returnList.append(inputFiles)
     elif isinstance(inputFiles,str):
-        returnList.append(DataFile.DataFile(inputFiles))
+        returnList.append(MJOLNIR.Data.DataFile.DataFile(inputFiles))
     else:
         raise AttributeError('File provided is not of type string, list, or DataFile')
     if len(returnList)>1:
@@ -4023,7 +4025,7 @@ def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
     del emptyDataset
-    DataFile.assertFile('Data/camea2018n000136.nxs')
+    MJOLNIR.Data.DataFile.assertFile('Data/camea2018n000136.nxs')
     dataset = DataSet(dataFiles=['Data/camea2018n000136.hdf'],convertedFiles='Data/camea2018n000137.nxs',calibrationfiles=[])
     
     assert(dataset.dataFiles[0].name=='camea2018n000136.hdf')
@@ -4149,7 +4151,7 @@ def test_DataSet_Pythonic():
     except:
         assert True
     
-    dataset.append(DataFile.DataFile(dataFiles[0]))
+    dataset.append(MJOLNIR.Data.DataFile.DataFile(dataFiles[0]))
     assert(len(dataset)==3)
     assert(dataset.I.shape!=secondShape)
 
@@ -4200,7 +4202,7 @@ def test_DataSet_Convert_Data():
     dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation='Data/',saveFile=True)
     convertedFile = dataset.convertedFiles[0]
     
-    otherFile = DataFile.DataFile(dataFiles.replace('.hdf','.nxs'))
+    otherFile = MJOLNIR.Data.DataFile.DataFile(dataFiles.replace('.hdf','.nxs'))
     assert(convertedFile==otherFile)
     os.remove('Data/camea2018n000136.nxs')
     
@@ -4292,7 +4294,7 @@ def test_DataSet_Visualization():
     dataset.convertDataFile(saveLocation='Data')
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
-    Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [DataFile.DataFile('Data/camea2018n000136.nxs')])
+    Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000136.nxs')])
     
     plt.ioff()
     warnings.simplefilter('ignore')
