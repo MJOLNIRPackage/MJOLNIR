@@ -60,14 +60,14 @@ introText = 'Instead of creating an instrument from scratch every time in python
 +'   :language: xml \n'\
 +'   :linenos:\n'\
 +'\nOne starts with the instrument and gives some informations. Next level is the wedge where position and concept is provided. For each wedge, one specifies the analysers with their positions, '\
-+' direction of surface, dspacing, mosaicity, width and height, and afterwards the detectors. These are specified with position, direction along wich the tube extends, number of pixels, length and diameter of tube, '\
++' direction of surface, d-spacing, mosaicity, width and height, and afterwards the detectors. These are specified with position, direction along which the tube extends, number of pixels, length and diameter of tube, '\
 +'how the pixels are split into segments (only applicable if concept "ManyToMany" is used).'
 
-outroText = 'Most of the above code is in reality only plotting commands for the instrument and the calcualted A4 and Ef values.\n\n'\
+outroText = 'Most of the above code is in reality only plotting commands for the instrument and the calculated A4 and Ef values.\n\n'\
 +'.. figure:: SimpleInstrument2.png\n  :width: 50%\n  :align: center\n\n'\
 +'Instrument generated from XML file. Currently, the figure is rendered wrongly due to a visualization problem... \n\n'\
 +'.. figure:: SimpleInstrument2_A4.png\n  :width: 50%\n  :align: center\n'\
-+'\nCorresponding A4 values as calulcated from instrument. Here it is seen that the A4 values are energy dependent if one has radial detectors that are "non-optimally" placed '\
++'\nCorresponding A4 values as calculated from instrument. Here it is seen that the A4 values are energy dependent if one has radial detectors that are "non-optimally" placed '\
 +'with respect to the analyser. Only the central detector tube has the same A4 value independent of position.\n .. figure:: SimpleInstrument2_Ef.png\n  :width: 50%\n  :align: center\n\n'\
 +'Energies as calculated. With this setup of analysers and detectors there is a whole lot of energy coverage for all of the segments. This is not what will happen in a real experiment as '\
 +'all of the segments have "inactive" ends that are cut of. However, some overlap remains.'

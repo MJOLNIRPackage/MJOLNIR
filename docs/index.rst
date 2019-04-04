@@ -33,7 +33,7 @@ tutorials and guides on how to make use of MJOLNIR.
 
 | 
 
-As the software is to be used by a broad user group, it is of great importance to support a wide range of python versions. Below is the current list of supported vesions.
+As the software is to be used by a broad user group, it is of great importance to support a wide range of python versions. Below is the current list of supported versions.
 
 |travis| |coverall| |python27| |python34| * |python35| |python36| |python37| *
 

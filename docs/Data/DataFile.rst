@@ -34,11 +34,3 @@ DataFile Object and Methods
     :members:
 
 .. autofunction:: DataFile.createEmptyDataFile
-
-Sample Object and Methods
--------------------------
-
-.. _Sample:
-
-.. autoclass:: Sample
-    :members:

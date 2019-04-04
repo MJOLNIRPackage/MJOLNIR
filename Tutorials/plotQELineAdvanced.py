@@ -60,7 +60,7 @@ def Tester():
     plot = 0
     for energyID in EnergyIndexes:    
     
-        # Exctract corresponding line
+        # Extract corresponding line
         Counts = DataLists[segID][0][energyID]
         Monitor = DataLists[segID][1][energyID]
         Normalization = DataLists[2][segID][energyID]
@@ -103,9 +103,9 @@ outroText = 'Running the above code results in the following figure: '\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
 +'|    dataFiles   | List of converted data files to be used                                         | None           | N/A  |\n'\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
-+'|      vmin      | Minimal value used for the color scale                                          | min(Intensity) | N/A  |\n'\
++'|      vmin      | Minimal value used for the coluor scale                                         | min(Intensity) | N/A  |\n'\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
-+'|      vmax      | Maximal value used for the color scale                                          | max(Intensity) | N/A  |\n'\
++'|      vmax      | Maximal value used for the coluor scale                                         | max(Intensity) | N/A  |\n'\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
 +'|       log      | If the logarithm to the intensity is to be plotted (+1e-20)                     | False          | N/A  |\n'\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
@@ -121,9 +121,9 @@ outroText = 'Running the above code results in the following figure: '\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n\n'\
 +'Working with return data\n'+24*'-'+'\n\nHaving created the plot as wanted, the natural next step is to look at the actual data return from the method. This data is exactly the same as what would have been returned by utilizing the non-plotting version cutQELine with the same arguments (except for plotting specifics). Of most interest are the DataList, BinListTotal, and centerPositionTotal, containing the neutron, monitor, normalization, and binning counts as function of segment and bin, as well as the edges and centers of these bins. That is, DataList is a list of length 4 with\n\n.. code-block:: python\n\n'\
 +'  NeutronCounts, MonitorSum, NormalizationSum, BinningNumber = DataList\n\n'\
-+'Each of these arrays has the length len(QPoints)-1, i.e. the number of cutting segments. Choosing one of these segments, the arrays are two dimensional with variable lengths. First axis is the energy index starting at lowest energy ending at the highest. In each of these arrays, the last dimension is along the :math:`\\vec{Q}` direction starting closest to the left. The reason for variable lengths, depending on energy, is that each the method uses the _tools.binEdges method. This function tries to bin the provided values in an array with a minimal min size (further explained in `Tools tutorials <../Scripting.html#tools>`_). \n\nConcerning the bins, the two arrays BinListTotal and centerPositionTotal are in similair in build-up as the data lists. Actually, the centerPositionTotal has the exact same dimensions as the data, while BinListTotal (containing the boundaries of the bins) is one longer in both the energy and binning along the :math:`\\vec{Q}` cut direction. That both are available is due to the requirements of the plotting method pcolormesh. \n\nAs an example, the intensities as function of :math:`L` for the third segment at five different energies are plotted. \n\n'\
++'Each of these arrays has the length len(QPoints)-1, i.e. the number of cutting segments. Choosing one of these segments, the arrays are two dimensional with variable lengths. First axis is the energy index starting at lowest energy ending at the highest. In each of these arrays, the last dimension is along the :math:`\\vec{Q}` direction starting closest to the left. The reason for variable lengths, depending on energy, is that each the method uses the _tools.binEdges method. This function tries to bin the provided values in an array with a minimal min size (further explained in `Tools tutorials <../Scripting.html#tools>`_). \n\nConcerning the bins, the two arrays BinListTotal and centerPositionTotal are in similar in build-up as the data lists. Actually, the centerPositionTotal has the exact same dimensions as the data, while BinListTotal (containing the boundaries of the bins) is one longer in both the energy and binning along the :math:`\\vec{Q}` cut direction. That both are available is due to the requirements of the plotting method pcolormesh. \n\nAs an example, the intensities as function of :math:`L` for the third segment at five different energies are plotted. \n\n'\
 +'.. figure:: plotCutQELineMnF21D.png\n  :width: 65%\n  :align: center\n\n'\
-+'Each energy is shifted by 1 for clarity. As the intensity of the signal is a combination of many different aspects an overall factor of 1e5 is multiplied to it as to ensure that the numbers are in a reasonable range. In the data the instrumental in-focus and out-of-focus effects are visible as the peak at possitive :math:`L` are a lot sharper and narrower than the ones at negative :math:`L`. This is as expected from a standard measurement. '
++'Each energy is shifted by 1 for clarity. As the intensity of the signal is a combination of many different aspects an overall factor of 1e5 is multiplied to it as to ensure that the numbers are in a reasonable range. In the data the instrumental in-focus and out-of-focus effects are visible as the peak at positive :math:`L` are a lot sharper and narrower than the ones at negative :math:`L`. This is as expected from a standard measurement. '
 
 
 introText = title+'\n'+'^'*len(title)+'\n'+introText

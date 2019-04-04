@@ -299,9 +299,9 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
 
         - axis (int): Whether to create axis 0 or 1 (projection vector 0 or orthogonal to this, default 0)
 
-        - figure (figure): If provided, this is used to create the axis withing (default None)
+        - figure (figure): If provided, this is used to create the axis within (default None)
 
-        - projectionVector1 (vec): Projection vector along wich data is plotted. If not provided sample vector is used (default None)
+        - projectionVector1 (vec): Projection vector along which data is plotted. If not provided sample vector is used (default None)
 
         - projectionVector2 (vec): Projection vector orthogonal to data. If not provided sample vector is used (default None)
 
@@ -349,7 +349,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
         projectionVector = projectionVectorQY
         projectionVectorOrthogonal = projectionVectorQX
     else:
-        raise AttributeError('Provided axis of {} is not allowed. Should be eiter 0 or 1.'.format(axis))
+        raise AttributeError('Provided axis of {} is not allowed. Should be either 0 or 1.'.format(axis))
 
     if figure is None:
         
@@ -407,11 +407,11 @@ def calculateBase(l,span,ticks):
 
         - span (float): Width of view
 
-        - ticsk (int): Number of ticks wanted
+        - ticks (int): Number of ticks wanted
 
     Returns:
 
-        - base (float): Closest base number accorting to l.multiples
+        - base (float): Closest base number according to l.multiples
     """
     ytickorder = np.ceil(np.log10(span/ticks))
     minimalMultiplesy = np.argmin(np.abs(np.power(10,-ytickorder)*span/ticks-l.multiples))

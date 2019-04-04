@@ -14,7 +14,7 @@ import sys
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 
 def formatCode(text,indentChar = '   ', skipHeader=1):
-    """Formater for raw code strings to doct string formation"""
+    """Formater for raw code strings to doc string formation"""
     
     text= text.split('\n')[skipHeader:]
     
@@ -84,7 +84,7 @@ class Tutorial(object):
         
         if result != 0:
             return None
-            #raise RuntimeError('An error occured while running pytest for "{}" defined in function "{}"'.format(codeFunctionName,codeLocation))    
+            #raise RuntimeError('An error occurred while running pytest for "{}" defined in function "{}"'.format(codeFunctionName,codeLocation))    
         else:
             print('Test successful!')
         fileLocation = self.fileLocation

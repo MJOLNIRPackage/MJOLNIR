@@ -26,7 +26,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
         Kwargs:
             
-            - position (float 3d): Position of the instrument alwasy at origin(?) (default (0,0,0))
+            - position (float 3d): Position of the instrument always at origin (default (0,0,0))
 
             - wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
 
@@ -123,7 +123,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         return string
 
     def initialize(self):
-        """Method to initialize and perform analytical calulations of scattering quantities. 
+        """Method to initialize and perform analytical calculations of scattering quantities. 
         Initializes:
 
             -  A4: Matrix holding pixel A4. Shape (len(Wedges),len(detectors),pixels)
@@ -149,7 +149,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             A6 = [np.arccos(np.divide(np.einsum('ij,ij->i',analyserPixelPositions[i],relPos[i]),
                 np.linalg.norm(analyserPixelPositions[i],axis=1)*np.linalg.norm(relPos[i],axis=1))) for i in range(len(analyserPixelPositions))]
-            Ef = [np.power(factorLambdasqrtE/(wedge.analysers[0].d_spacing*2.0*np.sin(A6Sub/2.0)),2.0) for A6Sub in A6] ## TODO: d_spacing Make generic
+            Ef = [np.power(factorLambdasqrtE/(wedge.analysers[0].d_spacing*2.0*np.sin(A6Sub/2.0)),2.0) for A6Sub in A6] 
             self._A4.append(A4)
             self._Ef.append(Ef)
 
@@ -335,7 +335,7 @@ class Instrument(GeometryConcept.GeometryConcept):
             - mask (boolean): If True the lower 100 pixels are set to 0
 
         .. warning::
-            At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Guassian width of Vanadium peaks.
+            At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Gaussian width of Vanadium peaks.
 
         """
         self.initialize()
@@ -815,7 +815,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
 
     Kwargs:
 
-        - CalibrationFile (str or list of str): Location of calibration file(s) wanted in HdF file (defailt None)
+        - CalibrationFile (str or list of str): Location of calibration file(s) wanted in HdF file (default None)
 
         - pixels (int): Number of pixels on detectors (default 1024)
 

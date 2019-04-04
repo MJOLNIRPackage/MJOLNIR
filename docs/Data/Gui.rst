@@ -2,7 +2,7 @@
 Graphical User Interfaces
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Below follows an overveiw of the developed graphical interfaces to be used in the data treatment.
+Below follows an overview of the developed graphical interfaces to be used in the data treatment.
 
 
 Viewer3D

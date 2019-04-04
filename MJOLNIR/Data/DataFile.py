@@ -813,9 +813,9 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
             # Check if all arrays then have same shape
             if not np.all([x.shape == isChangingData[0].shape for x in isChangingData[1:]]):
                     names = np.array(['A3','A4','Ei'])
-                    raise AttributeError('More than one parameter is changing but they do not have the same shape! Chaning: {}'.format(', '.join(str(x) for x in names[isChanging])))
+                    raise AttributeError('More than one parameter is changing but they do not have the same shape! Changing: {}'.format(', '.join(str(x) for x in names[isChanging])))
     elif np.sum(isChanging)==0:
-        raise AttributeError('No parameter is changing. At least one parameter must be chaning through the scan.')
+        raise AttributeError('No parameter is changing. At least one parameter must be changing through the scan.')
     steps = len(isChangingData[0])
     
     Monitor = np.asarray([Monitor]*steps)

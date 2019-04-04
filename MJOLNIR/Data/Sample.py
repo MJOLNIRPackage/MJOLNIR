@@ -26,7 +26,7 @@ def sind(x):
 
 
 class Sample(object):
-    """Sample object to store all infortion of the sample from the experiment"""
+    """Sample object to store all information of the sample from the experiment"""
     @_tools.KwargChecker()
     def __init__(self,a=1.0,b=1.0,c=1.0,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None):
         if isinstance(sample,hdf._hl.group.Group):
@@ -69,7 +69,7 @@ class Sample(object):
             
             self.initialize()
             
-            # Calcualte angles for plane vectors
+            # Calculate angles for plane vectors
             Ei = 5.0 
             k = np.sqrt(Ei)*factorsqrtEK
             H1,K1,L1 = vector1

@@ -1,23 +1,23 @@
 Introduction
 ============
 
-This is the introductonary page for the MOLJNIR software package. The main purpose of this document is to give an overview of different features of the software and how you can contribute to it.
+This is the introduction page for the MJOLNIR software package. The main purpose of this document is to give an overview of different features of the software and how you can contribute to it.
 
-The software is currently developed by Jakob Lass, PhD student at both the Niels Bohr Institute, Copenhagen - Denmark, and the Paul Scherrer Institute, Villigen - Switzerland, and is not developed by a professional team. The software is intended to be used for data treatment and visualization for the CAMEA upgrad at the RITA II instrument at SINQ, PSI Villigen - Switzerland. 
+The software is currently developed by Jakob Lass, PhD student at both the Niels Bohr Institute, Copenhagen - Denmark, and the Paul Scherrer Institute, Villigen - Switzerland, and is not developed by a professional team. The software is intended to be used for data treatment and visualization for the CAMEA upgrade at the RITA II instrument at SINQ, PSI Villigen - Switzerland. 
 
-The software is found at GitHub_ and is intended to be used together with Python versions 2.7, (3.4,) 3.5, 3.6, and 3.7. This compability is ensured by the use of automated unit test through the Travis project (Travis_). Python 3.4 is no longer tested due to updates in the Travis testing frameworl. Further than just testing, as to ensure a thorough testing the coverage of these are monitored using Coverals (Coveralls_). However, certain algorithms and methods are not suited to be tested through simple tests. This includes graphical methods where one for example uses a plotting routine to generate a specific output. Though the visual inspection is far outside of the testing scope for this software, some of the methods are still tested by simple run through test. That is, if they can be run and generate a plot without crashing and throwing an error, it is believed that they work as intended. This is where acutal user testing is needed. 
+The software is found at GitHub_ and is intended to be used together with Python versions 2.7, (3.4,) 3.5, 3.6, and 3.7. This compatibility is ensured by the use of automated unit test through the Travis project (Travis_). Python 3.4 is no longer tested due to updates in the Travis testing framework. Further than just testing, as to ensure a thorough testing the coverage of these are monitored using Coveralls (Coveralls_). However, certain algorithms and methods are not suited to be tested through simple tests. This includes graphical methods where one for example uses a plotting routine to generate a specific output. Though the visual inspection is far outside of the testing scope for this software, some of the methods are still tested by simple run through test. That is, if they can be run and generate a plot without crashing and throwing an error, it is believed that they work as intended. This is where actual user testing is needed. 
 
 .. Module documentation
 .. ^^^^^^^^^^^^^^^^^^^^
 .. Each module is supposed to be independent from the rest of this software suit. That is, it is supposed
-.. to be working on its one without the need of other peices or moduels. However,
-.. some possitive synagy is possible....
+.. to be working on its one without the need of other pieces or modules. However,
+.. some positive synergy is possible....
 
 
 IPython
 ^^^^^^^
 
-The MJOLNIR software package makes use of many features of the interactive part of matplotlib. Thus, if the code/tutorials are run through an IPython kernel, these might be absent. However, including the following code snippet to the top of the scripts changes the IPython matplotlib backend to be interactie:
+The MJOLNIR software package makes use of many features of the interactive part of matplotlib. Thus, if the code/tutorials are run through an IPython kernel, these might be absent. However, including the following code snippet to the top of the scripts changes the IPython matplotlib back-end to be interactive:
 
 .. code-block:: python
 
@@ -28,12 +28,12 @@ The MJOLNIR software package makes use of many features of the interactive part 
     except:
         pass
 
-This block can in principal also be included for regular python kernels as it will then through an exception and pass. If the 'qt' backend is not available, one could try a number of others; For a list run "matplotlib.rcsetup.interactive_bk" after import of matplotlib. 
+This block can in principal also be included for regular python kernels as it will then through an exception and pass. If the 'qt' back-end is not available, one could try a number of others; For a list run "matplotlib.rcsetup.interactive_bk" after import of matplotlib. 
 
 Software Structure
 ^^^^^^^^^^^^^^^^^^
 
-The software is devided into individual modules being Instrument, DataSet, and Statistics. With this division it is intended that each part of the software suit is to be fully independent of the others but may be used together. The same goes for the tutorials that are intended to cover all of the methods and workflows a user would come into contact with while using the software.
+The software is divided into individual modules being Instrument, DataSet, and Statistics. With this division it is intended that each part of the software suit is to be fully independent of the others but may be used together. The same goes for the tutorials that are intended to cover all of the methods and workflow a user would come into contact with while using the software.
 
 Installation
 ^^^^^^^^^^^^
@@ -46,7 +46,7 @@ simply writing in a terminal
    pip install MJOLNIR
 
 
-Depending on the setup on the computer, one recomendation is to install MJOLNIR in a virtual environment through the use of e.g. conda or Anaconda with different packages. Currently, MJOLNIR
+Depending on the set-up on the computer, one recomendation is to install MJOLNIR in a virtual environment through the use of e.g. conda or Anaconda with different packages. Currently, MJOLNIR
 is not installable through conda thus one needs to first set up the virtual environment and afterwards install the package through PyPI
 
 .. code-block:: bash
@@ -67,7 +67,7 @@ an argument to PyPI
 
 License
 ^^^^^^^
-The software package is released under the software lincense Mozilla Public License Version 2.0 |licence| to allow for redistribution and usage of the code. If this linces file has not been shipped with your distribution of the code, please find it here: licence_.
+The software package is released under the software license Mozilla Public License Version 2.0 |licence| to allow for redistribution and usage of the code. If this license file has not been shipped with your distribution of the code, please find it here: licence_.
 
 
 .. |licence| image:: https://img.shields.io/github/license/Jakob-Lass/MJOLNIR.svg   

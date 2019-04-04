@@ -49,7 +49,7 @@ outroText = 'Generate Data Path\n'+18*'-'+'\nMostely, one needs to combine files
 +' - /home/lass/Dropbox/PhD/CameaData/camea2018n000461.hdf\n'\
 +'\n\n'\
 +'Binning\n'+7*'-'+'\nWhen dealing with data that is non-uniformly distributed it is sometimes necessary to have a function that creates suitable bins all containing '\
-+' data. This is exactly what the _tools.binEdges does. It starts the first bin starts 0.1 times the tolerance away from the first unique entry and itterates through the list of '\
++' data. This is exactly what the _tools.binEdges does. It starts the first bin starts 0.1 times the tolerance away from the first unique entry and iterates through the list of '\
 +'points. For each step, as long as the distance between the current value and the next is less than the tolerance the bin is expanded. If the '\
 +'distance is greater, a bin is created in the middle between the last accepted and the rejected point. This insures that all points are within a bin '\
 +'and that no bins are empty. For the last point of the list, it is checked if the difference between last bin edge and point is smaller than '\

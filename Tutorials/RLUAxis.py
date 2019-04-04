@@ -104,13 +104,13 @@ outroText = 'The first example in the code above takes a data set measured on a 
 +'\n\n'\
 +'The second example has a crystal with unit cell [9.843  9.843  9.843 90.    90.    90.], i.e. simple cubic, but the scattering plane is (hkk). '\
 +'Setting the limits to include all points from -2 to 2 in H and from -1 to 1 in K is shown in the code by providing the position vectors. The same '\
-+'result is obtaind by simply giving [-2,-1] and [2,1] to the method.\n\n'\
++'result is obtained by simply giving [-2,-1] and [2,1] to the method.\n\n'\
 +'Technical details\n'+17*'-'+'\n\n'\
-+'It was choosen to make use of the "GridHelperCurveLinear" despite the difficulties arrising from it as this allows for plotting in RLU coordinates without '\
++'It was chosen to make use of the "GridHelperCurveLinear" despite the difficulties arising from it as this allows for plotting in RLU coordinates without '\
 +'having to skew data. That is, it is possible to keep data as measured by the instrument (sort of circular) while still providing all information about the '\
-+'reciprocal space to the user. As mentioned, some calculations happen behind the scenes when dealing with this object; most of the in the sample object iteslf. '\
++'reciprocal space to the user. As mentioned, some calculations happen behind the scenes when dealing with this object; most of the in the sample object itself. '\
 +'Mathematically what happens is as follows:\n\n'\
-+'The general relationship between measured points from the instrument, denoted :math:`(Q_x,Q_y,Q_z)` for the two inplane components along x and y, and the one out '\
++'The general relationship between measured points from the instrument, denoted :math:`(Q_x,Q_y,Q_z)` for the two in-plane components along x and y, and the one out '\
 +'of plane, and the reciprocal lattice units HKL is given by the UB matrix\n\n'\
 +'.. math::\n\n    '+r'\begin{pmatrix}Q_x\\Q_y\\Q_z\end{pmatrix} = UB \cdot \begin{pmatrix}H\\K\\L\end{pmatrix}'+'\n\n'\
 +'From the geometrical constraints of the CAMEA backend, all scattering is performed in plane. But in other words, the :math:`Q_z` is always 0. Thus one '\
@@ -120,15 +120,15 @@ outroText = 'The first example in the code above takes a data set measured on a 
 +'most simple projection vectors spanning this plane. Assuming they are found the projection along these are denoted  :math:`P_0` and :math:`P_1`. One can then '\
 +' project the H, K, L points long these vectors as:\n\n.. math::\n\n    '\
 +r'\begin{pmatrix}H\\K\\L\end{pmatrix} = P_M \cdot \begin{pmatrix}P_0\\P_1\end{pmatrix}'+'\n\n'\
-+'Now remains finding the projection matrix :math:`P_M`, which is given as the 3x2 column matrix of them devided by the square of their lengths. '\
-+'Putting it all togehter results in:\n\n.. math::\n\n   '\
++'Now remains finding the projection matrix :math:`P_M`, which is given as the 3x2 column matrix of them divided by the square of their lengths. '\
++'Putting it all together results in:\n\n.. math::\n\n   '\
 +r'\begin{pmatrix}Q_x\\Q_y\end{pmatrix}=P_{23}\cdot UB \cdot P_M \cdot \begin{pmatrix}P_0\\P_1\end{pmatrix}'+'\n\n'\
 +'One further detail is that due to the way that the instrument positions, :math:`Q_x` and :math:`Q_y` are calculated, one needs to rotate this system '\
-+'with an angle corresponding to the "mis-alingment" of the orientation of the crystal. In reality this angle corresponds to the difference between the '\
++'with an angle corresponding to the "mis-alignment" of the orientation of the crystal. In reality this angle corresponds to the difference between the '\
 +'A3 zero offset and the one for which the first projection vector is along the x-axis.\n\n'\
 +'In the code, the matrix coupling :math:`Q_x` and :math:`Q_y` to :math:`P_0` and :math:`P_1` is called convert, while the inverse is denoted convertinv. '\
 +'To use these two matrices in the plotting through the "GridHelperCurveLinear" axis, two functions are defined "tr" and "inv_tr" taking projection values '\
-+'to :math:`Q_x` and :math:`Q_y` and reverse respectively. These are provided to the axis and does the calculation for the plotting. For enabeling the hover-'\
++'to :math:`Q_x` and :math:`Q_y` and reverse respectively. These are provided to the axis and does the calculation for the plotting. For enabling the hover-'\
 +'over tool tip a function calculating :math:`Q_x` and :math:`Q_y` into HKL is created, being simply the matrix multiplication with inverse UB matrix. \n\n'\
 +'Examples\n'+8*'-'+'\n\n'\
 +'Using the crystal of example 1 above, the unit cell parameters are  6.11   6.11  11.35  90.    90.   120. resulting in the reciprocal lattice vector matrix:\n\n.. math::\n\n    '\
@@ -137,7 +137,7 @@ outroText = 'The first example in the code above takes a data set measured on a 
 +r"UB = \begin{pmatrix}1.097 & 0.155 & 0.000\\-0.454 & -1.177 & -0.000\\0.000 & 0.000 & -0.554\end{pmatrix}"+'\n\n'\
 +'The two projection vectors for the scattering plane HK0 is simply :math:`(1,0,0)^T` and :math:`(0,1,0)^T`, resulting in the convert matrix:\n\n.. math::\n\n    '\
 +r'\mathrm{convert} = \begin{pmatrix}1.187 & 0.594\\0.000 & -1.028\end{pmatrix}'+'\n\n'\
-+'As seen, the transformation is non-orthogonal and thus results in the axis shown above. For the "mis-alingment" the rotation angle to correct is found to be -22.5 :math:`^{\\mathrm{o}}`. '\
++'As seen, the transformation is non-orthogonal and thus results in the axis shown above. For the "mis-alignment" the rotation angle to correct is found to be -22.5 :math:`^{\\mathrm{o}}`. '\
 +'That is, all of the data is rotated by -22.5 degrees before being plotted in the RLU axis.'\
 +'\n\nFor the second example shown above, with the cartesian unit cell but the non-trivial scattering plane, the matrices are:\n\n.. math::\n\n    '\
 +r'UB &= \begin{pmatrix}-0.418 & 0.341 & 0.341\\0.482 & 0.296 & 0.296\\0.000 & 0.451 & -0.451\end{pmatrix}\\'+'\n    '\

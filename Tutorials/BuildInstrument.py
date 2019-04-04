@@ -32,14 +32,14 @@ def Tester():
     
 title = 'Build simple instrument'
 
-introText = 'One can build a virtual representation of the instrument in question throught the Instrument module. It consists of a series of different objects: '\
-+'Instrument, Wedge, Detector, and Analyser, which are the objects needed to create the basics of the instrument. Everything regarding the guide has not been implimented. '\
+introText = 'One can build a virtual representation of the instrument in question throughout the Instrument module. It consists of a series of different objects: '\
++'Instrument, Wedge, Detector, and Analyser, which are the objects needed to create the basics of the instrument. Everything regarding the guide has not been implemented. '\
 +'Below is a simple example of how to create an instrument consisting of an analyser and a radial detector.'
 
 outroText = 'The instrument is simply initialized without any objects. Then the detector and analyser are created and joined in the wedge object. '\
-+'The wedge is then appended to the instrument wich automatically adds it to it instrument description. Another way of achieving the same result is to '\
++'The wedge is then appended to the instrument which automatically adds it to it instrument description. Another way of achieving the same result is to '\
 +'first create the wedge containing the detector and analyser, add the two to the wedge and then initialize the instrument with the wedge as argument. '\
-+'In any case, the instrument is plotted througth the plot method and the resulting image is shown below\n .. figure:: SimpleInstrument.png\n  :width: 50%\n  :align: center\n'\
++'In any case, the instrument is plotted throughout the plot method and the resulting image is shown below\n .. figure:: SimpleInstrument.png\n  :width: 50%\n  :align: center\n'\
 
 
 introText = title+'\n'+'^'*len(title)+'\n'+introText

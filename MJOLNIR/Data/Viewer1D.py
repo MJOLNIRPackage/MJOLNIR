@@ -131,7 +131,7 @@ class Viewer1D: # pragma: no cover
         
         Args:
             
-            - XData (list): List of x-valies in shape (m,n) for m data series and n scan points.
+            - XData (list): List of x-values in shape (m,n) for m data series and n scan points.
             
             - YData (list): List of y-values in shape (m,n) for m data series and n scan points.
             
@@ -139,7 +139,7 @@ class Viewer1D: # pragma: no cover
             
         Kwargs:
             
-            - fitFunction (FittingFunction): Custumized object to perform fitting (default Gaussian).
+            - fitFunction (FittingFunction): Customized object to perform fitting (default Gaussian).
             
             - xLabel (list): X label text in shape (m) for m scan parameters (default '', nothing plotted).
             

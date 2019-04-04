@@ -34,7 +34,7 @@ class Viewer3D(object):
 
             - log (bool): If true, the log 10 of the intensity is plotted (default False).
 
-            - ax (matplotlib axis): Matplotlib axis into which one pltos data (Default None).
+            - ax (matplotlib axis): Matplotlib axis into which one plots data (Default None).
 
             - grid (bool/int): If int, grid will be plotted with zorder=int, if True, grid is plotted at zorder=-10 (Default False).
 

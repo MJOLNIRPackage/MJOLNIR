@@ -1,6 +1,8 @@
 Optimizations
 =============
-This is a small set of notes explaining the methods used to optimize different parts of the software code. It is meant as an overview of the changes and thoughts that have gone into the code structure and changes made.
+This is a small set of notes explaining the methods used to optimize different parts of the 
+software code. It is meant as an overview of the changes and thoughts that have gone into 
+the code structure and changes made.
 
 
 
@@ -13,9 +15,20 @@ This is a small set of notes explaining the methods used to optimize different p
 
 Timing function
 _______________
-In order to quantify whether or not a speed-up has been achieved, one need to time the method in question. This is moste easily done through the use of the package *time* from Python, where one simply requests the current time in seconds befor and after the method has been running. Subtracting the two then gives an estimate of the time consumption. The reason for the use of the word 'estimate' is that this is not the correct time used by the computer. The true time is the actual CPU time or even better, the number of CPU cycles needed to run the method. The reason the *time* module does not capture this is that if the program does not run as the only process and with a 100% usage of the core then a descripancy between measured and acutal time consumption is created. However, these technicalities are not taken into account when I have performed the profiling of the code as I in no case am able to perform a superb optimization with a background in pure physics.
+In order to quantify whether or not a speed-up has been achieved, one need to time the 
+method in question. This is mostly easily done through the use of the package *time* 
+from Python, where one simply requests the current time in seconds before and after 
+the method has been running. Subtracting the two then gives an estimate of the time 
+consumption. The reason for the use of the word 'estimate' is that this is not the 
+correct time used by the computer. The true time is the actual CPU time or even 
+better, the number of CPU cycles needed to run the method. The reason the *time* module 
+does not capture this is that if the program does not run as the only process and with 
+a 100% usage of the core then a discrepancy between measured and actual time consumption 
+is created. However, these technicalities are not taken into account when I have 
+performed the profiling of the code as I in no case am able to perform a superb 
+optimization with a background in pure physics.
 
-The dectorator used for profiling is given below:
+The decorator used for profiling is given below:
 
 .. code-block:: python
 	:linenos:
@@ -59,7 +72,10 @@ With this definition of the decorator, using it to time a function is straight f
 		return True
 	
 
-Thus, the above code allows for timing the function *timedFunction* called 5 times, producing the output: Function "timedFunction" took: 1.1920928955078125e-06s (±1.3571023436315258e-06s), where the first time is the average of the N=5 runs, and the parenthesis denotes the uncertainty on the mean, :math:`std(X)/\sqrt{N}`.
+Thus, the above code allows for timing the function *timedFunction* called 5 times, 
+producing the output: Function "timedFunction" took: 1.1920928955078125e-06s 
+(±1.3571023436315258e-06s), where the first time is the average of the N=5 runs, 
+and the parenthesis denotes the uncertainty on the mean, :math:`std(X)/\sqrt{N}`.
 	
 
 	

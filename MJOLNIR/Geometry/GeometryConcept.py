@@ -58,7 +58,7 @@ class GeometryConcept(object):
         """
         Args:
 
-            - ax (matplotlib axis): 3D matplotlib axis into whicht plotting is performed
+            - ax (matplotlib axis): 3D matplotlib axis into which plotting is performed
 
         .. warning::
             Method not incorporated, but acts as virtual method.

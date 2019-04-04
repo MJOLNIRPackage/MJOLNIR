@@ -81,4 +81,4 @@ This has to do with how Matplotlib shows figures in contrast to how the eps engi
 
     edgecolors='face'
 
-to the plotting function. This then forces the eps backend to draw the surrounding edges as the face color instead of white/transparent.
+to the plotting function. This then forces the eps back-end to draw the surrounding edges as the face colour instead of white/transparent.

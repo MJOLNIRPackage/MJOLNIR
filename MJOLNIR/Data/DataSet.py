@@ -215,7 +215,7 @@ class DataSet(object):
         try:
             return self.dataFiles[index]
         except IndexError:
-            raise IndexError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
+            raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self)))
 
     def __len__(self):
         return len(self.dataFiles)
@@ -250,7 +250,7 @@ class DataSet(object):
         try:
             del self.dataFiles[index]
         except IndexError:
-            raise IndexError('Provided index {} is out of bounds for DataSet with lenght {}.'.format(index,len(self)))
+            raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self)))
         self._getData
 
 
@@ -259,7 +259,7 @@ class DataSet(object):
     @_tools.KwargChecker()
     def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None,saveFile=True):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
-        Copies all of the old data file into the new to ensure complete reduncency. Determins the binning wanted from the file name of normalization file.
+        Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
         Kwargs:
 
@@ -398,7 +398,7 @@ class DataSet(object):
             
             - width (float): Full width of cut in q-plane in 1/AA.
             
-            - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
             
             - Emin (float): Minimal energy to include in cut.
             
@@ -459,7 +459,7 @@ class DataSet(object):
         .. note::
             Can only perform cuts for a constant energy plane of definable width.
         
-         Args:
+        Args:
             
             - q1 (3D or 2D array): Start position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
             
@@ -467,7 +467,7 @@ class DataSet(object):
             
             - width (float): Full width of cut in q-plane in 1/AA.
             
-            - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
             
             - Emin (float): Minimal energy to include in cut.
             
@@ -597,7 +597,7 @@ class DataSet(object):
             
             - width (float): Full width of cut in q-plane.
             
-            - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
 
             - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
 
@@ -620,7 +620,7 @@ class DataSet(object):
             
             - center position (n * 3D arrays): n instances of center positions for the bins.
 
-            - binDistance (n arrays): n isntances of arrays holding the distance in q to q1.
+            - binDistance (n arrays): n instances of arrays holding the distance in q to q1.
 
         """
         if dataFiles is None:
@@ -651,7 +651,7 @@ class DataSet(object):
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
         .. warning::
-           Depricated! Instead use the plotCutQELine tool with only two q points
+           Deprecated! Instead use the plotCutQELine tool with only two q points
 
         .. note::
             Positions shown in tool tip reflect the closes bin center and are thus limited to the area where data is present.
@@ -664,7 +664,7 @@ class DataSet(object):
             
             - width (float): Full width of cut in q-plane.
             
-            - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
 
             - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
 
@@ -690,7 +690,7 @@ class DataSet(object):
             
             - center position (n * 3D arrays): n instances of center positions for the bins.
 
-            - binDistance (n arrays): n isntances of arrays holding the distance in q to q1.
+            - binDistance (n arrays): n instances of arrays holding the distance in q to q1.
         """
         
         
@@ -736,7 +736,7 @@ class DataSet(object):
             
             - Data list (n * 4 arrays): n instances of [Intensity, monitor count, normalization and normalization counts].
             
-            - qbins (n arrays): n arrays holding the bin edges along the lenght of q
+            - qbins (n arrays): n arrays holding the bin edges along the length of q
 
         """
         if dataFiles is None:
@@ -884,9 +884,9 @@ class DataSet(object):
 
             - yBinTolerance (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
             
-            - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolereces are used as minimum bin sizes.
+            - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolerances are used as minimum bin sizes.
 
-            - log (bool): Plot intensities as the logarithm (defautl False).
+            - log (bool): Plot intensities as the logarithm (default False).
             
             - ax (matplotlib axes): Axes in which the data is plotted (default None). If None, the function creates a new axes object.
 
@@ -913,7 +913,7 @@ class DataSet(object):
             - ax (matplotlib axes): Returns provided matplotlib axis
             
         .. note::
-            The axes object has a new method denoted 'set_clim' taking two parameters (VMin and VMax) used to change axes coloring.
+            The axes object has a new method denoted 'set_clim' taking two parameters (VMin and VMax) used to change axes colouring.
             
         .. note::
             If a 3D matplotlib axis is provided, the planes are plotted in 3D with the provided energy bins. As the method 
@@ -927,11 +927,11 @@ class DataSet(object):
                 raise AttributeError('Either minimal/maximal energy or the energy bins is to be given.')
             else:
                 if len(EBins)<=1:
-                    raise AttributeError('Length of provided energy bins is {}, while at least 2 is needed! Recieved "{}"'.format(len(EBins),EBins))
+                    raise AttributeError('Length of provided energy bins is {}, while at least 2 is needed! Received "{}"'.format(len(EBins),EBins))
                 EBins = np.asarray(EBins)
         else:
             if EMin>=EMax:
-                raise AttributeError('Provided limites are either wrong or the same. Recieved EMin={} and EMax={}, expectes EMin<EMax.'.format(EMin,EMax))
+                raise AttributeError('Provided limits are either wrong or the same. Received EMin={} and EMax={}, expects EMin<EMax.'.format(EMin,EMax))
             EBins = np.array([EMin,EMax])
 
         if dataFiles is None:
@@ -1020,7 +1020,7 @@ class DataSet(object):
                         h = np.histogram(x.flatten(),bins = bins)
                         if bins > 200:
                             break
-                    if bins > 200: # If everyhting has been covered, do nothing.
+                    if bins > 200: # If everything has been covered, do nothing.
                         offset.append(0.0)
                     else:
                         offset.append(2*np.pi-h[1][np.argmax(h[0]==0)]) # Move highest value of lump to fit 2pi
@@ -1181,7 +1181,7 @@ class DataSet(object):
     @_tools.KwargChecker()
     def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
-        This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
+        This can result in distorted binning when binning across large energy regions. Data is plotted using the pixels calculated for average plane value, i.e. 
         binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
 
         Kwargs:
@@ -1201,13 +1201,13 @@ class DataSet(object):
 
             - plotTessellation (bool): Plot Tessellation of points (default False)
 
-            - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
+            - Ei_err (float): Tolerance of E_i for which the values are equal (default = 0.05)
 
-            - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
+            - temperature_err (float): Tolerance of temperature for which the values are equal (default = 0.2)
             
-            - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
+            - magneticField_err (float): Tolerance of magnetic field for which the values are equal (default = 0.2)
             
-            - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
+            - electricField_err (float): Tolerance of electric field for which the values are equal (default = 0.2)
 
         Returns:
             
@@ -1273,13 +1273,13 @@ class DataSet(object):
 #
 #            - plotTessellation (bool): Plot Tessellation of points (default False)
 #
-#            - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
+#            - Ei_err (float): Tolerance of E_i for which the values are equal (default = 0.05)
 #
-#            - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
+#            - temperature_err (float): Tolerance of temperature for which the values are equal (default = 0.2)
 #            
-#            - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
+#            - magneticField_err (float): Tolerance of magnetic field for which the values are equal (default = 0.2)
 #            
-#            - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
+#            - electricField_err (float): Tolerance of electric field for which the values are equal (default = 0.2)
 #
 #        Returns:
 #            
@@ -1330,7 +1330,7 @@ class DataSet(object):
         
             - width (float): Width of the cut in 1/A (default 0.1).
             
-            - minPixel (float): Minial size of binning along the cutting directions. Points will be binned if they arecloser than minPixel (default=0.01)
+            - minPixel (float): Minimal size of binning along the cutting directions. Points will be binned if they arecloser than minPixel (default=0.01)
         
             - rlu (bool): If True, provided QPoints are interpreted as (h,k,l) otherwise as (qx,qy), (default True).
         
@@ -1340,7 +1340,7 @@ class DataSet(object):
         
         .. warning::
             The way the binning works is by extending the end points with 0.5*minPixel, but the method sorts away points not between the two Q points given and thus the start and end
-            bins are only half filled. This might result in descripancies between a single cut and the same cut split into different steps. Further, splitting lines into sub-cuts 
+            bins are only half filled. This might result in discrepancies between a single cut and the same cut split into different steps. Further, splitting lines into sub-cuts 
             forces a new binning to be done and the bin positions can then differ from the case where only one cut is performed.
 
         
@@ -1352,7 +1352,7 @@ class DataSet(object):
             
             - center position (m * n * 3D arrays): n instances of center positions for the bins.
 
-            - binDistance (m * n arrays): n isntances of arrays holding the distance in q to q1.
+            - binDistance (m * n arrays): n instances of arrays holding the distance in q to q1.
 
         .. note::
             If an HKL point outside of the scattering plane is given, the program will just take the projection onto the scattering plane.
@@ -1427,9 +1427,9 @@ class DataSet(object):
 
             - minPixel (float): Minimum size of pixel for cut (default 0.01)
             
-            - rlu (bool): If True, provided points are intepreted as (h,k,l) otherwise (qx,qy), (Deflault RLU)
+            - rlu (bool): If True, provided points are interpreted as (h,k,l) otherwise (qx,qy), (default RLU)
             
-            - ax (matplotlib axis): Axis into wicht the data is plotted. If None a new will be created (default None).
+            - ax (matplotlib axis): Axis into whiht the data is plotted. If None a new will be created (default None).
             
             - dataFiles (DataFile(s)): DataFile or list of, from which data is to be taken. If None all datafiles in self is taken (default None).
             
@@ -1443,7 +1443,7 @@ class DataSet(object):
             
             - plotSeperator (bool): If true, vertical lines are plotted at Q points (default True).
             
-            - seperatorWidth (float): Width of sperator line (default 2).
+            - seperatorWidth (float): Width of seperator line (default 2).
             
             - log (bool): If true the plotted intensity is the logarithm of the intensity (default False)
 
@@ -1459,11 +1459,11 @@ class DataSet(object):
             
             - center position (m * n * 3D arrays): n instances of center positions for the bins.
 
-            - binDistance (m * n arrays): n isntances of arrays holding the distance in q to q1.
+            - binDistance (m * n arrays): n instances of arrays holding the distance in q to q1.
 
         .. note::
             
-            The ax.set_clim function is created to change the color scale. It takes inputs vmin,vmax. This function does however not work in 3D....
+            The ax.set_clim function is created to change the colour scale. It takes inputs vmin,vmax. This function does however not work in 3D....
 
         """
         DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
@@ -1665,7 +1665,7 @@ class DataSet(object):
             else:
                 ax.set_xlabel('$Q_x/A$\n$Q_y/A$', fontsize=8)
             
-            ax.xaxis.set_label_coords(1.15, -0.025)
+            ax.xaxis.set_label_coords(1.15, -0.025) 
             ax.set_ylabel('E [meV]')
             if colorbar:
                 ax.colorbar = ax.get_figure().colorbar(pmeshs[0],pad=0.1,format='%.2E')
@@ -1680,7 +1680,7 @@ class DataSet(object):
                 for pm in pmeshs:
                     pm.set_clim(vmin,vmax)
                     
-            ax.set_clim = set_clim#lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs]
+            ax.set_clim = set_clim#lambda VMin,VMax: [pm.set_clim(VMin,VMax) for pm in pmeshs] 
             
             if not 'vmin' in kwargs:
                 if log==True:
@@ -1843,7 +1843,7 @@ class DataSet(object):
         return ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal
 
     @_tools.KwargChecker()
-    def extractData(self, A4 = None, A4Id = None, Ef = None, EfId = None, raw = False, A4Tolerence = 0.1, EfTolerence = 0.1):
+    def extractData(self, A4 = None, A4Id = None, Ef = None, EfId = None, raw = False, A4Tolerance = 0.1, EfTolerance = 0.1):
         """Extract data given A4 value and Ef (or the corresponding indices).
         
         Kwargs:
@@ -1856,11 +1856,11 @@ class DataSet(object):
             
             - EfId (int): Wanted Id of analyser energy, number between 0-7 (default None)
             
-            - raw (bool): If true method returns Intensity,Nornalization,Monitor, else returns Intensity/(Norm*Monitor) (default False)
+            - raw (bool): If true method returns Intensity,Normalization,Monitor, else returns Intensity/(Norm*Monitor) (default False)
             
-            - A4Tolerence (float): Tolerence between found and wanted A4 value in degrees (default 0.1)
+            - A4Tolerance (float): Tolerance between found and wanted A4 value in degrees (default 0.1)
 
-            - EfTolerence (float): Tolerence between found and wanted Ef value in meV (default 0.1)
+            - EfTolerance (float): Tolerance between found and wanted Ef value in meV (default 0.1)
             
         .. note::
             If A4 or Ef is provided, then these will be used instead of A4Id or EfId.
@@ -1885,7 +1885,7 @@ class DataSet(object):
                 NominalA4 = file.instrumentCalibrationA4.reshape(104,8*binning)
                 A4Id,A4Analyser = np.unravel_index(np.argmin(np.abs(NominalA4-file.A4Off-A4)),NominalA4.shape) # Extract only wedge number
                 A4Found = (NominalA4[A4Id,A4Analyser]-file.A4Off)[0]
-                if np.abs(A4Found-A4)>A4Tolerence:
+                if np.abs(A4Found-A4)>A4Tolerance:
                     raise AttributeError('Difference between wanted ({}) and found A4 value ({}) is {} for file {}.. Maybe the sign of A4 should be changed.'.format(A4,A4Found,A4-A4Found,file.name))
             
 
@@ -1897,7 +1897,7 @@ class DataSet(object):
                     NominalEf = file.instrumentCalibrationEf[:,1].reshape(104,8*binning)
                 EfDetector,EfId = np.unravel_index(np.argmin(np.abs(NominalEf-Ef)),NominalEf.shape) # Extract only wedge number
                 EfFound = NominalEf[EfDetector,EfId]
-                if np.abs(EfFound-Ef)>EfTolerence:
+                if np.abs(EfFound-Ef)>EfTolerance:
                     raise AttributeError('Difference between wanted ({}) and found Ef value ({}) is {} for file {}.. Maybe the sign of A4 should be changed.'.format(Ef,EfFound,Ef-EfFound,file.name))
 
             
@@ -1936,11 +1936,11 @@ class DataSet(object):
         
         Kwargs:
             
-            - rlu (bool): If True, provided Q point is interpreted as (h,k,l) otherwise as (qx,qy), (Deflault true)
+            - rlu (bool): If True, provided Q point is interpreted as (h,k,l) otherwise as (qx,qy), (Default true)
 
             - width (float): Full width of cut in q-plane (default 0.02).
             
-            - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
+            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
             
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
 
@@ -2007,7 +2007,7 @@ class DataSet(object):
 
         Kwargs:
 
-            - rlu (Bool): If true a rlu axis is used for plotting orthervise qx,qy (Default True).
+            - rlu (Bool): If true a rlu axis is used for plotting otherwise qx,qy (Default True).
 
             - log (Bool): If true logarithm of intensity is plotted
 
@@ -2015,7 +2015,7 @@ class DataSet(object):
 
             - axis (int): Axis shown initially (default 2)
 
-            - kwargs: The remaining kwargs are given to the createRLUAxes method, inteded for tick mark positioning (see createRLUAxes)
+            - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
         If one plots not using RLU, everything is plotted in real units (1/AA), and the Qx and QY is not rotated. That is, the
         x axis in energy is not along the projection vector. The cuts of constant Qx and Qy does not represent any symmetry directions in
@@ -2057,7 +2057,7 @@ class DataSet(object):
 
         Returns
 
-            - Q (array): Converted HKL points in Qx QY of unrotated coordinate system.
+            - Q (array): Converted HKL points in Qx QY of un-rotated coordinate system.
         """
         return convertToQxQy(self.sample,HKL)
 
@@ -2078,7 +2078,7 @@ def load(filename):
     """Function to load an object from a pickled file.
 
     .. note::
-        It is not possible to unpickle an object created in python 3 in python 2 or vice versa.
+        It is not possible to un-pickle an object created in python 3 in python 2 or vice versa.
         
     """
     try:                                # Opening the given file with an error catch
@@ -2231,7 +2231,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#
         
         - width (float): Full width of cut in q-plane.
         
-        - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+        - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
         
         - Emin (float): Minimal energy to include in cut.
         
@@ -2310,7 +2310,7 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False
         
         - Data list (n * 4 arrays): n instances of [Intensity, monitor count, normalization and normalization counts].
         
-        - qbins (n arrays): n arrays holding the bin edges along the lenght of q
+        - qbins (n arrays): n arrays holding the bin edges along the length of q
 
     """
     qx,qy,energy = positions
@@ -2359,7 +2359,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True,con
         
         - width (float): Full width of cut in q-plane.
         
-        - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+        - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
 
         - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
 
@@ -2377,7 +2377,7 @@ def cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,extend=True,con
         
         - center position (n * 3D arrays): n instances of center positions for the bins.
 
-        - binDistance (n arrays): n isntances of arrays holding the distance in q to q1.
+        - binDistance (n arrays): n instances of arrays holding the distance in q to q1.
 
     """
     intensityArray = []
@@ -2413,7 +2413,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
     """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
     
     .. warning::
-        Depricated! Instead use the plotCutQELine tool with only two q points
+        Deprecated! Instead use the plotCutQELine tool with only two q points
 
     .. note::
         Positions shown in tool tip reflect the closes bin center and are thus limited to the area where data is present.
@@ -2434,7 +2434,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
         
         - width (float): Full width of cut in q-plane.
         
-        - minPixel (float): Minimal size of binning aling the cutting direction. Points will be binned if they are closer than minPixel.
+        - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
 
         - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
 
@@ -2442,7 +2442,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
         
         - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
 
-        - rlu (bool): If True, data is plotted in RLU. # TODO: Make this work!
+        - rlu (bool): If True, data is plotted in RLU. 
         
         - kwargs: All other keywords will be passed on to the ax.errorbar method.
 
@@ -2458,9 +2458,9 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
         
         - center position (n * 3D arrays): n instances of center positions for the bins.
 
-        - binDistance (n arrays): n isntances of arrays holding the distance in q to q1.
+        - binDistance (n arrays): n instances of arrays holding the distance in q to q1.
     """
-    warnings.warn("The plotCutQE is being depricated. Use instead the plotCutQELine width only two QPoints",DeprecationWarning)
+    warnings.warn("The plotCutQE is being deprecated. Use instead the plotCutQELine width only two QPoints",DeprecationWarning)
 
     [intensityArray,monitorArray,normalizationArray,normcountArray],returnpositions,centerPos,binDistance = cutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,constantBins=constantBins)
 
@@ -2553,7 +2553,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
 #        
 #        - Monitor (array): Monitor of data.
 #        
-#        - Norm (array): Nornmalization of data.
+#        - Norm (array): Normalization of data.
 #        
 #        - pos (3 array): Position of data in qx, qy, and energy.
 #        
@@ -2569,9 +2569,9 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
 #
 #        - yBinTolerance (float): bin sizes along y direction (default 0.05). If enlargen is true, this is the minimum bin size.
 #        
-#        - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolereces are used as minimum bin sizes.
+#        - enlargen (bool): If the bin sizes should be adaptive (default False). If set true, bin tolerances are used as minimum bin sizes.
 #
-#        - log (bool): Plot intensities as the logarithm (defautl False).
+#        - log (bool): Plot intensities as the logarithm (default False).
 #        
 #        - ax (matplotlib axes): Axes in which the data is plotted (default None). If None, the function creates a new axes object.
 #        
@@ -2676,7 +2676,7 @@ def plotCutQE(positions,I,Norm,Monitor,q1,q2,width,minPix,EnergyBins,rlu=True,ax
 @_tools.KwargChecker()
 def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2): # pragma: no cover
     """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
-    This can result in distordet binning when binning across large energy regions. Data is plotted using the pixels calulated for average plane value, i.e. 
+    This can result in distorted binning when binning across large energy regions. Data is plotted using the pixels calculated for average plane value, i.e. 
     binning 7,8,9,10, and 11 patches for plane 9 are used for plotting.
 
     Args:
@@ -2699,13 +2699,13 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
         - plotTessellation (bool): Plot Tessellation of points (default False)
 
-        - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
+        - Ei_err (float): Tolerance of E_i for which the values are equal (default = 0.05)
 
-        - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
+        - temperature_err (float): Tolerance of temperature for which the values are equal (default = 0.2)
         
-        - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
+        - magneticField_err (float): Tolerance of magnetic field for which the values are equal (default = 0.2)
         
-        - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
+        - electricField_err (float): Tolerance of electric field for which the values are equal (default = 0.2)
 
     Returns:
         
@@ -3049,7 +3049,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 #    """Plot data files together with pixels created around each point in Q space. See :doc:`Voronoi Tessellation<../../InDepthDocumentation/VoronoiTessellation>` for further information.
 #
 #    .. warning::
-#        This method plots all measurement points unless they are literaly on top of each other and is thus really slow! Binning 8 planes for two files takes approximately
+#        This method plots all measurement points unless they are literally on top of each other and is thus really slow! Binning 8 planes for two files takes approximately
 #        3.5 minutes. Alternatively use binning, i.e. plotQPlane.
 #
 #
@@ -3077,13 +3077,13 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 #
 #        - plotTessellation (bool): Plot Tessellation of points (default False)
 #
-#        - Ei_err (float): Tolerence of E_i for which the values are equal (default = 0.05)
+#        - Ei_err (float): Tolerance of E_i for which the values are equal (default = 0.05)
 #
-#        - temperature_err (float): Tolerence of temperature for which the values are equal (default = 0.2)
+#        - temperature_err (float): Tolerance of temperature for which the values are equal (default = 0.2)
 #        
-#        - magneticField_err (float): Tolerence of magnetic field for which the values are equal (default = 0.2)
+#        - magneticField_err (float): Tolerance of magnetic field for which the values are equal (default = 0.2)
 #        
-#        - electricField_err (float): Tolerence of electric field for which the values are equal (default = 0.2)
+#        - electricField_err (float): Tolerance of electric field for which the values are equal (default = 0.2)
 #
 #    Returns:
 #        
@@ -3449,7 +3449,7 @@ def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
         from scipy.spatial import voronoi_plot_2d
         voronoi_plot_2d(vor)
     if not len(pointsX)==len(Polygons):
-        raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calulated edge\n - ??'.format(len(pointsX),len(Polygons)))
+        raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calculated edge\n - ??'.format(len(pointsX),len(Polygons)))
 
 
     return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
@@ -3710,7 +3710,7 @@ def calculateGrid3D(X,Y,Z):
     >>> X,Y,Z = np.meshgrid(x,y,z,indexing='ij')
     >>> XX,YY,ZZ = calculateGrid3D(X,Y,Z)
 
-    Now XX is a 21x11x67 array containing all x coordinates of the edges exactly midway bewteen the points. Same goes for YY and ZZ with y and z coordinates respectively.
+    Now XX is a 21x11x67 array containing all x coordinates of the edges exactly midway between the points. Same goes for YY and ZZ with y and z coordinates respectively.
     """
 
     xshape = np.array(X.shape)
@@ -3817,7 +3817,7 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
 
     returns:
 
-        Rebinned intensity (and if provided Normalization, Monitor, and Normalization Count) and X, Y, and Z bins in 3 3D arrays.
+        Re-binned intensity (and if provided Normalization, Monitor, and Normalization Count) and X, Y, and Z bins in 3 3D arrays.
 
 
     Example:
@@ -3888,7 +3888,7 @@ def fmt(x, pos):
 
 def figureRowColumns(subplots):
     if subplots<1:
-        raise AttributeError('Negative or zero number of subplots requiested.')
+        raise AttributeError('Negative or zero number of subplots requested.')
     if subplots==1:
         rows = 1
         cols = 1
@@ -3903,7 +3903,7 @@ def figureRowColumns(subplots):
     return rows,cols
 
 
-def centeroidnp(arr): # Calcualted centroid
+def centeroidnp(arr): # Calculated centroid
     length = arr.shape[0]
     Totsum = np.sum(arr,axis=0)
     return Totsum/length
@@ -3926,7 +3926,7 @@ def compareNones(first,second,margin): # Function to compare
         return False
 
 def OxfordList(list):
-    """Create a comma seperated string from the strings provided with last comma trailed by 'and'."""
+    """Create a comma separated string from the strings provided with last comma trailed by 'and'."""
     if len(list)==0:
         return None
     elif len(list)==1:
@@ -3945,7 +3945,7 @@ def convertToQxQy(sample,QPoints):
 
         - sample (MJOLNIR.Sample.Sample): Sample from which the UB matrix is to be used
 
-        - QPoints (list): List of HKL poinst to be converted
+        - QPoints (list): List of HKL points to be converted
 
     Returns:
 
@@ -3959,11 +3959,11 @@ def convertToQxQy(sample,QPoints):
 
     if len(shape)==1: # One point given as [h,k,l]
         if shape[0]!=3:
-            raise AttributeError('Provided HKL point is not 3D. Recieved: {}'.format(QPoints))
+            raise AttributeError('Provided HKL point is not 3D. Received: {}'.format(QPoints))
         qx,qy,qz = np.einsum('ij,j->i',sample.orientationMatrix,QPoints)
     else:
         if shape[-1]!=3:
-            raise AttributeError('Provided HKL point is not 3D. Recieved: {}'.format(QPoints))
+            raise AttributeError('Provided HKL point is not 3D. Received: {}'.format(QPoints))
         qx,qy,qz = np.einsum('ij,...j->i...',sample.orientationMatrix,QPoints)
 
 
@@ -3976,7 +3976,7 @@ def convertToHKL(sample,QxQy):
 
         - sample (MJOLNIR.Sample.Sample): Sample from which the UB matrix is to be used
 
-        - QxQy (list): List of HKL poinst to be converted
+        - QxQy (list): List of HKL points to be converted
 
     Returns:
 
@@ -3990,12 +3990,12 @@ def convertToHKL(sample,QxQy):
 
     if len(shape)==1: # One point given as [h,k,l]
         if shape[0]!=2:
-            raise AttributeError('Provided QxQy point is not 3D. Recieved: {}'.format(QxQy))
+            raise AttributeError('Provided QxQy point is not 3D. Received: {}'.format(QxQy))
         QxQy = np.pad(QxQy, (0, 1), 'constant')
         H,K,L = np.einsum('ij,j->i',sample.orientationMatrixINV,QxQy)
     else:
         if shape[-1]!=2:
-            raise AttributeError('Provided QxQy point is not 2D. Recieved: {}'.format(QxQy))
+            raise AttributeError('Provided QxQy point is not 2D. Received: {}'.format(QxQy))
         Shape = np.asarray(shape)
         Shape[-1]=1
         z  = np.zeros(Shape)
