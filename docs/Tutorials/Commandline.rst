@@ -7,9 +7,13 @@ Despite the full usability and customizability of using a scripting interface to
 
 In any case, the following tutorials seek to introduce and explain the possibilities of using the command line scripts to quickly plot different parts of the data. However, running the scripts from the command line is operation system dependent. That is, if you are running either Linux or Mac, chances are that you can simply run:
 
+.. code-block:: bash
+
     python ScriptFile.py *args
 
 or if python has been installed as an environment variable::
+
+.. code-block:: bash
 
     ./ScriptFile.py *args
 

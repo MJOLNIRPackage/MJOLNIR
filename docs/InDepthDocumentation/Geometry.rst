@@ -14,22 +14,22 @@
 
 
 The calculation of energies and the corresponding scattering angles is automatically calculated when the initialization
- method is called on the :doc:`Instrument<../Geometry/Geometry>` object. That is, one first of all needs to create the 
- wanted instrument with all of the detectors, analysers and wedges as described in the instrument creation tutorial 
- :doc:`Build a simple instrument<../Tutorials/BuildSimpleInstrument>`. Having done all this, the procedure for the 
- calculations is as follows. 
+method is called on the :doc:`Instrument<../Geometry/Geometry>` object. That is, one first of all needs to create the 
+wanted instrument with all of the detectors, analysers and wedges as described in the instrument creation tutorial 
+:doc:`Build a simple instrument<../Tutorials/Instrument/instrument>`. Having done all this, the procedure for the 
+calculations is as follows. 
 
 Looping through all wedges, the concept attribute is checked. This tells whether one has a one to one correspondence
- between the detectors and the analysers or a many to many. The prior is true for secondary spectrometers as FlatCone 
- or MultiFLEXX, where each detector optimally receives neutrons from only one analyser. The latter is, however only 
- in the sense of many to one, true for the CAMEA concept applied at SINQ. Here one detector receives neutrons from 
- multiple analysers. The need for this distinction in the code is for the algorithm to know, if it should split the
-  detector pixels up in bunches or not. These bunches are controlled by the attributes for the :doc:`Detector<../Geometry/Geometry>`
-   object. In both cases, the relative position vector is found for each pixel and the corresponding analyser as 
-   well as the vector from origo to the analyser. As described below, the actual optimal scattering position is then 
-   calculated and returned to the instrument object. Having both the detector position as well as the scattering 
-   position at the analyser, it is straight forward to calculate scattering angle :math:`A4` and corresponding 
-   final energy :math:`E_f`.
+between the detectors and the analysers or a many to many. The prior is true for secondary spectrometers as FlatCone 
+or MultiFLEXX, where each detector optimally receives neutrons from only one analyser. The latter is, however only 
+in the sense of many to one, true for the CAMEA concept applied at SINQ. Here one detector receives neutrons from 
+multiple analysers. The need for this distinction in the code is for the algorithm to know, if it should split the 
+detector pixels up in bunches or not. These bunches are controlled by the attributes for the :doc:`Detector<../Geometry/Geometry>` 
+object. In both cases, the relative position vector is found for each pixel and the corresponding analyser as 
+well as the vector from origo to the analyser. As described below, the actual optimal scattering position is then 
+calculated and returned to the instrument object. Having both the detector position as well as the scattering 
+position at the analyser, it is straight forward to calculate scattering angle :math:`A4` and corresponding 
+final energy :math:`E_f`.
 
 .. _InstrumentFig: 
 

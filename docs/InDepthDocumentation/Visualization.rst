@@ -25,14 +25,14 @@ features and visualizations needed by the user during an experiment at the CAMEA
     - Powder average, intensity against :math:`\Delta E` and :math:`\left|Q\right|`
 
     - Constant energy planes, intensity against :math:`Q_x` and  :math:`Q_x` or scattering plane 
-    vectors for given energy width
+      vectors for given energy width
 
     - Intensity against detector index and un-binned pixel
 
     - Intensity against detector index and :math:`\Delta E`
 
     - Intensity against energy and :math:`Q`-points, for a list of :math:`Q`-points plot the 
-    intensity as function of :math:`\Delta E` and :math:`\vec{Q}`
+      intensity as function of :math:`\Delta E` and :math:`\vec{Q}`
 
 The last bullet under the 2D plots has been added since the last review of the document (medio February 2017).
 

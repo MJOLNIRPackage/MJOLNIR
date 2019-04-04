@@ -17,7 +17,7 @@ If one performed a voronoi tesselation on the reciprocal lattice points one woul
  than any other center.
 
 Walk-through of method
----------------------
+----------------------
 Given a set of data files the program first asserts that the files are compatible. This is 
 defined to be when the files have the same sample, and approximately same physical measurement 
 conditions. That is, the incoming energy, temperature and magnetic and electric fields are to 
