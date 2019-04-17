@@ -565,7 +565,15 @@ class DataSet(object):
 
         
         def onclick(event,ax,DataList):# pragma: no cover
-            if ax.in_axes(event) and ax.get_figure().canvas.cursor().shape() == 0:
+            if ax.in_axes(event):
+                try:
+                    C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
+                except:
+                    pass
+                else:
+                    if C != 0:
+                        return
+
                 x = event.xdata
                 y = event.ydata
                 printString = ax.format_coord(x,y)
@@ -1132,7 +1140,7 @@ class DataSet(object):
             def onclick(ax, event,Qx,Qy,data): # pragma: no cover
                 if event.xdata is not None and ax.in_axes(event):
                     try:
-                        C = self.figure.canvas.cursor().shape() # Only works for pyQt5 backend
+                        C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
                     except:
                         pass
                     else:
@@ -1753,7 +1761,14 @@ class DataSet(object):
                 return segID,Eindex,index
             ax.calculateIndex = lambda x,y: calculateIndex(x,y,offset,actualEnergy,edgeQDistance,textReturn=False)#EnergyBins
             def onclick(event,ax,DataList): # pragma: no cover
-                if ax.in_axes(event) and ax.get_figure().canvas.cursor().shape() == 0:
+                if ax.in_axes(event):
+                    try:
+                        C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
+                    except:
+                        pass
+                    else:
+                        if C != 0:
+                            return
                     x = event.xdata
                     y = event.ydata
                     printString = ax.format_coord(x,y)
