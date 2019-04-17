@@ -262,8 +262,8 @@ def binEdges(values,tolerance,startPoint=None,endPoint=None):
     return bin_edges
 
 
-def without_keys(d, keys): # Remove key word argument from kwargs
-    return {x: d[x] for x in d if x not in keys}
+def without_keys(dictionary, keys): # Remove key word argument from kwargs
+    return {x: dictionary[x] for x in dictionary if x not in keys}
 
 def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hdf'):
     """Function to generate list of data files.

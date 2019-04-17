@@ -350,8 +350,8 @@ class DataFile(object):
 
         A4 = np.reshape(self.instrumentCalibrationA4,(104,8*binning))
         fig = plt.figure()
-        for i in range(104):
-            plt.scatter(-A4[i],np.arange(len(A4[i])),c=Norm[i])
+        for a4,N in zip(A4,Norm):
+            plt.scatter(-a4,np.arange(len(a4)),c=N)
         
         plt.title('Instrument calibration')
         plt.ylabel('Pixel')
@@ -483,9 +483,7 @@ class DataFile(object):
         
         
         edgePolygon = []
-        for i in range(len(EBins)-1):
-            ELow = EBins[i]
-            EHigh= EBins[i+1]
+        for ELow,EHigh in zip(EBins,EBins[1:]):#range(len(EBins)-1):
             
             EBool = np.logical_and(Energy>ELow,Energy<EHigh)
             
