@@ -1,6 +1,6 @@
 Plotting Q planes for constant energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Plotting the data acquired in 3D is made possible through the plotQPlane method when the "ax" key word is given a 3D matplotlib axis. Providing only an Emin and Emax generates a single plane plotted in 3D at the mean energy position. However, providing a whole range of energies throught the key word "EBins" collapeses all points inside the energy range and perform the same binning as explained in the `<../Quick/ConstantEnergy.html>`_ tutorial. The code needed to generate a figure is shown below:
+Plotting the data acquired in 3D is made possible through the plotQPlane method when the "ax" key word is given a 3D matplotlib axis. Providing only an Emin and Emax generates a single plane plotted in 3D at the mean energy position. However, providing a whole range of energies through the key word "EBins" collapses all points inside the energy range and perform the same binning as explained in the `<../Quick/ConstantEnergy.html>`_ tutorial. The code needed to generate a figure is shown below:
 
 .. code-block:: python
    :linenos:
@@ -50,7 +50,7 @@ Plotting the data acquired in 3D is made possible through the plotQPlane method 
    fig.savefig('figure0.png',format='png')
    
 
-Making use of the possibility to provide a custom color map allows for using transparency when plotting. This is shown above where the cmap is created from the "coolwarm" base map and transparency is added as the fourth value taking values from 0 to 1, where 0 is fully transparent and 1 is solid. Playing around with the onset of transparency and the vmin/vmax limites allows the differentiation between signal and background for data sets with good signal to noice. 
+Making use of the possibility to provide a custom colour map allows for using transparency when plotting. This is shown above where the cmap is created from the "coolwarm" base map and transparency is added as the fourth value taking values from 0 to 1, where 0 is fully transparent and 1 is solid. Playing around with the onset of transparency and the vmin/vmax limits allows the differentiation between signal and background for data sets with good signal to noise. 
 
 .. figure:: ConstantEnergy3D.png
   :width: 50%

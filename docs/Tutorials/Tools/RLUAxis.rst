@@ -95,14 +95,14 @@ As to the data plotted in the axis. Plotting directly into the axis corresponds 
 
 
 
-The second example has a crystal with unit cell [9.843  9.843  9.843 90.    90.    90.], i.e. simple cubic, but the scattering plane is (hkk). Setting the limits to include all points from -2 to 2 in H and from -1 to 1 in K is shown in the code by providing the position vectors. The same result is obtaind by simply giving [-2,-1] and [2,1] to the method.
+The second example has a crystal with unit cell [9.843  9.843  9.843 90.    90.    90.], i.e. simple cubic, but the scattering plane is (hkk). Setting the limits to include all points from -2 to 2 in H and from -1 to 1 in K is shown in the code by providing the position vectors. The same result is obtained by simply giving [-2,-1] and [2,1] to the method.
 
 Technical details
 -----------------
 
-It was choosen to make use of the "GridHelperCurveLinear" despite the difficulties arrising from it as this allows for plotting in RLU coordinates without having to skew data. That is, it is possible to keep data as measured by the instrument (sort of circular) while still providing all information about the reciprocal space to the user. As mentioned, some calculations happen behind the scenes when dealing with this object; most of the in the sample object iteslf. Mathematically what happens is as follows:
+It was chosen to make use of the "GridHelperCurveLinear" despite the difficulties arising from it as this allows for plotting in RLU coordinates without having to skew data. That is, it is possible to keep data as measured by the instrument (sort of circular) while still providing all information about the reciprocal space to the user. As mentioned, some calculations happen behind the scenes when dealing with this object; most of the in the sample object itself. Mathematically what happens is as follows:
 
-The general relationship between measured points from the instrument, denoted :math:`(Q_x,Q_y,Q_z)` for the two inplane components along x and y, and the one out of plane, and the reciprocal lattice units HKL is given by the UB matrix
+The general relationship between measured points from the instrument, denoted :math:`(Q_x,Q_y,Q_z)` for the two in-plane components along x and y, and the one out of plane, and the reciprocal lattice units HKL is given by the UB matrix
 
 .. math::
 
@@ -120,15 +120,15 @@ As the measured space from the instrument side is 2D the points in terms of RLU 
 
     \begin{pmatrix}H\\K\\L\end{pmatrix} = P_M \cdot \begin{pmatrix}P_0\\P_1\end{pmatrix}
 
-Now remains finding the projection matrix :math:`P_M`, which is given as the 3x2 column matrix of them devided by the square of their lengths. Putting it all togehter results in:
+Now remains finding the projection matrix :math:`P_M`, which is given as the 3x2 column matrix of them divided by the square of their lengths. Putting it all together results in:
 
 .. math::
 
    \begin{pmatrix}Q_x\\Q_y\end{pmatrix}=P_{23}\cdot UB \cdot P_M \cdot \begin{pmatrix}P_0\\P_1\end{pmatrix}
 
-One further detail is that due to the way that the instrument positions, :math:`Q_x` and :math:`Q_y` are calculated, one needs to rotate this system with an angle corresponding to the "mis-alingment" of the orientation of the crystal. In reality this angle corresponds to the difference between the A3 zero offset and the one for which the first projection vector is along the x-axis.
+One further detail is that due to the way that the instrument positions, :math:`Q_x` and :math:`Q_y` are calculated, one needs to rotate this system with an angle corresponding to the "mis-alignment" of the orientation of the crystal. In reality this angle corresponds to the difference between the A3 zero offset and the one for which the first projection vector is along the x-axis.
 
-In the code, the matrix coupling :math:`Q_x` and :math:`Q_y` to :math:`P_0` and :math:`P_1` is called convert, while the inverse is denoted convertinv. To use these two matrices in the plotting through the "GridHelperCurveLinear" axis, two functions are defined "tr" and "inv_tr" taking projection values to :math:`Q_x` and :math:`Q_y` and reverse respectively. These are provided to the axis and does the calculation for the plotting. For enabeling the hover-over tool tip a function calculating :math:`Q_x` and :math:`Q_y` into HKL is created, being simply the matrix multiplication with inverse UB matrix. 
+In the code, the matrix coupling :math:`Q_x` and :math:`Q_y` to :math:`P_0` and :math:`P_1` is called convert, while the inverse is denoted convertinv. To use these two matrices in the plotting through the "GridHelperCurveLinear" axis, two functions are defined "tr" and "inv_tr" taking projection values to :math:`Q_x` and :math:`Q_y` and reverse respectively. These are provided to the axis and does the calculation for the plotting. For enabling the hover-over tool tip a function calculating :math:`Q_x` and :math:`Q_y` into HKL is created, being simply the matrix multiplication with inverse UB matrix. 
 
 Examples
 --------
@@ -151,7 +151,7 @@ The two projection vectors for the scattering plane HK0 is simply :math:`(1,0,0)
 
     \mathrm{convert} = \begin{pmatrix}1.187 & 0.594\\0.000 & -1.028\end{pmatrix}
 
-As seen, the transformation is non-orthogonal and thus results in the axis shown above. For the "mis-alingment" the rotation angle to correct is found to be -22.5 :math:`^{\mathrm{o}}`. That is, all of the data is rotated by -22.5 degrees before being plotted in the RLU axis.
+As seen, the transformation is non-orthogonal and thus results in the axis shown above. For the "mis-alignment" the rotation angle to correct is found to be -22.5 :math:`^{\mathrm{o}}`. That is, all of the data is rotated by -22.5 degrees before being plotted in the RLU axis.
 
 For the second example shown above, with the cartesian unit cell but the non-trivial scattering plane, the matrices are:
 

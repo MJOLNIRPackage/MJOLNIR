@@ -60,7 +60,7 @@ With the simple show casing of the plotCutQELine in the `Simple plotCutQELine <.
    plot = 0
    for energyID in EnergyIndexes:    
    
-   # Exctract corresponding line
+   # Extract corresponding line
    Counts = DataLists[segID][0][energyID]
    Monitor = DataLists[segID][1][energyID]
    Normalization = DataLists[2][segID][energyID]
@@ -106,9 +106,9 @@ Many different kwargs are possible for the cutting method and most of them shoul
 +----------------+---------------------------------------------------------------------------------+----------------+------+
 |    dataFiles   | List of converted data files to be used                                         | None           | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
-|      vmin      | Minimal value used for the color scale                                          | min(Intensity) | N/A  |
+|      vmin      | Minimal value used for the coluor scale                                         | min(Intensity) | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
-|      vmax      | Maximal value used for the color scale                                          | max(Intensity) | N/A  |
+|      vmax      | Maximal value used for the coluor scale                                         | max(Intensity) | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
 |       log      | If the logarithm to the intensity is to be plotted (+1e-20)                     | False          | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
@@ -134,7 +134,7 @@ Having created the plot as wanted, the natural next step is to look at the actua
 
 Each of these arrays has the length len(QPoints)-1, i.e. the number of cutting segments. Choosing one of these segments, the arrays are two dimensional with variable lengths. First axis is the energy index starting at lowest energy ending at the highest. In each of these arrays, the last dimension is along the :math:`\vec{Q}` direction starting closest to the left. The reason for variable lengths, depending on energy, is that each the method uses the _tools.binEdges method. This function tries to bin the provided values in an array with a minimal min size (further explained in `Tools tutorials <../Scripting.html#tools>`_). 
 
-Concerning the bins, the two arrays BinListTotal and centerPositionTotal are in similair in build-up as the data lists. Actually, the centerPositionTotal has the exact same dimensions as the data, while BinListTotal (containing the boundaries of the bins) is one longer in both the energy and binning along the :math:`\vec{Q}` cut direction. That both are available is due to the requirements of the plotting method pcolormesh. 
+Concerning the bins, the two arrays BinListTotal and centerPositionTotal are in similar in build-up as the data lists. Actually, the centerPositionTotal has the exact same dimensions as the data, while BinListTotal (containing the boundaries of the bins) is one longer in both the energy and binning along the :math:`\vec{Q}` cut direction. That both are available is due to the requirements of the plotting method pcolormesh. 
 
 As an example, the intensities as function of :math:`L` for the third segment at five different energies are plotted. 
 
@@ -142,4 +142,4 @@ As an example, the intensities as function of :math:`L` for the third segment at
   :width: 65%
   :align: center
 
-Each energy is shifted by 1 for clarity. As the intensity of the signal is a combination of many different aspects an overall factor of 1e5 is multiplied to it as to ensure that the numbers are in a reasonable range. In the data the instrumental in-focus and out-of-focus effects are visible as the peak at possitive :math:`L` are a lot sharper and narrower than the ones at negative :math:`L`. This is as expected from a standard measurement. 
+Each energy is shifted by 1 for clarity. As the intensity of the signal is a combination of many different aspects an overall factor of 1e5 is multiplied to it as to ensure that the numbers are in a reasonable range. In the data the instrumental in-focus and out-of-focus effects are visible as the peak at positive :math:`L` are a lot sharper and narrower than the ones at negative :math:`L`. This is as expected from a standard measurement. 

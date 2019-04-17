@@ -41,7 +41,7 @@ After one has gotten an overview of the data measured through the Viewer3D (expl
    fig2.savefig('figure1.png',format='png')
    
 
-The above code creates the two figures shown below. The difference between the two is that the former performs the creation of bins in polar coordinates. This means that the provided bint tolerences are to be understood as the angular and radial bin sizes respectively for x and y. If the rlu is set to true the unist are in projections along the in plane scattering vectors. Otherwise units are in 1/AA.
+The above code creates the two figures shown below. The difference between the two is that the former performs the creation of bins in polar coordinates. This means that the provided bin tolerances are to be understood as the angular and radial bin sizes respectively for x and y. If the rlu is set to true the units are in projections along the in plane scattering vectors. Otherwise units are in 1/AA.
 
 |pic1| |pic2|
 

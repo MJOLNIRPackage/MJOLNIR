@@ -6,7 +6,7 @@ Instead of creating an instrument from scratch every time in python, as explaine
    :language: xml 
    :linenos:
 
-One starts with the instrument and gives some informations. Next level is the wedge where position and concept is provided. For each wedge, one specifies the analysers with their positions,  direction of surface, dspacing, mosaicity, width and height, and afterwards the detectors. These are specified with position, direction along wich the tube extends, number of pixels, length and diameter of tube, how the pixels are split into segments (only applicable if concept "ManyToMany" is used).
+One starts with the instrument and gives some informations. Next level is the wedge where position and concept is provided. For each wedge, one specifies the analysers with their positions,  direction of surface, d-spacing, mosaicity, width and height, and afterwards the detectors. These are specified with position, direction along which the tube extends, number of pixels, length and diameter of tube, how the pixels are split into segments (only applicable if concept "ManyToMany" is used).
 
 .. code-block:: python
    :linenos:
@@ -59,7 +59,7 @@ One starts with the instrument and gives some informations. Next level is the we
    plt.savefig('figure2.png',format='png')
    
 
-Most of the above code is in reality only plotting commands for the instrument and the calcualted A4 and Ef values.
+Most of the above code is in reality only plotting commands for the instrument and the calculated A4 and Ef values.
 
 .. figure:: SimpleInstrument2.png
   :width: 50%
@@ -71,7 +71,7 @@ Instrument generated from XML file. Currently, the figure is rendered wrongly du
   :width: 50%
   :align: center
 
-Corresponding A4 values as calulcated from instrument. Here it is seen that the A4 values are energy dependent if one has radial detectors that are "non-optimally" placed with respect to the analyser. Only the central detector tube has the same A4 value independent of position.
+Corresponding A4 values as calculated from instrument. Here it is seen that the A4 values are energy dependent if one has radial detectors that are "non-optimally" placed with respect to the analyser. Only the central detector tube has the same A4 value independent of position.
  .. figure:: SimpleInstrument2_Ef.png
   :width: 50%
   :align: center

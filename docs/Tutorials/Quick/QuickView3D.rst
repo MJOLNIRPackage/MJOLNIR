@@ -30,8 +30,8 @@ For the initial overview of what has been measured and for viewing some features
    # coordinates (orthogonal and in units of 1/AA) by issuing rlu=False above.
    
    Viewer.caxis=(1e-7,2.5e-6)
-   # Without any intervention data is usualy plotted on a useless coler scale.
-   # This is countered by specifying min and max for color by the call above.
+   # Without any intervention data is usually plotted on a useless colour scale.
+   # This is countered by specifying min and max for colour by the call above.
    # Alternatively, one can provide this as input to View3D 
    
    # Set title of plot
