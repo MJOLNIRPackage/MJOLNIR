@@ -1090,13 +1090,13 @@ class DataSet(object):
             vmin = kwargs['vmin']
             kwargs = _tools.without_keys(dictionary=kwargs,keys='vmin')
         else:
-            vmin = np.min([np.nanmin(intensity) for intensity in Int])
+            vmin = np.min([np.nanmin(intens) for intens in Int])
 
         if 'vmax' in kwargs:
             vmax = kwargs['vmax']
             kwargs = _tools.without_keys(dictionary=kwargs,keys='vmax')
         else:
-            vmax = np.max([np.nanmax(intensity) for intensity in Int])
+            vmax = np.max([np.nanmax(intens) for intens in Int])
 
         if 'colorbar' in kwargs:
             colorbar = kwargs['colorbar']
@@ -1105,7 +1105,7 @@ class DataSet(object):
             colorbar = False
         pmeshs = []
         if log:
-            Int = [np.log10(1e-20+np.array(intensity)) for intensity in Int]
+            Int = [np.log10(1e-20+np.array(intens)) for intens in Int]
 
         for i in range(len(EBins)-1):
             if _3D:
@@ -3022,7 +3022,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         #@_tools.my_timer_N()
         #def genPatchesAndCollection(QRX,QRY,plotPlane):
         #patches = [Polygon(np.array([QRX[i][:,plotPlane],QRY[i][:,plotPlane]]).T) for i in range(len(QRX))]
-        patches = [Polygon(np.array([qrx[:,plotPlane],qry[i][:,plotPlane]]).T) for qrx,qry in zip(QRX,QRY)]
+        patches = [Polygon(np.array([qrx[:,plotPlane],qry[:,plotPlane]]).T) for qrx,qry in zip(QRX,QRY)]
         pcollection = PatchCollection(patches)
         #    return pcollection
 
