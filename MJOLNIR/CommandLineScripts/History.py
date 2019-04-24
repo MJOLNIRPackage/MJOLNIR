@@ -18,9 +18,8 @@ import sys
 import _tools
 settingsName = 'HistoryDir'
 
-sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
-
 from MJOLNIR.Data import DataFile
+from MJOLNIR.CommandLineScripts import _tools
 
 import warnings
 
