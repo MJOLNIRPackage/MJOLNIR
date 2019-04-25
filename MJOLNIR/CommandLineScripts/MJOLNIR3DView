@@ -49,9 +49,12 @@ if not 'DataFile' in args:
     
     root = tk.Tk()
     root.withdraw()
-    startingDir = '/'.join([x for x in list(startingPath)[0].split('/')[:-1]])
-    startingFiles = list(np.unique([x.split('/')[-1] for x in startingPath]))
-    
+    if not startingPath is None:
+        startingDir = '/'.join([x for x in list(startingPath)[0].split('/')[:-1]])
+        startingFiles = list(np.unique([x.split('/')[-1] for x in startingPath]))
+    else:
+        startingDir = None
+        startingFiles = None
     files = filedialog.askopenfilenames(initialdir=startingDir, initialfile=startingFiles, title = 'Select file(s) for conversion',filetypes=(('Data files',fileTypes),))#('All Files','*')))
     
     files = tuple(np.unique(files))
