@@ -1,16 +1,16 @@
-Normalization inspection
-========================
+Calibration inspection
+======================
 
 Inspection of the current normalization table used to convert the raw data measured into actual scattering intensities is of great importance. It holds the information of energy and A4 value of all of the individual pixels and does thus govern the convertion into reciprocal space. Furthermore, it contains the normalization needed to take care of detector sensitivity, space angle coverage, as well as analyser efficiency. Due to this vital role, it has been made possible to easily plot the contents of the calibration table.
 
-The script *CalibrationInspector.py* and it has the following help text::
+The script *MJOLNIRCalibrationInspector* and it has the following help text::
 
-    $ python CalibrationInspector.py -h
+    $ MJOLNIRCalibrationInspector -h
     usage: CalibrationInspector.py [-h] [-s SAVE] [-p [PLOTLIST [PLOTLIST ...]]]
                                    [-b BINNING]
                                    [DataFile]
 
-    Inspection tool to visialize calibration tables in a data file.
+    Inspection tool to visualize calibration tables in a data file.
 
     positional arguments:
       DataFile              Data file from which calibration table is to be
