@@ -25,82 +25,33 @@ import warnings
 
 
 
-parser = argparse.ArgumentParser(description="History tool for displaying files and command for all data files in folder.")
-parser.add_argument("-f", "--Folder", nargs ='?', default=argparse.SUPPRESS, type=str,help="Folder for history to be created. If none provided file dialogue will appear.")
+parser = argparse.ArgumentParser(description="History tool for displaying files and command for selected data files.")
+parser.add_argument("DataFile", nargs ='*', default=argparse.SUPPRESS, type=str,help="Data file(s) to be used. If none provided file dialogue will appear. Using string format, directory and year is also possible. See documentation.")
 parser.add_argument("-s", "--save", type=str, default= '',help="Location to which the generated history will be saved.")
+parser.add_argument("-r", "--reuse", action='store_true', help='Set flag to reuse files from previous usage. Default false.')
 
 args = parser.parse_args()
+files = _tools.extractDataFiles(args,settingsName)
+_tools.updateSetting(settingsName,files)
 
-
-if not 'Folder' in args:
-    startingPath = _tools.loadSetting(settingsName)
-
-    try:
-        import tkinter as tk
-        from tkinter import filedialog
-    except:
-        import Tkinter as tk
-        import tkFileDialog as filedialog
-    
-    root = tk.Tk()
-    root.withdraw()
-    
-    
-    directory = filedialog.askdirectory(initialdir=startingPath, title = 'Select folder for history generation')
-    
-    if len(directory)==0: # No file chosen
-        sys.exit()
-    
-    
-
-    _tools.updateSetting(settingsName,directory)
-
-
-else:
-    directory = args.Folder
-
-#
-#if not args.save is '':
-#    saveLocation = args.save
-#else:
-#    saveLocation = directory
-    
- 
-
-extensions = _tools.fileFormats
-onlyfiles = np.sort([f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and os.path.splitext(f)[-1] in extensions])
-
-def identicalPart(fileNames):
-    from difflib import SequenceMatcher
-    strings = np.array([x.split('.')[0] for x in fileNames]).copy()
-    
-    while(not np.all([strings[0]==x for x in strings])):
-        match = [SequenceMatcher(None, strings[0], x).find_longest_match(0, len(strings[0]), 0, len(x)) for x in strings]
-        strings = [strings[0][x.a: x.a + x.size] for x in match][::-1]
-    return strings[0],match[0]
-
-
-
-
-#string,lastMatch = identicalPart(onlyfiles)
-    
-completePaths = [directory+'/'+x for x in onlyfiles]
 
 returnText = ''
-#returnText +='Files, replacing {} with ^:\n'.format(string)
-for file in completePaths:
-    try:
-        f = DataFile.DataFile(file)
-    except:
-        returnText+=file.split('/')[-1]+' not correct format\n'
-    else:
-        returnText+=f.name+': '+f.scanCommand[0].decode()+'\t'+f.title[0].decode()+'\n'
 
 saveFile = args.save
 
-if saveFile == '':
-    print(returnText)
-else:
+for file in files:
+    try:
+        f = DataFile.DataFile(file)
+    except:
+        textLine = file.split('/')[-1]+' not correct format\n'
+        returnText+= textLine
+    else:
+        textLine = f.name+': '+f.scanCommand[0].decode()+'\t'+f.title[0].decode()+'\n'
+        returnText+=textLine
+    print(textLine[:-1]) # Print string excluding the added new line character. 
+
+
+if saveFile != '':
     if saveFile.split('.')[-1]!='txt':
         saveFile+='.txt'
     if os.path.isfile(saveFile):
@@ -110,9 +61,3 @@ else:
     with open(saveFile,'w') as f:
         f.write(returnText)
             
-
-
-
-
-
-
