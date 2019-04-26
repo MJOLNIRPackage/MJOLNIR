@@ -38,54 +38,7 @@ parser.add_argument("-m", "--VMin", type=float, default=None, help='Minimal valu
 
 args = parser.parse_args()
 
-fileTypes = _tools.fileFormats
-
-reuse = args.reuse
-
-if not 'DataFile' in args:
-    startingPath = _tools.loadSetting(settingsName)
-
-    if not startingPath is None:
-        startingDir = '/'.join([x for x in list(startingPath)[0].split('/')[:-1]])
-    else:
-        startingDir = None
-    
-    if reuse:
-        files = startingPath
-    else:
-        try:
-            import tkinter as tk
-            from tkinter import filedialog
-        except:
-            import Tkinter as tk
-            import tkFileDialog as filedialog
-        
-        root = tk.Tk()
-        root.withdraw()
-        files = filedialog.askopenfilenames(initialdir=startingDir, title = 'Select file(s) for conversion',filetypes=(('Data files',fileTypes),))#('All Files','*')))
-
-    files = tuple(np.unique(files))
-    if len(files)==0: # No file chosen
-        sys.exit()
-
-    directory = os.path.split(files[0])[0]
-
-
-else:
-    pattern = re.compile(r'^(\d+[-,]?){1,}\d') # Generate pattern to recognize format: Start with digits, and then - or . or nothing repeated at least once, and ending in digit.
-    res = pattern.match(args.DataFile[0])
-    if not res is None:
-        if res.start()==0 and res.end() == len(args.DataFile[0]): # Correct expression is given
-            if len(args.DataFile) == 3: # Provided is string, directory and year
-                fileNumbers, directory, year = args.DataFile
-                year = int(year)
-                files = MJOLNIR._tools.fileListGenerator(fileNumbers,directory,year)
-            elif len(args.DataFile) == 4:
-                raise NotImplementedError('Using non-CAMEA input is currently not supported... sorry :-/ ')
-            else:
-                raise AttributeError('Provided data file arguments does not fit the scheme of being number list, directory, and year! (+ possibly instrument)')
-    else:
-        files = args.DataFile
+files = _tools.extractDataFiles(args,settingsName)
 
 _tools.updateSetting(settingsName,files)
 binning = args.binning
@@ -93,7 +46,7 @@ dQxdQydE = args.dQxdQydE
 
 files = list(files)
 
-dataSet = DataSet.DataSet(files.copy())
+dataSet = DataSet.DataSet(np.array(files).copy())
 dataSet.convertDataFile(binning=binning,saveFile=False)
 dQx, dQy, dE = dQxdQydE
 V = dataSet.View3D(dQx=dQx,dQy=dQy,dE=dE,grid=-20,rlu=True)
