@@ -53,9 +53,10 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
         This is to be done in the self.View3D method call!
 
     .. note::
-        The number of ticks and their location cannot be changed after the initiation of the axis due to current stage of experimental development
-        of the GridHelperCurveLinear object. Provide either nbinsy, (nbinsx,nbinsy), basex, or (basex,basey). If none is provided 0.25 is used as base 
-        in both directions.
+        When using python 2 the changing of tick marks is not supported due to limitations in matplotlib. However, if python 3 is used, the number 
+        of ticks and their location can be change after the initialization using the set_xticks_number, set_yticks_number chaning the wanted number 
+        of tick marks, or the set_xticks_base or set_yticks_base to change the base number, see RLU tutorial under Tools. As default a sufficient base
+        number is found and will update when zooming.
         
     """
 
