@@ -21,6 +21,7 @@ Below is an overview of currently implemented scripts and their arguments.
 .. toctree::
    :maxdepth: 1
 
+   Commandline/MJOLNIRHistory
    Commandline/MJOLNIRCalibrationInspector
    Commandline/MJOLNIRConvert
    Commandline/MJOLNIR3DView
