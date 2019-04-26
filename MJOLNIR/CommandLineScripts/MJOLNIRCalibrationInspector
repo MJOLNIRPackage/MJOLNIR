@@ -45,33 +45,6 @@ parser.add_argument("-b", "--binning", type=int, default= '8',help="Binning to b
 
 args = parser.parse_args()
 
-if False:
-    if not 'DataFile' in args:
-        startingPath = _tools.loadSetting(settingsName)
-        
-
-        try:
-            import tkinter as tk
-            from tkinter import filedialog
-        except:
-            import Tkinter as tk
-            import tkFileDialog as filedialog
-        
-        root = tk.Tk()
-        root.withdraw()
-        
-        
-        file = filedialog.askopenfilename(initialdir=startingPath, title = 'Select file for calibration plotting',filetypes=(('Data files',_tools.fileFormats),))# TODO: ,('Calibration Files','*.calib'),('All Files','*')))
-        
-        if len(file)==0: # No file chosen
-            sys.exit()
-        directory = os.path.split(file)[0]
-        _tools.updateSetting(settingsName,directory)
-
-
-
-    else:
-        file = args.DataFile    
 file = _tools.extractDataFiles(args,settingsName,oneFile=True)[0]
 
 directory = os.path.split(file)[0]
