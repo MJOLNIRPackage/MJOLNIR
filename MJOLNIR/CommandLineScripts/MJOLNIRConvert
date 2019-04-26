@@ -23,7 +23,7 @@ from MJOLNIR.Data import DataSet
 
 
 parser = argparse.ArgumentParser(description="Conversion tool for converting output h5 files to nxs files.")
-parser.add_argument("DataFile", nargs ='?', default=argparse.SUPPRESS, type=str,help="Data file to convert. If none provided file dialogue will appear.")
+parser.add_argument("DataFile", nargs ='*', default=argparse.SUPPRESS, type=str,help="Data file(s) to be used. If none provided file dialogue will appear. Using string format, directory and year is also possible. See documentation.")
 parser.add_argument("-s", "--save", type=str, default= '',help="Location to which the generated file will be saved.")
 parser.add_argument("-b", "--binning", type=int, default= '8',help="Binning performed. Default '8'")
 parser.add_argument("-r", "--reuse", action='store_true', help='Set flag to reuse files from previous usage. Default false.')
