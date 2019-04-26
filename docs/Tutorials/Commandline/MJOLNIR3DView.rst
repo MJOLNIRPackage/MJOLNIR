@@ -39,12 +39,10 @@ Number formatting
 ^^^^^^^^^^^^^^^^^
 
 Specifying a complete data path for each individual file is at best annoying, thus one can use the shorter way of specifying the data files numbers, their folder, and the year they were taking. Later on also 
-multiple instruments are supposed to be supported. The directory and year are believed to be self-explanatory, but the number string has the format as:
+multiple instruments are supposed to be supported. The directory and year are believed to be self-explanatory, but the number string has the format as::
 
     numberString1 = '10-12,234,223,24-30'
-
     numberString2 = '10,11,12,13' 
-    
     numberString3 = '10-13' 
 
 That is, one can specify single files, ranges of files, or a combination separated with commas. In the above example *numberString2* and *numberString3* are equivalent.
