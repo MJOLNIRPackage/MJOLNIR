@@ -13,6 +13,8 @@ convertedFileFormats = ' '.join([x for x in ['*.nxs']])
 fileFormats = ' '.join([x for x in [rawFileFormats,convertedFileFormats]])
 
 
+fileTypes = (('Data files',fileFormats),('Raw files',rawFileFormats),('Converted files',convertedFileFormats))
+
 
 def loadSetting(string):
     if Exists():
@@ -68,9 +70,9 @@ def extractDataFiles(args,settingsName,oneFile = False):
             root = tk.Tk()
             root.withdraw()
             if oneFile:
-                files = filedialog.askopenfilename(initialdir=startingDir, title = 'Select file',filetypes=(('Data files',fileFormats),))#('All Files','*')))
+                files = filedialog.askopenfilename(initialdir=startingDir, title = 'Select file',filetypes=fileTypes)
             else:
-                files = filedialog.askopenfilenames(initialdir=startingDir, title = 'Select file(s)',filetypes=(('Data files',fileFormats),))#('All Files','*')))
+                files = filedialog.askopenfilenames(initialdir=startingDir, title = 'Select file(s)',filetypes=fileTypes)
 
         files = tuple(np.unique(files))
         if len(list(files))==0: # No file chosen
