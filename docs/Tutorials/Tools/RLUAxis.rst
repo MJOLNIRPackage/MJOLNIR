@@ -79,7 +79,7 @@ This axis is created to easily plot data in RLU for all crystals in the scatteri
 
 The first example in the code above takes a data set measured on a crystal with unit cell [6.11  6.11  11.35  90.    90.   120.], that is, the crystal is hexagonal and is placed in the hk0 scattering plane. Behind the scene, data plotted in the axis is assumed to be in the :math:`Q_x`, :math:`Q_y` coordinate system rotated such that the first projection vector is along the x-axis (in this case (h,0,0). The data is then first converted into reciprocal space (HKL) and then into the projected in the scattering plane. This might seem like swatting flies with a sledge hammer, however, this allows for enough abstraction as to allow all cases to be plotted.
 
-As the axis object makes use of the non-standard "GridHelperCurveLinear" many features regarding the tick marks and setting limits are not working. A custom function has been generated to set the limits of the shown graph called "set_limits". It takes at least two vectors in either HKL or projection along principal directions and assures that these are visible. Multiple vectors can be provided and it is then assured that all vector positions are visible. An example is shown in line 22 where it is assured that [-1,-1.5,0] and [2.0,1.0,0] are both visible. In this case, providing the vectors [-1,-1.5] and [2,1] is sufficient as the projections are simply [1,0,0] and [0,1,0]. 
+As the axis object makes use of the non-standard "GridHelperCurveLinear" many features regarding the tick marks and setting limits are not working, but see section below for dicussion. A custom function has been generated to set the limits of the shown graph called "set_limits". It takes at least two vectors in either HKL or projection along principal directions and assures that these are visible. Multiple vectors can be provided and it is then assured that all vector positions are visible. An example is shown in line 22 where it is assured that [-1,-1.5,0] and [2.0,1.0,0] are both visible. In this case, providing the vectors [-1,-1.5] and [2,1] is sufficient as the projections are simply [1,0,0] and [0,1,0]. 
 
 .. figure:: RLUAxis.png
   :width: 50%
@@ -162,3 +162,14 @@ For the second example shown above, with the cartesian unit cell but the non-tri
     \mathrm{convert} &= \begin{pmatrix}0.638 & -0.000\\-0.000 & -0.903\end{pmatrix}
 
 Here it is clear that the convert matrix is not necessarily simple to find from the RLU matrix.
+
+Tick marks
+----------
+
+The discussion of the location of the tick marks is quite long and deserves a section of it's own. It all revolves about the usage of the curve linear axis, which is provided as an experimental/development feature in the *matplotlib* package. This in change then introduces some difficulties with the compability of the code with both python 2 and 3 as some calls are only supported with python 3. Thus to keep the compability of MJOLNIR to both versions, the customization of tick locations and number is only used for python versions 3. 
+
+ Codewise, what is done is to create two subclasses of the *mticker.MultipleLocator* and the *mticker.MaxLocator* classes designed to calculate the positions of tick marks using two different methods. The *MaxLocator* expects a integer input signifying the maximal number of ticks along the given axis, which are chosen at 'suitable' positions and will update with zooming and panning. 
+ 
+ The *MultipleLocator* is designed to place tick marks at multiples of a given value. That is, if the base is 0.1, tick marks are located at all integer multiples of 0.1 inside of the viewable area. For static or panning, this solution is suitable and sufficient, but allowing the user to zoom requires the class to be more complex. In order to find a suitable base value, the class finds the window limits and given a wanted number of tick marks it finds the average wanted distance between the marks. As to be scale invariant this number is mapped to a value between 0.1 and 1, where it is compared to a predefined list of allowed fractions (1/1,1/2,1/3,1/4,1/5) where the closest is used.
+
+ With the new tick marks found, a hook is created to overview the panning and zooming of the axis and force an update of the drawing of tick marks. 
