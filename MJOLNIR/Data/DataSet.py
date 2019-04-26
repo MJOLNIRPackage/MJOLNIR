@@ -29,6 +29,7 @@ from shapely.vectorized import contains
 import time
 import warnings
 
+pythonVersion = sys.version_info[0]
 
 
 class DataSet(object):
@@ -4292,12 +4293,12 @@ def test_DataSet_full_test():
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
     viewer = dataset.View3D(0.08,0.08,0.25)
     
+    if pythonVersion == 3: # Only possible in python 3
+        viewer.ax.set_xticks_number(5)
+        viewer.ax.set_yticks_number(10)
 
-    viewer.ax.set_xticks_number(5)
-    viewer.ax.set_yticks_number(10)
-
-    viewer.ax.set_xticks_base(0.5)
-    viewer.ax.set_yticks_base(0.5)
+        viewer.ax.set_xticks_base(0.5)
+        viewer.ax.set_yticks_base(0.5)
 
     viewer.setProjection(0)
     viewer.setPlane(4)
@@ -4550,14 +4551,15 @@ def test_DataSet_createRLUAxes():
     ax = ds.createRLUAxes(basex=0.5,figure=fig)
     ax = ds.createRLUAxes(basey=0.5)
 
-    ax.set_xticks_number(5)
-    ax.set_yticks_number(8)
+    if pythonVersion == 3: # Only possible in python 3
+        ax.set_xticks_number(5)
+        ax.set_yticks_number(8)
 
-    ax.set_xticks_base(0.2)
-    ax.set_yticks_base(0.5)
+        ax.set_xticks_base(0.2)
+        ax.set_yticks_base(0.5)
 
-    ax.set_xticks_number(5)
-    ax.set_yticks_number(8)
+        ax.set_xticks_number(5)
+        ax.set_yticks_number(8)
 
     V1,V2,V3 = [2,0,0],[-2,3,0],[2,-3,0]
     ax.set_axis(V1,V2)
