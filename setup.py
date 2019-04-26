@@ -17,7 +17,7 @@ pythonPath = 'lib/python{}.{}/site-packages/MJOLNIR/'.format(*sys.version_info[:
 setup(
     name='MJOLNIR',
 
-    version='1.1.0',
+    version='1.1.1',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
