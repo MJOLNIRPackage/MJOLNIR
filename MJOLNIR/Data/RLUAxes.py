@@ -136,7 +136,8 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
         boundaries = np.array([ax.sample.inv_tr(x[0],x[1]) for x in points])
         ax.set_xlim(boundaries[:,0].min(),boundaries[:,0].max())
         ax.set_ylim(boundaries[:,1].min(),boundaries[:,1].max())
-        ax.forceGridUpdate()
+        if pythonVersion == 3: # Only possible in python 3
+            ax.forceGridUpdate()
 
 
     fig.add_subplot(ax)
