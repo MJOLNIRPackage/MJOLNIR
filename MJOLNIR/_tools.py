@@ -265,20 +265,22 @@ def binEdges(values,tolerance,startPoint=None,endPoint=None):
 def without_keys(dictionary, keys): # Remove key word argument from kwargs
     return {x: dictionary[x] for x in dictionary if x not in keys}
 
-def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hdf'):
+def fileListGenerator(numberString,folder,year=2018, format = None, instrument = 'CAMEA'):
     """Function to generate list of data files.
     
     Args:
         
-        - numberString (str): List if numbers seperated with comma and dashes for sequences.
+        - numberString (str): List if numbers separated with comma and dashes for sequences.
         
         - folder (str): Folder of wanted data files.
         
-        - year (int): Year if wanted data files
-        
     Kwargs:
-        
-        - format (str): format of data files (default '{:}camea{:d}n{:06d}.hdf')
+
+        - year (int): Year of wanted data files (default 2018)
+
+        - format (str): format of data files (default None, but CAMEA if instrument is provided)
+
+        - instrument (str): Instrument to be used to determine format string (default CAMEA)
         
     returns:
         
@@ -296,6 +298,15 @@ def fileListGenerator(numberString,folder,year, format = '{:}camea{:d}n{:06d}.hd
         
     splits = numberString.split(',')
     dataFiles = []
+    if format is None: # If no user specified format is provided
+        if instrument == 'CAMEA':
+            format = '{:}camea{:d}n{:06d}.hdf'
+        elif instrument == 'MultiFLEXX':
+            format = '{0:}{2:06d}'
+        else:
+            raise AttributeError('Provided instrument "{}" not understood'.format(instrument))
+
+
     for sp in splits:
         isRange = sp.find('-')!=-1
         
