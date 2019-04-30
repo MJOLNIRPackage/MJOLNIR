@@ -4991,3 +4991,12 @@ def test_DataSet_OxfordList():
 
     assert(OxfordList([]) is None)
     assert(OxfordList(['Apples'])=='Apples')
+
+
+def test_DataSet_MultiFLEXX():
+    fileLocation = _tools.fileListGenerator('65059',folder='/home/lass/Dropbox/PhD/Software/MJOLNIR/Data/',instrument='MultiFLEXX')
+
+    ds = DataSet(fileLocation)
+    ds.convertDataFile(saveFile = False)
+
+    V = ds.View3D(0.05,0.05,0.5,grid=True)

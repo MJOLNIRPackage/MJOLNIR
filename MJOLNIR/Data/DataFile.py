@@ -15,8 +15,13 @@ from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
 import MJOLNIR.Data.Sample
+import re
 
+multiFLEXXDetectors = 31*5
+reFloat = r'-?\d*\.\d*'
 factorsqrtEK = 0.694692
+supportedRawFormats = ['hdf','MultiFLEXX']
+supportedConvertedFormats = ['nxs']
 
 def cosd(x):
     return np.cos(np.deg2rad(x))
@@ -38,91 +43,100 @@ class DataFile(object):
         
             elif fileLocation.split('.')[-1]=='hdf':
 	            self.type='hdf'
+            elif os.path.splitext(fileLocation)[1]=='': # No extension
+                self.type = 'MultiFLEXX'
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
             self.name = fileLocation.split('/')[-1]
             self.fileLocation = os.path.abspath(fileLocation)		
 			
-            with hdf.File(fileLocation) as f:
-			
-                sample=f.get('/entry/sample')
-                self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
-                instr = getInstrument(f)
-                if self.type == 'hdf':
-                    self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
-                else:
-                    self.I=Marray(f.get('entry/data/intensity'))
-                    self.counts = Marray(instr.get('detector/counts')).swapaxes(1,2)
-                    self.qx=Marray(f.get('entry/data/qx'))
-                    self.qy=Marray(f.get('entry/data/qy'))
-                    self.h=Marray(f.get('entry/data/h'))
-                    self.k=Marray(f.get('entry/data/k'))
-                    self.l=Marray(f.get('entry/data/l'))
-                    self.energy=Marray(f.get('entry/data/en'))
-                    self.Norm=Marray(f.get('entry/data/normalization'))
-                self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
-                self.MonitorPreset=np.array(f.get('entry/control/preset'))                
-                if self.type == 'hdf':
-                    self.Monitor = Marray(f.get('entry/control/data'))
-                    if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
-                        if self.Monitor.flatten()[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
-                            self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
-                else:
-                    self.Monitor=Marray(f.get('entry/data/monitor'))
-                self.Time = np.array(f.get('entry/control/time'))
+            if not self.type == 'MultiFLEXX':
+                with hdf.File(fileLocation) as f:
+                    sample=f.get('/entry/sample')
+                    self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
+                    instr = getInstrument(f)
+                    if self.type == 'hdf':
+                        self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
+                    else:
+                        self.I=Marray(f.get('entry/data/intensity'))
+                        self.counts = Marray(instr.get('detector/counts')).swapaxes(1,2)
+                        self.qx=Marray(f.get('entry/data/qx'))
+                        self.qy=Marray(f.get('entry/data/qy'))
+                        self.h=Marray(f.get('entry/data/h'))
+                        self.k=Marray(f.get('entry/data/k'))
+                        self.l=Marray(f.get('entry/data/l'))
+                        self.energy=Marray(f.get('entry/data/en'))
+                        self.Norm=Marray(f.get('entry/data/normalization'))
+                    self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
+                    self.MonitorPreset=np.array(f.get('entry/control/preset'))                
+                    if self.type == 'hdf':
+                        self.Monitor = Marray(f.get('entry/control/data'))
+                        if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
+                            if self.Monitor.flatten()[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
+                                self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
+                    else:
+                        self.Monitor=Marray(f.get('entry/data/monitor'))
+                    self.Time = np.array(f.get('entry/control/time'))
 
-                instr = getInstrument(f)
-                self.instrument = instr.name.split('/')[-1]
-                self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                self.Ei = Marray(instr.get('monochromator/energy'))
-                self.A3 = Marray(f.get('entry/sample/rotation_angle'))
-                self.A4 = Marray(instr.get('analyzer/polar_angle')).reshape(-1)
-                try:
-                    self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))  
-                except:
-                    self.A3Off = [0.0]
-                self.A4Off = Marray(instr.get('analyzer/polar_angle_offset'))
-                if self.type == 'hdf':
-                    self.binning=1 # Choose standard binning 1
-                else:
-                    self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
-                calibrations = []
-                for binning in self.possibleBinnings:
-                    Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
-                    width = np.array(instr.get('calib{}/width'.format(str(binning))))
-                    bg = np.array(instr.get('calib{}/background'.format(str(binning))))
-                    amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
-                    EfTable = np.array([amp,Ef,width,bg]).T
-                    A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
-                    bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
-                    calibrations.append([EfTable,A4,bound])
-                self.instrumentCalibrations = np.array(calibrations)
-                self.loadBinning(self.binning)
-                
-                self.temperature = np.array(sample.get('temperature'))
-                self.magneticField = np.array(sample.get('magnetic_field'))
-                self.electricField = np.array(sample.get('electric_field'))
-                self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
-                self.scanCommand = np.array(f.get('entry/scancommand'))
-                if self.type == 'nxs':
-                    self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
-                self.title = np.array(f.get('entry/title'))
-
-                try:
+                    instr = getInstrument(f)
+                    self.instrument = instr.name.split('/')[-1]
+                    self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
+                    self.Ei = Marray(instr.get('monochromator/energy'))
+                    self.A3 = Marray(f.get('entry/sample/rotation_angle'))
+                    self.A4 = Marray(instr.get('analyzer/polar_angle')).reshape(-1)
+                    try:
+                        self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))  
+                    except:
+                        self.A3Off = [0.0]
+                    self.A4Off = Marray(instr.get('analyzer/polar_angle_offset'))
+                    if self.type == 'hdf':
+                        self.binning=1 # Choose standard binning 1
+                    else:
+                        self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
+                    calibrations = []
+                    for binning in self.possibleBinnings:
+                        Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
+                        width = np.array(instr.get('calib{}/width'.format(str(binning))))
+                        bg = np.array(instr.get('calib{}/background'.format(str(binning))))
+                        amp = np.array(instr.get('calib{}/amplitude'.format(str(binning))))
+                        EfTable = np.array([amp,Ef,width,bg]).T
+                        A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
+                        bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
+                        calibrations.append([EfTable,A4,bound])
+                    self.instrumentCalibrations = np.array(calibrations)
+                    self.loadBinning(self.binning)
+                    
+                    self.temperature = np.array(sample.get('temperature'))
+                    self.magneticField = np.array(sample.get('magnetic_field'))
+                    self.electricField = np.array(sample.get('electric_field'))
                     self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
-                except:
-                    pass
+                    self.scanCommand = np.array(f.get('entry/scancommand'))
+                    if self.type == 'nxs':
+                        self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
+                    self.title = np.array(f.get('entry/title'))
 
-                if self.type == 'hdf':
-                    ###################
-                    #self.I[:,:,:150]=0#
-                    ###################
-                    pass
+                    try:
+                        self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
+                    except:
+                        pass
+
+                    if self.type == 'hdf':
+                        ###################
+                        #self.I[:,:,:150]=0#
+                        ###################
+                        pass
+            else: # type is multiFLEXX
+                self.loadMultiFLEXXData(fileLocation)
                 
             for key in ['magneticField','temperature','electricField']:
-                if self.__dict__[key].dtype ==object: # Is np nan object
+                try:
+                    self.__dict__[key].dtype
+                except:
                     self.__dict__[key] = None
-        else:
+                else:
+                    if self.__dict__[key].dtype ==object: # Is np nan object
+                        self.__dict__[key] = None
+        else: # Create an empty data set
             pass
         
 
@@ -233,11 +247,225 @@ class DataFile(object):
         return s in self.__dict__.keys()
 
     @_tools.KwargChecker()
-    def convert(self,binning):
+    def loadMultiFLEXXData(self,fileLocation,calibrationFile=None):
+        """"Dedicated loader for MultiFLEXX data.
+
+        Args:
+
+            - fileLocation (str): Location of file
+
+        Kwargs:
+
+            - calibrationFile (str): Location of calibration file (default None: uses shipped calibration)
+
+        """
+        
+        
+        
+        if calibrationFile is None: # Use shipped calibration
+            this_dir, _ = os.path.split(__file__)
+            calibrationFile = os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))
+
+        with open(fileLocation) as f:
+            dataString = f.readlines()
+        
+        ## Find data format (number of saved labels)
+        dataString = ''.join([line for line in dataString])
+        startOfData = re.compile(r'\s*PNT\s+(\w{2,}\s+){1,}\d')
+        
+        startIter = startOfData.finditer(dataString)
+        startPosition = []
+        endPosition = []
+        for sI in startIter:
+            startPosition.append(sI.start())
+            endPosition.append(sI.end())
+        if len(startPosition)>1:
+            raise RuntimeError('Provided datafile ({}) has multiple initial data positions...'.format(fileLocation))
+        else:
+            startPosition = startPosition[0]
+            endPosition = endPosition[0]
+        
+        
+        ## Extract scan command
+        
+        scanPattern = re.compile(r'COMND:\s\w+\s*(\w+\s+-?\d*\.?\d*){1,}\s*(D\w+\s+-?\d*\.?\d*){1,}\s*NP\s(\d+)\s+MN\s+(\d+)')
+        scanIter = scanPattern.finditer(dataString)
+        
+        scanParam = []
+        startParam = []
+        stepParam = []
+        
+        sI = next(scanIter)
+        
+        self.scanCommand = np.array(sI.group().split(':')[1][1:])
+        
+        parameters = int((len(sI.groups())-2)/2)
+        for x in sI.groups()[:parameters]: # Run over scan parameter
+            scanParam.append(x.split()[0])
+            startParam.append(float(x.split()[1]))
+        for i,x in enumerate(sI.groups()[parameters:parameters*2]):
+            if not x.split()[0][1:] == scanParam[i]:
+                raise RuntimeError('Scan command not correctly formated, recieved "{}"'.format(dataString[sI.start():sI.end()]))
+            stepParam.append(float(x.split()[1]))
+        steps = int(sI.groups()[-2])
+        self.scanParameters = np.array(scanParam)
+        scanUnits = []
+        scanValues = []
+        for i,param in enumerate(self.scanParameters):
+            scanValues.append(np.arange(steps)*stepParam[i]+startParam[i])
+            if param.lower() in ['a3','a4']:
+                unit= 'degree'
+            elif param.lower() == 'ei':
+                unit = 'meV'
+            else:
+                unit = 'unknown'
+            scanUnits.append(unit)
+        
+        self.scanUnits = np.array(scanUnits)
+        self.scanValues = np.array(scanValues)
+        self.MonitorPreset = np.array((sI.groups()[-1]),dtype=int)
+        
+        labelString = dataString[startPosition:endPosition-1]
+        
+        labels = labelString.strip().split()[1:] # Remove PNT list
+        
+        ### Find all header info
+        ## Find Energy info
+        
+        KIPattern = re.compile(r'PARAM:\s*(FX=\s*\d*.?\d*),\s*(KFIX=\s*'+reFloat+')')
+        FX,KI = [float(x.split('=')[1]) for x in KIPattern.findall(dataString)[0]]
+        
+        energyPattern = re.compile(r'POSQE:'+4*('(\s*\w\w=\s*'+reFloat+'),?\s*'))
+        EITrue = float(energyPattern.findall(dataString)[0][3].split('=')[1])
+                    
+        EI = np.power(KI/0.694692,2)
+        
+        if np.isclose(FX,1.0): # If FX == 1 subtract, otherwise add
+            self.Ei = Marray(EI-EITrue)
+        else:
+            self.Ei = Marray(EI+EITrue)
+        
+        self.name = os.path.split(fileLocation)[1]
+        self.title = np.array(re.compile(r'TITLE:\s(.*)\n').findall(dataString)[0])
+        self.instrument = re.compile(r'INSTR:\s(.*)\n').findall(dataString)[0]
+        
+        self.TT,self.magneticField = [np.array(x.split('=')[1],dtype=float) for x in re.compile(r'PARAM:\s*(TT=\s*'+reFloat+').*(MAG=\s*'+reFloat+')').findall(dataString)[0]]
+        
+        zerosPattern = re.compile('ZEROS:\s*'+4*('(A\d\s*=\s*'+reFloat+'),?\s*'))
+        zeroMatch = zerosPattern.findall(dataString)[0]
+        
+        for variableValue in zeroMatch:
+            variable,value = variableValue.split('=')
+            variable = ''.join([variable.strip(),'Off'])
+            setattr(self,variable,np.array(value,dtype=float))
+        
+        ### Actual data in steps (parameters  might be overwritten but this is intended)
+        
+        ## Find step values
+        stepPattern = re.compile(r'(\s+-?\d+\.\d*){'+str(len(labels))+r'}\s*flat')
+        stepIter = stepPattern.finditer(dataString)
+        stepData = np.zeros((steps,len(labels)))
+        
+        for i,sI in enumerate(stepIter):
+            stepData[i] = [float(x) for x in dataString[sI.start():sI.end()-5].split()]
+            
+        for attributeNumber,attribute in enumerate(labels):
+            setattr(self,attribute,Marray(stepData[:,attributeNumber]))
+            if attribute.lower() == 'en':
+                self.__dict__[attribute] = Marray(self.Ei-self.__dict__[attribute])
+        
+        # Extract intensity data
+        
+        dataPattern = re.compile(r'(\s+\d+){'+str(multiFLEXXDetectors+5)+r'}\s*endflat')
+        dataIter = dataPattern.finditer(dataString)
+        
+        data = np.zeros((steps,multiFLEXXDetectors),dtype=int)
+        for dataIndex,dI in enumerate(dataIter):
+            start,stop = dI.span()
+            data[dataIndex] = np.array([int(x) for x in dataString[start:stop-len('endflat')].split()])[:multiFLEXXDetectors]
+        
+        # Find sample info
+        sample = dict() # Dictionary to unpack in sample creation
+        samplePattern = re.compile(r'PARAM:'+3*'(\s*[ABC]\w=\s*-?\d*\.\d*),?')
+        sampleIter = samplePattern.finditer(dataString)
+        
+        # Format is [a,b,c], [alpha,beta,gamma], [projection vector 1], [projection vector 2]
+        formater = [['a','b','c'],['alpha','beta','gamma'],['projectionVector1'],['projectionVector2']]
+        for i,sI in enumerate(sampleIter):
+            if i<2:
+                for parameterId,parameter in enumerate(formater[i]):
+                    sample[parameter] = float(sI.groups()[parameterId].split('=')[1])
+            else:
+                sample[formater[i][0]] = np.array([float(x.split('=')[1]) for x in sI.groups()])
+        
+        ## Convert names to fit with MJOLNIR
+        def renameAttribute(obj,oldName,newName,castType=None):
+            if not hasattr(obj,oldName):
+                raise AttributeError('Object does not have attribute "{}"'.format(oldName))
+            if hasattr(obj,newName):
+                raise AttributeError('The new attribute name already exists! ({})'.format(newName))
+        
+            if not castType is None:
+                setattr(obj,newName, castType(getattr(obj,oldName)))
+            else:
+                setattr(obj,newName, getattr(obj,oldName))
+            delattr(obj,oldName)
+        
+        renameAttribute(self,'TT','temperature',castType=np.array)
+        renameAttribute(self,'M1','Monitor',castType=Marray)
+        renameAttribute(self,'TIME','Time',castType=np.array)
+        
+        self.I = Marray(data.reshape(-1,multiFLEXXDetectors,1))
+        
+        ## Standard values
+        self.A4Off = np.array([0.0]) # Offset in data file is already changed in data
+        delattr(self,'M2')
+        self.fileLocation = fileLocation
+        self.possibleBinnings = np.array([1])
+        self.MonitorMode = 'm'
+        self.binning = 1
+        self.type = 'MultiFLEXX'
+        self.electricField = None
+        if np.isclose(np.sum(np.diff(self.A4)),0.0): # TODO: Fix this! Cannot assume that A4 is always stationary
+            self.A4 = np.array([self.A4[0]])
+        else:
+            self.A4 = np.array([self.A4[0]])
+        
+        self.A3Off = [90] # This is not understood why but needs to be 90 degrees for MultiFLEXX data...
+        
+        sample['name']= str(self.title)
+        
+        self.sample = MJOLNIR.Data.Sample.Sample(**sample)
+        
+        
+        calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
+        amplitude = calibrationData[:,3]
+        background = calibrationData[:,6] 
+        bound = calibrationData[:,7:9]
+        final_energy = calibrationData[:,4]
+        width = calibrationData[:,5]
+        A4 = -calibrationData[:,9]
+        
+        EfTable = np.array([amplitude,final_energy,width,background]).T
+        calibrations=[[EfTable,A4,bound]]
+        bound =  np.array(multiFLEXXDetectors*[0,1],dtype=int)
+        
+        self.instrumentCalibrationEdges = bound
+        self.instrumentCalibrationEf = EfTable
+        self.instrumentCalibrationA4 = A4
+        
+        self.instrumentCalibrations = calibrations
+        
+    @_tools.KwargChecker()
+    def convert(self,binning=None):
         if self.instrument == 'CAMEA':
             EPrDetector = 8 
-        elif self.instrument in ['MULTIFLEXX','FLATCONE']:
+            if binning is None:
+                binning = 8
+        elif self.instrument in ['FLEXX','FLATCONE']:
             EPrDetector = 1
+            if binning is None:
+                binning = 1
         else:
             raise AttributeError('Instrument type of data file not understood. {} was given.'.format(self.instrument))
         
@@ -252,7 +480,7 @@ class DataFile(object):
         detectors = Data.shape[1]
         steps = Data.shape[0]
         
-        if self.instrument in ['MULTIFLEXX','FLATCONE']:
+        if self.instrument in ['FLEXX','FLATCONE']:
             Data.shape = (Data.shape[0],Data.shape[1],-1)
 
         A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
@@ -306,8 +534,8 @@ class DataFile(object):
         else:
             UB = self.sample.orientationMatrix
             UBINV = np.linalg.inv(UB)
-            HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3).squeeze(),
-            -np.rad2deg(A4Mean)],Ei.squeeze().reshape(-1,1,1),EfMean.squeeze())
+            HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3),
+                -np.rad2deg(A4Mean)],Ei,EfMean)
             H,K,L = np.swapaxes(np.swapaxes(HKL,1,2),0,3)
             self.sample.B = TasUBlib.calculateBMatrix(self.sample.cell)
 
@@ -907,8 +1135,7 @@ def extractData(files):
     instrumentCalibrationEf = []
     instrumentCalibrationA4 = []
     instrumentCalibrationEdges = []
-
-    if(files[0].type!='hdf'):
+    if(files[0].type=='nxs'):
         qx = []
         qy = []
         energy = []
@@ -920,7 +1147,7 @@ def extractData(files):
     scanParamUnit = []
     for datafile in files:
         I.append(datafile.I)
-        if(files[0].type!='hdf'):
+        if(files[0].type=='nxs'):
             qx.append(datafile.qx)
             qy.append(datafile.qy)
             energy.append(datafile.energy)
@@ -941,14 +1168,14 @@ def extractData(files):
         if np.array(datafile.A4Off).shape is ():
             datafile.A4Off = [0.0]
         a4.append(datafile.A4-datafile.A4Off)
-        a4Off.append(datafile.A3Off)
+        a4Off.append(datafile.A4Off)
         Ei.append(datafile.Ei)
         instrumentCalibrationEf.append(datafile.instrumentCalibrationEf)
         instrumentCalibrationA4.append(datafile.instrumentCalibrationA4)
         instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
         
     I = Marray(np.concatenate(I,axis=0))
-    if(files[0].type!='hdf'):
+    if(files[0].type=='nxs'):
         qx = Marray(np.concatenate(qx,axis=0))
         qy = Marray(np.concatenate(qy,axis=0))
         H = Marray(np.concatenate(H,axis=0))
@@ -970,7 +1197,7 @@ def extractData(files):
     instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
     instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
     Ei = Marray(Ei)
-    if files[0].type!='hdf':
+    if files[0].type=='nxs':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
     else:
