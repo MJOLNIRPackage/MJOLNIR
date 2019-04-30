@@ -265,6 +265,7 @@ def binEdges(values,tolerance,startPoint=None,endPoint=None):
 def without_keys(dictionary, keys): # Remove key word argument from kwargs
     return {x: dictionary[x] for x in dictionary if x not in keys}
 
+@KwargChecker()
 def fileListGenerator(numberString,folder,year=2018, format = None, instrument = 'CAMEA'):
     """Function to generate list of data files.
     
