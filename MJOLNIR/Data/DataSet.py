@@ -103,8 +103,8 @@ class DataSet(object):
     def dataFiles(self,dataFiles):
         try:
             correctDataFiles = isListOfDataFiles(dataFiles)
-            [self._dataFiles.append(file) for file in correctDataFiles if file.type=='hdf']
-            [self._convertedFiles.append(file) for file in correctDataFiles if file.type=='nxs']
+            [self._dataFiles.append(file) for file in correctDataFiles if file.type in MJOLNIR.Data.DataFile.supportedRawFormats]
+            [self._convertedFiles.append(file) for file in correctDataFiles if file.type in MJOLNIR.Data.DataFile.supportedConvertedFormats]
         except Exception as e:
             raise(e)
 
@@ -260,7 +260,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=8,saveLocation=None,saveFile=True):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=True):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
