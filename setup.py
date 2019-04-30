@@ -12,7 +12,7 @@ else:
         long_description = f.read()
 
 
-pythonPath = 'lib/python{}.{}/site-packages/MJOLNIR/'.format(*sys.version_info[:2])
+pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'site-packages','MJOLNIR')
 
 setup(
     name='MJOLNIR',
@@ -24,7 +24,7 @@ setup(
     author_email='lass.jakob@gmail.com',
     url='https://github.com/jakob-lass/MJOLNIR',
     license='MPL-2.0',
-    data_files = [(pythonPath, ["LICENSE.txt"])],#,(pythonPath+'/CommandLineScripts/',['MJOLNIR/CommandLineScripts/.settings'])],
+    data_files = [(pythonPath, ["LICENSE.txt"]),((os.path.join(pythonPath),['MJOLNIR/Calibration.csv']))],#,(pythonPath+'/CommandLineScripts/',['MJOLNIR/CommandLineScripts/.settings'])],
     packages=['MJOLNIR','MJOLNIR/Data','MJOLNIR/Geometry','MJOLNIR/Statistics','MJOLNIR/CommandLineScripts'],
     scripts=['MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector','MJOLNIR/CommandLineScripts/MJOLNIRHistory','MJOLNIR/CommandLineScripts/MJOLNIRConvert',
     'MJOLNIR/CommandLineScripts/MJOLNIR3DView'],
