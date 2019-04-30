@@ -4294,9 +4294,6 @@ def test_DataSet_full_test():
     viewer = dataset.View3D(0.08,0.08,0.25)
     
     if pythonVersion == 3: # Only possible in python 3
-        viewer.ax.set_xticks_number(5)
-        viewer.ax.set_yticks_number(10)
-
         viewer.ax.set_xticks_base(0.5)
         viewer.ax.set_yticks_base(0.5)
 
@@ -4546,20 +4543,12 @@ def test_DataSet_createRLUAxes():
     ds.convertDataFile()
 
     ax = ds.createRLUAxes()
-    ax = ds.createRLUAxes(nbinsx=5)
-    ax = ds.createRLUAxes(nbinsy=5)
     ax = ds.createRLUAxes(basex=0.5,figure=fig)
     ax = ds.createRLUAxes(basey=0.5)
 
     if pythonVersion == 3: # Only possible in python 3
-        ax.set_xticks_number(5)
-        ax.set_yticks_number(8)
-
         ax.set_xticks_base(0.2)
         ax.set_yticks_base(0.5)
-
-        ax.set_xticks_number(5)
-        ax.set_yticks_number(8)
 
     V1,V2,V3 = [2,0,0],[-2,3,0],[2,-3,0]
     ax.set_axis(V1,V2)
@@ -4994,7 +4983,7 @@ def test_DataSet_OxfordList():
 
 
 def test_DataSet_MultiFLEXX():
-    fileLocation = _tools.fileListGenerator('65059',folder='/home/lass/Dropbox/PhD/Software/MJOLNIR/Data/',instrument='MultiFLEXX')
+    fileLocation = _tools.fileListGenerator('65059',folder='Data/',instrument='MultiFLEXX')
 
     ds = DataSet(fileLocation)
     ds.convertDataFile(saveFile = False)
