@@ -86,7 +86,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
                 nbinsx = int(np.round(nbinsy/np.sin(sample.projectionAngle)))
             elif not nbinsx is None and nbinsy is None:
                 nbinsy = int(np.round(nbinsx*np.sin(sample.projectionAngle)))
-
+            
             grid_locator1 = MaxNLocator(nbins=nbinsx)
             grid_locator2 = MaxNLocator(nbins=nbinsy)
             baseGrid = False
@@ -102,12 +102,10 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
             grid_locator1 = MultipleLocator(base=basex)
             grid_locator2 = MultipleLocator(base=basey)
         else:
-            basex = 0.25
-            basey = 0.25
-            baseGrid = True
-            locatorGrid = False
-            grid_locator1 = MultipleLocator(base=basex)
-            grid_locator2 = MultipleLocator(base=basey)
+            grid_locator1 = MaxNLocator(nbins=7)
+            grid_locator2 = MaxNLocator(nbins=7)
+            baseGrid = False
+            locatorGrid = True
             
         grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr),grid_locator1=grid_locator1,grid_locator2=grid_locator2)
     else: # Python 2
@@ -183,10 +181,13 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
             if axis.baseGrid and not np.any([np.isclose(axis._oldXlimDiff,xlimDiff),
                 np.isclose(axis._oldYlimDiff,ylimDiff)]) or forceUpdate:# Check if gridding with base and if new image size
 
-                Q1 = np.array([s.tr(xlim[0],ylim[0])])
-                Q2 = np.array([s.tr(xlim[1],ylim[1])])
-                xspan,yspan = np.abs(Q1.T-Q2.T)
-
+                points = np.array(np.meshgrid(xlim,ylim)).reshape(-1,2)
+                Qs = np.array([s.tr(p[0],p[1]) for p in points])
+                xspan = np.max(Qs[:,0])-np.min(Qs[:,0])
+                yspan = np.max(Qs[:,1])-np.min(Qs[:,1])
+                print(xspan,yspan)
+                print(xlim)
+                print(ylim)
                 if direction.lower() == 'y' or direction.lower()=='both':
                     if not hasattr(axis,'yticks'):
                         yticks = 7
@@ -210,7 +211,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],nbinsx=None,nbinsy=None,basex=N
                         aspect = axis.get_aspect_ratio()
                         if aspect <= 0:
                             aspect = 1 
-                        xticks = int(0.60*axis.calculateTicks(yticks)/aspect)
+                        xticks = 7#int(0.60*axis.calculateTicks(yticks)/aspect)
                     else:
                         xticks = axis.xticks
                     axis._oldXlimDiff = xlimDiff
