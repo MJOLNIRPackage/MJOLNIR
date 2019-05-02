@@ -94,12 +94,15 @@ def test_History_SingleFile():
 
 
 def test_History_MultipleFiles():
-    result = subprocess.check_output(['MJOLNIRHistory', *dataFiles])
+    call = ['MJOLNIRHistory'] + dataFiles
+    
+    result = subprocess.check_output(call)
     print(result)
     assert(b''.join(returnText)==result)
 
 def test_History_MultipleFiles_repeat():
-    results = subprocess.check_output(['MJOLNIRHistory', *dataFiles[-2:]])
+    call = ['MJOLNIRHistory'] + dataFiles[-2:]
+    results = subprocess.check_output(call)
     results2 = subprocess.check_output(['MJOLNIRHistory', '-r'])
     assert(results2 == results)
     
@@ -155,7 +158,8 @@ def test_Convert_SaveLocation():
     
 def test_Convert_Reuse():
     subSet = [dataFiles[0],dataFiles[3]]
-    subprocess.run(['MJOLNIRConvert',*subSet])
+    call = ['MJOLNIRConvert'] + subSet
+    subprocess.run(call)
     for file in subSet:
         os.remove(file.replace('hdf','nxs'))
     subprocess.run(['MJOLNIRConvert','-r'])
