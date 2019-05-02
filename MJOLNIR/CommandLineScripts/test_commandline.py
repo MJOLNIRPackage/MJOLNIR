@@ -47,7 +47,7 @@ optional arguments:
 def test_CalibrationInsepctor_Run():
     os.makedirs('_temp')
     try:
-        subprocess.run(['MJOLNIRCalibrationInspector', '-s _temp/','-b 1',dataFiles[0]])
+        subprocess.check_output(['MJOLNIRCalibrationInspector', '-s _temp/','-b 1',dataFiles[0]])
         # Creates 4 files in _temp
         filesCreated = ['_temp/Final_Energy_Individual_1.png',
         '_temp/Final_Energy_Overview_1.png',
@@ -136,17 +136,17 @@ optional arguments:
     
     
 def test_Convert_binning():
-    subprocess.run(['MJOLNIRConvert',dataFiles[0]])
+    subprocess.check_output(['MJOLNIRConvert',dataFiles[0]])
     f = DataFile.DataFile(dataFiles[0].replace('hdf','nxs'))
     assert(f.binning == 8)
-    subprocess.run(['MJOLNIRConvert',dataFiles[0],'-b 1'])
+    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-b 1'])
     f = DataFile.DataFile(dataFiles[0].replace('hdf','nxs'))
     assert(f.name == dataFiles[0].split('/')[1].replace('hdf','nxs'))
     assert(f.binning == 1)
     
 def test_Convert_SaveLocation():
     os.makedirs('Data/Data')
-    subprocess.run(['MJOLNIRConvert',dataFiles[0],'-s Data/Data'])
+    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-s Data/Data'])
     fileName = dataFiles[0].split('/')[1].replace('hdf','nxs')
     f = DataFile.DataFile('Data/Data/'+fileName)
     assert(f.binning == 8)
@@ -159,10 +159,10 @@ def test_Convert_SaveLocation():
 def test_Convert_Reuse():
     subSet = [dataFiles[0],dataFiles[3]]
     call = ['MJOLNIRConvert'] + subSet
-    subprocess.run(call)
+    subprocess.check_output(call)
     for file in subSet:
         os.remove(file.replace('hdf','nxs'))
-    subprocess.run(['MJOLNIRConvert','-r'])
+    subprocess.check_output(['MJOLNIRConvert','-r'])
     for file in subSet:
         assert(os.path.isfile(file.replace('hdf','nxs')))
 
@@ -198,9 +198,9 @@ optional arguments:
   
     
 def test_3DView_Run_Through():
-    subprocess.run(['MJOLNIR3DView',dataFiles[0],dataFiles[2]])
-    subprocess.run(['MJOLNIR3DView','-r','-b 1','-d 0.1 0.1 0.2'])
-    subprocess.run(['MJOLNIR3DView','-r','-b 1','-m 0','-M 1e-5'])
+    subprocess.check_output(['MJOLNIR3DView',dataFiles[0],dataFiles[2]])
+    subprocess.check_output(['MJOLNIR3DView','-r','-b 1','-d 0.1 0.1 0.2'])
+    subprocess.check_output(['MJOLNIR3DView','-r','-b 1','-m 0','-M 1e-5'])
     assert(True)
     
 
