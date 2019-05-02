@@ -198,13 +198,9 @@ optional arguments:
   
     
 def test_3DView_Run_Through():
-    call = ['MJOLNIR3DView'] + [dataFiles[0],dataFiles[1]]
+    call = ['MJOLNIR3DView'] + [dataFiles[0],dataFiles[0]]
     subprocess.check_output(call)
-    subprocess.check_output(['MJOLNIR3DView','-r','-b 1','-d','0.1','0.1','0.2'])
+    subprocess.check_output(['MJOLNIR3DView','-r','-b 1','-d', '0.1','0.1','0.2'])
     subprocess.check_output(['MJOLNIR3DView','-r','-b 1','-m 0','-M 1e-5'])
     assert(True)
-    
-
-    
-
     
