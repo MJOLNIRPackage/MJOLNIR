@@ -14,6 +14,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib._pylab_helpers
 
+plt.ion()
+
 from MJOLNIR.CommandLineScripts import _tools
 import sys,os
 settingsName = 'CalibrationInspectorDir'
@@ -45,7 +47,7 @@ parser.add_argument("-b", "--binning", type=int, default= '8',help="Binning to b
 
 args = parser.parse_args()
 
-file = _tools.extractDataFiles(args,settingsName,oneFile=True)[0]
+file = _tools.extractDataFiles(args,settingsName,oneFile=True)
 
 directory = os.path.split(file)[0]
 
@@ -68,7 +70,7 @@ booleanList[np.array(argsIdx)]=True
 
 if not args.save is '':
     saveFile = True
-    saveLocation = args.save
+    saveLocation = os.path.realpath(args.save.strip())
 else:
     saveFile = False
 
@@ -96,12 +98,12 @@ if saveFile==True:
          for manager in matplotlib._pylab_helpers.Gcf.get_all_fig_managers()]
     if len(argsIdx)>1:
         if not os.path.isdir(saveLocation):
-            raise AttributeError('Provided save location is not a directory. This is needed when multiple figures are created.')
+            raise AttributeError('Provided save location is not a directory. Recieved "{}"'.format(saveLocation))
         else:
             for f in figures:
                 title = f.get_axes()[0].get_title().replace(' ','_')
                 print('Save figure as '+saveLocation+title+'_'+str(binning)+'.png')
-                f.savefig(saveLocation+title+'_'+str(binning)+'.png')
+                f.savefig(os.path.join(saveLocation,title+'_'+str(binning)+'.png'))
     else:
         title = figures[0].get_axes()[0].get_title().replace(' ','_')
         if '.' in saveLocation:
@@ -110,7 +112,7 @@ if saveFile==True:
                 f.savefig(saveLocation)
         else:
             print('Save figure as '+saveLocation+title+'_'+str(binning)+'.png')
-            f.savefig(saveLocation+title+'.png')
+            f.savefig(os.path.join(saveLocation,title+'.png'))
             
 
 plt.show()
