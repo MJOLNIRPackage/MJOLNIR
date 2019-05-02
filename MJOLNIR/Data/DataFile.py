@@ -151,7 +151,7 @@ class DataFile(object):
     @A3Off.setter
     def A3Off(self,A3Off):
         if A3Off is None:
-            self._A3Off = 0.0
+            self._A3Off = np.array([0.0])
         else:
             self._A3Off = A3Off
 
@@ -166,7 +166,7 @@ class DataFile(object):
     @A4Off.setter
     def A4Off(self,A4Off):
         if A4Off is None:
-            self._A4Off = 0.0
+            self._A4Off = np.array([0.0])
         else:
             self._A4Off = A4Off
 
@@ -181,10 +181,10 @@ class DataFile(object):
     @A3.setter
     def A3(self,A3):
         if A3.shape == ():
-            self._A3 = [0.0]
+            self._A3 = np.array([0.0])
         else:
             if A3[0] is None:
-                self._A3 = [0.0]
+                self._A3 = np.array([0.0])
             else:
                 self._A3 = A3
 
@@ -299,12 +299,12 @@ class DataFile(object):
         
         self.scanCommand = np.array(sI.group().split(':')[1][1:])
         
-        parameters = int((len(sI.groups())-2)/2)
+        parameters = int((len(sI.groups())-2))
         for x in sI.groups()[:parameters]: # Run over scan parameter
             scanParam.append(x.split()[0])
             startParam.append(float(x.split()[1]))
-        for i,x in enumerate(sI.groups()[parameters:parameters*2]):
-            if not x.split()[0][1:] == scanParam[i]:
+        for i,x in enumerate(sI.groups()[:parameters]):
+            if not x.split()[0][1:] == scanParam[i][1:]: # Remove the D in front
                 raise RuntimeError('Scan command not correctly formated, recieved "{}"'.format(dataString[sI.start():sI.end()]))
             stepParam.append(float(x.split()[1]))
         steps = int(sI.groups()[-2])
@@ -351,6 +351,14 @@ class DataFile(object):
         
         self.TT,self.magneticField = [np.array(x.split('=')[1],dtype=float) for x in re.compile(r'PARAM:\s*(TT=\s*'+reFloat+').*(MAG=\s*'+reFloat+')').findall(dataString)[0]]
         
+        valuesPattern = re.compile('VARIA:\s*'+4*('(A\d\s*=\s*'+reFloat+'),?\s*'))
+        valuesMatch = valuesPattern.findall(dataString)[0]
+
+        for variableValue in valuesMatch:
+            variable,value = variableValue.split('=')
+            variable = variable.strip()
+            setattr(self,variable,np.array(value,dtype=float))
+
         zerosPattern = re.compile('ZEROS:\s*'+4*('(A\d\s*=\s*'+reFloat+'),?\s*'))
         zeroMatch = zerosPattern.findall(dataString)[0]
         
@@ -431,7 +439,7 @@ class DataFile(object):
         else:
             self.A4 = np.array([self.A4[0]])
         
-        self.A3Off = [90] # This is not understood why but needs to be 90 degrees for MultiFLEXX data...
+        self.A3Off = np.array([90]) # This is not understood why but needs to be 90 degrees for MultiFLEXX data...
         
         sample['name']= str(self.title)
         
