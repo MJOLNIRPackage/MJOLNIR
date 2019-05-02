@@ -46,21 +46,17 @@ optional arguments:
 
 def test_CalibrationInsepctor_Run():
     os.makedirs('_temp')
-    try:
-        subprocess.check_output(['MJOLNIRCalibrationInspector', '-s _temp/','-b 1',dataFiles[0]])
-        # Creates 4 files in _temp
-        filesCreated = ['_temp/Final_Energy_Individual_1.png',
-        '_temp/Final_Energy_Overview_1.png',
-        '_temp/Instrument_calibration_1.png',
-        '_temp/Normalization_1.png']
-        for file in filesCreated:
-            assert(os.path.exists(file))
-            os.remove(file)
-    except:
-        os.rmdir('_temp')
-        raise
-    else:
-        os.rmdir('_temp')
+    
+    subprocess.check_output(['MJOLNIRCalibrationInspector', '-s _temp/','-b 1',dataFiles[0]])
+    # Creates 4 files in _temp
+    filesCreated = ['_temp/Final_Energy_Individual_1.png',
+    '_temp/Final_Energy_Overview_1.png',
+    '_temp/Instrument_calibration_1.png',
+    '_temp/Normalization_1.png']
+    for file in filesCreated:
+        assert(os.path.exists(file))
+        os.remove(file)
+    os.rmdir('_temp')
     
 
 

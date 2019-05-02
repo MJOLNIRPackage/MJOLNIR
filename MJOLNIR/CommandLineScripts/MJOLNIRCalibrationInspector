@@ -115,4 +115,4 @@ if saveFile==True:
             f.savefig(os.path.join(saveLocation,title+'.png'))
             
 
-plt.show(blocking=False)
+plt.show()
