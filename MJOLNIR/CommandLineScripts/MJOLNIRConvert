@@ -37,7 +37,7 @@ _tools.updateSetting(settingsName,files)
 binning = args.binning
 
 if not args.save is '':
-    saveLocation = args.save
+    saveLocation = args.save.strip()
 else:
     saveLocation = directory
     
