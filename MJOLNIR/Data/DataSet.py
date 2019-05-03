@@ -3740,7 +3740,7 @@ def calculateGrid3D(X,Y,Z):
 
     xshape = np.array(X.shape)
     if np.any(xshape <= 1):
-        raise AttributeError('Provided array has dimension(s) {} of size <= 1'.format(np.arange(xshape)[xshape<=1]))
+        raise AttributeError('Provided array has dimension(s) {} of size <= 1'.format(xshape))
     XT = np.zeros((xshape[0]+1,xshape[1]+1,xshape[2]+1))
     YT = np.zeros_like(XT)
     ZT = np.zeros_like(XT)
