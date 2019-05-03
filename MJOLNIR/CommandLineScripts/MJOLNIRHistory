@@ -46,7 +46,16 @@ for file in files:
         textLine = file.split('/')[-1]+' not correct format\n'
         returnText+= textLine
     else:
-        textLine = f.name+': '+f.scanCommand[0].decode()+'\t'+f.title[0].decode()+'\n'
+        textLine = f.name+': '
+        try:
+            textLine+=f.scanCommand[0].decode()
+        except:
+            textLine+=str(f.scanCommand)
+        try:
+            textLine+='\t'+f.title[0].decode()+'\n'
+        except:
+            textLine+='\t'+str(f.title)+'\n'
+        
         returnText+=textLine
     print(textLine[:-1]) # Print string excluding the added new line character. 
 
