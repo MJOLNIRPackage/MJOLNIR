@@ -13,7 +13,7 @@ convertedFileFormats = ' '.join([x for x in ['*.nxs']])
 fileFormats = ' '.join([x for x in [rawFileFormats,convertedFileFormats]])
 
 
-fileTypes = (('Data files',fileFormats),('Raw files',rawFileFormats),('Converted files',convertedFileFormats))
+fileTypes = (('Data files',fileFormats),('Raw files',rawFileFormats),('Converted files',convertedFileFormats),('All files','*'))
 
 
 def loadSetting(string):
