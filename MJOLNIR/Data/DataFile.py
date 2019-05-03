@@ -391,7 +391,11 @@ class DataFile(object):
         for dataIndex,dI in enumerate(dataIter):
             start,stop = dI.span()
             data[dataIndex] = np.array([int(x) for x in dataString[start:stop-len('endflat')].split()])[:multiFLEXXDetectors]
-        
+        if dataIndex != steps-1: # Scan stopped prematurely
+            steps = dataIndex+1
+            data = data[:steps]
+            self.M1 = self.M1[:steps]
+
         # Find sample info
         sample = dict() # Dictionary to unpack in sample creation
         samplePattern = re.compile(r'PARAM:'+3*'(\s*[ABC]\w=\s*-?\d*\.\d*),?')
