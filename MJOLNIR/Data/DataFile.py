@@ -129,6 +129,7 @@ class DataFile(object):
                 self.loadMultiFLEXXData(fileLocation)
                 
             for key in ['magneticField','temperature','electricField']:
+
                 try:
                     self.__dict__[key].dtype
                 except:
