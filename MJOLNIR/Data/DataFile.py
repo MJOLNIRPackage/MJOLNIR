@@ -20,7 +20,7 @@ import re
 multiFLEXXDetectors = 31*5
 reFloat = r'-?\d*\.\d*'
 factorsqrtEK = 0.694692
-supportedRawFormats = ['hdf','MultiFLEXX']
+supportedRawFormats = ['hdf','MultiFLEXX','FlatCone']
 supportedConvertedFormats = ['nxs']
 
 def cosd(x):
@@ -180,13 +180,18 @@ class DataFile(object):
 
     @A3.setter
     def A3(self,A3):
-        if A3.shape == ():
-            self._A3 = np.array([0.0])
+        try:
+            A3.shape
+        except AttributeError:
+            self._A3 = np.array(A3)
         else:
-            if A3[0] is None:
+            if A3.shape == ():
                 self._A3 = np.array([0.0])
             else:
-                self._A3 = A3
+                if A3[0] is None:
+                    self._A3 = np.array([0.0])
+                else:
+                    self._A3 = A3
 
     @property
     def A4(self):
@@ -198,10 +203,15 @@ class DataFile(object):
 
     @A4.setter
     def A4(self,A4):
-        if A4.shape == ():
-            self._A4 = [0.0]
+        try:
+            A4.shape
+        except AttributeError:
+            self._A4 = np.array(A4)
         else:
-            self._A4 = A4
+            if A4.shape == ():
+                self._A4 = [0.0]
+            else:
+                self._A4 = A4
 
     def updateProperty(self,dictionary):
         if isinstance(dictionary,dict):
@@ -262,211 +272,260 @@ class DataFile(object):
         
         
         
-        if calibrationFile is None: # Use shipped calibration
-            this_dir, _ = os.path.split(__file__)
-            calibrationFile = os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))
+        #if calibrationFile is None: # Use shipped calibration
+        #    this_dir, _ = os.path.split(__file__)
+        #    calibrationFile = os.path.realpath(os.path.join(this_dir,"..", "CalibrationMultiFLEXX.csv"))
+
+        self.fileLocation = fileLocation
+        self.possibleBinnings = [1] # Standard value (1 energy/detector)
+        self.binning = 1
 
         with open(fileLocation) as f:
             dataString = f.readlines()
-        
-        ## Find data format (number of saved labels)
-        dataString = ''.join([line for line in dataString])
-        startOfData = re.compile(r'\s*PNT\s+(\w{2,}\s+){1,}\d')
-        
-        startIter = startOfData.finditer(dataString)
-        startPosition = []
-        endPosition = []
-        for sI in startIter:
-            startPosition.append(sI.start())
-            endPosition.append(sI.end())
-        if len(startPosition)>1:
-            raise RuntimeError('Provided datafile ({}) has multiple initial data positions...'.format(fileLocation))
-        else:
-            startPosition = startPosition[0]
-            endPosition = endPosition[0]
-        
-        
-        ## Extract scan command
-        
-        scanPattern = re.compile(r'COMND:\s\w+\s*(\w+\s+-?\d*\.?\d*){1,}\s*(D\w+\s+-?\d*\.?\d*){1,}\s*NP\s(\d+)\s+MN\s+(\d+)')
-        scanIter = scanPattern.finditer(dataString)
-        
-        scanParam = []
-        startParam = []
-        stepParam = []
-        
-        sI = next(scanIter)
-        
-        self.scanCommand = np.array(sI.group().split(':')[1][1:])
-        
-        parameters = int((len(sI.groups())-2))
-        for x in sI.groups()[:parameters]: # Run over scan parameter
-            scanParam.append(x.split()[0])
-            startParam.append(float(x.split()[1]))
-        for i,x in enumerate(sI.groups()[:parameters]):
-            if not x.split()[0][1:] == scanParam[i][1:]: # Remove the D in front
-                raise RuntimeError('Scan command not correctly formated, recieved "{}"'.format(dataString[sI.start():sI.end()]))
-            stepParam.append(float(x.split()[1]))
-        steps = int(sI.groups()[-2])
-        self.scanParameters = np.array(scanParam)
-        scanUnits = []
-        scanValues = []
-        for i,param in enumerate(self.scanParameters):
-            scanValues.append(np.arange(steps)*stepParam[i]+startParam[i])
-            if param.lower() in ['a3','a4']:
+        dataString = ''.join(dataString)
+        ## Load header data:
+        headerStart = dataString.find('VVVVVVVVVVVVVVVVVVVV')
+        headerEnd = dataString.find('DATA_:')
+        headerString = dataString[headerStart:headerEnd].split('\n')[1:-1]
+        dataPart = dataString[headerEnd:].split('\n')[1:-1]
+        # Markers of multiple lines of parameters
+        multiLines = ['param','varia','zeros','posqe']
+        stringParameters = ['file_']
+        parameters = {}
+
+
+        for line in headerString:
+            try:
+                description,value = line.split(': ')
+            except ValueError:
+                continue
+            description = description.lower()
+            
+            if not description in multiLines:
+                ## Single value
+                if not description in stringParameters:
+                    try:
+                        value = float(value)
+                    except ValueError:
+                        pass
+                description=description.replace('_','')
+                parameters[description] = value
+                #print(description,value)
+            elif description in ['varia','param','posqe']:
+                
+                keyValuePattern = re.compile(r'\w*\s*=\s*'+reFloat)
+                KVPairs = keyValuePattern.findall(value)
+                
+                for pair in KVPairs:
+                    key,val = pair.split('=')
+
+                    key = key.strip()
+                    
+                    try:
+                        val = np.array(val.strip(),dtype=float)
+                    except ValueError:
+                        continue
+                    setattr(self,key,val)
+            elif description == 'zeros':
+                keyValuePattern = re.compile(r'\w+\s+=\s*'+reFloat)
+                KVPairs = keyValuePattern.findall(value)
+                
+                for pair in KVPairs:
+                    key,val = pair.split('=')
+                    
+                    key = key.strip()
+                    try:
+                        val = np.array(val.strip(),dtype=float)
+                    except ValueError:
+                        continue
+                    key+='Off'
+                    setattr(self,key,val)
+
+        self.__dict__.update(parameters)
+
+        ## Format scanCommand
+        scanParameters = [x.split('=')[0].strip() for x in self.steps.split(',')]
+        self.scanParameters = scanParameters
+
+        self.scanUnits = []
+        for param in self.scanParameters:
+            if param.lower() in ['a3','a4','sgu','sgl']:
                 unit= 'degree'
             elif param.lower() == 'ei':
                 unit = 'meV'
             else:
                 unit = 'unknown'
-            scanUnits.append(unit)
-        
-        self.scanUnits = np.array(scanUnits)
-        self.scanValues = np.array(scanValues)
-        self.MonitorPreset = np.array((sI.groups()[-1]),dtype=int)
-        
-        labelString = dataString[startPosition:endPosition-1]
-        
-        labels = labelString.strip().split()[1:] # Remove PNT list
-        
-        ### Find all header info
-        ## Find Energy info
-        
-        KIPattern = re.compile(r'PARAM:\s*(FX=\s*\d*.?\d*),\s*(KFIX=\s*'+reFloat+')')
-        FX,KI = [float(x.split('=')[1]) for x in KIPattern.findall(dataString)[0]]
-        
-        energyPattern = re.compile(r'POSQE:'+4*('(\s*\w\w=\s*'+reFloat+'),?\s*'))
-        EITrue = float(energyPattern.findall(dataString)[0][3].split('=')[1])
-                    
-        EI = np.power(KI/0.694692,2)
-        
-        if np.isclose(FX,1.0): # If FX == 1 subtract, otherwise add
-            self.Ei = Marray(EI-EITrue)
-        else:
-            self.Ei = Marray(EI+EITrue)
-        
-        self.name = os.path.split(fileLocation)[1]
-        self.title = np.array(re.compile(r'TITLE:\s(.*)\n').findall(dataString)[0])
-        self.instrument = re.compile(r'INSTR:\s(.*)\n').findall(dataString)[0]
-        
-        self.TT,self.magneticField = [np.array(x.split('=')[1],dtype=float) for x in re.compile(r'PARAM:\s*(TT=\s*'+reFloat+').*(MAG=\s*'+reFloat+')').findall(dataString)[0]]
-        
-        valuesPattern = re.compile('VARIA:\s*'+4*('(A\d\s*=\s*'+reFloat+'),?\s*'))
-        valuesMatch = valuesPattern.findall(dataString)[0]
+            self.scanUnits.append(unit)
 
-        for variableValue in valuesMatch:
-            variable,value = variableValue.split('=')
-            variable = variable.strip()
-            setattr(self,variable,np.array(value,dtype=float))
+        scanSteps = [float(x.split('=')[1]) for x in self.steps.split(',')]
 
-        zerosPattern = re.compile('ZEROS:\s*'+4*('(A\d\s*=\s*'+reFloat+'),?\s*'))
-        zeroMatch = zerosPattern.findall(dataString)[0]
-        
-        for variableValue in zeroMatch:
-            variable,value = variableValue.split('=')
-            variable = ''.join([variable.strip(),'Off'])
-            setattr(self,variable,np.array(value,dtype=float))
-        
-        ### Actual data in steps (parameters  might be overwritten but this is intended)
-        
-        ## Find step values
-        stepPattern = re.compile(r'(\s+-?\d+\.\d*){'+str(len(labels))+r'}\s*flat')
-        stepIter = stepPattern.finditer(dataString)
-        stepData = np.zeros((steps,len(labels)))
-        
-        for i,sI in enumerate(stepIter):
-            stepData[i] = [float(x) for x in dataString[sI.start():sI.end()-5].split()]
+        scanCommandNPMN = re.compile(r'\w+\s+\d+')
+        NPMN = scanCommandNPMN.findall(self.comnd)[-2:]
+        for paramVal in NPMN:
+            param,val = paramVal.split()
+            if param.lower() == 'np':
+                self.steps = int(val)
+            elif param.lower() == 'mn':
+                self.MonitorPreset = int(val)
+                self.MonitorMode = 'm'
+            elif param.lower() == 'ti':
+                self.MonitorPreset = int(val)
+                self.MonitorMode = 't'
+
+        def extractSample(obj,sample=None):
+            if sample is None:
+                sample = dict()
             
-        for attributeNumber,attribute in enumerate(labels):
-            setattr(self,attribute,Marray(stepData[:,attributeNumber]))
-            if attribute.lower() == 'en':
-                self.__dict__[attribute] = Marray(self.Ei-self.__dict__[attribute])
-        
-        # Extract intensity data
-        
-        dataPattern = re.compile(r'(\s+\d+){'+str(multiFLEXXDetectors+5)+r'}\s*endflat')
-        dataIter = dataPattern.finditer(dataString)
-        
-        data = np.zeros((steps,multiFLEXXDetectors),dtype=int)
-        for dataIndex,dI in enumerate(dataIter):
-            start,stop = dI.span()
-            data[dataIndex] = np.array([int(x) for x in dataString[start:stop-len('endflat')].split()])[:multiFLEXXDetectors]
-        if dataIndex != steps-1: # Scan stopped prematurely
-            steps = dataIndex+1
-            data = data[:steps]
-            self.M1 = self.M1[:steps]
+            nameConversion = [['AA','alpha'],
+                            ['BB','beta'],
+                            ['CC','gamma'],
+                            ['AS','a'],
+                            ['BS','b'],
+                            ['CS','c'],
+                            ]
+            
+            for oldName,newName in nameConversion:
+                sample[newName] = getattr(obj,oldName)
+                delattr(obj,oldName)
+                
+            planeVector1 = [getattr(obj,x) for x in ['AX','AY','AZ']]
+            planeVector2 = [getattr(obj,x) for x in ['BX','BY','BZ']]
+            sample['projectionVector1']=planeVector1
+            sample['projectionVector2']=planeVector2
+            return sample
 
-        # Find sample info
-        sample = dict() # Dictionary to unpack in sample creation
-        samplePattern = re.compile(r'PARAM:'+3*'(\s*[ABC]\w=\s*-?\d*\.\d*),?')
-        sampleIter = samplePattern.finditer(dataString)
-        
-        # Format is [a,b,c], [alpha,beta,gamma], [projection vector 1], [projection vector 2]
-        formater = [['a','b','c'],['alpha','beta','gamma'],['projectionVector1'],['projectionVector2']]
-        for i,sI in enumerate(sampleIter):
-            if i<2:
-                for parameterId,parameter in enumerate(formater[i]):
-                    sample[parameter] = float(sI.groups()[parameterId].split('=')[1])
-            else:
-                sample[formater[i][0]] = np.array([float(x.split('=')[1]) for x in sI.groups()])
-        
-        ## Convert names to fit with MJOLNIR
-        def renameAttribute(obj,oldName,newName,castType=None):
-            if not hasattr(obj,oldName):
-                raise AttributeError('Object does not have attribute "{}"'.format(oldName))
-            if hasattr(obj,newName):
-                raise AttributeError('The new attribute name already exists! ({})'.format(newName))
-        
-            if not castType is None:
-                setattr(obj,newName, castType(getattr(obj,oldName)))
-            else:
-                setattr(obj,newName, getattr(obj,oldName))
-            delattr(obj,oldName)
-        
-        renameAttribute(self,'TT','temperature',castType=np.array)
-        renameAttribute(self,'M1','Monitor',castType=Marray)
-        renameAttribute(self,'TIME','Time',castType=np.array)
-        
-        self.I = Marray(data.reshape(-1,multiFLEXXDetectors,1))
-        
-        ## Standard values
-        self.A4Off = np.array([0.0]) # Offset in data file is already changed in data
-        delattr(self,'M2')
-        self.fileLocation = fileLocation
-        self.possibleBinnings = np.array([1])
-        self.MonitorMode = 'm'
-        self.binning = 1
-        self.type = 'MultiFLEXX'
-        self.electricField = None
-        if np.isclose(np.sum(np.diff(self.A4)),0.0): # TODO: Fix this! Cannot assume that A4 is always stationary
-            self.A4 = np.array([self.A4[0]])
+
+        def updateKeyName(obj,key,newName):
+            if not hasattr(obj,key):
+                return
+            setattr(obj,newName,getattr(obj,key))
+            delattr(obj,key)
+
+
+        ## Find correct Ei
+
+        KIPattern = re.compile(r'PARAM:\s*(FX=\s*\d*.?\d*),\s*(KFIX=\s*'+reFloat+')')
+
+
+        EI = np.power(self.KFIX/0.694692,2)
+
+        if np.isclose(self.FX,1.0): # If FX == 1 subtract, otherwise add
+            self.EI = EI-self.EN
         else:
-            self.A4 = np.array([self.A4[0]])
-        
-        self.A3Off = np.array([90]) # This is not understood why but needs to be 90 degrees for MultiFLEXX data...
-        
-        sample['name']= str(self.title)
-        
-        self.sample = MJOLNIR.Data.Sample.Sample(**sample)
-        
-        
-        calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
-        amplitude = calibrationData[:,3]
-        background = calibrationData[:,6] 
-        bound = calibrationData[:,7:9]
-        final_energy = calibrationData[:,4]
-        width = calibrationData[:,5]
-        A4 = -calibrationData[:,9]
-        
-        EfTable = np.array([amplitude,final_energy,width,background]).T
-        calibrations=[[EfTable,A4,bound]]
-        bound =  np.array(multiFLEXXDetectors*[0,1],dtype=int)
-        
-        self.instrumentCalibrationEdges = bound
-        self.instrumentCalibrationEf = EfTable
-        self.instrumentCalibrationA4 = A4
-        
-        self.instrumentCalibrations = calibrations
+            self.EI = EI+self.EN
+
+
+
+        sampleDict = extractSample(self)
+
+
+        ## Find labels for data
+        labels = dataPart[0].split()
+        stepData = np.zeros((self.steps,len(labels)))
+        singleDetectorData = np.zeros(self.steps,dtype = int)
+        ## Extract the intensity data
+        if dataPart[3].strip() == 'endflat': # Data is mix of steps and data in each line
+            self.pntData = np.array([np.array(x.split(),dtype=float) for x in dataPart[1::3] if x[:8]!='Finished'])
+            self.multiData = np.array([np.array(x.split()[1:],dtype=int) for x in dataPart[2::3]])
+            self.multiData = self.multiData[:,:155] # Remove additional 5 zeros in data file
+            self.type = 'MultiFLEXX'
+        else: # Assume flatcone, data is split in steps and then flatcone data
+            # Split is marked with 'MULTI:'
+            splitMarker = np.array([x=='MULTI:' for x in dataPart])
+            split = splitMarker.argmax()
+            if split !=0: # We have flatCone data!
+                self.pntData = np.array([np.array(x.split(),dtype=float) for x in dataPart[1:split]])
+                self.multiData = np.array([np.array(x.split(),dtype=int) for x in dataPart[split+1:]])
+                self.type = 'FlatCone'
+            else:
+                self.pntData = np.array([np.array(x.split(),dtype=float) for x in dataPart[1:] if x[:8]!='Finished'])
+                self.type='1D'
+                
+
+        ## Extract the data from above
+        for parameter,value in zip(labels[1:],self.pntData[:,1:].T):
+            setattr(self,parameter,np.array(value))
+
+        dataLen = self.pntData.shape[0]
+        if not dataLen == self.steps: # Scan stopped prematurely
+            self.steps = dataLen
+
+        if hasattr(self,'multiData'):
+            updateKeyName(self,'multiData','I')
+        else:
+            updateKeyName(self,'CNTS','I')
+
+
+        nameSwaps = [['file','name'],
+                    ['MAG','magneticField'],
+                    ['CNTS','ISingleDetector'],
+                    ['M1','Monitor'],
+                    ['TIME','Time'],
+                    ['TT','temperature'],
+                    ['comnd','scanCommand'],
+                    ['instr','instrument'],
+                    ['EI','Ei'],
+                    ['local','localContact']]
+
+        for pair in nameSwaps:
+            updateKeyName(self,pair[0],pair[1])
+
+
+        self.scanValues = np.array([getattr(self,param) for param in self.scanParameters])
+
+        ## Create sample from sample dictionary
+        self.sample = MJOLNIR.Data.Sample.Sample(**sampleDict)
+
+
+        ## Create calibration data from file
+        if calibrationFile is None: # Use shipped calibration
+            this_dir, _ = os.path.split(__file__)
+            if self.type in ['MultiFLEXX','FlatCone']:
+                if self.type =='MultiFLEXX':
+                    calibrationFile = os.path.join(this_dir,'CalibrationMultiFLEXX.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
+                    detectors = 155
+                else:
+                    calibrationFile = os.path.join(this_dir,'CalibrationFlatCone.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
+                    detectors = 31
+                calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
+                amplitude = calibrationData[:,3]
+                background = calibrationData[:,6] 
+                bound = calibrationData[:,7:9]
+                final_energy = calibrationData[:,4]
+                width = calibrationData[:,5]
+                A4 = -calibrationData[:,9]
+                
+                EfTable = np.array([amplitude,final_energy,width,background]).T
+                calibrations=[[EfTable,A4,bound]]
+                bound =  np.array(detectors*[0,1],dtype=int).reshape(-1,2)
+                
+                self.instrumentCalibrationEdges = bound
+                self.instrumentCalibrationEf = EfTable
+                self.instrumentCalibrationA4 = A4
+                
+                self.instrumentCalibrations = calibrations
+            elif self.type == '1D':
+                pass
+            else:
+                import warnings
+                warnings.warn('Instrument of type "{}" is not supported yet....'.format(self.type))
+                #raise NotImplementedError('Instrument of type "{}" is not supported yet....'.format(self.type))
+
+
+        ### Weird additional changes:
+
+        if self.type == 'MultiFLEXX':
+            self.A3Off = np.array([90.0])
+            self.A4Off = np.array([0.0])
+            
+
+
+        if not hasattr(self,'electricField'):
+            self.electricField = None
+        if not hasattr(self,'magneticField'):
+            self.magneticField = None
+            
+
         
     @_tools.KwargChecker()
     def convert(self,binning=None):
@@ -474,7 +533,7 @@ class DataFile(object):
             EPrDetector = 8 
             if binning is None:
                 binning = 8
-        elif self.instrument in ['FLEXX','FLATCONE']:
+        elif self.type in ['MultiFLEXX','FlatCone']:
             EPrDetector = 1
             if binning is None:
                 binning = 1
@@ -492,7 +551,7 @@ class DataFile(object):
         detectors = Data.shape[1]
         steps = Data.shape[0]
         
-        if self.instrument in ['FLEXX','FLATCONE']:
+        if self.type in ['MultiFLEXX','FlatCone']:
             Data.shape = (Data.shape[0],Data.shape[1],-1)
 
         A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
