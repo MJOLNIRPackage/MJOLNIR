@@ -9,4 +9,4 @@ Further documentation? Version is 1.0.10?
 import sys,os
 sys.path.append('.')
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
