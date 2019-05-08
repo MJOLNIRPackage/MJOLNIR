@@ -15,8 +15,8 @@ fileFormats = ' '.join([x for x in [rawFileFormats,convertedFileFormats]])
 
 fileTypes = (('Data files',fileFormats),('Raw files',rawFileFormats),('Converted files',convertedFileFormats),('All files','*'))
 
-
-def loadSetting(string):
+# All functions are tested through the test_coonadline.py script but are called through the terminal thus not recorded as tested.
+def loadSetting(string): # pragma: no cover
     if Exists():
         with open(settingsFile,"rb") as pickle_in:
             loaded_dict = pickle.load(pickle_in)
@@ -28,7 +28,7 @@ def loadSetting(string):
     else:
         return None
 
-def updateSetting(name,value):
+def updateSetting(name,value):# pragma: no cover
     if Exists():
         with open(settingsFile,"rb") as pickle_in:
             loaded_dict = pickle.load(pickle_in)
@@ -38,10 +38,10 @@ def updateSetting(name,value):
     with open(settingsFile,"wb") as pickle_out:
         pickle.dump(loaded_dict, pickle_out)
 
-def Exists(file = settingsFile):
+def Exists(file = settingsFile):# pragma: no cover
     return os.path.isfile(settingsFile)
 
-def extractDataFiles(args,settingsName,oneFile = False):
+def extractDataFiles(args,settingsName,oneFile = False):# pragma: no cover
     if not 'DataFile' in args:
         startingPath = loadSetting(settingsName)
         if not startingPath is None:
