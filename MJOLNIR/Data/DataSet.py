@@ -2143,7 +2143,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
         
     Kwargs:
         
-        - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
+        - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut in new figure, if axis, plots on top (default False).
 
         - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
 
@@ -2206,23 +2206,28 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     EmeanVec = np.ones((len(binpositions),1))*(Emin+Emax)*0.5
     binpositionsTotal = np.concatenate((binpositions,EmeanVec),axis=1)
    
-    if plotCoverage: # pragma: no cover
-        plt.figure()
-        plt.scatter(positions2D[0],positions2D[1],s=0.5)
-        plt.plot([binpositions[0][0]+orthopos[0][0],binpositions[-1][0]+orthopos[0][0]],[binpositions[0][1]+orthopos[0][1],binpositions[-1][1]+orthopos[0][1]],c='k')
-        plt.plot([binpositions[0][0]+orthopos[1][0],binpositions[-1][0]+orthopos[1][0]],[binpositions[0][1]+orthopos[1][1],binpositions[-1][1]+orthopos[1][1]],c='k')
-        for i in [0,-1]:
-            plt.plot([binpositions[i][0]+orthopos[0][0],binpositions[i][0]+orthopos[1][0]],[binpositions[i][1]+orthopos[0][1],binpositions[i][1]+orthopos[1][1]],c='k')
-        for binPos in binpositions:#i in range(len(binpositions)):
-            plt.plot([binPos[0]+orthopos[0][0],binPos[0]+orthopos[1][0]],[binPos[1]+orthopos[0][1],binPos[1]+orthopos[1][1]],c='k',linewidth=0.5)
-        if extend==False:
-            plt.scatter(positions2D[0][insideQ][insideWidth],positions2D[1][insideQ][insideWidth],s=0.5)
+    if not plotCoverage is False: # pragma: no cover
+        if not isinstance(plotCoverage,bool): # Assuming matplotlib axis
+            ax = plotCoverage
+            plotPoints = False
         else:
-            plt.scatter(positions2D[0][insideWidth],positions2D[1][insideWidth],s=0.5)
-        ax = plt.gca()
-        ax.set_aspect('equal', 'datalim')
-        ax.set_xlabel('Qx [1/A]')
-        ax.set_ylabel('Qy [1/A]')
+            fig,ax = plt.subplots() # Generate new figure
+            plotPoints = True
+            ax.scatter(positions2D[0],positions2D[1],s=0.5,zorder=100)
+        ax.plot([binpositions[0][0]+orthopos[0][0],binpositions[-1][0]+orthopos[0][0]],[binpositions[0][1]+orthopos[0][1],binpositions[-1][1]+orthopos[0][1]],c='w',zorder=100)
+        ax.plot([binpositions[0][0]+orthopos[1][0],binpositions[-1][0]+orthopos[1][0]],[binpositions[0][1]+orthopos[1][1],binpositions[-1][1]+orthopos[1][1]],c='w',zorder=100)
+        for i in [0,-1]:
+            ax.plot([binpositions[i][0]+orthopos[0][0],binpositions[i][0]+orthopos[1][0]],[binpositions[i][1]+orthopos[0][1],binpositions[i][1]+orthopos[1][1]],c='w',zorder=100)
+        for binPos in binpositions:#i in range(len(binpositions)):
+            ax.plot([binPos[0]+orthopos[0][0],binPos[0]+orthopos[1][0]],[binPos[1]+orthopos[0][1],binPos[1]+orthopos[1][1]],c='w',linewidth=0.5,zorder=100)
+        if extend==False and plotPoints:
+            ax.scatter(positions2D[0][insideQ][insideWidth],positions2D[1][insideQ][insideWidth],s=0.5,zorder=100)
+        elif plotPoints:
+            ax.scatter(positions2D[0][insideWidth],positions2D[1][insideWidth],s=0.5,zorder=100)
+        if plotPoints:
+            ax.set_aspect('equal', 'datalim')
+            ax.set_xlabel('Qx [1/A]')
+            ax.set_ylabel('Qy [1/A]')
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
 
