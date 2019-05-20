@@ -329,11 +329,11 @@ class DataSet(object):
         if len(self.convertedFiles)!=0:
             self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l = MJOLNIR.Data.DataFile.extractData(self.convertedFiles)
+            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l,self.mask = MJOLNIR.Data.DataFile.extractData(self.convertedFiles)
         else:
             self.I,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
+            self.scanParameterValues,self.scanParameterUnits,self.mask = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
 
     @_tools.KwargChecker()
     def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None):
@@ -385,6 +385,7 @@ class DataSet(object):
 
         return returnData,bins
 
+    @_tools.cutObject
     @_tools.KwargChecker()
     def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None,constantBins=False):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
@@ -457,7 +458,8 @@ class DataSet(object):
         return cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,minPixel=minPixel,
                      Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
 
-    @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound']) #Advanced KWargs checker for figures
+    @_tools.cutObject
+    @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound',]) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
@@ -511,10 +513,11 @@ class DataSet(object):
         
         
         D,P = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,\
-        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
-
-        INT = np.divide(D[0]*D[3],D[1]*D[2])
-        INT_err = np.divide(np.sqrt(D[0])*D[3],D[1]*D[2])
+        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins, internal=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            INT = np.divide(D[0]*D[3],D[1]*D[2])
+            INT_err = np.divide(np.sqrt(D[0])*D[3],D[1]*D[2])
         
         
         binCenter = 0.5*(P[0][:-1]+P[0][1:])
@@ -596,9 +599,10 @@ class DataSet(object):
         plt.tight_layout()
         
         ax.format_coord = lambda x,y: format_coord(x,y,ax,binCenter)
-        ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,D))
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,D))
         return ax,D,P,binCenter,binDistance
 
+    @_tools.cutObject
     @_tools.KwargChecker()
     def cutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,extend=True,dataFiles=None,constantBins=False):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
@@ -661,6 +665,7 @@ class DataSet(object):
                     minPixel=minPixel,EnergyBins=EnergyBins,extend=extend,constantBins=constantBins)
 
  
+    @_tools.cutObject
     @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
     def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
@@ -731,6 +736,7 @@ class DataSet(object):
         return plotCutQE(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
                         minPixel=minPixel,EnergyBins=EnergyBins,rlu=rlu,ax = ax,constantBins=constantBins,**kwargs)
 
+    @_tools.cutObject
     @_tools.KwargChecker()
     def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,constantBins=False):
         """Cut data powder map with intensity as function of the length of q and energy. 
@@ -775,6 +781,7 @@ class DataSet(object):
         return cutPowder(positions=positions,I=I,Norm=Norm,Monitor=Monitor,
                         EBinEdges=EBinEdges,qMinBin=qMinBin,constantBins=constantBins)
 
+    @_tools.cutObject
     @_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax'])
     def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
@@ -808,7 +815,7 @@ class DataSet(object):
 
         """
 
-        DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins)
+        DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins, internal=True)
         intensity,monitorCount,Normalization,NormCount = DataList
         warnings.simplefilter('ignore')
         Int = [np.divide(Int*NC,mC*N) for Int,NC,mC,N in zip(intensity,NormCount,monitorCount,Normalization)]
@@ -870,7 +877,7 @@ class DataSet(object):
             maxVal = np.max(np.concatenate(Int))
             ax.set_clim(minVal,maxVal)
         ax.pmeshs = pmeshs
-        ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
         return ax,[intensity,monitorCount,Normalization,NormCount],qbins
 
     @_tools.KwargChecker()
@@ -1331,6 +1338,7 @@ class DataSet(object):
 #        plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
 #        magneticField_err=magneticField_err,electricField_err=electricField_err)
 
+    @_tools.cutObject
     @_tools.KwargChecker()
     def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,dataFiles=None,constantBins=False):
         """
@@ -1406,7 +1414,7 @@ class DataSet(object):
         binDistance = []
         for pStart,pStop,w,mP,EB in zip(positions,positions[1:],width,minPixel,EnergyBins):
             _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=False,
-                                                                         dataFiles=dataFiles,extend=False,constantBins=constantBins)
+                                                                         dataFiles=dataFiles,extend=False,constantBins=constantBins,internal=True)
             DataList.append(_DataList)
             if rlu:
                 UB2D = self.sample.convertHKLINV # Matrix to calculate HKL from Qx,Qy
@@ -1427,7 +1435,7 @@ class DataSet(object):
             
         return np.array(DataList),np.array(BinList),np.array(centerPosition),np.array(binDistance)
 
-
+    @_tools.cutObject
     @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar','edgecolors']]))
     def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
@@ -1483,7 +1491,7 @@ class DataSet(object):
             The ax.set_clim function is created to change the colour scale. It takes inputs vmin,vmax. This function does however not work in 3D....
 
         """
-        DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
+        DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins,internal=True)
         if rlu==True: # Recalculate q points into qx and qy points
             positions = self.convertToQxQy(QPoints)
         else: # Do nothing
@@ -1788,7 +1796,7 @@ class DataSet(object):
                         printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
                     print(printString)
             ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPositionTotal,actualEnergy,IntTotal,rlu,offset,self)#EnergyBins
-            ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
+            ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
         else: # pragma: no cover
             # TODO: Make test!!!
             import matplotlib.colors
@@ -1938,6 +1946,7 @@ class DataSet(object):
 
         return returnData
 
+    @_tools.cutObject
     @_tools.KwargChecker()
     def cut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 

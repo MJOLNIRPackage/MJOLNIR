@@ -7,6 +7,34 @@ import logging
 import math
 MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
+def cutObject(func):
+    import MJOLNIR.Statistics.CutObject
+    @functools.wraps(func)
+    def newFunction(*args,**kwargs):
+        if 'internal' in kwargs:
+            if kwargs['internal'] is True:
+                del kwargs['internal']
+                return func(*args,**kwargs)
+        fittingKwargs = ['fitFunction','p0','costFunction','lock']
+        temp = {}
+        for fitKwarg in fittingKwargs:
+            if fitKwarg in kwargs:
+                temp[fitKwarg] = kwargs[fitKwarg]
+                del kwargs[fitKwarg]
+            else:
+                temp[fitKwarg] = None
+
+        ds = args[0]
+        if len(args)>1:
+            otherArgs = args[1:]
+        else:
+            otherArgs = None
+        co = MJOLNIR.Statistics.CutObject.CutObject(*func(*args,**kwargs),dataSet = ds,cutFunction = func,kwargs = kwargs,args = otherArgs)
+        for fitKwarg in fittingKwargs:
+            setattr(co,fitKwarg,temp[fitKwarg])
+        return co
+    return newFunction
+
 def KwargChecker(function=None,include=None):
     """Function to check if given key-word is in the list of accepted Kwargs. If not directly therein, checks capitalization. If still not match raises error
     with suggestion of closest argument.
