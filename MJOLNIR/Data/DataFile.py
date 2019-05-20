@@ -125,6 +125,9 @@ class DataFile(object):
                         #self.I[:,:,:150]=0#
                         ###################
                         pass
+                    if self.binning == 8:
+                        self.mask = np.zeros_like(self.I.data,dtype=bool)
+                        self.mask[:,:,:2] = True
             else: # type is multiFLEXX
                 self.loadMultiFLEXXData(fileLocation)
                 
@@ -488,6 +491,7 @@ class DataFile(object):
                 else:
                     calibrationFile = os.path.join(this_dir,'CalibrationFlatCone.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
                     detectors = 31
+                    self.mask = False
                 calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
                 amplitude = calibrationData[:,3]
                 background = calibrationData[:,6] 
@@ -505,6 +509,10 @@ class DataFile(object):
                 self.instrumentCalibrationA4 = A4
                 
                 self.instrumentCalibrations = calibrations
+                if self.type == 'MultiFLEXX':
+                    self.mask = np.zeros_like(self.I.data,dtype=bool)
+                    self.mask[:,np.isnan(self.instrumentCalibrationEf[:,0])] = True
+                    print(np.sum(self.mask))
             elif self.type == '1D':
                 pass
             else:
@@ -628,6 +636,11 @@ class DataFile(object):
         updateDict = {'I':Intensity,'Monitor':Monitor,'qx':QX,'qy':QY,'energy':DeltaE,'binning':binning,'Norm':Normalization,
         'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.hdf','.nxs')}
         convFile.updateProperty(updateDict)
+
+        if convFile.type == 'nxs' and convFile.binning == 8:
+            convFile.mask = np.zeros_like(convFile.I.data,dtype=bool)
+            convFile.mask[:,:,:2] = True
+
         return convFile
 
 
@@ -1217,6 +1230,7 @@ def extractData(files):
     scanParameters = []
     scanParamValue = []
     scanParamUnit = []
+    mask = []
     for datafile in files:
         I.append(datafile.I)
         if(files[0].type=='nxs'):
@@ -1227,11 +1241,11 @@ def extractData(files):
             H.append(datafile.h)
             K.append(datafile.k)
             L.append(datafile.l)
+        mask.append(datafile.mask)
         scanParameters.append(datafile.scanParameters)
         scanParamValue.append(datafile.scanValues)
         scanParamUnit.append(datafile.scanUnits)
             
-        
         Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape is ():
             datafile.A3Off = 0.0
@@ -1271,10 +1285,10 @@ def extractData(files):
     Ei = Marray(Ei)
     if files[0].type=='nxs':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L,mask
     else:
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,mask
 
 
 
