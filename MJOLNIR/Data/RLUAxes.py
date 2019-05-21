@@ -57,13 +57,14 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
     """
 
     sample = copy.deepcopy(self.sample)
-    
-    sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
-    sample.convertinv = np.linalg.inv(sample.convert) # Convert from Qx, Qy to projX, projY
+    for samp in sample:
+        samp.convert = np.einsum('ij,j...->i...',samp.RotMat,samp.convert)
+        #sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
+        samp.convertinv = np.linalg.inv(samp.convert) # Convert from Qx, Qy to projX, projY
 
-    sample.orientationMatrix = np.dot(sample.RotMat3D,sample.orientationMatrix)
-    sample.orientationMatrixINV = np.linalg.inv(sample.orientationMatrix)
-    sample.theta = 0.0
+        samp.orientationMatrix = np.dot(samp.RotMat3D,samp.orientationMatrix)
+        samp.orientationMatrixINV = np.linalg.inv(samp.orientationMatrix)
+        samp.theta = 0.0
 
     if figure is None:
         fig = plt.figure(figsize=(7, 4))
@@ -79,9 +80,9 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
     if pythonVersion==3: # Only for python 3
         if  not basex is None or not basey is None: # Either basex or basey is provided (or both)
             if basex is None:
-                basex = calculateTicks(basey,sample.projectionAngle,round=False)
+                basex = calculateTicks(basey,sample[0].projectionAngle,round=False)
             elif basey is None:
-                basey = basex/calculateTicks(1.0,sample.projectionAngle,round=False)
+                basey = basex/calculateTicks(1.0,sample[0].projectionAngle,round=False)
 
             grid_locator1 = MultipleLocator(base=basex)
             grid_locator2 = MultipleLocator(base=basey)
@@ -92,11 +93,11 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
             grid_locator1 = MultipleLocator(base=basex)
             grid_locator2 = MultipleLocator(base=basey)
             
-        grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr),grid_locator1=grid_locator1,grid_locator2=grid_locator2)
+        grid_helper = GridHelperCurveLinear((sample[0].inv_tr, sample[0].tr),grid_locator1=grid_locator1,grid_locator2=grid_locator2)
     else: # Python 2
-        grid_helper = GridHelperCurveLinear((sample.inv_tr, sample.tr))
+        grid_helper = GridHelperCurveLinear((sample[0].inv_tr, sample[0].tr))
     ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
-    ax.sample = sample
+    ax.sample = sample[0]
     
     if pythonVersion==3: # Only for python 3
 
@@ -122,14 +123,14 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
     ax.set_aspect(1.)
     ax.grid(True, zorder=0)
     
-    if not np.isclose(sample.projectionAngle,np.pi/2.0,atol=0.001):
+    if not np.isclose(ax.sample.projectionAngle,np.pi/2.0,atol=0.001):
         ax.axis["top"].major_ticklabels.set_visible(True)
         ax.axis["right"].major_ticklabels.set_visible(True)
 
-    ax.format_coord = sample.format_coord
+    ax.format_coord = ax.sample.format_coord
     ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
-    ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector1.astype(int)])))
-    ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in sample.projectionVector2.astype(int)])))
+    ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in ax.sample.projectionVector1.astype(int)])))
+    ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in ax.sample.projectionVector2.astype(int)])))
 
     if pythonVersion==3: # Only for python 3
         def forceGridUpdate(self):
@@ -137,7 +138,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
             self.pchanged()
             self.stale = True
 
-        ax.calculateTicks = lambda value:calculateTicks(value,sample.projectionAngle)
+        ax.calculateTicks = lambda value:calculateTicks(value,ax.sample.projectionAngle)
         ax.forceGridUpdate = lambda:forceGridUpdate(ax)
         ax._oldXlimDiff = np.diff(ax.get_xlim())
         ax._oldYlimDiff = np.diff(ax.get_ylim())
@@ -300,10 +301,10 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     """
     
     if projectionVector1 is None or projectionVector2 is None:
-        v1 = DataSet.sample.projectionVector1
-        v2 = DataSet.sample.projectionVector2
-        angle = DataSet.sample.projectionAngle
-        orientationMatrix = DataSet.sample.orientationMatrix
+        v1 = DataSet.sample[0].projectionVector1
+        v2 = DataSet.sample[0].projectionVector2
+        angle = DataSet.sample[0].projectionAngle
+        orientationMatrix = DataSet.sample[0].orientationMatrix
     else:
         v1 = np.array(projectionVector1)
         v2 = np.array(projectionVector2)
