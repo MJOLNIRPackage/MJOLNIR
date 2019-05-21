@@ -5,6 +5,8 @@ from difflib import SequenceMatcher
 import functools
 import logging
 import math
+from MJOLNIR.Marray import *
+
 MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
 def cutObject(func):
@@ -355,17 +357,7 @@ def fileListGenerator(numberString,folder,year=2018, format = None, instrument =
     return list(np.concatenate(dataFiles))
 
 
-class Marray(np.ma.MaskedArray):
-    """Subclass of Numpy's masked array with added extractData method"""
-    def __new__(cls, data=None, **kwargs):
-        obj = np.asarray(data).view(cls)
-        return obj
 
-    def extractData(self):
-        if self.mask.shape == ():
-            return self.data.flatten()
-        else:
-            return self.data[self.mask == False].flatten()
 
 def RoundBinning(X,deltas,Data=None):
     """ Bin points to nearest delta value in D dimensions and reorder Data.
