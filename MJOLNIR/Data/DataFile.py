@@ -56,39 +56,39 @@ class DataFile(object):
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
                     instr = getInstrument(f)
                     if self.type == 'hdf':
-                        self.I = Marray(instr.get('detector/counts')).swapaxes(1,2)
+                        self.I = np.array(instr.get('detector/counts')).swapaxes(1,2)
                     else:
-                        self.I=Marray(f.get('entry/data/intensity'))
-                        self.counts = Marray(instr.get('detector/counts')).swapaxes(1,2)
-                        self.qx=Marray(f.get('entry/data/qx'))
-                        self.qy=Marray(f.get('entry/data/qy'))
-                        self.h=Marray(f.get('entry/data/h'))
-                        self.k=Marray(f.get('entry/data/k'))
-                        self.l=Marray(f.get('entry/data/l'))
-                        self.energy=Marray(f.get('entry/data/en'))
-                        self.Norm=Marray(f.get('entry/data/normalization'))
+                        self.I=np.array(f.get('entry/data/intensity'))
+                        self.counts = np.array(instr.get('detector/counts')).swapaxes(1,2)
+                        self.qx=np.array(f.get('entry/data/qx'))
+                        self.qy=np.array(f.get('entry/data/qy'))
+                        self.h=np.array(f.get('entry/data/h'))
+                        self.k=np.array(f.get('entry/data/k'))
+                        self.l=np.array(f.get('entry/data/l'))
+                        self.energy=np.array(f.get('entry/data/en'))
+                        self.Norm=np.array(f.get('entry/data/normalization'))
                     self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
                     self.MonitorPreset=np.array(f.get('entry/control/preset'))                
                     if self.type == 'hdf':
-                        self.Monitor = Marray(f.get('entry/control/data'))
+                        self.Monitor = np.array(f.get('entry/control/data'))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
                             if self.Monitor.flatten()[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
                                 self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
                     else:
-                        self.Monitor=Marray(f.get('entry/data/monitor'))
+                        self.Monitor=np.array(f.get('entry/data/monitor'))
                     self.Time = np.array(f.get('entry/control/time'))
 
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                    self.Ei = Marray(instr.get('monochromator/energy'))
-                    self.A3 = Marray(f.get('entry/sample/rotation_angle'))
-                    self.A4 = Marray(instr.get('analyzer/polar_angle')).reshape(-1)
+                    self.Ei = np.array(instr.get('monochromator/energy'))
+                    self.A3 = np.array(f.get('entry/sample/rotation_angle'))
+                    self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
                     try:
                         self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))  
                     except:
                         self.A3Off = [0.0]
-                    self.A4Off = Marray(instr.get('analyzer/polar_angle_offset'))
+                    self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     if self.type == 'hdf':
                         self.binning=1 # Choose standard binning 1
                     else:
@@ -125,8 +125,8 @@ class DataFile(object):
                         #self.I[:,:,:150]=0#
                         ###################
                         pass
+                    self.mask = np.zeros_like(self.I,dtype=bool)
                     if self.binning == 8:
-                        self.mask = np.zeros_like(self.I.data,dtype=bool)
                         self.mask[:,:,:2] = True
             else: # type is multiFLEXX
                 self.loadMultiFLEXXData(fileLocation)
@@ -512,7 +512,6 @@ class DataFile(object):
                 if self.type == 'MultiFLEXX':
                     self.mask = np.zeros_like(self.I.data,dtype=bool)
                     self.mask[:,np.isnan(self.instrumentCalibrationEf[:,0])] = True
-                    print(np.sum(self.mask))
             elif self.type == '1D':
                 pass
             else:
@@ -1260,22 +1259,23 @@ def extractData(files):
         instrumentCalibrationA4.append(datafile.instrumentCalibrationA4)
         instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
         
-    I = Marray(np.concatenate(I,axis=0))
+    I = Marray(I)#np.concatenate(I,axis=0))
     if(files[0].type=='nxs'):
-        qx = Marray(np.concatenate(qx,axis=0))
-        qy = Marray(np.concatenate(qy,axis=0))
-        H = Marray(np.concatenate(H,axis=0))
-        K = Marray(np.concatenate(K,axis=0))
-        L = Marray(np.concatenate(L,axis=0))
-        energy = Marray(np.concatenate(energy,axis=0))
-        Norm = Marray(np.concatenate(Norm,axis=0))
+        qx = Marray(qx)#np.concatenate(qx,axis=0))
+        qy = Marray(qy)#np.concatenate(qy,axis=0))
+        H = Marray(H)#np.concatenate(H,axis=0))
+        K = Marray(K)#np.concatenate(K,axis=0))
+        L = Marray(L)#np.concatenate(L,axis=0))
+        energy = Marray(energy)#np.concatenate(energy,axis=0))
+        Norm = Marray(Norm)#np.concatenate(Norm,axis=0))
     else:  
+        #print(Norm)
         Norm = Marray(Norm)
         
-    Monitor = Marray(np.concatenate(Monitor,axis=0))
+    Monitor = Marray(Monitor)#np.concatenate(Monitor,axis=0))
 
-    a3 = Marray(np.concatenate(a3,axis=0))
-    a4 = Marray(np.concatenate(a4,axis=0))
+    a3 = Marray(a3)#np.concatenate(a3,axis=0))
+    a4 = Marray(a4)#np.concatenate(a4,axis=0))
 
     a3Off = Marray(a3Off)
     a4Off = Marray(a4Off)
