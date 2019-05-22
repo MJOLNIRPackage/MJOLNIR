@@ -59,8 +59,9 @@ class CutObject(object):
             else:
                 self.cutFunction = cutFunction
 
-            for param,value in zip(self.cutFunction.__code__.co_varnames[1:],args):
-                self.parameters[param] = value
+            if not args is None:
+                for param,value in zip(self.cutFunction.__code__.co_varnames[1:],args):
+                    self.parameters[param] = value
 
             self.parameters.update(kwargs)
             if hasattr(self,'_ax'):
