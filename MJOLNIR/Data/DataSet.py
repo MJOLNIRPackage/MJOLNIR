@@ -1172,8 +1172,9 @@ class DataSet(object):
                 pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
             else:
                 pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i],zorder=zorder,cmap=cmap,**kwargs))
-        ax.set_aspect('equal')
-        ax.grid(True, zorder=0)
+        if not _3D:
+            ax.set_aspect('equal')
+            ax.grid(True, zorder=0)
         def set_clim(pmeshs,vmin,vmax):
             for pmesh in pmeshs:
                 pmesh.set_clim(vmin,vmax)
