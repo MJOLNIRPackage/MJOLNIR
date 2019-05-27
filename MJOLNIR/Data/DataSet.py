@@ -83,9 +83,9 @@ class DataSet(object):
             
         
         if len(self.convertedFiles)!=0:
-            self.sample = self.convertedFiles[0].sample
+            self.sample = [d.sample for d in self]
         elif len(self.dataFiles)!=0:
-            self.sample = self.dataFiles[0].sample
+            self.sample = [d.sample for d in self]
 
         # Add all other kwargs to settings
         for key in kwargs:
@@ -169,14 +169,19 @@ class DataSet(object):
 
     @mask.setter
     def mask(self,mask):
-        if np.sum(mask)==0:
-            warnings.warn('Provided mask has no masked elements!')
-        elif np.sum(mask)==self.I.size:
+        if isinstance(mask,list):
+            masksum = np.sum([np.sum(x) for x  in mask])
+        else:
+            masksum = np.sum(mask)
+        if masksum==0:
+            pass#warnings.warn('Provided mask has no masked elements!')
+        elif masksum==self.I.size:
             warnings.warn('Provided mask masks all elements!')
         self._mask = mask
         for att in self.__dict__.values():
             if hasattr(att,'extractData'):
                 att.mask = mask
+        self.maskIndices = np.cumsum([np.sum(1-M) for M in self.mask])[:-1]
 
     @property
     def settings(self):
@@ -215,13 +220,21 @@ class DataSet(object):
         return string
 
     def __getitem__(self,index):
+        if len(self.convertedFiles) > 0:
+            data = self.convertedFiles
+        else:
+            data = self.dataFiles
         try:
-            return self.dataFiles[index]
+            return data[index]
         except IndexError:
             raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self)))
 
     def __len__(self):
-        return len(self.dataFiles)
+        if len(self.convertedFiles) > 0:
+            data = self.convertedFiles
+        else:
+            data = self.dataFiles
+        return len(data)
     
     def __iter__(self):
         self._index=0
@@ -230,7 +243,11 @@ class DataSet(object):
     def __next__(self):
         if self._index >= len(self):
             raise StopIteration
-        result = self.dataFiles[self._index]
+        if len(self.convertedFiles) > 0:
+            data = self.convertedFiles
+        else:
+            data = self.dataFiles
+        result = data[self._index]
         self._index += 1
         return result
 
@@ -374,12 +391,15 @@ class DataSet(object):
                 energy = self.energy.extractData()
                 Norm = self.Norm.extractData()
                 Monitor = self.Monitor.extractData()
+                samples = self.sample
+                maskIndices = self.maskIndices
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
-        if rlu:
-            qx,qy = np.einsum('ij,j...->i...',self.sample.RotMat,np.array([qx,qy]))
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
+        if rlu: # Rotate data
+            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+            qx,qy = np.concatenate([np.einsum('ij,j...->i...',s.RotMat,q) for s,q in zip(samples,Q)],axis=1)
         pos=[qx,qy,energy]
         returnData,bins = binData3D(dx=dx,dy=dy,dz=dz,pos=pos,data=I,norm=Norm,mon=Monitor)
 
@@ -438,14 +458,23 @@ class DataSet(object):
                 energy = self.energy.extractData()
                 Norm = self.Norm.extractData()
                 Monitor = self.Monitor.extractData()
+                samples = self.sample
+                maskIndices = self.maskIndices
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
-        positions = np.array([qx,qy,energy])
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
+            
 
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
+            # Rotate all data files to fit with first data file
+            thetaDifference = [s.theta-samples[0].theta for s in samples]
+            rotationMatrices = [samples[0].RotMat.T@s.RotMat for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+            qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
+
+            positions = np.array([qx,qy,energy])
             Data,[binpositionsTotal,orthopos,Earray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
                                                             minPixel=minPixel,Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,
                                                             extend=extend,constantBins=constantBins)
@@ -453,7 +482,7 @@ class DataSet(object):
             orthopos = self.convertToHKL(orthopos)
             return Data,[binpositionsTotal,orthopos,Earray]
             
-
+        positions = np.array([qx,qy,energy])
        
         return cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,minPixel=minPixel,
                      Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
@@ -591,7 +620,7 @@ class DataSet(object):
                 Norm = float(DataList[2][index][0])
                 NC = int(DataList[3][index][0])
                 printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-            print(printString)
+                print(printString)
 
 
         ax.xaxis.set_label_coords(1.15, -0.025)
@@ -651,16 +680,23 @@ class DataSet(object):
                 energy = self.energy.extractData()
                 Norm = self.Norm.extractData()
                 Monitor = self.Monitor.extractData()
+                samples = self.sample
+                maskIndices = self.maskIndices
 
         else: 
             #dataFiles = isListOfDataFiles(dataFiles)
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
         
-        positions = np.array([qx,qy,energy])
+        
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
-
+            # Rotate all data files to fit with first data file
+            thetaDifference = [s.theta-samples[0].theta for s in samples]
+            rotationMatrices = [samples[0].RotMat.T@s.RotMat for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+            qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
+        positions = np.array([qx,qy,energy])
         return cutQE(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
                     minPixel=minPixel,EnergyBins=EnergyBins,extend=extend,constantBins=constantBins)
 
@@ -718,19 +754,27 @@ class DataSet(object):
             if len(self.convertedFiles)==0:
                 raise AttributeError('No data file to be binned provided in either input or DataSet object.')
             else:
-                I = self.I
-                qx = self.qx
-                qy = self.qy
-                energy = self.energy
-                Norm = self.Norm
-                Monitor = self.Monitor
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
+                samples = self.sample
+                maskIndices = self.maskIndices
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
             
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
+            # Rotate all data files to fit with first data file
+            thetaDifference = [s.theta-samples[0].theta for s in samples]
+            rotationMatrices = [samples[0].RotMat.T@s.RotMat for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+            qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
+
 
         positions = np.array([qx,qy,energy])
         return plotCutQE(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
@@ -817,6 +861,7 @@ class DataSet(object):
 
         DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins, internal=True)
         intensity,monitorCount,Normalization,NormCount = DataList
+        print(len(DataList))
         warnings.simplefilter('ignore')
         Int = [np.divide(Int*NC,mC*N) for Int,NC,mC,N in zip(intensity,NormCount,monitorCount,Normalization)]
         warnings.simplefilter('once')
@@ -968,10 +1013,12 @@ class DataSet(object):
                 energy = self.energy.extractData()#
                 Norm = self.Norm.extractData()#
                 Monitor = self.Monitor.extractData()#
+                samples = self.sample
+                maskIndices = self.maskIndices
 
         else: 
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor, = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor,DS.sample,DS.maskIndices
         if ax is None:
             if rlu is True:
                 ax = self.createRLUAxes()
@@ -996,8 +1043,8 @@ class DataSet(object):
         
         
         if rlu == True: # Rotate positions with taslib.misalignment to line up with RLU
-            positions = np.array([qx,qy])
-            qx,qy = np.einsum('ij,j...->i...',self.sample.RotMat,positions)
+            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+            qx,qy = np.concatenate([np.einsum('ij,j...->i...',s.RotMat,q) for s,q in zip(samples,Q)],axis=1)
             
         if 'zorder' in kwargs:
             zorder = kwargs['zorder']
@@ -1389,11 +1436,12 @@ class DataSet(object):
         if(len(QPoints)<2):
             raise AttributeError('Number of Q points given is less than 2.')
         if rlu==True: # Recalculate q points into qx and qy points
-            sample =self.convertedFiles[0].sample
-            positions = self.convertToQxQy(QPoints)
+        #    sample =self.sample[0]
+        #    positions = self.convertToQxQy(QPoints)
+            pass
             
         elif rlu==False: # RLU is false
-            positions = QPoints
+        #    positions = QPoints
             if QPoints.shape[1]!=2:
                 raise AttributeError('Provide Q list is not 2 dimensional, should have shape (n,2) in QxQy mode but got shape {}.'.format(QPoints.shape))
         else:
@@ -1412,12 +1460,12 @@ class DataSet(object):
         BinList = []
         centerPosition = []
         binDistance = []
-        for pStart,pStop,w,mP,EB in zip(positions,positions[1:],width,minPixel,EnergyBins):
-            _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=False,
+        for pStart,pStop,w,mP,EB in zip(QPoints,QPoints[1:],width,minPixel,EnergyBins):
+            _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
                                                                          dataFiles=dataFiles,extend=False,constantBins=constantBins,internal=True)
             DataList.append(_DataList)
             if rlu:
-                UB2D = self.sample.convertHKLINV # Matrix to calculate HKL from Qx,Qy
+                UB2D = self.sample[0].convertHKLINV # Matrix to calculate HKL from Qx,Qy  # TODO: 
                 _BinListUpdated = []
                 _centerPositionUpdated = []
                 for i,[Position,ortho,E] in enumerate(_BinList):
@@ -1605,8 +1653,8 @@ class DataSet(object):
                 q1 = positions[segID]
                 q2 = positions[segID+1]
                 if rlu:
-                    q1 = np.dot(self.sample.convertHKLINV,q1)
-                    q2 = np.dot(self.sample.convertHKLINV,q2)
+                    q1 = np.dot(self.sample[0].convertHKLINV,q1)  # TODO: 
+                    q2 = np.dot(self.sample[0].convertHKLINV,q2)
                 dirvec = np.array(q2)-np.array(q1)
                 
                 leftEdgeBins = np.array([np.dot(BL[0][0,:len(q1)],dirvec) for BL in BinList])
@@ -1654,7 +1702,7 @@ class DataSet(object):
                 direction = (qstop-qstart)
                 distanceChange = np.max(binDistance[maximalDistanceIDEnergy])-np.min(binDistance[minimalDistanceIDEnergy])
                 if rlu:
-                    qstartQ,qstopQ = [np.dot(self.sample.convertHKL,x) for x in [qstart,qstop]]
+                    qstartQ,qstopQ = [np.dot(self.sample[0].convertHKL,x) for x in [qstart,qstop]]  # TODO: 
                     dirLen = np.linalg.norm(direction)
                     dirLenQ = np.linalg.norm(qstopQ-qstartQ)
                     distanceChange*=dirLen/dirLenQ
@@ -1834,8 +1882,8 @@ class DataSet(object):
                 H = np.concatenate([bins[idx][0][:,0] for idx in range(energies)],axis=0)
                 K = np.concatenate([bins[idx][0][:,1] for idx in range(energies)],axis=0)
                 L = np.concatenate([bins[idx][0][:,2] for idx in range(energies)],axis=0)
-                P0,P1 = self.sample.calculateHKLToQxQy(H,K,L)
-                P0,P1 = np.einsum('mj,j...->m...',self.sample.RotMat,[P0,P1])
+                P0,P1 = self.sample[0].calculateHKLToQxQy(H,K,L)  # TODO: 
+                P0,P1 = np.einsum('mj,j...->m...',self.sample[0].RotMat,[P0,P1])  # TODO: 
                 
                 Data = np.array([np.concatenate(x,axis=0) for x in datlist]).squeeze()
                 INT = np.divide(Data[0]*Data[3],Data[2]*Data[1])
@@ -2088,7 +2136,7 @@ class DataSet(object):
 
             - Q (array): Converted HKL points in Qx QY of un-rotated coordinate system.
         """
-        return convertToQxQy(self.sample,HKL)
+        return convertToQxQy(self.sample[0],HKL)
 
     def convertToHKL(self,QxQy):
         """Convert array or vector of QxQy point(s) to corresponding HKL
@@ -2101,7 +2149,7 @@ class DataSet(object):
 
             - HKL (array): Converted QxQy points in HKL
         """
-        return convertToHKL(self.sample,QxQy)
+        return convertToHKL(self.sample[0],QxQy)
 
 def load(filename):
     """Function to load an object from a pickled file.
@@ -4325,7 +4373,7 @@ def test_DataSet_Visualization():
     DataFiles = ['Data/camea2018n000136.hdf']
 
     dataset = DataSet(dataFiles=DataFiles)
-    dataset.convertDataFile(saveLocation='Data')
+    dataset.convertDataFile(saveLocation='Data',saveFile=True)
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000136.nxs')])
@@ -4391,7 +4439,9 @@ def test_DataSet_1Dcut():
 
     #q3 = np.array([1.1,1.1])
     #q4 = np.array([2.0,2.0])
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=0.0,Emax=1.5,extend=False)
+    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
+    print(len(bins))
+    print(len(bins[0]))
     assert(np.all(bins[0][:,0]>=q1[0]-0.1))
     assert(np.all(bins[0][:,0]<=q2[0]+0.1))
     assert(np.all(bins[0][:,1]>=q1[1]-0.1))
@@ -4429,7 +4479,7 @@ def test_DataSet_1DcutE():
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile()
     Datset._getData()
-    I,qx,qy,energy,Norm,Monitor = Datset.I.flatten(),Datset.qx.flatten(),Datset.qy.flatten(),Datset.energy.flatten(),Datset.Norm.flatten(),Datset.Monitor.flatten()
+    I,qx,qy,energy,Norm,Monitor = Datset.I.extractData(),Datset.qx.extractData(),Datset.qy.extractData(),Datset.energy.extractData(),Datset.Norm.extractData(),Datset.Monitor.extractData()
 
     [intensity,MonitorCount,Normalization,normcounts],[bins] = cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=Emin,E2=Emax,q=q,width=width,minPixel=0.01)
     Q = Datset.convertToHKL(q.reshape(2))
@@ -4510,15 +4560,15 @@ def test_DataSet_2Dcut():
 
     for i in range(len(pos)):
         for j in range(len(pos[i])):
-            assert(np.all(pos1[i][j]==pos2[i][j]))
+            assert(np.all(np.isclose(pos1[i][j],pos2[i][j])))
     
     for i in range(len(cpos)):
         for j in range(len(cpos[i])):
-            assert(np.all(cpos2[i][j]==cpos1[i][j]))
+            assert(np.all(np.isclose(cpos2[i][j],cpos1[i][j])))
         
     for i in range(len(distance)):
         for j in range(len(distance[i])):
-            assert(np.all(distance2[i][j]==distance1[i][j]))
+            assert(np.all(np.isclose(distance2[i][j],distance1[i][j])))
 
 def test_DataSet_cutPowder():
     Tolerance = 0.01
@@ -4578,7 +4628,7 @@ def test_DataSet_createQEAxes():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile()
 
-    ax = ds.createQEAxes(projectionVector1=ds.sample.projectionVector1,projectionVector2=ds.sample.projectionVector2)
+    ax = ds.createQEAxes(projectionVector1=ds.sample[0].projectionVector1,projectionVector2=ds.sample[0].projectionVector2)
 
     try:
         ax = ds.createQEAxes(axis=2) # Axis only allowed to be 0 or 1
