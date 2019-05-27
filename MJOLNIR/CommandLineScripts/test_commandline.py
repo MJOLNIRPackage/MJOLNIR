@@ -45,8 +45,10 @@ optional arguments:
     assert(result == helpText)
 
 def test_CalibrationInsepctor_Run():
-    os.makedirs('_temp')
-    
+    try:
+      os.makedirs('_temp')
+    except:
+      pass
     subprocess.check_output(['MJOLNIRCalibrationInspector', '-s _temp/','-b 1',dataFiles[0]])
     # Creates 4 files in _temp
     filesCreated = ['_temp/Final_Energy_Individual_1.png',
