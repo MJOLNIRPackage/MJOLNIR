@@ -205,7 +205,13 @@ class CutObject(object):
 
     def __getitem__(self,index):
         try:
-            return self.data[index]
+            if hasattr(self,'_ax'):
+                if index == 0:
+                    return self._ax
+                else:
+                    self.data[index]
+            else:
+                return self.data[index]
         except IndexError:
             raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self)))
 
@@ -217,9 +223,18 @@ class CutObject(object):
         return self
     
     def __next__(self):
-        if self._index >= len(self):
-            raise StopIteration
-        result = self.data[self._index]
+        
+        if hasattr(self,'_ax'):
+            if self._index >= len(self)+1:
+                raise StopIteration
+            if self._index == 0:
+                result = self._ax
+            else:
+                result = self.data[self._index-1]
+        else:
+            if self._index >= len(self):
+                raise StopIteration
+            result = self.data[self._index]
         self._index += 1
         return result
 
