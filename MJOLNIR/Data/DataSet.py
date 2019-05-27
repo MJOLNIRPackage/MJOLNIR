@@ -470,7 +470,7 @@ class DataSet(object):
             q1,q2 = self.convertToQxQy([q1,q2])
             # Rotate all data files to fit with first data file
             thetaDifference = [s.theta-samples[0].theta for s in samples]
-            rotationMatrices = [samples[0].RotMat.T@s.RotMat for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            rotationMatrices = [np.multiply(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
             Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
             qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
 
@@ -693,7 +693,7 @@ class DataSet(object):
             q1,q2 = self.convertToQxQy([q1,q2])
             # Rotate all data files to fit with first data file
             thetaDifference = [s.theta-samples[0].theta for s in samples]
-            rotationMatrices = [samples[0].RotMat.T@s.RotMat for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            rotationMatrices = [np.multiply(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
             Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
             qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
         positions = np.array([qx,qy,energy])
@@ -771,7 +771,7 @@ class DataSet(object):
             q1,q2 = self.convertToQxQy([q1,q2])
             # Rotate all data files to fit with first data file
             thetaDifference = [s.theta-samples[0].theta for s in samples]
-            rotationMatrices = [samples[0].RotMat.T@s.RotMat for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            rotationMatrices = [np.multiply(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
             Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
             qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
 
