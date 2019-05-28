@@ -510,7 +510,7 @@ class DataFile(object):
                 
                 self.instrumentCalibrations = calibrations
                 if self.type == 'MultiFLEXX':
-                    self.mask = np.zeros_like(self.I.data,dtype=bool)
+                    self.mask = np.zeros_like(self.I,dtype=bool)
                     self.mask[:,np.isnan(self.instrumentCalibrationEf[:,0])] = True
             elif self.type == '1D':
                 pass
@@ -637,7 +637,7 @@ class DataFile(object):
         convFile.updateProperty(updateDict)
 
         if convFile.type == 'nxs' and convFile.binning == 8:
-            convFile.mask = np.zeros_like(convFile.I.data,dtype=bool)
+            convFile.mask = np.zeros_like(convFile.I,dtype=bool)
             convFile.mask[:,:,:2] = True
 
         return convFile

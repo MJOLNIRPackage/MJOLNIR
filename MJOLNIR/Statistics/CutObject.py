@@ -25,14 +25,18 @@ pythonVersion = sys.version_info[0]
 
 
 class CutObject(object):
-    def __init__(self,*returnValues, dataSet = None, args = None, kwargs = None, cutFunction = None):
+    def __init__(self,*returnValues, **kwargsCut): # dataSet = None, args = None, kwargs = None, cutFunction = None
+        dataSet = kwargsCut.get('dataSet',None)
+        args = kwargsCut.get('args',None)
+        kwargs = kwargsCut.get('kwargs',None)
+        cutFunction = kwargsCut.get('cutFunction',None)
         if isinstance(dataSet,MJOLNIR.Data.DataSet.DataSet):
             self.dataSet = dataSet
         elif not dataSet is None:
             raise AttributeError('dataSet attribute has to be of type MJOLNIR.Data.DataSet.')
 
         if issubclass(type(returnValues[0]),matplotlib.axes.Axes):
-            self._ax,*data = returnValues
+            self._ax,data = returnValues[0],returnValues[1:]
         else:
             data = returnValues
         
