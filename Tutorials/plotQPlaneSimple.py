@@ -15,10 +15,7 @@ def Tester():
     # Create the data set
     ds = DataSet.DataSet(fileList)
     ds.convertDataFile(saveFile=False)
-    mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
-    mask[:,:,:3]=True
-    ds.mask = mask
-    
+        
     # Choose energy limits for binning
     EMin = 3.5
     EMax = 4.0
