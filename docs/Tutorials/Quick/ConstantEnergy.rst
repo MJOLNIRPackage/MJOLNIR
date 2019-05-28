@@ -15,9 +15,6 @@ After one has gotten an overview of the data measured through the Viewer3D (expl
    # Create the data set
    ds = DataSet.DataSet(fileList)
    ds.convertDataFile(saveFile=False)
-   mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
-   mask[:,:,:3]=True
-   ds.mask = mask
    
    # Choose energy limits for binning
    EMin = 3.5

@@ -54,9 +54,6 @@ Assuming that the Quick visualization from the Quick tutorials is understood, th
    fileName = _tools.fileListGenerator(numbers,folder='/Path/To/Data/',year=2018)
    ds = DataSet.DataSet(dataFiles=fileName)
    ds.convertDataFile(saveFile=False)
-   mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
-   mask[:,:,:3]=True
-   ds.mask = mask
    
    # Plotting data quickly in equi-sized voxels can be done by
    Viewer = ds.View3D(0.03,0.03,0.09,grid=9,rlu=True)
