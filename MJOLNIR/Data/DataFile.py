@@ -1130,9 +1130,9 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
     
     Monitor = np.asarray([Monitor]*steps)
     
-    df.A3Off = Marray(A3Off)
-    df.A4Off = Marray(A4Off)
-    df.Monitor = Marray(Monitor)
+    df.A3Off = np.array([A3Off])
+    df.A4Off = np.array([A4Off])
+    df.Monitor = np.array(Monitor)
     df.MonitorPreset = Monitor[0]
     df.MonitorMode = 'm'
 
@@ -1159,11 +1159,11 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
     
     df.Time = df.Monitor*0.0013011099243 # Typical measurement time RITA2 in 2018
     
-    df.Ei = Marray(Ei)
-    df.A3 = Marray(A3)
-    df.A4 = Marray(A4)
+    df.Ei = np.array(Ei)
+    df.A3 = np.array(A3)
+    df.A4 = np.array(A4)
     
-    df.I = Marray(np.zeros((steps,detectors,pixels)))
+    df.I = np.array(np.zeros((steps,detectors,pixels)))
     df.binning = None
     
     if not normalizationFiles is None:
@@ -1181,6 +1181,8 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
             df.possibleBinnings = binning
             df.loadBinning(1)
     
+    
+    df.mask = np.zeros_like(df.I,dtype=bool)
     return df
 
 
@@ -1332,12 +1334,13 @@ def test_DataFile_equility():
     f3 = DataFile(f2)
     assert(f1==f3)
     print('----------')
+    f4 = DataFile('Data/camea2018n000137.hdf')
+    assert(f1!=f4)
+    f5 = f2.convert(binning=8)
+    f5.saveNXsqom('Data/camea2018n000136.nxs')
     f3 = DataFile('Data/camea2018n000136.nxs')
     assert(f1==f3)
     print('----------')
-    f4 = DataFile('Data/camea2018n000137.hdf')
-    assert(f1!=f4)
-
 
 def test_DataFile_plotA4():
     plt.ioff()
