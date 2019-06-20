@@ -277,7 +277,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=True):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -4346,7 +4346,7 @@ def test_DataSet_full_test():
     DataFile = ['Data/camea2018n000136.hdf']
 
     dataset = DataSet(dataFiles=DataFile)
-    dataset.convertDataFile(saveLocation='Data/')
+    dataset.convertDataFile(saveLocation='Data/',saveFile=True)
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     
@@ -4478,7 +4478,7 @@ def test_DataSet_1DcutE():
     plt.ioff()
     convertFiles = ['Data/camea2018n000137.hdf']
     Datset = DataSet(dataFiles = convertFiles)
-    Datset.convertDataFile()
+    Datset.convertDataFile(saveFile=True)
     Datset._getData()
     I,qx,qy,energy,Norm,Monitor = Datset.I.extractData(),Datset.qx.extractData(),Datset.qy.extractData(),Datset.energy.extractData(),Datset.Norm.extractData(),Datset.Monitor.extractData()
 
@@ -4578,7 +4578,7 @@ def test_DataSet_cutPowder():
     convertFiles = ['Data/camea2018n000136.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
-    Datset.convertDataFile()
+    Datset.convertDataFile(saveFile=True)
     mask = np.ones_like(Datset.I.data)
 
     Datset.mask = mask
@@ -4605,7 +4605,7 @@ def test_DataSet_createRLUAxes():
     convertFiles = ['Data/camea2018n000136.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
-    ds.convertDataFile()
+    ds.convertDataFile(saveFile=True)
 
     ax = ds.createRLUAxes()
     ax = ds.createRLUAxes(basex=0.5,figure=fig)
@@ -4627,7 +4627,7 @@ def test_DataSet_createQEAxes():
     convertFiles = ['Data/camea2018n000136.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
-    ds.convertDataFile()
+    ds.convertDataFile(saveFile=True)
 
     ax = ds.createQEAxes(projectionVector1=ds.sample[0].projectionVector1,projectionVector2=ds.sample[0].projectionVector2)
 
@@ -4649,7 +4649,7 @@ def test_DataSet_plotQPlane():
     convertFiles = ['Data/camea2018n000137.hdf']#'TestData/ManuallyChangedData/A3.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
-    Datset.convertDataFile()
+    Datset.convertDataFile(saveFile=True)
 
     EmptyDS = DataSet()
     try:
@@ -4731,7 +4731,7 @@ def test_DataSet_plotA3A4(quick):
     File2 = 'Data/camea2018n000137.hdf'
 
     DS = DataSet(dataFiles=[File1,File2])
-    DS.convertDataFile()
+    DS.convertDataFile(saveFile=True)
 
     F1 = DS.convertedFiles[0]
     F2 = DS.convertedFiles[1]
@@ -4987,7 +4987,7 @@ def test_DataSet_extractDetectorData():
     dataset = DataSet(DataFile)
 
     binning = 1
-    dataset.convertDataFile(binning=binning)
+    dataset.convertDataFile(binning=binning,saveFile=True)
 
     
     try:
