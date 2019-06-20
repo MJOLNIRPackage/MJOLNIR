@@ -286,11 +286,11 @@ class Viewer3D(object):
         self.text.set_text(self.stringValue())
         self.im.remove()
         if self.shading=='flat':
-            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face')
         elif self.shading=='gouraud': # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face') # ,vmin=1e-6,vmax=6e-6
         self.im.set_clim(self.caxis)
         self.ax.set_position(self.figpos)
         xlim = self.ax.get_xlim()
