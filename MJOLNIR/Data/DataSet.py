@@ -178,9 +178,9 @@ class DataSet(object):
         elif masksum==self.I.size:
             warnings.warn('Provided mask masks all elements!')
         self._mask = mask
-        for att in self.__dict__.values():
-            if hasattr(att,'extractData'):
-                att.mask = mask
+        for key,val in self.__dict__.items():
+            if hasattr(val,'extractData'):
+                val.mask = mask
         self.maskIndices = np.cumsum([np.sum(1-M) for M in self.mask])[:-1]
 
     @property
