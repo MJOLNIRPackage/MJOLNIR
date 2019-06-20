@@ -8,4 +8,4 @@ MJOLNIR Module
 import sys,os
 sys.path.append('.')
 
-__version__ = '1.1.2'
+__version__ = '1.1.4'
