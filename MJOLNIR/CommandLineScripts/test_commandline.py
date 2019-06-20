@@ -145,20 +145,20 @@ def test_Convert_binning():
 def test_Convert_SaveLocation():
     if not os.path.isdir('Data/Data'):
           os.makedirs('Data/Data')
-    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-s Data/Data'])
+    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-s Data'])
     fileName = dataFiles[0].split('/')[1].replace('hdf','nxs')
-    f = DataFile.DataFile('Data/Data/'+fileName)
+    f = DataFile.DataFile('Data/'+fileName)
     assert(f.binning == 8)
     print(fileName)
     print(f.name)
     assert(f.name == fileName)
-    os.remove('Data/Data/'+fileName)
-    os.removedirs('Data/Data')
+    
     
 def test_Convert_Reuse():
     subSet = [dataFiles[0],dataFiles[3]]
     call = ['MJOLNIRConvert'] + subSet
     subprocess.check_output(call)
+    print('calling: "'+' '.join(call)+'"')
     for file in subSet:
         os.remove(file.replace('hdf','nxs'))
     subprocess.check_output(['MJOLNIRConvert','-r'])
