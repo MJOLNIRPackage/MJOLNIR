@@ -128,8 +128,10 @@ class Viewer3D(object):
         self.cmap.set_bad('white',1.)
         self.value = 0
         
+
+        viewAxis = axis
         axis_color='white'
-        self.setAxis(axis)
+        self.setAxis(2)
         self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
         self.figure.canvas.mpl_connect('scroll_event',lambda event: onscroll(event, self))
         
@@ -173,7 +175,7 @@ class Viewer3D(object):
         #    self.ax.set_xlim(np.min([xlim[0],ylim[0]]),np.max([xlim[1],ylim[1]]))
         self.Energy_slider.set_val(self.value)
 
-        self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(self,x))
+        self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event))
         
         try:
             maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
@@ -181,6 +183,15 @@ class Viewer3D(object):
             maxVal = 1
         self.caxis = [np.nanmin(self.masked_array),maxVal]
         self.ax.grid(self.grid,zorder=self.gridZOrder)
+
+        for view in [0,1,2]: # Add the hover over functionality to all axes
+            self.setAxis(view)
+            self.ax.format_coord = lambda x,y: onclick(self,x,y,returnText=True) # Overwrite standard hover with data information
+
+        self.setAxis(viewAxis) # Set view plane to correct
+        ## Hack for this to look nice as just changing direction does not render correctly
+        self.setPlane(1)
+        self.setPlane(0)
 
     @property 
     def caxis(self):
@@ -300,48 +311,55 @@ class Viewer3D(object):
         self.ax.grid(self.grid,zorder=self.gridZOrder)
 
 
-def onclick(self, event): # pragma: no cover
+def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
     if event.xdata is not None and self.ax.in_axes(event):
         try:
-            C = self.figure.canvas.cursor().shape() # Only works for pyQt5 backend
+            C = self.ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
         except:
             pass
         else:
             if C != 0:
                 return
-        idz = self.value
-        axis = self.axis
+        return function(self,event.xdata,event.ydata,*args,**kwargs)
 
-        XX,YY = self.X[:,:,idz],self.Y[:,:,idz]
-        XX = 0.25*(XX[:-1,:-1]+XX[1:,:-1]+XX[:-1,1:]+XX[1:,1:])
-        YY = 0.25*(YY[:-1,:-1]+YY[1:,:-1]+YY[:-1,1:]+YY[1:,1:])
-        idx = np.unravel_index(np.argmin(np.abs(XX-event.xdata)),XX.shape)[0]
-        idy = np.unravel_index(np.argmin(np.abs(YY-event.ydata)),YY.shape)[1]
-        I = self.masked_array[idx,idy,idz]
 
-        masked = np.ma.is_masked(I)
-        printString = ''
-        printString+=self.ax.format_coord(event.xdata, event.ydata)+', '
+def onclick(self,x,y,returnText=False): # pragma: no cover
+    idz = self.value
+    axis = self.axis
 
-        if masked:
-            I = np.nan
+    XX,YY = self.X[:,:,idz],self.Y[:,:,idz]
+    XX = 0.25*(XX[:-1,:-1]+XX[1:,:-1]+XX[:-1,1:]+XX[1:,1:])
+    YY = 0.25*(YY[:-1,:-1]+YY[1:,:-1]+YY[:-1,1:]+YY[1:,1:])
+    idx = np.unravel_index(np.argmin(np.abs(XX-x)),XX.shape)[0]
+    idy = np.unravel_index(np.argmin(np.abs(YY-y)),YY.shape)[1]
+    I = self.masked_array[idx,idy,idz]
 
-        printString+='I = {:.4E}'.format(I)
-       
-        if self.allData is True and not masked:
-            if self.axis == 0:
-                flipper = [2,0,1]
-            elif self.axis == 1:
-                flipper = [0,2,1]
-            else:
-                flipper = [0,1,2]
-            ID = np.array([idx,idy,idz])[flipper]
-            cts = self.Counts[ID[0],ID[1],ID[2]]
-            Norm = self.Normalization[ID[0],ID[1],ID[2]]
-            Mon = self.Monitor[ID[0],ID[1],ID[2]]
-            NC = self.NormCounts[ID[0],ID[1],ID[2]]
-            printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+    masked = np.ma.is_masked(I)
+    printString = ''
+    printString+=self.axRLU.sample.format_coord(x, y)+', '
 
+    if masked:
+        I = np.nan
+
+    printString+='I = {:.4E}'.format(I)
+    
+    if self.allData is True and not masked:
+        if self.axis == 0:
+            flipper = [2,0,1]
+        elif self.axis == 1:
+            flipper = [0,2,1]
+        else:
+            flipper = [0,1,2]
+        ID = np.array([idx,idy,idz])[flipper]
+        cts = self.Counts[ID[0],ID[1],ID[2]]
+        Norm = self.Normalization[ID[0],ID[1],ID[2]]
+        Mon = self.Monitor[ID[0],ID[1],ID[2]]
+        NC = self.NormCounts[ID[0],ID[1],ID[2]]
+        printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+
+    if returnText:
+        return printString
+    else:
         print(printString)
         
 def onkeypress(event,self): # pragma: no cover
