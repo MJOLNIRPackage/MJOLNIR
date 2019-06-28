@@ -121,6 +121,8 @@ class Viewer3D(object):
 
             else:
                 raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
+
+            self.figure.set_size_inches(10,7)
        
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
