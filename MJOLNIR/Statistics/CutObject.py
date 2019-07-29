@@ -247,6 +247,23 @@ class CutObject(object):
 
     def __delitem__(self,index):
         raise NotImplementedError('It is not possible to delete items in a CutObject.')
+
+
+    def fittingIterator(self):
+        X = np.concatenate(self.centerPosition,axis=0)
+        IDs = np.concatenate([[i]*len(CP) for i,CP in enumerate(self.centerPosition)])
+
+        DATA = []
+        for D in self.dataList:
+            DataLocal = []
+            for E in range(len(D[0])):
+                DataLocal.append([D[0][E],D[1][E],D[2][E],D[3][E]])
+            DATA.append(DataLocal)
+
+
+        DATA = np.concatenate(DATA,axis=0)
+        QDistance = np.concatenate(self._ax.edgeQDistance)
+        return zip(IDs,X,DATA,QDistance)
     
 
 
