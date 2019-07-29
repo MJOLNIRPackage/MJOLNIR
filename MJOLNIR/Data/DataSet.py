@@ -488,7 +488,7 @@ class DataSet(object):
                      Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
 
     @_tools.cutObject
-    @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound',]) #Advanced KWargs checker for figures
+    @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound','mfc','markeredgewidth','markersize']) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
@@ -576,6 +576,8 @@ class DataSet(object):
             plt.figure()
             ax = plt.gca()
         
+        if not 'label' in kwargs:
+            kwargs['label'] = 'Data'
         ax.errorbar(binDistance,INT,yerr=INT_err,**kwargs)
 
         ax.set_xticks(binDistance[xvalues])
@@ -1540,6 +1542,9 @@ class DataSet(object):
             The ax.set_clim function is created to change the colour scale. It takes inputs vmin,vmax. This function does however not work in 3D....
 
         """
+        if not isinstance(EnergyBins,np.ndarray):
+            EnergyBins = np.array(EnergyBins)
+
         DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins,internal=True)
         if rlu==True: # Recalculate q points into qx and qy points
             positions = self.convertToQxQy(QPoints)
@@ -1637,6 +1642,11 @@ class DataSet(object):
             idmax = len(DataList) # Number of segments
             edgeQDistance = []
             actualEnergy = []
+            qstart = []
+            qstop = []
+            direction = []
+            distanceChange = []
+
             for BLT in BinListTotal:
                 localE = []
                 for BLTSub in BLT:
@@ -1697,16 +1707,16 @@ class DataSet(object):
                 maximalDistanceID = np.argmax(binDistance[maximalDistanceIDEnergy])
                 
                 
-                qstart= centerPosition[minimalDistanceIDEnergy][minimalDistanceID][:len(q1)]
-                qstop = centerPosition[maximalDistanceIDEnergy][maximalDistanceID][:len(q1)]
+                qstart.append(centerPosition[minimalDistanceIDEnergy][minimalDistanceID][:len(q1)])
+                qstop.append(centerPosition[maximalDistanceIDEnergy][maximalDistanceID][:len(q1)])
                 # Prepare the calculation of tick markers
-                direction = (qstop-qstart)
-                distanceChange = np.max(binDistance[maximalDistanceIDEnergy])-np.min(binDistance[minimalDistanceIDEnergy])
+                direction.append(qstop[segID]-qstart[segID])
+                distanceChange.append(np.max(binDistance[maximalDistanceIDEnergy])-np.min(binDistance[minimalDistanceIDEnergy]))
                 if rlu:
-                    qstartQ,qstopQ = [np.dot(self.sample[0].convertHKL,x) for x in [qstart,qstop]]  # TODO: 
-                    dirLen = np.linalg.norm(direction)
+                    qstartQ,qstopQ = [np.dot(self.sample[0].convertHKL,x) for x in [qstart[segID],qstop[segID]]]  # TODO: 
+                    dirLen = np.linalg.norm(direction[segID])
                     dirLenQ = np.linalg.norm(qstopQ-qstartQ)
-                    distanceChange*=dirLen/dirLenQ
+                    distanceChange[-1]*=dirLen/dirLenQ
                 
                 binminmaxList = np.linspace(0,1,100)
                 ticksCurrentSeg = ticksInSegments[segID]
@@ -1721,13 +1731,17 @@ class DataSet(object):
 
                 my_xticks=[]
                 for i in xvalues:
-                    positionValues = binminmaxList[i]*direction+qstart
+                    positionValues = binminmaxList[i]*direction[segID]+qstart[segID]
                     my_xticks.append('\n'.join([('{:.'+str(tickRound)+'f}').format(x+0.0) for x in positionValues]))
                 
-                xticks.append(binminmaxList[xvalues]*distanceChange +offset[-1]) # binDistanceAll[xvalues]
+                
+                
+                xticks.append(binminmaxList[xvalues]*distanceChange[segID] +offset[segID]) # binDistanceAll[xvalues]
                 xticklabels.append(my_xticks)
-                offset.append(offset[-1]+np.max([np.max(binedge) for binedge in binedges]))
-
+                offset.append(offset[segID]+np.max([np.max(binedge) for binedge in binedges]))
+            def calculateXPosition(x,ID):
+                return np.dot(x-qstart[ID],direction[ID])/(np.linalg.norm(direction[ID])**2)*distanceChange[ID] +offset[ID]
+            ax.converterFunction = calculateXPosition
             if plotSeperator == True: # plot last seperator
                 plt.plot([offset,offset],[np.min(EnergyBins[-1]),np.max(EnergyBins[-1])],'k',linewidth=seperatorWidth)
             
@@ -1917,6 +1931,8 @@ class DataSet(object):
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
             else:
                 ax.pmeshs = pmeshs
+        ax.edgeQDistance = edgeQDistance   
+        ax.offset = offset
         return ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal
 
     @_tools.KwargChecker()
