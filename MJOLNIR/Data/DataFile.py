@@ -77,6 +77,55 @@ class DataFile(object):
                     else:
                         self.Monitor=np.array(f.get('entry/data/monitor'))
                     self.Time = np.array(f.get('entry/control/time'))
+                    self.startTime = np.array(f.get('entry/start_time'))
+                    self.endTime = np.array(f.get('entry/end_time'))
+                    self.experimentIdentifier = np.array(f.get('entry/experiment_identifier'))
+                    self.comment = np.array(f.get('entry/comment'))
+                    self.proposalId = np.array(f.get('entry/proposal_id'))
+                    self.proposalTitle = np.array(f.get('entry/proposal_title'))
+
+                    self.localContactName = np.array(f.get('entry/local_contact/name'))
+                    
+                    self.proposalUserName = np.array(f.get('entry/proposal_user/name'))
+                    self.proposalUserEmail = np.array(f.get('entry/proposal_user/email'))
+
+                    self.userName = np.array(f.get('entry/user/name'))
+                    self.userEmail = np.array(f.get('entry/user/email'))
+                    self.userAddress = np.array(f.get('entry/user/address'))
+                    self.userAffiliation = np.array(f.get('entry/user/affiliation'))
+
+                    # Monochromator
+
+                    attributes = ['type','d_spacing','horizontal_curvature','vertical_curvature',
+                        'horizontal_curvature_zero','vertical_curvature_zero',
+                        'gm','gm_zero','tlm','tlm_zero','tum','tum_zero','rotation_angle','rotation_angle_zero']
+                    
+                    values = ['monochromator'+x for x in ['Type','DSpacing','HorizontalCurvature',
+                            'VerticalCurvature','HorizontalCurvatureZero','VerticalCurvatureZero',
+                            'GM','GMZero','TLM','TLMZero','TUM','TUMZero','RotationAngle','RotationAngleZero']]
+                    for att,value in zip(attributes,values):
+                        loadedValue = f.get('entry/CAMEA/monochromator/{}'.format(att))
+                        if not loadedValue is None: # if it does exist
+                            setattr(self,value,np.array(loadedValue))
+
+                    # MonochromatorSlit
+
+                    attributes = [x+zero for x in ['bottom','left','right','top'] for zero in ['','_zero']]+\
+                        ['x_gap','y_gap']
+                    
+                    values = ['monochromatorSlit'+x+zero for x in ['Bottom','Left','Right','Top'] for zero in ['','Zero']]+\
+                        ['monochromatorSlitXGap','monochromatorSlitYGap']
+                    for att,value in zip(attributes,values):
+                        setattr(self,value,np.array(f.get('entry/CAMEA/monochromator_slit/{}'.format(att))))
+
+                    # Analyzer
+                    # analyzer_selection
+                    attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset','type']
+                    values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
+                    for att,value in zip(attributes,values):
+                        setattr(self,value,np.array(f.get('entry/CAMEA/analyzer/{}'.format(att))))
+                    self.analyzerSelection = np.array(f.get('entry/CAMEA/analyzer/analyzer_selection'))
+                    self.detectorSelection = np.array(f.get('entry/CAMEA/detector/detector_selection'))
 
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
@@ -114,6 +163,9 @@ class DataFile(object):
                     if self.type == 'nxs':
                         self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
                     self.title = np.array(f.get('entry/title'))
+
+                    self.absoluteTime = np.array(f.get('entry/control/absolute_time'))
+                    self.protonBeam = np.array(f.get('entry/proton_beam/data'))
 
                     try:
                         self.scanParameters,self.scanValues,self.scanUnits = getScanParameter(f)
@@ -223,10 +275,9 @@ class DataFile(object):
                 self.__setattr__(key,dictionary[key])
 
     def __eq__(self,other):
-        print(self.difference(other))
         return len(self.difference(other))==0
     
-    def difference(self,other,keys = set(['sample','instrument','Ei','I','_A3','_A4','binning','scanParameters'])):
+    def difference(self,other,keys = set(['sample','instrument','Ei','I','_A3','_A4','binning','scanParameters','Monitor'])):
         """Return the difference between two data files by keys"""
         dif = []
         if not set(self.__dict__.keys()) == set(other.__dict__.keys()): # Check if same generation and type (hdf or nxs)
