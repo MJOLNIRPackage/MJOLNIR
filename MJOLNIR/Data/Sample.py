@@ -265,7 +265,10 @@ class Sample(object):
         self.convertHKL = np.dot(p23,UB) # Convert from HKL to Qx, Qy
 
         # Calculate 'misalignment' of the projection vector 1
-        self.theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
+        try:
+            self.theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
+        except AttributeError:
+            self.theta = 0
         
         self.RotMat = _tools.Rot(self.theta) # Create 2x2 rotation matrix
         
