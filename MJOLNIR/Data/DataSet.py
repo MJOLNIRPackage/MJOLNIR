@@ -19,6 +19,7 @@ from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
 from mpl_toolkits.axisartist import SubplotHost
+import pandas as pd
 import pytest
 from scipy.ndimage import filters
 import scipy.optimize
@@ -405,7 +406,7 @@ class DataSet(object):
 
         return returnData,bins
 
-    @_tools.cutObject
+    
     @_tools.KwargChecker()
     def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None,constantBins=False):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
@@ -469,25 +470,49 @@ class DataSet(object):
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
             # Rotate all data files to fit with first data file
-            thetaDifference = [s.theta-samples[0].theta for s in samples]
+            #thetaDifference = [s.theta-samples[0].theta for s in samples]
             rotationMatrices = [np.dot(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
             Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
             qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
 
             positions = np.array([qx,qy,energy])
-            Data,[binpositionsTotal,orthopos,Earray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
+            Data,[binpositionsTotal,orthopos,EArray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
                                                             minPixel=minPixel,Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,
                                                             extend=extend,constantBins=constantBins)
+            
+            QxBin,QyBin = binpositionsTotal[:,:2].T
             binpositionsTotal = np.concatenate([self.convertToHKL(binpositionsTotal[:,:2]),binpositionsTotal[:,-1].reshape(-1,1)],axis=1)
             orthopos = self.convertToHKL(orthopos)
-            return Data,[binpositionsTotal,orthopos,Earray]
             
-        positions = np.array([qx,qy,energy])
-       
-        return cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,minPixel=minPixel,
-                     Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
+        else:
+            positions = np.array([qx,qy,energy])
+        
+            Data,[binpositionsTotal,orthopos,EArray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,minPixel=minPixel,
+                        Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
+            QxBin,QyBin = binpositionsTotal[:,:2].T
+            binpositionsTotal = np.concatenate([self.convertToHKL(binpositionsTotal[:,:2]),binpositionsTotal[:,-1].reshape(-1,1)],axis=1)
 
-    @_tools.cutObject
+        HBin,KBin,LBin,EnergyBin = binpositionsTotal.T
+
+        def meaning(X):
+            return 0.5*(X[:-1]+X[1:])
+
+        Qx = meaning(QxBin)
+        Qy = meaning(QyBin)
+        H = meaning(HBin)
+        K = meaning(KBin)
+        L = meaning(LBin)
+        Energy = meaning(EnergyBin)
+
+
+        I,Mon,Norm,BinC = Data
+
+        pdData = pd.DataFrame(np.array([np.array(x.flatten()) for x in [Qx,Qy,H,K,L,Energy,I,Mon,Norm,BinC]]).T,
+            columns = ['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount'],
+            )
+        return pdData,[binpositionsTotal,orthopos,EArray]
+
+    
     @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound','mfc','markeredgewidth','markersize']) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
@@ -541,18 +566,23 @@ class DataSet(object):
         
         
         
-        D,P = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,\
-        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins, internal=True)
+        #D,P 
+        Data,[binpositionsTotal,orthopos,EArray] = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,\
+        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            INT = np.divide(D[0]*D[3],D[1]*D[2])
-            INT_err = np.divide(np.sqrt(D[0])*D[3],D[1]*D[2])
+            INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
+            INT_err = np.divide(np.sqrt(Data['Intensity'])*Data['BinCount'],Data['Monitor']*Data['Normalization'])
         
         
-        binCenter = 0.5*(P[0][:-1]+P[0][1:])
-        num=len(binCenter)
         
+        num=len(Data)
+        if rlu:
+            variables = ['H','K','L']
+        else:
+            variables = ['Qx','Qy']
        
+        variables = variables+['Energy']
         if not 'ticks' in kwargs:
             ticks = 5
         else:
@@ -568,9 +598,10 @@ class DataSet(object):
         xvalues = np.round(np.linspace(0,num-1,ticks)).astype(int)
         my_xticks=[]
         for i in xvalues:
-            my_xticks.append('\n'.join(map(lambda x:('{:.'+str(tickRound)+'f}').format(x),[np.round(binCenter[i,j],tickRound) for j in range(len(binCenter[i]))])))
+            my_xticks.append('\n'.join(map(lambda x:('{:.'+str(tickRound)+'f}').format(x),[np.round(Data[var][i],tickRound) for var in variables])))
+   
         
-        binDistance = np.linalg.norm(binCenter[:,:-1]-P[0][0,:-1],axis=1)
+        Data['binDistance'] = np.linalg.norm(Data[variables]-np.array(Data[variables].iloc[1]),axis=1)
         
         if ax is None:
             plt.figure()
@@ -578,15 +609,15 @@ class DataSet(object):
         
         if not 'label' in kwargs:
             kwargs['label'] = 'Data'
-        ax.errorbar(binDistance,INT,yerr=INT_err,**kwargs)
+        ax.errorbar(Data['binDistance'],INT,yerr=INT_err,**kwargs)
 
-        ax.set_xticks(binDistance[xvalues])
+        ax.set_xticks(Data['binDistance'].iloc[xvalues])
         ax.set_xticklabels(my_xticks,fontsize=10, multialignment="center",ha="center")
         
         def calculateIndex(binDistance,x):
             return np.argmin(np.abs(binDistance-x))
 
-        ax.calculateIndex = lambda x: calculateIndex(binDistance,x)
+        ax.calculateIndex = lambda x: calculateIndex(Data['binDistance'],x)
         
         if rlu==False:
             ax.set_xlabel('$Q_x/A$\n$Q_y/A$\nE/meV', fontsize=8)
@@ -602,7 +633,7 @@ class DataSet(object):
             ax.set_xlabel('$Q_h/A$\n$Q_k/A$\n$Q_l/A$\nE/meV', fontsize=8)
 
         
-        def onclick(event,ax,DataList):# pragma: no cover
+        def onclick(event,ax,Data):# pragma: no cover
             if ax.in_axes(event):
                 try:
                     C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -617,10 +648,10 @@ class DataSet(object):
                 printString = ax.format_coord(x,y)
                 index = ax.calculateIndex(x)
             
-                cts = int(DataList[0][index])
-                Mon = int(DataList[1][index][0])
-                Norm = float(DataList[2][index][0])
-                NC = int(DataList[3][index][0])
+                cts = int(Data['Intensity'][index])
+                Mon = int(Data['Monitor'][0])
+                Norm = float(Data['Normalization'][0])
+                NC = int(Data['BinCount'][0])
                 printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
                 print(printString)
 
@@ -629,11 +660,12 @@ class DataSet(object):
         ax.set_ylabel('Int [arb]')
         plt.tight_layout()
         
-        ax.format_coord = lambda x,y: format_coord(x,y,ax,binCenter)
-        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,D))
-        return ax,D,P,binCenter,binDistance
+        
+        ax.format_coord = lambda x,y: format_coord(x,y,ax,np.array(Data[variables]))
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data))
+        return ax,Data,[binpositionsTotal,orthopos,EArray]#D,P,binCenter,binDistance
 
-    @_tools.cutObject
+    
     @_tools.KwargChecker()
     def cutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,extend=True,dataFiles=None,constantBins=False):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
@@ -694,7 +726,7 @@ class DataSet(object):
         if rlu==True: # Recalculate H,K,L to qx
             q1,q2 = self.convertToQxQy([q1,q2])
             # Rotate all data files to fit with first data file
-            thetaDifference = [s.theta-samples[0].theta for s in samples]
+            #thetaDifference = [s.theta-samples[0].theta for s in samples]
             rotationMatrices = [np.dot(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
             Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
             qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
@@ -703,7 +735,7 @@ class DataSet(object):
                     minPixel=minPixel,EnergyBins=EnergyBins,extend=extend,constantBins=constantBins)
 
  
-    @_tools.cutObject
+    
     @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
     def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs): 
         """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
@@ -782,7 +814,7 @@ class DataSet(object):
         return plotCutQE(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
                         minPixel=minPixel,EnergyBins=EnergyBins,rlu=rlu,ax = ax,constantBins=constantBins,**kwargs)
 
-    @_tools.cutObject
+    
     @_tools.KwargChecker()
     def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,constantBins=False):
         """Cut data powder map with intensity as function of the length of q and energy. 
@@ -827,7 +859,7 @@ class DataSet(object):
         return cutPowder(positions=positions,I=I,Norm=Norm,Monitor=Monitor,
                         EBinEdges=EBinEdges,qMinBin=qMinBin,constantBins=constantBins)
 
-    @_tools.cutObject
+    
     @_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax'])
     def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
@@ -861,7 +893,7 @@ class DataSet(object):
 
         """
 
-        DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins, internal=True)
+        DataList,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins)
         intensity,monitorCount,Normalization,NormCount = DataList
         print(len(DataList))
         warnings.simplefilter('ignore')
@@ -1388,7 +1420,7 @@ class DataSet(object):
 #        plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
 #        magneticField_err=magneticField_err,electricField_err=electricField_err)
 
-    @_tools.cutObject
+    
     @_tools.KwargChecker()
     def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,dataFiles=None,constantBins=False):
         """
@@ -1465,7 +1497,7 @@ class DataSet(object):
         binDistance = []
         for pStart,pStop,w,mP,EB in zip(QPoints,QPoints[1:],width,minPixel,EnergyBins):
             _DataList,_BinList,_centerPosition,_binDistance = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
-                                                                         dataFiles=dataFiles,extend=False,constantBins=constantBins,internal=True)
+                                                                         dataFiles=dataFiles,extend=False,constantBins=constantBins)
             DataList.append(_DataList)
             if rlu:
                 UB2D = self.sample[0].convertHKLINV # Matrix to calculate HKL from Qx,Qy  # TODO: 
@@ -1486,7 +1518,7 @@ class DataSet(object):
             
         return np.array(DataList),np.array(BinList),np.array(centerPosition),np.array(binDistance)
 
-    @_tools.cutObject
+    
     @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar','edgecolors']]))
     def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
@@ -1545,7 +1577,7 @@ class DataSet(object):
         if not isinstance(EnergyBins,np.ndarray):
             EnergyBins = np.array(EnergyBins)
 
-        DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins,internal=True)
+        DataList,BinListTotal,centerPositionTotal,binDistanceTotal = self.cutQELine(QPoints=QPoints,EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
         if rlu==True: # Recalculate q points into qx and qy points
             positions = self.convertToQxQy(QPoints)
         else: # Do nothing
@@ -1931,7 +1963,7 @@ class DataSet(object):
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
             else:
                 ax.pmeshs = pmeshs
-        ax.edgeQDistance = edgeQDistance   
+        #ax.edgeQDistance = edgeQDistance   
         ax.offset = offset
         return ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal
 
@@ -2011,7 +2043,7 @@ class DataSet(object):
 
         return returnData
 
-    @_tools.cutObject
+    
     @_tools.KwargChecker()
     def cut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
@@ -2302,6 +2334,8 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
             ax.set_aspect('equal', 'datalim')
             ax.set_xlabel('Qx [1/A]')
             ax.set_ylabel('Qy [1/A]')
+
+    data = pd.Series(index = ['H','K','L','Energy','Intensity','Monitor','Normalization','BinCount','Distance'])
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
 
@@ -4445,18 +4479,19 @@ def test_DataSet_1Dcut():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile(saveFile=False)
 
-    ax,D,P,binCenter,binDistance = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.',ticks=5,tickRound=2)
-    D2,P2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
-    assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
-    assert(np.all([np.all(P[i]==P2[i]) for i in range(len(P))]))
+    ax,Data,bins = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.',ticks=5,tickRound=2)
+    Data2,bins2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
+    
+    # Check that the two data sets have the same values (except for Data2 also having 'binDistance')
+    assert(Data2.equals(Data.loc[:, Data.columns != 'binDistance']))
 
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
+    Data,bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
     assert(np.all(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1))) 
     # x-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
     #q3 = np.array([1.1,1.1])
     #q4 = np.array([2.0,2.0])
-    [intensity,MonitorCount,Normalization,normcounts],bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
+    Data,bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
     print(len(bins))
     print(len(bins[0]))
     assert(np.all(bins[0][:,0]>=q1[0]-0.1))
@@ -4468,22 +4503,24 @@ def test_DataSet_1Dcut():
     Q1 = np.array([1,0,0])
     Q2 = np.array([0.5,1,0])
 
-    ax,D,P,binCenter,binDistance = ds.plotCut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
-    D2,P2 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
-    assert(np.all([np.all(D[i]==D2[i]) for i in range(len(D))]))
-    assert(np.all(np.array([np.all(np.isclose(P[i],P2[i])) for i in range(len(P))]).flatten()))
+    ax,Data,bins = ds.plotCut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
+    Data2,bins2 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
+    assert(Data.equals(Data2.loc[:,Data2.columns!='binDistance']))
+    assert(np.all(np.array([np.all(np.isclose(bins[i],bins2[i])) for i in range(len(bins))]).flatten()))
 
     q1,q2 = ds.convertToQxQy([Q1,Q2])
-    D1,P1 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
-    D2,P2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
+    D1,b1 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
+    D2,b2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
 
-    BinPos,OrthoPos,E = P1
+    # Convert b1 to HKL in order to check if conversion works
+    BinPos,OrthoPos,E = b1
     BinPos = np.concatenate([ds.convertToQxQy(BinPos[:,:3]),BinPos[:,-1].reshape(-1,1)],axis=1)
     OrthoPos = ds.convertToQxQy(OrthoPos)
-    P1 = [BinPos,OrthoPos,E]
+    b1 = [BinPos,OrthoPos,E]
 
-    assert(np.all(np.array([np.all(np.isclose(D[i],D2[i])) for i in range(len(D))]).flatten()))
-    assert(np.all(np.array([np.all(np.isclose(P1[i],P2[i])) for i in range(len(P))]).flatten()))
+    assert(D1.equals(D2.loc[:,Data2.columns!='binDistance']))
+    
+    assert(np.all(np.array([np.all(np.isclose(b1[i],b2[i])) for i in range(len(b1))]).flatten()))
     
 
 def test_DataSet_1DcutE():
