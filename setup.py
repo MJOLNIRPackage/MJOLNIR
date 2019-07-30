@@ -29,7 +29,7 @@ setup(
     scripts=['MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector','MJOLNIR/CommandLineScripts/MJOLNIRHistory','MJOLNIR/CommandLineScripts/MJOLNIRConvert',
     'MJOLNIR/CommandLineScripts/MJOLNIR3DView'],
     python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,<3.8.*',
-    install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest','pyperclip','shapely','decorator'],
+    install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest','pyperclip','shapely','decorator','pandas'],
     #data_files=[('MJOLNIR/TestData',['TestData/CAMEA_Full_2.xml','TestData/EnergyNormalization_2.calib','TestData/EnergyNormalization_3.calib','TestData/EnergyNormalization_8.calib','TestData/VanNormalization.h5','TestData/VanNormalization.nxs','TestData/cameasim2018n000005.nxs'])],
     
     classifiers=[
