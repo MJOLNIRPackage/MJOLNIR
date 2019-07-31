@@ -1860,8 +1860,10 @@ class DataSet(object):
                     print(printString)
             ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPositionTotal,actualEnergy,IntTotal,rlu,offset,self)#EnergyBins
             ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
-        else: # pragma: no cover
-            # TODO: Make test!!!
+            ax.edgeQDistance = edgeQDistance   
+            ax.offset = offset  
+        else: 
+            
             import matplotlib.colors
 
             if not 'vmin' in kwargs:
@@ -1931,8 +1933,7 @@ class DataSet(object):
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
             else:
                 ax.pmeshs = pmeshs
-        ax.edgeQDistance = edgeQDistance   
-        ax.offset = offset
+        
         return ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal
 
     @_tools.KwargChecker()
