@@ -24,6 +24,17 @@ def cosd(x):
 def sind(x):
     return np.sin(np.deg2rad(x))
 
+def camelCase(string,split='_'):
+    """Convert string to camel case from <split> seperated"""
+
+    if not split in string:
+        return string
+    splitString = string.split(split)
+    first = splitString[0]
+    others = [x.title() for x in splitString[1:]]
+    
+    combi = [first]+others
+    return ''.join([str(x) for x in combi])
 
 class Sample(object):
     """Sample object to store all information of the sample from the experiment"""
@@ -40,7 +51,9 @@ class Sample(object):
             self.unitCell = np.array(sample.get('unit_cell'))
             self.plane_vector1 = np.array(sample.get('plane_vector_1'))
             self.plane_vector2 = np.array(sample.get('plane_vector_2'))
-            self.planeNormal = np.cross(self.plane_vector1[:3],self.plane_vector2[:3])
+            crossProduct = np.cross(self.plane_vector1[:3],self.plane_vector2[:3])
+            if not np.all(np.isclose(crossProduct,[0,0,0])):
+                self.planeNormal = crossProduct
             self.A3Off = np.array([0.0])#
             if not np.isclose(np.linalg.norm(self.plane_vector1[:3].astype(float)),0.0) or not np.isclose(np.linalg.norm(self.plane_vector2[:3].astype(float)),0.0): # If vectors are not zero
                 self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))
@@ -49,6 +62,10 @@ class Sample(object):
             self.initialize()
             self.calculateProjections()
 
+            attributes = ['azimuthal_angle','x','y','sgu','sgu_zero','sgl','sgl_zero']
+            values = [camelCase(x) for x in attributes]
+            for att, val in zip(attributes,values):
+                setattr(self,val,np.array(sample.get(att)))
             
             
         elif np.all([a is not None,b is not None, c is not None]):
@@ -265,7 +282,10 @@ class Sample(object):
         self.convertHKL = np.dot(p23,UB) # Convert from HKL to Qx, Qy
 
         # Calculate 'misalignment' of the projection vector 1
-        self.theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
+        try:
+            self.theta = -TasUBlib.calcTasMisalignment(UB,self.planeNormal,V1)
+        except AttributeError:
+            self.theta = 0
         
         self.RotMat = _tools.Rot(self.theta) # Create 2x2 rotation matrix
         
