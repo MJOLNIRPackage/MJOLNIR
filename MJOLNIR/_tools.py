@@ -643,6 +643,23 @@ def vectorAngle(V1,V2):
     return np.arccos(np.dot(V1,V2.T)/(np.linalg.norm(V1)*np.linalg.norm(V2)))
 
 
+def generateLabel(vector):
+    """Generate a label for a given HKL vector"""
+    HKL = ['H','K','L']
+    local = []
+    for value,direction in zip(vector,HKL):
+        if np.isclose(np.abs(value),1.0):
+            base = direction
+            if np.sign(value)==-1:
+                base ='-'+base
+            local.append(base)
+        elif np.isclose(value,0.0):
+            local.append('0')
+        else:
+            local.append('{:.0f}{}'.format(value,direction))
+    label = '('+', '.join(local)+')'
+    return label
+
 
 ############# TESTING
 
@@ -770,3 +787,9 @@ def test_RoundBinning():
     assert(np.all(I==I2))
     assert(np.all(C==C2))
     assert(np.all(Data.shape[0]==BP.shape[1]))
+
+
+def test_generateLabel():
+    v = [1,-1,2]
+    label = generateLabel(v)
+    assert(label=='(H, -K, 2L)')
