@@ -490,6 +490,8 @@ class DataSet(object):
         
             Data,[binpositionsTotal,orthopos,EArray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,minPixel=minPixel,
                         Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,extend=extend,constantBins=constantBins)
+            if len(binpositionsTotal) == 0:
+                return pd.DataFrame([],columns=['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount','Int']),[binpositionsTotal,orthopos,EArray]
             QxBin,QyBin = binpositionsTotal[:,:2].T
             #binpositionsTotal = np.concatenate([self.convertToHKL(binpositionsTotal[:,:2]),binpositionsTotal[:,-1].reshape(-1,1)],axis=1)
             #print(binpositionsTotal[0])
@@ -515,10 +517,10 @@ class DataSet(object):
         dtypes = [np.float]*6+[np.int]*4
 
         pdData = pd.DataFrame()
-        for dat,col,typ in zip(DataValues,columns,dtypes):
-            pdData[col] = dat.astype(typ)
-       
-        pdData['Int'] = pdData['Intensity']*pdData['BinCount']/(pdData['Normalization']*pdData['Monitor'])
+        if not len(I) == 0:
+            for dat,col,typ in zip(DataValues,columns,dtypes):
+                pdData[col] = dat.astype(typ)
+            pdData['Int'] = pdData['Intensity']*pdData['BinCount']/(pdData['Normalization']*pdData['Monitor'])
         return pdData,[binpositionsTotal,orthopos,EArray]
 
     
@@ -769,7 +771,6 @@ class DataSet(object):
             #depth(position[0])
             #print("\n")
             if len(_local)==0:
-                print('continuing')
                 continue
             returnpositions.append(position)
 
@@ -2381,7 +2382,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     ProjectMatrix = np.array([dirvec,orthovec])
     insideEnergy = np.logical_and(positions[2]<=Emax,positions[2]>=Emin)
     if(np.sum(insideEnergy)==0):
-        raise AttributeError('No points are within the provided energy limits.')
+        #raise AttributeError('No points are within the provided energy limits.')
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),np.array([]),[Emin,Emax]]
         
 
