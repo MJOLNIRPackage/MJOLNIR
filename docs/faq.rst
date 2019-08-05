@@ -173,3 +173,21 @@ or in one line
 	ds.mask = mask
 
 
+
+After I have performed a cut, the data I receive as a data type of object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sometimes, when working with pandas DataFrames, the data type of the different columns might go from e.g. int64 to object. In order to change this 
+when wanting to perform numeric calculations, on can format the DataFrame to be numeric. That is:
+
+.. code-block:: python
+
+	...
+	>>> Data = ds.cut1D(...)
+	>>> Data['Intensity'].dtypes
+	Name: Intensity, Length: 4244, dtype: object
+
+	>>> Intensity = pd.to_numeric(Data['Intensity'])
+	>>> Intensity.dtypes
+	dtype('int64')
+
