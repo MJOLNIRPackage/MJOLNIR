@@ -20,7 +20,7 @@ def Tester():
     EMin = 3.5
     EMax = 4.0
     # Generate a figure making use of binning in polar coordinates
-    Data,Bins,ax = ds.plotQPlane(EMin=EMin, EMax=EMax,xBinTolerance=0.03,yBinTolerance=0.03,binning='polar',vmin=2e-7,vmax=2e-5)
+    Data,Bins,ax = ds.plotQPlane(EMin=EMin, EMax=EMax,xBinTolerance=0.03,yBinTolerance=0.03,binning='polar',vmin=2e-7,vmax=1e-5)
     
     fig = ax.get_figure() # Extract figure from returned axis
     fig.colorbar(ax.pmeshs[0]) # Create colorbar from plot
@@ -30,7 +30,7 @@ def Tester():
     fig.savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Quick/ConstantEnergy3DPolar.png',format='png',dpi=300)
     
     # Generate a figure making use of binning in regular orthonormal coordinates
-    Data2,Bins2,ax2 =  ds.plotQPlane(EMin=EMin, EMax=EMax,xBinTolerance=0.03,yBinTolerance=0.03,binning='xy',vmin=5e-7,vmax=5e-5)
+    Data2,Bins2,ax2 =  ds.plotQPlane(EMin=EMin, EMax=EMax,xBinTolerance=0.03,yBinTolerance=0.03,binning='xy',vmin=2e-7,vmax=1e-5)
 
     fig2 = ax2.get_figure()
     fig2.colorbar(ax2.pmeshs[0])
