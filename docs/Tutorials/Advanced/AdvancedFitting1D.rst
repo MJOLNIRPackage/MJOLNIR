@@ -1,6 +1,6 @@
-Fitting of sequental 2D plots in as 1D Gaussians
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-After a spetrum has been measured, it is sensible to extract some of the physical quantities of excitations. In this tutorial, one possible method of doing so by the use of QELine as well as LMFIT is presented. The data is the MnF2 data set where only as subset of the data is used. Secifically from 4.8 meV to 6.9 meV and the parameters wanted are the positions and widths of the magnon along two cuts in Q. More specifically, there will be performed a cut from (-1,0,-67) RLU to (-1,0,1) RLU to (0,0,1) RLU. For each of the two segments, the data is split into horizontal (energy) slices of same energy width and Gaussians are used to model the spin wave line shapes. Below is the data as seen before the fitting routine has been performed.
+Fitting of sequential 2D plots in as 1D Gaussians
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+After a spectrum has been measured, it is sensible to extract some of the physical quantities of excitations. In this tutorial, one possible method of doing so by the use of QELine as well as LMFIT is presented. The data is the MnF2 data set where only as subset of the data is used. Specifically from 4.8 meV to 6.9 meV and the parameters wanted are the positions and widths of the magnon along two cuts in Q. More specifically, there will be performed a cut from (-1,0,-67) RLU to (-1,0,1) RLU to (0,0,1) RLU. For each of the two segments, the data is split into horizontal (energy) slices of same energy width and Gaussians are used to model the spin wave line shapes. Below is the data as seen before the fitting routine has been performed.
  .. figure:: RawQEPlot.png
   :width: 80%
   :align: center
@@ -51,7 +51,7 @@ From this it is clear that the number of horizontal Gaussians changes for the se
    
    out = [] # Holder for fitting results
    
-   # Utilize the groupby function of the pandas DataFrame to loop throug the different cuts
+   # Utilize the groupby function of the pandas DataFrame to loop through the different cuts
    for ID,_cutdata in Data.groupby('qCut'):
    # ID: which segment, either 0: q1->q2, or 1: q2->q3
    # _data: pandas frame containing data for this cut
@@ -83,7 +83,7 @@ From this it is clear that the number of horizontal Gaussians changes for the se
            fittingX = x['L']
            
            # Cut out portions to make use of the automatic parameter estimation
-           ix1 = fittingX< -0.1 # All points befor -0.1 is for first Gaussian
+           ix1 = fittingX< -0.1 # All points before -0.1 is for first Gaussian
            ix2 = np.logical_and(fittingX> -0.1,fittingX<0.5) # Between ix1 and ix2 is second Gaussian
            ix3 = fittingX>0.5 # values bigger than 0.5
            # Third Gaussian is from 0.5 and the rest.
@@ -132,8 +132,8 @@ From this it is clear that the number of horizontal Gaussians changes for the se
                widths.append(par.value)
                widths_err.append(par.stderr)
        
-       # Depending on segment, the centres of the Gaussians are eihter [-1,0,c] or [c,0,-1]
-       # 'Errors' referes to the errorbars and are in this case plotted as the widths
+       # Depending on segment, the centres of the Gaussians are either [-1,0,c] or [c,0,-1]
+       # 'Errors' refers to the errorbars and are in this case plotted as the widths
        if ID == 0:
            Center3D    = [[-1.0,0,c] for c in centres]
            Center3DErr = [[-1.0,0,c+err] for c,err in zip(centres,widths)]
@@ -156,7 +156,4 @@ From this it is clear that the number of horizontal Gaussians changes for the se
    ax.get_figure('figure1.png',format='png').savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/FittedQEPlot.png',format='png',dpi=600)
    
 
-This is just a simple example code generating a figure denoted "figure0.png". However, in the actual code this figure is called "MJOLNIR/docs/Tutorials/Tools/Here.png" and can be shown with the use of rst commands
- .. figure:: FittedQEPlot.png
-  :width: 80%
-  :align: center
+In the above code, a lot of things are going, showing just one way of treating the data. If one does not like to work with pandas DataFrames, one can convert them into a set of numpy arrays. However, this then requires the user to deal with all of the indices themself. Further, if LMFIT is not your cup of tea, many other fitting routines exist for Python.
