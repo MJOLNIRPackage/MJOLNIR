@@ -79,20 +79,20 @@ class DataFile(object):
                     self.Time = np.array(f.get('entry/control/time'))
                     self.startTime = np.array(f.get('entry/start_time'))
                     self.endTime = np.array(f.get('entry/end_time'))
-                    self.experimentIdentifier = np.array(f.get('entry/experiment_identifier'))
-                    self.comment = np.array(f.get('entry/comment'))
-                    self.proposalId = np.array(f.get('entry/proposal_id'))
-                    self.proposalTitle = np.array(f.get('entry/proposal_title'))
+                    self.experimentIdentifier = np.array(f.get('entry/experiment_identifier'))[0]
+                    self.comment = np.array(f.get('entry/comment'))[0]
+                    self.proposalId = np.array(f.get('entry/proposal_id'))[0]
+                    self.proposalTitle = np.array(f.get('entry/proposal_title'))[0]
 
-                    self.localContactName = np.array(f.get('entry/local_contact/name'))
+                    self.localContactName = np.array(f.get('entry/local_contact/name'))[0]
                     
-                    self.proposalUserName = np.array(f.get('entry/proposal_user/name'))
-                    self.proposalUserEmail = np.array(f.get('entry/proposal_user/email'))
+                    self.proposalUserName = np.array(f.get('entry/proposal_user/name'))[0]
+                    self.proposalUserEmail = np.array(f.get('entry/proposal_user/email'))[0]
 
-                    self.userName = np.array(f.get('entry/user/name'))
-                    self.userEmail = np.array(f.get('entry/user/email'))
-                    self.userAddress = np.array(f.get('entry/user/address'))
-                    self.userAffiliation = np.array(f.get('entry/user/affiliation'))
+                    self.userName = np.array(f.get('entry/user/name'))[0]
+                    self.userEmail = np.array(f.get('entry/user/email'))[0]
+                    self.userAddress = np.array(f.get('entry/user/address'))[0]
+                    self.userAffiliation = np.array(f.get('entry/user/affiliation'))[0]
 
                     # Monochromator
 
@@ -120,10 +120,11 @@ class DataFile(object):
 
                     # Analyzer
                     # analyzer_selection
-                    attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset','type']
+                    attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']
                     values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
                     for att,value in zip(attributes,values):
                         setattr(self,value,np.array(f.get('entry/CAMEA/analyzer/{}'.format(att))))
+                    self.analyzerType = np.array(f.get('entry/CAMEA/analyzer/type'))[0]
                     self.analyzerSelection = np.array(f.get('entry/CAMEA/analyzer/analyzer_selection'))
                     self.detectorSelection = np.array(f.get('entry/CAMEA/detector/detector_selection'))
 
@@ -159,10 +160,10 @@ class DataFile(object):
                     self.magneticField = np.array(sample.get('magnetic_field'))
                     self.electricField = np.array(sample.get('electric_field'))
                     self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(f)
-                    self.scanCommand = np.array(f.get('entry/scancommand'))
+                    self.scanCommand = np.array(f.get('entry/scancommand'))[0]
                     if self.type == 'nxs':
                         self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
-                    self.title = np.array(f.get('entry/title'))
+                    self.title = np.array(f.get('entry/title'))[0]
 
                     self.absoluteTime = np.array(f.get('entry/control/absolute_time'))
                     self.protonBeam = np.array(f.get('entry/proton_beam/data'))
@@ -1158,7 +1159,7 @@ class DataFile(object):
                 if not unit is None:
                     dset.attrs['units'] = np.string_(unit)
                 
-            dset = ana.create_dataset('type',data = np.string_(self.analyzerType))
+            dset = ana.create_dataset('type',data = np.array([np.string_(self.analyzerType)]))
             dset = ana.create_dataset('analyzer_selection',(1,),'int32',data=self.analyzerSelection)
             
 
