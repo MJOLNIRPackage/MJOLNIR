@@ -48,11 +48,11 @@ for file in files:
     else:
         textLine = f.name+': '
         try:
-            textLine+=f.scanCommand[0].decode()
+            textLine+=f.scanCommand.decode()
         except:
             textLine+=str(f.scanCommand)
         try:
-            textLine+='\t'+f.title[0].decode()+'\n'
+            textLine+='\t'+f.title.decode()+'\n'
         except:
             textLine+='\t'+str(f.title)+'\n'
         
