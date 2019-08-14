@@ -661,6 +661,88 @@ def generateLabel(vector):
     return label
 
 
+def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitude,EMin,EMax,spinWaveEnergyErr=None):
+    """Write fitted values for spin wave(s) into a SpinW readable format.
+    
+    Args:
+        
+        - files (string): File into which the spin waves is to be saved
+        
+        - position (3D vector, 3 x m): HKL position of spin wave(s)
+        
+        - spinWaveEnergy (array, n x m): Array with energy position of spin wave. For multiple spin waves fill with 0 if wave not found
+        
+        - spinWaveWidth (array, n x m): Standard deviation of spin wave(s). For multiple spin waves fill with 0 if wave not found
+        
+        - spinWaveAmplitude (array, n x m): Amplitude of spin wave(s). For multiple spin waves fill with 0 if wave not found
+        
+        - EMin (float): Lowest energy measured in data [meV]
+        
+        - EMin (float): Highest energy measured in data [meV]
+        
+        
+    n is the number of spin waves
+    m is the number of data points measured        
+    """
+    spinWaveEnergy = np.asarray(spinWaveEnergy)
+    if not spinWaveEnergyErr is None:
+        spinWaveEnergyErr = np.asarray(spinWaveEnergyErr)
+        if not spinWaveEnergy.shape == spinWaveEnergyErr.shape:
+            raise AttributeError('Arrays for spinWaveEnergy(shape: {}), spinWaveEnergyErr(shape: {}) have to have same shape.'.format(spinWaveEnergy.shape,spinWaveEnergyErr.shape))
+   
+        
+    spinWaveWidth = np.asarray(spinWaveWidth)
+    spinWaveAmplitude = np.asarray(spinWaveAmplitude)
+    position = np.asarray(position)
+    
+    if not np.all([spinWaveEnergy.shape == spinWaveWidth.shape,spinWaveEnergy.shape == spinWaveAmplitude.shape]):
+        raise AttributeError('Arrays for spinWaveEnergy(shape: {}), spinWaveWidth(shape: {}), and spinWaveAmplitude(shape: {}) have to have same shape.'.format(spinWaveEnergy.shape,spinWaveWidth.shape,spinWaveAmplitude.shape))
+        
+    if len(spinWaveEnergy.shape) == 1:
+        spinWaveEnergy.shape = (1,-1)
+        spinWaveWidth.shape = (1,-1)
+        spinWaveAmplitude.shape = (1,-1)
+        
+    spinWaves,dataPoints = spinWaveEnergy.shape
+    
+    if not position.shape == (3,dataPoints):
+        raise AttributeError('With provided spin wave parameters, expected position of shape (3,{}) but recieved {}.'.format(dataPoints,position.shape))
+    
+    
+    if not spinWaveEnergyErr is None:
+        columns = 4
+    else:
+        columns = 3
+    dataMatrix = np.zeros((5+columns*spinWaves,dataPoints))
+    
+    dataMatrix[:3,:] = position
+    dataMatrix[3,:] = EMin
+    dataMatrix[4,:] = EMax
+    
+    energyIndices = np.array([6+x*columns for x in range(spinWaves)],dtype=int)
+    widthIndices = np.array([7+x*columns for x in range(spinWaves)],dtype=int)
+    amplitudeIndices = np.array([5+x*columns for x in range(spinWaves)],dtype=int)
+    
+    if not spinWaveEnergyErr is None:
+        errorIndices = np.array([8+x*columns for x in range(spinWaves)],dtype=int)
+        dataMatrix[errorIndices,:] = spinWaveEnergyErr
+    
+    dataMatrix[energyIndices,:] = spinWaveEnergy
+    dataMatrix[widthIndices,:] = spinWaveWidth
+    dataMatrix[amplitudeIndices,:] = spinWaveAmplitude
+    
+    headers = ['QH','QK','QL','ENlim1','ENlim2']
+    if not spinWaveEnergyErr is None:
+        headers+=list(np.concatenate([['I{}'.format(x+1),'EN{}'.format(x+1),'sigma{}'.format(x+1),'EErr{}'.format(x+1)] for x in range(spinWaves)]))
+    else:
+        headers+=list(np.concatenate([['I{}'.format(x+1),'EN{}'.format(x+1),'sigma{}'.format(x+1)] for x in range(spinWaves)]))
+    titles = ''.join(['{:>14s} '.format(x) for x in headers])
+
+    
+    np.savetxt(file,dataMatrix.T,fmt='%+.7e',delimiter = ' ', header=titles,comments='')
+
+
+
 ############# TESTING
 
 def test_minMax():
