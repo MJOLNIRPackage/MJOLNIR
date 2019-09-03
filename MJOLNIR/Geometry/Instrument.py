@@ -800,7 +800,8 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90],factor=10000): # pragma: no cover
+# TODO: Make the reader create a true HDF file with all attributes set
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90],factor=10000,detectors=104): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -977,8 +978,11 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         psddata = f.readlines()
         f.close()
         idx = 0
+        a3 = 0
+        a4 = 0
+        ei = 0
         for line in psddata:
-            if line.find('EI=') > 0:
+            if line.find('EI=') >0 or line.find(' SourceE=') > 0:
                 l = line.split('=')
                 ei = float(l[1])
             if line.find('A3=') > 0:
@@ -991,6 +995,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
                 idx = idx + 1
                 break
             idx = idx + 1
+        
         detind = 0
         for i in range(idx+1,pixels+idx-1):
             l = psddata[i].split()
@@ -1001,23 +1006,23 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             detind = detind + 1
         return detdata,a3,a4,ei
 
-    def readScanPointData(dir,detlist,Numpoints,pixels=1024,factor=10000):
-        frame = np.zeros((104,pixels),dtype='int32')
+    def readScanPointData(dir,detlist,Numpoints,pixels=1024,factor=10000,detectors=104):
+        frame = np.zeros((detectors,pixels),dtype='int32')
         i = 0
         for detfile in detlist:
-            detdata, a3, a4, ei = readDetFile(dir +'/' + str(Numpoints) + '/' + detfile,factor=factor)
+            detdata, a3, a4, ei = readDetFile(dir +'/' + str(Numpoints) + '/' + detfile,factor=factor,pixels=pixels)
             frame[i] = detdata
             i = i + 1
         return frame,a3,a4,ei
 
-    def readScanData(dir,Numpoints,pixels=1024,factor=10000):
-        detlist = readDetSequence()
-        data = np.zeros((Numpoints,104,pixels),dtype='int32')
+    def readScanData(dir,Numpoints,pixels=1024,factor=10000,detectors=104):
+        detlist = readDetSequence()[:detectors]
+        data = np.zeros((Numpoints,detectors,pixels),dtype='int32')
         a3 = []
         a4 = []
         ei = []
         for n in range(Numpoints):
-            frame, a3n, a4n, ein = readScanPointData(dir,detlist,n,factor=factor)
+            frame, a3n, a4n, ein = readScanPointData(dir,detlist,n,factor=factor,pixels=pixels,detectors=detectors)
             a3.append(a3n)
             a4.append(a4n)
             ei.append(ein)
@@ -1170,47 +1175,47 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         vals = [0]*Numpoints
         dset = pb.create_dataset('data',data=vals,dtype='int32')
 
-    f = hdf.File(fileName,'w')
-    f.attrs['file_name'] = np.string_(fileName)
-    f.attrs['file_time'] = np.string_(b'2018-03-22T16:44:02+01:00')
-    
-    entry = f.create_group('entry')
-    entry.attrs['NX_class'] = np.string_('NXentry')
+    with hdf.File(fileName,'w') as f:
+        f.attrs['file_name'] = np.string_(fileName)
+        f.attrs['file_time'] = np.string_(b'2018-03-22T16:44:02+01:00')
+        
+        entry = f.create_group('entry')
+        entry.attrs['NX_class'] = np.string_('NXentry')
 
-    addMetaData(entry,np.string_(title))
-    
-    #------------ Instrument
-    inst = entry.create_group(b'CAMEA')
-    inst.attrs['NX_class'] = np.string_('NXinstrument')
-    
-    if not CalibrationFile is None:
-        #calib = inst.create_group(b'calibration')
-        if not isinstance(CalibrationFile,list):
-            CalibrationFile=[CalibrationFile]
-        for i in range(len(CalibrationFile)):
-            calibrationData = np.genfromtxt(CalibrationFile[i],skip_header=3,delimiter=',')
-            binning = CalibrationFile[i].split('/')[-1].split('_')[-1].split('.')[0]
-            pixelCalib = inst.create_group('calib{}'.format(binning))
+        addMetaData(entry,np.string_(title))
+        
+        #------------ Instrument
+        inst = entry.create_group(b'CAMEA')
+        inst.attrs['NX_class'] = np.string_('NXinstrument')
+        
+        if not CalibrationFile is None:
+            #calib = inst.create_group(b'calibration')
+            if not isinstance(CalibrationFile,list):
+                CalibrationFile=[CalibrationFile]
+            for i in range(len(CalibrationFile)):
+                calibrationData = np.genfromtxt(CalibrationFile[i],skip_header=3,delimiter=',')
+                binning = CalibrationFile[i].split('/')[-1].split('_')[-1].split('.')[0]
+                pixelCalib = inst.create_group('calib{}'.format(binning))
 
-            pixelCalib.create_dataset('final_energy'.format(binning),data=calibrationData[:,4],dtype='float32')
-            pixelCalib.create_dataset('background'.format(binning),data=calibrationData[:,6],dtype='float32')
-            pixelCalib.create_dataset('width'.format(binning),data=calibrationData[:,5],dtype='float32')
-            pixelCalib.create_dataset('amplitude'.format(binning),data=calibrationData[:,3],dtype='float32')
-            pixelCalib.create_dataset('boundaries'.format(binning),data=calibrationData[:,7:9],dtype='int')
-            pixelCalib.create_dataset('a4offset'.format(binning),data=calibrationData[:,9],dtype='float32')
-            
-    
-    addMono(inst)
-    addAna(inst)
-    
-    addDetector(inst)
-    
-    addSample(entry,np.string_(sample),cell)
-    import os
-    Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
-    data,a3,a4,ei = readScanData(fname,Numpoints,factor=factor)
-    storeScanData(entry,data,a3,a4,ei)
-    f.close()
+                pixelCalib.create_dataset('final_energy'.format(binning),data=calibrationData[:,4],dtype='float32')
+                pixelCalib.create_dataset('background'.format(binning),data=calibrationData[:,6],dtype='float32')
+                pixelCalib.create_dataset('width'.format(binning),data=calibrationData[:,5],dtype='float32')
+                pixelCalib.create_dataset('amplitude'.format(binning),data=calibrationData[:,3],dtype='float32')
+                pixelCalib.create_dataset('boundaries'.format(binning),data=calibrationData[:,7:9],dtype='int')
+                pixelCalib.create_dataset('a4offset'.format(binning),data=calibrationData[:,9],dtype='float32')
+                
+        
+        addMono(inst)
+        addAna(inst)
+        
+        addDetector(inst)
+        
+        addSample(entry,np.string_(sample),cell)
+        import os
+        Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
+        data,a3,a4,ei = readScanData(fname,Numpoints,factor=factor,pixels=pixels,detectors=detectors)
+        storeScanData(entry,data,a3,a4,ei)
+        
 
 
 # _________________________TESTS____________________________________________
