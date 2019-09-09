@@ -183,7 +183,21 @@ class DataFile(object):
                         self.mask[:,:,:2] = True
             else: # type is multiFLEXX
                 self.loadMultiFLEXXData(fileLocation)
-                
+            
+            if True:
+                for attr in self.__dir__():
+                    # If attribute is a function or property, skip it
+                    if hasattr(getattr(self,attr),'__call__') or isinstance(getattr(self,attr),property):
+                        continue
+                    value = getattr(self,attr) 
+                    if hasattr(value,'shape'): # Does it have a shape method -> Numpy array
+                        if value.shape == (): # It is 0 D but either bytes or simple list
+                            if isinstance(value,np.bytes_):
+                                setattr(self,attr,value.decode()) # decode into text
+                            else:
+                                value = np.array([value]) # recast into 1D-array
+                                setattr(self,attr,value) 
+
             for key in ['magneticField','temperature','electricField']:
 
                 try:
@@ -521,7 +535,13 @@ class DataFile(object):
                     ['comnd','scanCommand'],
                     ['instr','instrument'],
                     ['EI','Ei'],
-                    ['local','localContact']]
+                    ['local','localContact'],
+                    ['user','userName'],
+                    ['DA','analyzerDSpacing'],
+                    ['EN','Ei'],
+                    ['expno','experimentIdentifier'],
+                    ['localContact','localContactName']
+                    ]
 
         for pair in nameSwaps:
             updateKeyName(self,pair[0],pair[1])
