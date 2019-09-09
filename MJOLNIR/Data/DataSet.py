@@ -90,7 +90,11 @@ class DataSet(object):
 
         # Add all other kwargs to settings
         for key in kwargs:
-            self.settings[key]=kwargs[key]
+            if hasattr(kwargs,'shape'): # They are an array
+                if kwargs[key].shape in [(),(1,)]:
+                    self.settings[key] = float(kwargs[key])
+            else:
+                self.settings[key]=kwargs[key]
         
     @property
     def dataFiles(self):
@@ -268,9 +272,9 @@ class DataSet(object):
         return self[::-1]
     
     def __delitem__(self,index):
-        try:
+        if index < len(self.dataFiles):
             del self.dataFiles[index]
-        except IndexError:
+        else:
             raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self)))
         self._getData
 
@@ -644,7 +648,7 @@ class DataSet(object):
                 except:
                     pass
                 else:
-                    if C != 0:
+                    if C != 0: # Cursor corresponds to arrow
                         return
 
                 x = event.xdata
@@ -773,7 +777,7 @@ class DataSet(object):
             binDistance.append(thisBinDistance)
         if len(dataFrame)>1:
             dataFrame = pd.concat(dataFrame)
-        else:
+        elif len(dataFrame) == 1:
             dataFrame = dataFrame[0]
         
         for col in ['Intensity','Monitor','Normalization','BinCount']:
@@ -1665,9 +1669,7 @@ class DataSet(object):
             _3D = False
         else:
             ax = ax
-            try:
-                ax.name
-            except:
+            if not hasattr(ax,'name'):
                 _3D = False
             else:
                 if ax.name == '3d':
@@ -2803,11 +2805,9 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
             raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,len(planes)))
             
     
-    try:
-        numFiles = len(files)
-    except:
-        numFiles = 1
+    if not hasattr(files,'len'):
         files = [files]
+    numFiles = len(files)
 
     @_tools.my_timer_N()
     def testFiles(files,numFiles):
@@ -3963,13 +3963,13 @@ def centeroidnp(arr): # Calculated centroid
     return Totsum/length
 
 def compareNones(first,second,margin): # Function to compare
-    try: 
+    if hasattr(first,'dtype'):
         t1 = first.dtype
-    except:
+    else:
         t1 = type(first)
-    try:
+    if hasattr(second,'dtype'):
         t2 = second.dtype
-    except:
+    else:
         t2 = type(second)
     
     if t1 == type(None) and t2 == type(None):

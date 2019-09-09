@@ -200,13 +200,11 @@ class DataFile(object):
 
             for key in ['magneticField','temperature','electricField']:
 
-                try:
-                    self.__dict__[key].dtype
-                except:
-                    self.__dict__[key] = None
-                else:
+                if hasattr(getattr(self,key),'dtype'):
                     if self.__dict__[key].dtype ==object: # Is np nan object
                         self.__dict__[key] = None
+                else:
+                    setattr(self,key,None)
         else: # Create an empty data set
             pass
         
@@ -251,9 +249,7 @@ class DataFile(object):
 
     @A3.setter
     def A3(self,A3):
-        try:
-            A3.shape
-        except AttributeError:
+        if not hasattr(A3,'shape'):
             self._A3 = np.array(A3)
         else:
             if A3.shape == ():
@@ -274,9 +270,7 @@ class DataFile(object):
 
     @A4.setter
     def A4(self,A4):
-        try:
-            A4.shape
-        except AttributeError:
+        if not hasattr(A4,'shape'):
             self._A4 = np.array(A4)
         else:
             if A4.shape == ():
@@ -365,9 +359,10 @@ class DataFile(object):
 
 
         for line in headerString:
-            try:
-                description,value = line.split(': ')
-            except ValueError:
+            splitLine = line.split(': ')
+            if isinstance(splitLine,list):
+                description,value = splitLine
+            else:
                 continue
             description = description.lower()
             
@@ -1090,7 +1085,7 @@ class DataFile(object):
             dset[0] = self.endTime
             
             dset = entry.create_dataset('experiment_identifier',(1,),dtype='<S70')
-            dset[0] = self.experimentIdentifier
+            dset[0] = self.experimentIdentifier.encode('utf8')
 
             dset = entry.create_dataset('instrument',(1,),dtype='<S70')
             dset[0] = self.instrument.title().upper().encode('utf8')
@@ -1363,13 +1358,13 @@ class DataFile(object):
 
             
 def decodeStr(string):
-    try:
-        if 'decode' in string.__dir__():
-            return string.decode('utf8')
-        else:
-            return string
-    except:
+    #try:
+    if hasattr(string,'decode'):
+        return string.decode('utf8')
+    else:
         return string
+    #except:
+    #    return string
 
 @_tools.KwargChecker()
 def getScanParameter(f):
