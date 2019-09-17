@@ -180,7 +180,7 @@ if pythonVersion == 3: # Only for python 3
                 if not hasattr(axis,'{}base'.format(d)):
                     base = calculateBase(locator,span,ticks)
                 else:
-                    base = getattr(ax,'{}base'.format(d))
+                    base = getattr(axis,'{}base'.format(d))
 
                 locator.set_params(base=base)
             
