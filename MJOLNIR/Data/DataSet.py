@@ -1578,12 +1578,11 @@ class DataSet(object):
             _DataList['qCut']=cutIndex
             DataList.append(_DataList)
             if rlu:
-                UB2D = self.sample[0].convertHKLINV # Matrix to calculate HKL from Qx,Qy  # TODO: 
+                UB2D = self.sample[0].convertHKLINV # Matrix to calculate HKL from Qx,Qy 
                 _BinListUpdated = []
                 _centerPositionUpdated = []
                 for i,[Position,ortho,E] in enumerate(_BinList):
                     pos = np.array([np.concatenate([np.dot(UB2D,x[:2]),[x[2]]],axis=0) for x in Position])
-                    print(ortho)
                     orthogonal = [np.dot(UB2D,x) for x in ortho]
                     _BinListUpdated.append([pos,orthogonal,E])
 
@@ -1798,7 +1797,7 @@ class DataSet(object):
                 q1 = positions[segID]
                 q2 = positions[segID+1]
                 if rlu:
-                    q1 = np.dot(self.sample[0].convertHKLINV,q1)  # TODO: 
+                    q1 = np.dot(self.sample[0].convertHKLINV,q1) 
                     q2 = np.dot(self.sample[0].convertHKLINV,q2)
                 dirvec = np.array(q2)-np.array(q1)
                 
@@ -1845,7 +1844,7 @@ class DataSet(object):
                 direction.append(qstop[segID]-qstart[segID])
                 distanceChange.append(np.max(binDistance[maximalDistanceIDEnergy])-np.min(binDistance[minimalDistanceIDEnergy]))
                 if rlu:
-                    qstartQ,qstopQ = [np.dot(self.sample[0].convertHKL,x) for x in [qstart[segID],qstop[segID]]]  # TODO: 
+                    qstartQ,qstopQ = [np.dot(self.sample[0].convertHKL,x) for x in [qstart[segID],qstop[segID]]]
                     dirLen = np.linalg.norm(direction[segID])
                     dirLenQ = np.linalg.norm(qstopQ-qstartQ)
                     distanceChange[-1]*=dirLen/dirLenQ
@@ -2206,13 +2205,7 @@ class DataSet(object):
         positions = [qx,qy,energy]
 
         if rlu==True: # Recalculate q points into qx and qy points
-
-            #projectOrientation = np.dot(sample.orientationMatrix,q)
             Q = self.convertToQxQy(q).flatten()
-            # Add width/2 to point in 4 direction and make width mean of the converted positions
-            #diffQ = projectOrientation.reshape(3,1)+np.array([[width*0.5,0,0],[-width*0.5,0,0],[0,width*0.5,0],[0,-width*0.5,0]]).T
-            #dist = [np.array(sample.tr(diffQ[0][i],diffQ[1][i])) for i in range(4)]-Q
-            #width = np.mean(np.linalg.norm(dist,axis=1))
         else: # Do nothing
             Q = np.array(q).flatten()
 
