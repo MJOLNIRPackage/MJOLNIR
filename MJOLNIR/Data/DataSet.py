@@ -2322,7 +2322,7 @@ class DataSet(object):
             Emax = DS.energy.max()
 
         # Points for which constant Q cut in energy is to be performed
-        QPoints = np.array([Q1+dirvec*x for x in np.linspace(0,1,points)])        
+        QPoints = np.array([Q1+dirvec*x for x in np.linspace(0.0,1.0,int(np.floor(points)))])
 
 
         if rlu==True: # Recalculate H,K,L to qx
@@ -2414,12 +2414,7 @@ class DataSet(object):
         
         Data,Bins = self.cutELine(Q1=Q1, Q2=Q2,Emin=Emin, Emax=Emax, energyWidth=energyWidth, minPixel =minPixel, width = width, rlu=rlu, dataFiles=dataFiles, constantBins=constantBins)
 
-        if ax is None:
-            fig,ax = plt.subplots()
-        else:
-            fig = ax.get_figure()
-
-
+        
         if Vmin is None:
             Vmin = Data['Int'].min()
         if Vmax is None:
@@ -2428,17 +2423,35 @@ class DataSet(object):
         dirvec = np.asarray(Q2)-np.asarray(Q1)
 
 
+        if np.sign(dirvec[np.argmax(np.abs(dirvec))])==-1:
+            dirvec = -dirvec
+            
         if rlu:
-            cutData = Data[['H','K','L','QCut']].groupby('QCut')
+            QPointColumns = ['H','K','L']
+            visualizationBinPosition = np.array([-1,1])*0.5*np.linalg.norm(self.convertToQxQy(dirvec))/(len(Bins)-1)
         else:
-            cutData = Data[['qx','qy','QCut']].groupby('QCut')
+            QPointColumns = ['qx','qy']
+            visualizationBinPosition = np.array([-1,1])*0.5*np.linalg.norm(dirvec)/(len(Bins)-1)
 
-        QPoints = np.array([d[d.columns[:-1]].iloc[0] for _,d in cutData])
         meshs = []
-        for Q,(_,_data),_bins in zip(QPoints,Data[['Int','QCut']].groupby('QCut'),Bins):
-            
-            position = np.array([-minPixel,minPixel])*0.5/np.linalg.norm(dirvec)+np.dot(Q-Q1,dirvec)
-            
+
+        if ax is None:
+            if rlu:
+                ortho = np.cross(self.sample[0].planeNormal,dirvec)
+                ax = RLUAxes.createQEAxes(self,projectionVector1 = dirvec, projectionVector2 = ortho)
+            else:
+                fig, ax = plt.subplots()
+        else:
+            fig, ax = plt.subplots()
+                
+        columns = QPointColumns+['Int','QCut']
+        for (_,_data),_bins in zip(Data[columns].groupby('QCut'),Bins):
+            Q = np.array(_data[QPointColumns].iloc[0])
+            if rlu:
+                position = visualizationBinPosition+np.dot(Q,dirvec)/np.linalg.norm(dirvec)
+            else:
+                position = visualizationBinPosition+np.linalg.norm(Q)
+                
             x,y = np.meshgrid(position,_bins[0])
             
             pmesh = ax.pcolormesh(x,y,_data['Int'].values.reshape(-1,1))
@@ -2453,6 +2466,7 @@ class DataSet(object):
         ax.set_clim = lambda Vmin,Vmax: set_clim(Vmin,Vmax,ax.meshs)
 
         ax.set_clim(Vmin,Vmax)
+
         return ax, Data, Bins
 
 
