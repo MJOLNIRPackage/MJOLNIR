@@ -2229,6 +2229,233 @@ class DataSet(object):
 
         return data,bins
 
+    def cutELine(self, Q1, Q2, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False):
+        """Perform cut along energy in steps between two Q Point 
+        
+        Args:
+
+            - Q1 (3D or 2D vector): Starting point for energy cut.
+
+            - Q2 (3D or 2D vector): End of energy cut
+            
+
+        Kwargs: 
+
+            - Emin (float): Start energy (default is self.Energy.min() for data in cut).
+            
+            - Emax (float): End energy (default is self.Energy.max() for data in cut).
+
+            - energyWidth (float): Height of energy bins (default 0.05 meV)
+
+            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
+
+            - width (float): Full width of cut in q-plane (default 0.02).
+
+            - rlu (bool): If True, provided Q point is interpreted as (h,k,l) otherwise as (qx,qy), (Default true)
+            
+            - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
+            
+        Returns:
+            
+            - Data (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,BinDistance for 1D cut.
+            
+            - Bin (1 array): Bin edge positions in energy
+
+        """
+
+
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
+                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+            else:
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
+                samples = self.sample
+                maskIndices = self.maskIndices
+                DS = self
+
+        else: 
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
+            
+
+
+
+        Q1 = np.asarray(Q1,dtype=float)
+        Q2 = np.asarray(Q2,dtype=float)
+
+        dirvec = Q2-Q1
+        
+        # Copy the original mask to be reapplied later
+        originalMask = DS.mask
+
+        # Cut out relevant part of data set
+        Q1re = Q1.copy().reshape(-1,1,1)
+        
+        if rlu:
+            normal = DS.sample[0].planeNormal
+            normal*=1.0/np.linalg.norm(normal)
+            perp = np.cross(dirvec,normal)/np.linalg.norm(dirvec)
+
+            mask = [np.array([np.logical_or(np.abs(np.einsum('i...,i->...',(A-Q1re),dirvec)-0.5)>0.5,np.abs(np.einsum('i...,i->...',A-Q1re,perp))>width) for A in zip(d.h,d.k,d.l)]) for d in DS]
+        else:
+            perp = dirvec[[1,0]]
+
+            mask = [np.array([np.logical_or(np.abs(np.einsum('i...,i->...',(A-Q1re),dirvec)-0.5)>0.5,np.abs(np.einsum('i...,i->...',A-Q1re,perp))>width) for A in zip(d.qx,d.qy)]) for d in DS]
+
+        # Combine the old mask and new with points close to cut
+        DS.mask = [np.logical_or(mNew,mOld) for mNew,mOld in zip(mask,self.mask)]
+
+        # Number of points along the Q cutting direction to reach minPixel
+        points = np.linalg.norm(dirvec)/minPixel
+
+        # Find minimum and maximum for newly masked data
+        if Emin is None:
+            Emin = DS.energy.min()
+        if Emax is None:
+            Emax = DS.energy.max()
+
+        # Points for which constant Q cut in energy is to be performed
+        QPoints = np.array([Q1+dirvec*x for x in np.linspace(0,1,points)])        
+
+
+        if rlu==True: # Recalculate H,K,L to qx
+            rotationMatrices = [np.dot(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+            qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
+
+            positions = np.array([qx,qy,energy])
+            
+            Qs = np.array([DS.convertToQxQy(q) for q in QPoints])
+        else:
+            positions = np.array([qx,qy,energy])
+            Qs = QPoints
+
+        
+        Data = []
+        Bins = []
+
+        # Perform actual binning
+        for i,Q in enumerate(Qs):
+            Q = Q.flatten()
+            [intensity,MonitorCount,Normalization,normcounts],bins  = cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=Emin,E2=Emax,q=Q,width=width,minPixel=energyWidth,constantBins=constantBins)
+            data = pd.DataFrame()
+            
+            HKL = self.convertToHKL(Q.flatten())
+            data['qx'] = Q[0]*np.ones_like(intensity)
+            data['qy'] = Q[1]*np.ones_like(intensity)
+            data['H'] = HKL[0]*np.ones_like(intensity)
+            data['K'] = HKL[1]*np.ones_like(intensity)
+            data['L'] = HKL[2]*np.ones_like(intensity)
+            data['Energy'] = 0.5*(bins[0][1:]+bins[0][:-1])
+            data['Intensity'] = intensity.astype(int)
+            data['Monitor'] = MonitorCount.astype(int)
+            data['Normalization'] = Normalization.astype(int)
+            data['BinCount'] = normcounts.astype(int)
+            data['QCut'] = i*np.ones_like(intensity).astype(int)
+            
+            data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
+            Data.append(data)
+            Bins.append(bins)
+
+        Data = pd.concat(Data)
+        DS.mask = originalMask
+
+        return Data,Bins
+
+
+    def plotCutELine(self, Q1, Q2, ax=None, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False, Vmin=None, Vmax = None, **kwargs):
+        """Perform cut along energy in steps between two Q Point 
+        
+        Args:
+
+            - Q1 (3D or 2D vector): Starting point for energy cut.
+
+            - Q2 (3D or 2D vector): End of energy cut
+            
+
+        Kwargs: 
+
+            - ax (matplotlib axis): Axis into which the plot is to go (default None, new created)
+
+            - Emin (float): Start energy (default is self.Energy.min() for data in cut).
+            
+            - Emax (float): End energy (default is self.Energy.max() for data in cut).
+
+            - energyWidth (float): Height of energy bins (default 0.05 meV)
+
+            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
+
+            - width (float): Full width of cut in q-plane (default 0.02).
+
+            - rlu (bool): If True, provided Q point is interpreted as (h,k,l) otherwise as (qx,qy), (Default true)
+            
+            - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
+
+            - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+            - Vmin (float): Lower limit for colorbar (default min(Intensity)).
+            
+            - Vmax (float): Upper limit for colorbar (default max(Intensity)).
+            
+        Returns:
+            
+            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,BinDistance for 1D cut.
+            
+            - Bin list (1 array): Bin edge positions in energy
+
+        """
+        
+        Data,Bins = self.cutELine(Q1=Q1, Q2=Q2,Emin=Emin, Emax=Emax, energyWidth=energyWidth, minPixel =minPixel, width = width, rlu=rlu, dataFiles=dataFiles, constantBins=constantBins)
+
+        if ax is None:
+            fig,ax = plt.subplots()
+        else:
+            fig = ax.get_figure()
+
+
+        if Vmin is None:
+            Vmin = Data['Int'].min()
+        if Vmax is None:
+            Vmax = Data['Int'].max()
+
+        dirvec = np.asarray(Q2)-np.asarray(Q1)
+
+
+        if rlu:
+            cutData = Data[['H','K','L','QCut']].groupby('QCut')
+        else:
+            cutData = Data[['qx','qy','QCut']].groupby('QCut')
+
+        QPoints = np.array([d[d.columns[:-1]].iloc[0] for _,d in cutData])
+        meshs = []
+        for Q,(_,_data),_bins in zip(QPoints,Data[['Int','QCut']].groupby('QCut'),Bins):
+            
+            position = np.array([-minPixel,minPixel])*0.5/np.linalg.norm(dirvec)+np.dot(Q-Q1,dirvec)
+            
+            x,y = np.meshgrid(position,_bins[0])
+            
+            pmesh = ax.pcolormesh(x,y,_data['Int'].values.reshape(-1,1))
+            meshs.append(pmesh)
+            
+        ax.meshs = meshs
+
+        def set_clim(vmin,vmax,meshs):
+            for p in meshs:
+                p.set_clim(vmin,vmax)
+                
+        ax.set_clim = lambda Vmin,Vmax: set_clim(Vmin,Vmax,ax.meshs)
+
+        ax.set_clim(Vmin,Vmax)
+        return ax, Data, Bins
+
+
     @_tools.KwargChecker(function=createRLUAxes)
     def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,**kwargs):
         """View data in the Viewer3D object. 
