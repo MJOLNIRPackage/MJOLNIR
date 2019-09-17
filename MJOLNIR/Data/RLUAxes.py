@@ -19,9 +19,184 @@ from mpl_toolkits.axisartist import SubplotHost
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
 
+if pythonVersion == 3: # Only for python 3
+
+    def calculateBase(l,span,ticks):
+        """Calcualte the tick mark base suitable for current span and ticks
+
+        Args:
+
+            - l (grid locator): Matplotlib grid locator
+
+            - span (float): Width of view
+
+            - ticks (int): Number of ticks wanted
+
+        Returns:
+
+            - base (float): Closest base number according to l.multiples
+        """
+        ytickorder = np.ceil(np.log10(span/ticks))
+        minimalMultiplesy = np.argmin(np.abs(np.power(10,-ytickorder)*span/ticks-l.multiples))
+        return l.multiples[minimalMultiplesy]*np.power(10,ytickorder)
+        
 
 
+    def updateAxisDecorator(ax,direction='both'):
+        def axisDecorator(func):
+            @functools.wraps(func)
+            def newFunc(*args,**kwargs):
+                returnval = func(*args,**kwargs)
+                ax.axisChanged(direction=direction)
+                return returnval
+            return newFunc
+        return axisDecorator
 
+    def updateXAxisDecorator(ax):
+        def axisDecorator(func):
+            @functools.wraps(func)
+            def newFunc(*args,**kwargs):
+                returnval = func(*args,**kwargs)
+                ax.xAxisChanged()
+                return returnval
+            return newFunc
+        return axisDecorator
+
+    class MaxNLocator(mticker.MaxNLocator):
+        def __init__(self, nbins=10, steps=None,
+                    trim=True,
+                    integer=False,
+                    symmetric=False,
+                    prune=None):
+            # trim argument has no effect. It has been left for API compatibility
+            mticker.MaxNLocator.__init__(self, nbins, steps=steps,
+                                        integer=integer,
+                                        symmetric=symmetric, prune=prune)
+            self.create_dummy_axis()
+            self._factor = None
+
+        def __call__(self, v1, v2): # pragma: no cover
+            if self._factor is not None:
+                self.set_bounds(v1*self._factor, v2*self._factor)
+                locs = mticker.MaxNLocator.__call__(self)
+                return np.array(locs), len(locs), self._factor
+            else:
+                self.set_bounds(v1, v2)
+                locs = mticker.MaxNLocator.__call__(self)
+                return np.array(locs), len(locs), None
+
+        def set_factor(self, f):
+            self._factor = f
+
+
+    class MultipleLocator(mticker.MultipleLocator):
+        def __init__(self,base=None):
+            if base is None:
+                base = 0.25
+            mticker.MultipleLocator.__init__(self, base)
+            self.create_dummy_axis()
+            self._factor = None
+            self._multiplerVals = np.array([1,2,4,5,10])
+            self.multiples = 1.0/self.multiplerVals
+
+        @property
+        def multiplerVals(self):
+            return self._multiplerVals
+
+        @multiplerVals.getter
+        def multiplerVals(self):
+            return self._multiplerVals
+
+        @multiplerVals.setter
+        def multiplerVals(self,multiplerVals):
+            self._multiplerVals = multiplerVals
+            self.multiples = 1.0/multiplerVals
+
+
+        def __call__(self, v1, v2): # pragma: no cover
+            if self._factor is not None:
+                self.set_bounds(v1*self._factor, v2*self._factor)
+                locs = mticker.MultipleLocator.__call__(self)
+                return np.array(locs), len(locs), self._factor
+            else:
+                self.set_bounds(v1, v2)
+                locs = mticker.MultipleLocator.__call__(self)
+                return np.array(locs), len(locs), None
+
+        def set_factor(self, f):
+            self._factor = f
+
+    def forceGridUpdate(self):
+        self._grid_helper._force_update = True
+        self.pchanged()
+        self.stale = True
+
+    def get_aspect(ax):
+        figW, figH = ax.get_figure().get_size_inches()
+        _, _, w, h = ax.get_position().bounds
+        disp_ratio = (figH * h) / (figW * w)
+        data_ratio = sub(*ax.get_ylim()) / sub(*ax.get_xlim())
+        return (disp_ratio / data_ratio)
+
+    def axisChanged(axis,forceUpdate=False,direction='both'):
+        """Function to recalculate the base number for RLU axis"""
+        s = axis.sample
+        xlim = axis.get_xlim()
+        ylim = axis.get_ylim()
+        xlimDiff = np.diff(xlim)
+        ylimDiff = np.diff(ylim)
+        
+        if direction == 'both':
+            direction = ['x','y']
+            difference = [xlimDiff,ylimDiff]
+            locators = [axis._grid_helper.grid_finder.grid_locator1,axis._grid_helper.grid_finder.grid_locator2]
+        else:
+            if direction == 'x':
+                difference = [xlimDiff]  
+                locators = [axis._grid_helper.grid_finder.grid_locator1]
+            else:
+                difference = [ylimDiff]  
+                locators = [axis._grid_helper.grid_finder.grid_locator2]
+            direction = [direction]
+        for d,diff,locator in zip(direction,difference,locators):
+            forceUpdate = True
+            if isinstance(locator,MultipleLocator):
+                if not np.isclose(getattr(axis,'_old{}limDiff'.format(d.capitalize())),diff) \
+                or forceUpdate:# if new image size
+
+                    points = np.array(np.meshgrid(xlim,ylim)).reshape(-1,2) # Generate the 4 corner points
+                    Qs = np.array([s.tr(p[0],p[1]) for p in points])
+                    if d=='x':
+                        span = np.max(Qs[:,0])-np.min(Qs[:,0])
+                    else:
+                        span = np.max(Qs[:,1])-np.min(Qs[:,1])
+                    if not hasattr(axis,'{}ticks'.format(d)):
+                        setattr(axis,'{}ticks'.format(d),7)
+                    
+                    ticks = getattr(axis,'{}ticks'.format(d))
+                    setattr(axis,'_old{}limDiff'.format(d.capitalize()),diff)
+                
+
+                if not hasattr(axis,'{}base'.format(d)):
+                    base = calculateBase(locator,span,ticks)
+                else:
+                    base = getattr(ax,'{}base'.format(d))
+
+                locator.set_params(base=base)
+            
+            elif isinstance(locator,MaxNLocator):
+                if hasattr(axis,'{}ticks'.format(d)):
+                    ticks = getattr(axis,'{}ticks'.format(d))
+                else:
+                    ticks = 7
+                locator.set_params(nbins = ticks)
+            else:
+                return 
+        
+        # force an update
+        axis.forceGridUpdate()
+
+    
 
 def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
     """Create a reciprocal lattice plot for a given DataSet object.
@@ -133,82 +308,13 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
     ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in ax.sample.projectionVector2.astype(int)])))
 
     if pythonVersion==3: # Only for python 3
-        def forceGridUpdate(self):
-            self._grid_helper._force_update = True
-            self.pchanged()
-            self.stale = True
-
         ax.calculateTicks = lambda value:calculateTicks(value,ax.sample.projectionAngle)
         ax.forceGridUpdate = lambda:forceGridUpdate(ax)
         ax._oldXlimDiff = np.diff(ax.get_xlim())
         ax._oldYlimDiff = np.diff(ax.get_ylim())
 
-        def get_aspect(ax):
-            figW, figH = ax.get_figure().get_size_inches()
-            _, _, w, h = ax.get_position().bounds
-            disp_ratio = (figH * h) / (figW * w)
-            data_ratio = sub(*ax.get_ylim()) / sub(*ax.get_xlim())
-            return (disp_ratio / data_ratio)
-
         ax.get_aspect_ratio = lambda: get_aspect(ax)
 
-        def axisChanged(axis,forceUpdate=False,direction='both'):
-            """Function to recalculate the base number for RLU axis"""
-            s = axis.sample
-            xlim = axis.get_xlim()
-            ylim = axis.get_ylim()
-            xlimDiff = np.diff(xlim)
-            ylimDiff = np.diff(ylim)
-            
-            if direction == 'both':
-                direction = ['x','y']
-                difference = [xlimDiff,ylimDiff]
-                locators = [axis._grid_helper.grid_finder.grid_locator1,axis._grid_helper.grid_finder.grid_locator2]
-            else:
-                if direction == 'x':
-                    difference = [xlimDiff]  
-                    locators = [axis._grid_helper.grid_finder.grid_locator1]
-                else:
-                    difference = [ylimDiff]  
-                    locators = [axis._grid_helper.grid_finder.grid_locator2]
-                direction = [direction]
-            for d,diff,locator in zip(direction,difference,locators):
-                forceUpdate = True
-                if isinstance(locator,MultipleLocator):
-                    if not np.isclose(getattr(axis,'_old{}limDiff'.format(d.capitalize())),diff) \
-                    or forceUpdate:# if new image size
-
-                        points = np.array(np.meshgrid(xlim,ylim)).reshape(-1,2) # Generate the 4 corner points
-                        Qs = np.array([s.tr(p[0],p[1]) for p in points])
-                        if d=='x':
-                            span = np.max(Qs[:,0])-np.min(Qs[:,0])
-                        else:
-                            span = np.max(Qs[:,1])-np.min(Qs[:,1])
-                        if not hasattr(axis,'{}ticks'.format(d)):
-                            setattr(axis,'{}ticks'.format(d),7)
-                        
-                        ticks = getattr(axis,'{}ticks'.format(d))
-                        setattr(axis,'_old{}limDiff'.format(d.capitalize()),diff)
-                    
-
-                    if not hasattr(axis,'{}base'.format(d)):
-                        base = calculateBase(locator,span,ticks)
-                    else:
-                        base = getattr(ax,'{}base'.format(d))
-
-                    locator.set_params(base=base)
-                
-                elif isinstance(locator,MaxNLocator):
-                    if hasattr(axis,'{}ticks'.format(d)):
-                        ticks = getattr(axis,'{}ticks'.format(d))
-                    else:
-                        ticks = 7
-                    locator.set_params(nbins = ticks)
-                else:
-                    return 
-            
-            # force an update
-            axis.forceGridUpdate()
         ax.callbacks.connect('xlim_changed', axisChanged)
         ax.callbacks.connect('ylim_changed', axisChanged)
         ax.callbacks.connect('draw_event',lambda ax: axisChanged(ax,forceUpdate=True))
@@ -275,7 +381,6 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
         ax.set_yticks_base = set_yticks_base
         ax.set_xticks_number = set_xticks_number
         ax.set_yticks_number = set_yticks_number
-
 
     return ax
 
@@ -354,9 +459,13 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     def tr(l,x,y):
         return x/l,y
     
+    if pythonVersion == 3:
+        grid_locator1 = MultipleLocator(base=1.0) # Standard X ticks is multiple locator
+        grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
+                                        lambda x,y:tr(projectionVectorLength,x,y)),grid_locator1=grid_locator1)
     
-    
-    grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
+    else:
+        grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
                                         lambda x,y:tr(projectionVectorLength,x,y)))
     
     ax = SubplotHost(figure, 1, 1, 1, grid_helper=grid_helper)
@@ -382,104 +491,86 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     ax._step = 0.0
     ax.calculateRLU = lambda x,y: calculateRLU(projectionVectorLength,ax._projectionVector,x,y,ax._projectionVectorOrthogonal,ax._step)
     ax.format_coord = lambda x,y: format_coord(*ax.calculateRLU(x,y))
+
+
+    if pythonVersion == 3:
+        ax.forceGridUpdate = lambda:forceGridUpdate(ax)
+        ax.xticks = 7
+
+        def xAxisChanged(axis, forceUpdate=False):
+            locator = axis._grid_helper.grid_finder.grid_locator1
+            xlim = axis.get_xlim()
+            xlimDiff = np.diff(xlim)
+            if isinstance(locator,MultipleLocator):
+                if hasattr(axis,'xBase'):
+                    base = axis.xBase
+                else:
+                    base = calculateBase(locator,xlimDiff,axis.xticks)
+                locator.set_params(base=base)
+                
+            elif isinstance(locator,MaxNLocator):
+                if hasattr(axis,'xTicks'):
+                    ticks = getattr(axis,'xTicks')
+                else:
+                    ticks = 7
+                locator.set_params(nbins = ticks)
+            else:
+                return
+            axis.forceGridUpdate()
+
+        ax.callbacks.connect('xlim_changed', xAxisChanged)
+
+        ax.callbacks.connect('draw_event',lambda ax: xAxisChanged(ax,forceUpdate=True))
+        ax.xAxisChanged = lambda: xAxisChanged(ax,forceUpdate=True)
+
+
+        @updateXAxisDecorator(ax=ax)
+        def set_xticks_base(xBase=None,ax=ax):
+            """Setter of the base x ticks to be used for plotting
+
+            Kwargs:
+
+                - xBase (float): Base of the tick marks (default automatic)
+
+            """
+            
+                
+            if not isinstance(ax._grid_helper.grid_finder.grid_locator1,MultipleLocator):
+                l1 = MultipleLocator(base=xBase)
+                ax._grid_helper.update_grid_finder(grid_locator1=l1)
+
+            if xBase is None:
+                if hasattr(ax,'xBase'):
+                    delattr(ax,'xBase')
+            else:
+                ax.xBase = xBase
+
+        @updateXAxisDecorator(ax=ax)
+        def set_xticks_number(xNumber = None,ax=ax):
+            """Setter of the number of x ticks to be used for plotting
+
+            Kwargs:
+
+                - xNumber (int): Number of x tick marks (default 7)
+
+            """
+            if xNumber is None:
+                xNumber = 7
+
+            if not isinstance(ax._grid_helper.grid_finder.grid_locator1,MaxNLocator):
+                l1 = MaxNLocator(nbins=xNumber)
+                ax._grid_helper.update_grid_finder(grid_locator1=l1)
+            ax.xTicks = xNumber
+
+
+        ax.set_xticks_base = set_xticks_base
+        ax.set_xticks_number = set_xticks_number
+
+
     return ax
 
 
 
 
 
-if pythonVersion == 3: # Only for python 3
 
-    def calculateBase(l,span,ticks):
-        """Calcualte the tick mark base suitable for current span and ticks
-
-        Args:
-
-            - l (grid locator): Matplotlib grid locator
-
-            - span (float): Width of view
-
-            - ticks (int): Number of ticks wanted
-
-        Returns:
-
-            - base (float): Closest base number according to l.multiples
-        """
-        ytickorder = np.ceil(np.log10(span/ticks))
-        minimalMultiplesy = np.argmin(np.abs(np.power(10,-ytickorder)*span/ticks-l.multiples))
-        return l.multiples[minimalMultiplesy]*np.power(10,ytickorder)
-        
-
-
-    def updateAxisDecorator(ax,direction='both'):
-        def axisDecorator(func):
-            @functools.wraps(func)
-            def newFunc(*args,**kwargs):
-                returnval = func(*args,**kwargs)
-                ax.axisChanged(direction=direction)
-                return returnval
-            return newFunc
-        return axisDecorator
-
-    class MaxNLocator(mticker.MaxNLocator):
-        def __init__(self, nbins=10, steps=None,
-                    trim=True,
-                    integer=False,
-                    symmetric=False,
-                    prune=None):
-            # trim argument has no effect. It has been left for API compatibility
-            mticker.MaxNLocator.__init__(self, nbins, steps=steps,
-                                        integer=integer,
-                                        symmetric=symmetric, prune=prune)
-            self.create_dummy_axis()
-            self._factor = None
-
-        def __call__(self, v1, v2): # pragma: no cover
-            if self._factor is not None:
-                self.set_bounds(v1*self._factor, v2*self._factor)
-                locs = mticker.MaxNLocator.__call__(self)
-                return np.array(locs), len(locs), self._factor
-            else:
-                self.set_bounds(v1, v2)
-                locs = mticker.MaxNLocator.__call__(self)
-                return np.array(locs), len(locs), None
-
-        def set_factor(self, f):
-            self._factor = f
-
-
-    class MultipleLocator(mticker.MultipleLocator):
-        def __init__(self,base=0.25):
-            
-            mticker.MultipleLocator.__init__(self, base)
-            self.create_dummy_axis()
-            self._factor = None
-            self._multiplerVals = np.array([1,2,4,5,10])
-            self.multiples = 1.0/self.multiplerVals
-
-        @property
-        def multiplerVals(self):
-            return self._multiplerVals
-
-        @multiplerVals.getter
-        def multiplerVals(self):
-            return self._multiplerVals
-
-        @multiplerVals.setter
-        def multiplerVals(self,multiplerVals):
-            self._multiplerVals = multiplerVals
-            self.multiples = 1.0/multiplerVals
-
-
-        def __call__(self, v1, v2): # pragma: no cover
-            if self._factor is not None:
-                self.set_bounds(v1*self._factor, v2*self._factor)
-                locs = mticker.MultipleLocator.__call__(self)
-                return np.array(locs), len(locs), self._factor
-            else:
-                self.set_bounds(v1, v2)
-                locs = mticker.MultipleLocator.__call__(self)
-                return np.array(locs), len(locs), None
-
-        def set_factor(self, f):
-            self._factor = f
