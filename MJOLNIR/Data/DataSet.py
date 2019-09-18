@@ -4925,66 +4925,66 @@ def test_DataSet_plotQPlane():
             binning='polar',vmin=7.5e-7,vmax=7e-6,antialiased=True,cmap=cmap,rlu=True,extend='max')
     plt.close('all')
 
-@pytest.mark.unit
-def test_DataSet_plotA3A4(quick):
-    plt.ioff()
-
-    File1 = 'Data/camea2018n000136.hdf'
-    File2 = 'Data/camea2018n000137.hdf'
-
-    DS = DataSet(dataFiles=[File1,File2])
-    DS.convertDataFile(saveFile=True)
-
-    F1 = DS.convertedFiles[0]
-    F2 = DS.convertedFiles[1]
-
-    files = [F1,F2]
-    axes = [plt.figure().gca(),plt.figure().gca()]
-    try:
-        plotA3A4(files,planes=[],ax=axes) # 64 planes and only 2 axes
-        assert False
-    except AttributeError:
-        assert True
-
-    try:
-        plotA3A4(files,planes=None,ax=[]) # 64 planes and only 2 axes
-        assert False
-    except AttributeError:
-        assert True 
-
-    try:
-        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
-        assert False
-    except AttributeError:
-        assert True
-    
-    try:
-        ei = F1.Ei
-        F2.Ei = F1.Ei*10
-        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
-        assert False
-    except AttributeError:
-        F2.Ei = ei
-        assert True
-
-    try:
-        plotA3A4(files,planes=[10,[22]],ax=axes,singleFigure=True) # 2 axes and singleFigure true
-        assert False
-    except AttributeError:
-        assert True
-    if not quick==True:
-        print('___________')
-        plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
-        print('___________')
-        DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
-        print('___________')
-        DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
-        print('___________')
-        patches,energies=DS.plotA3A4([F1],planes=[10,25],returnPatches=True)
-        print('___________')
-        assert(len(patches)==2)
-        assert(len(energies)==2)
-    plt.close('all')
+#@pytest.mark.unit
+#def test_DataSet_plotA3A4(quick):
+#    plt.ioff()
+#
+#    File1 = 'Data/camea2018n000136.hdf'
+#    File2 = 'Data/camea2018n000137.hdf'
+#
+#    DS = DataSet(dataFiles=[File1,File2])
+#    DS.convertDataFile(saveFile=True)
+#
+#    F1 = DS.convertedFiles[0]
+#    F2 = DS.convertedFiles[1]
+#
+#    files = [F1,F2]
+#    axes = [plt.figure().gca(),plt.figure().gca()]
+#    try:
+#        plotA3A4(files,planes=[],ax=axes) # 64 planes and only 2 axes
+#        assert False
+#    except AttributeError:
+#        assert True
+#
+#    try:
+#        plotA3A4(files,planes=None,ax=[]) # 64 planes and only 2 axes
+#        assert False
+#    except AttributeError:
+#        assert True 
+#
+#    try:
+#        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
+#        assert False
+#    except AttributeError:
+#        assert True
+#    
+#    try:
+#        ei = F1.Ei
+#        F2.Ei = F1.Ei*10
+#        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
+#        assert False
+#    except AttributeError:
+#        F2.Ei = ei
+#        assert True
+#
+#    try:
+#        plotA3A4(files,planes=[10,[22]],ax=axes,singleFigure=True) # 2 axes and singleFigure true
+#        assert False
+#    except AttributeError:
+#        assert True
+#    if not quick==True:
+#        print('___________')
+#        plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
+#        print('___________')
+#        DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
+#        print('___________')
+#        DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
+#        print('___________')
+#        patches,energies=DS.plotA3A4([F1],planes=[10,25],returnPatches=True)
+#        print('___________')
+#        assert(len(patches)==2)
+#        assert(len(energies)==2)
+#    plt.close('all')
 
 @pytest.mark.unit
 def test_DataSet_plotQPatches(quick):
