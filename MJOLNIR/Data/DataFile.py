@@ -185,7 +185,7 @@ class DataFile(object):
                 self.loadMultiFLEXXData(fileLocation)
             
             if True:
-                for attr in self.__dir__():
+                for attr in dir(self):
                     # If attribute is a function or property, skip it
                     if hasattr(getattr(self,attr),'__call__') or isinstance(getattr(self,attr),property):
                         continue
