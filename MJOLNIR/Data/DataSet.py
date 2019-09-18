@@ -5254,3 +5254,49 @@ def test_DataSet_MultiFLEXX():
     ds.convertDataFile(saveFile = False)
 
     V = ds.View3D(0.05,0.05,0.5,grid=True)
+
+def test_DataSet_ELine():
+    DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
+    dataset = DataSet(DataFile)
+
+    dataset.convertDataFile()
+
+    Q1 = [1.0,-0.185,0.0]
+    Q2 = [0.5,1.5,0.0]
+    Emin = 1.65
+    Emax = 3.3
+
+    CutData,Bins = dataset.cutELine(Q1, Q2, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False)
+    ax, CutDataPlot, BinsPlot = dataset.plotCutELine(Q1, Q2, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False)
+
+    assert(np.all([np.all(np.isclose(B,B2)) for B,B2 in zip(Bins,BinsPlot)]))
+    assert(np.all(CutDataPlot.equals(CutData)))
+
+    assert(np.all(np.logical_and(CutData['Energy']>=Emin,CutData['Energy']<=Emax*1.01))) # Allow for slightly heigher energy
+    assert(np.logical_and(np.all(CutData['H']<=Q1[0]*1.01),np.all(CutData['H']>=Q2[0]*0.99)))
+    assert(np.logical_and(np.all(CutData['K']>=Q1[1]*1.01),np.all(CutData['K']<=Q2[1]*1.01)))
+    assert(np.all(np.isclose(CutData['L'],0.0,atol=1e-6)))
+    assert(np.all([np.all(np.logical_and(B[0]>=Emin*0.99,B[0]<=Emax*1.05)) for B in Bins])) # Allow for slightly heigher energy
+
+
+    if sys.version[0] == '3':
+        ax.set_xticks_base(0.01)
+        ax.set_xticks_number(10)
+        ax.set_xticks_base()
+        
+
+    Q1raw = dataset.convertToQxQy(Q1)
+    Q2raw = dataset.convertToQxQy(Q2)
+
+    CutData,Bins = dataset.cutELine(Q1raw, Q2raw, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=False)
+    ax, CutDataPlot, BinsPlot = dataset.plotCutELine(Q1raw, Q2raw, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=False)
+
+
+    assert(np.all([np.all(np.isclose(B,B2)) for B,B2 in zip(Bins,BinsPlot)]))
+    assert(np.all(CutDataPlot.equals(CutData)))
+
+    assert(np.all(np.logical_and(CutData['Energy']>=Emin,CutData['Energy']<=Emax*1.01))) # Allow for slightly heigher energy
+    assert(np.logical_and(np.all(CutData['qx']<=Q1raw[0]*1.01),np.all(CutData['qx']>=Q2raw[0]*0.99)))
+    assert(np.logical_and(np.all(CutData['qy']<=Q1raw[1]*0.99),np.all(CutData['qy']>=Q2raw[1]*1.01)))
+
+    assert(np.all([np.all(np.logical_and(B[0]>=Emin*0.99,B[0]<=Emax*1.05)) for B in Bins])) # Allow for slightly heigher energy
