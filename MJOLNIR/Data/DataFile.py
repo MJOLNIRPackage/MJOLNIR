@@ -533,7 +533,6 @@ class DataFile(object):
                     ['local','localContact'],
                     ['user','userName'],
                     ['DA','analyzerDSpacing'],
-                    ['EN','Ei'],
                     ['expno','experimentIdentifier'],
                     ['localContact','localContactName']
                     ]
