@@ -318,23 +318,14 @@ class DataSet(object):
         for rawfile in dataFiles:
             convFile = rawfile.convert(binning)
 
-            if saveFile:
+            if saveFile: # TODO:
                 if not saveLocation is None:
-                    if not os.path.isabs(saveLocation): # if full path is given
-                        saveloc = saveLocation
-                        if not saveLocation.split('.')[-1] == 'nxs':
-                            if saveLocation[-1]!='/':
-                                saveLocation+='/'
-                            saveloc = saveLocation+rawfile.fileLocation.replace('.hdf','.nxs').split('/')[-1]
-                        else:
-                            saveloc = saveLocation
-                    else: # pragma: no cover
-                        if not saveLocation.split('.')[-1] == 'nxs': # is not covered as testing platform is to be used with relative paths
-                            if saveLocation[-1]!='/':
-                                saveLocation+='/'
-                            saveloc = saveLocation+rawfile.fileLocation.replace('.hdf','.nxs').split('/')[-1]
-                        else:
-                            saveloc = saveLocation
+                    directory,file = os.path.split(saveLocation)
+                    directory = os.path.abspath(directory)
+                    if file == '':
+                        file = os.path.split(rawfile.fileLocation)[1]
+                    fileName = os.path.splitext(file)[0]
+                    saveloc = os.path.join(directory,fileName+'.nxs')
                 else:
                     saveloc = rawfile.fileLocation.replace('.hdf','.nxs')
                 
@@ -4131,10 +4122,11 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
         returndata.append(MonitorCount)
     if norm is not None:
         Normalization= np.histogramdd(np.array(pos).T,bins=HistBins,weights=norm.flatten())[0].astype(norm.dtype)
-        NormCount =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=np.ones_like(data).flatten())[0].astype(int)
+        
         returndata.append(Normalization)
-        returndata.append(NormCount)
-
+        
+    NormCount =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=np.ones_like(data).flatten())[0].astype(int)
+    returndata.append(NormCount)
     return returndata,bins
 
 def calculateBins(dx,dy,dz,pos):

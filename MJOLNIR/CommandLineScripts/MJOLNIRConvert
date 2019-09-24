@@ -31,7 +31,7 @@ parser.add_argument("-r", "--reuse", action='store_true', help='Set flag to reus
 args = parser.parse_args()
 
 files = _tools.extractDataFiles(args,settingsName)
-directory = os.path.split(files[0])[0]
+directory = os.path.split(files[0])[0]+os.path.sep
 
 _tools.updateSetting(settingsName,files)
 binning = args.binning

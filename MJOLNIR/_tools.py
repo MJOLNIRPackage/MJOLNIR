@@ -6,6 +6,7 @@ import functools
 import logging
 import math
 from MJOLNIR.Marray import *
+import os
 
 MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
@@ -331,9 +332,9 @@ def fileListGenerator(numberString,folder,year=2018, format = None, instrument =
     dataFiles = []
     if format is None: # If no user specified format is provided
         if instrument == 'CAMEA':
-            format = '{:}camea{:d}n{:06d}.hdf'
+            format = 'camea{:d}n{:06d}.hdf'
         elif instrument == 'MultiFLEXX':
-            format = '{0:}{2:06d}'
+            format = '{1:06d}'
         else:
             raise AttributeError('Provided instrument "{}" not understood'.format(instrument))
 
@@ -350,10 +351,8 @@ def fileListGenerator(numberString,folder,year=2018, format = None, instrument =
             numbers = np.arange(startNumber,endNumber+1)    
         else:
             numbers = [int(sp)]
-        if not folder[-1]=='/':
-            folder+='/'
-        
-        dataFiles.append([format.format(folder,year,x) for x in numbers])
+
+        dataFiles.append([os.path.join(folder,format.format(year,x)) for x in numbers])
     return list(np.concatenate(dataFiles))
 
 
