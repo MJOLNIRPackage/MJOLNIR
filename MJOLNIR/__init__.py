@@ -8,7 +8,7 @@ MJOLNIR Module
 import sys,os
 sys.path.append('.')
 
-__version__ = '1.1.3'
+__version__ = '1.1.4'
 __author__ = 'Jakob Lass'
 
 
