@@ -410,7 +410,7 @@ class DataFile(object):
 
         ## Format scanCommand
         scanParameters = [x.split('=')[0].strip() for x in self.steps.split(',')]
-        self.scanParameters = scanParameters
+        self.scanParameters = [p.capitalize() for p in scanParameters]
 
         self.scanUnits = []
         for param in self.scanParameters:
