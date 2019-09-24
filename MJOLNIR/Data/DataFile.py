@@ -552,10 +552,10 @@ class DataFile(object):
             this_dir, _ = os.path.split(__file__)
             if self.type in ['MultiFLEXX','FlatCone']:
                 if self.type =='MultiFLEXX':
-                    calibrationFile = os.path.join(this_dir,'CalibrationMultiFLEXX.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
+                    calibrationFile = os.path.join(this_dir,'..','CalibrationMultiFLEXX.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
                     detectors = 155
                 else:
-                    calibrationFile = os.path.join(this_dir,'CalibrationFlatCone.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
+                    calibrationFile = os.path.join(this_dir,'..','CalibrationFlatCone.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
                     detectors = 31
                     self.mask = False
                 calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
