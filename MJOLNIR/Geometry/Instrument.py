@@ -136,6 +136,8 @@ class Instrument(GeometryConcept.GeometryConcept):
             raise ValueError('Instrument does not contain any wedges and can thus not be initialized.')
         self._A4 = []
         self._Ef = []
+        self._pixelPosition = []
+        self._analyserPosition = []
         beamDirection = np.array([0.0,1.0,0.0])
 
         for wedge in self.wedges:
@@ -152,7 +154,8 @@ class Instrument(GeometryConcept.GeometryConcept):
             Ef = [np.power(factorLambdasqrtE/(wedge.analysers[0].d_spacing*2.0*np.sin(A6Sub/2.0)),2.0) for A6Sub in A6] 
             self._A4.append(A4)
             self._Ef.append(Ef)
-
+            self._pixelPosition.append(detectorPixelPositions)
+            self._analyserPosition.append(analyserPixelPositions)
 
 
 
