@@ -1019,7 +1019,7 @@ class DataSet(object):
         ax.pmeshs = pmeshs
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data))
         if colorbar:
-            ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
+            ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
 
         return ax,Data,qbins
 
@@ -1286,7 +1286,7 @@ class DataSet(object):
         ax.set_clim = lambda vMin,vMax: set_clim(ax.pmeshs,vMin,vMax)
 
         if colorbar:
-            ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
+            ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
 
         ax.set_clim(vmin,vmax)
         if _3D:
@@ -3304,7 +3304,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
             ax[counter].add_collection(pcollection)
             ax[counter].set_xlim(-QXlim,QXlim)
             ax[counter].set_ylim(-QYlim,QYlim)
-            ax[counter].get_figure().colorbar(ax[counter].collections[0], ax=ax[counter],format=ticker.FuncFormatter(fmt))
+            ax[counter].colorbar = ax[counter].get_figure().colorbar(ax[counter].collections[0], ax=ax[counter],format=ticker.FuncFormatter(fmt))
             
             ax[counter].collections[0].set_clim(currIntMin,np.max(currentInt))
             if subplanes==1:
