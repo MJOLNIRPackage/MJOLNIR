@@ -19,6 +19,7 @@ tutorials and guides on how to make use of MJOLNIR.
 
    Introduction
    faq
+   ShortCuts
    Tutorials/Tutorial
    MJOLNIR
    InDepthDocumentation/Documentation
