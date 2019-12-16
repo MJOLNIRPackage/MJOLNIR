@@ -186,10 +186,6 @@ class Viewer3D(object):
         self.caxis = [np.nanmin(self.masked_array),maxVal]
         self.ax.grid(self.grid,zorder=self.gridZOrder)
 
-        for view in [0,1,2]: # Add the hover over functionality to all axes
-            self.setAxis(view)
-            self.ax.format_coord = lambda x,y: onclick(self,x,y,returnText=True) # Overwrite standard hover with data information
-
         self.setAxis(viewAxis) # Set view plane to correct
         ## Hack for this to look nice as just changing direction does not render correctly
         self.setPlane(1)
@@ -344,7 +340,7 @@ def onclick(self,x,y,returnText=False): # pragma: no cover
 
     masked = np.ma.is_masked(I)
     printString = ''
-    printString+=self.axRLU.sample.format_coord(x, y)+', '
+    printString+=self.ax.format_coord(x, y)+', '
 
     if masked:
         I = np.nan
