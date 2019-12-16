@@ -51,7 +51,7 @@ class DataFile(object):
             self.fileLocation = os.path.abspath(fileLocation)		
 			
             if not self.type == 'MultiFLEXX':
-                with hdf.File(fileLocation) as f:
+                with hdf.File(fileLocation,mode='a') as f:
                     sample=f.get('/entry/sample')
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
                     instr = getInstrument(f)
