@@ -2,7 +2,7 @@ Viewer3D
 ========
 
 In this section, the interactivity of the Viewer3D is explained. 
-It is assumed that an instance has already been create (for example, see `Quick plotting of data <QuickView3D>`_). 
+It is assumed that an instance has already been created (for example, see `Quick plotting of data <QuickView3D>`_). 
 For a given data set, the viewer will look something like the picture below:
 
 |pic1| |pic2|
