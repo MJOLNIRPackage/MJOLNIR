@@ -214,6 +214,12 @@ class Viewer3D(object):
         self.im.set_clim(caxis)
         self.colorbar.update_bruteforce(self.im)
 
+    def set_clim(self,cmin,cmax=None):
+        if cmax is None:
+            self.caxis = cmin
+        else:
+            self.caxis = (cmin,cmax)
+
     def setAxis(self,axis):
         
         if axis==2:
