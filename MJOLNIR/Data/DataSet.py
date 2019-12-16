@@ -826,36 +826,36 @@ class DataSet(object):
         """
         
         
-        if dataFiles is None:
-            if len(self.convertedFiles)==0:
-                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
-            else:
-                I = self.I.extractData()
-                qx = self.qx.extractData()
-                qy = self.qy.extractData()
-                energy = self.energy.extractData()
-                Norm = self.Norm.extractData()
-                Monitor = self.Monitor.extractData()
-                samples = self.sample
-                maskIndices = self.maskIndices
+        #if dataFiles is None:
+        #    if len(self.convertedFiles)==0:
+        #        raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+        #    else:
+        #        I = self.I.extractData()
+        #        qx = self.qx.extractData()
+        #        qy = self.qy.extractData()
+        #        energy = self.energy.extractData()
+        #        Norm = self.Norm.extractData()
+        #        Monitor = self.Monitor.extractData()
+        #        samples = self.sample
+        #        maskIndices = self.maskIndices
 
-        else: 
-            DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
+        #else: 
+        #    DS = DataSet(convertedFiles = dataFiles)
+        #    I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
             
-        if rlu==True: # Recalculate H,K,L to qx
-            q1,q2 = self.convertToQxQy([q1,q2])
-            # Rotate all data files to fit with first data file
-            thetaDifference = [s.theta-samples[0].theta for s in samples]
-            rotationMatrices = [np.dot(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
-            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
-            qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
+        #if rlu==True: # Recalculate H,K,L to qx
+        #    q1,q2 = self.convertToQxQy([q1,q2])
+        #    # Rotate all data files to fit with first data file
+        #    thetaDifference = [s.theta-samples[0].theta for s in samples]
+        #    rotationMatrices = [np.dot(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+        #    Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+        #    qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
 
 
-        positions = np.array([qx,qy,energy])
-        return plotCutQE(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
-                        minPixel=minPixel,EnergyBins=EnergyBins,rlu=rlu,ax = ax,constantBins=constantBins,**kwargs)
-
+        #positions = np.array([qx,qy,energy])
+        #return plotCutQELine(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
+        #                minPixel=minPixel,EnergyBins=EnergyBins,rlu=rlu,ax = ax,constantBins=constantBins,**kwargs)
+        return self.plotCutQELine(QPoints=[q1,q2],width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=rlu,ax=ax,dataFiles=dataFiles,constantBins=constantBins,**kwargs)
     
     @_tools.KwargChecker()
     def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,constantBins=False):
@@ -1906,7 +1906,13 @@ class DataSet(object):
                         return "x out of range: {:.3}".format(x)
                     else:
                         return -1,-1,-1
-                segID = (np.arange(len(offset)-1)[[x>offStart and x<offStop for offStart,offStop in zip(offset,offset[1:])]])[0]
+                try:
+                    segID = (np.arange(len(offset)-1)[[x>offStart and x<offStop for offStart,offStop in zip(offset,offset[1:])]])[0]
+                except IndexError: # index error returned if no segment is found
+                    if textReturn == True:
+                        return "x out of range: {:.3}".format(x)
+                    else:
+                        return -1,-1,-1
                 Eindex = np.array(EnergyBins[segID]).searchsorted(y) - 1
                 minspan = np.min(np.concatenate(edgeQDistance[segID]))
                 maxspan = np.max(np.concatenate(edgeQDistance[segID]))
@@ -1949,14 +1955,15 @@ class DataSet(object):
                     y = event.ydata
                     printString = ax.format_coord(x,y)
                     segID,Eindex,index = ax.calculateIndex(x,y)
-
-                    dataPoint = DataList[np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex)].iloc[index]
-                    if not np.any([x==-1 for x in [segID,Eindex,index]]):
-                        cts = int(dataPoint['Intensity'])
-                        Mon = int(dataPoint['Monitor'])
-                        Norm = float(dataPoint['Normalization'])
-                        NC = int(dataPoint['BinCount'])
-                        printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+                    if index < len(DataList[np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex)]) and index>=0:
+                        dataPoint = DataList[np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex)].iloc[index]
+                        if not np.any([x==-1 for x in [segID,Eindex,index]]):
+                            cts = int(dataPoint['Intensity'])
+                            Mon = int(dataPoint['Monitor'])
+                            Norm = float(dataPoint['Normalization'])
+                            NC = int(dataPoint['BinCount'])
+                            printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+                    
                     print(printString)
             ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPositionTotal,actualEnergy,DataList,rlu,offset,self)#EnergyBins
             ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
