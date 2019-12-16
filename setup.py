@@ -17,7 +17,7 @@ pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'sit
 setup(
     name='MJOLNIR',
 
-    version='1.1.4',
+    version='1.1.5',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
