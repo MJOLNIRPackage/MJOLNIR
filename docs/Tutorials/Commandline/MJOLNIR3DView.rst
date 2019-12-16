@@ -1,7 +1,7 @@
 Quick 3D View of data
 =====================
 
-During an experiment a quick overview of the current data is often times needed. By the use of th *MJOLNIR3DView* script this is possible without using python directly. 
+During an experiment a quick overview of the current data is often times needed. By the use of the *MJOLNIR3DView* script this is possible without using python directly. 
 
 The script *MJOLNIR3DView* and it has the following help text::
 

@@ -43,8 +43,7 @@ of points, the voronoi algorithm splits of space into just as many
 regions for which all points in a given region is closest to the 
 initial point inside it than to any other. This method is suitable 
 in many different areas of data treatment, e.g. to divide a city map 
-in to districts dependent on which hospital is nearest, or divide 
-????. This method can however also be used in the specific task for 
+in to districts depending on which hospital is nearest. This method can however also be used in the specific task for 
 creating pixels around each measurement point in a neutron scattering 
 dataset. 
 
@@ -54,7 +53,7 @@ Euclidean :math:`d = \sqrt{\Delta x^2+\Delta y^2+\Delta z^2 \cdots}`
 to other metrics, i.e. the so-called Manhattan distance 
 :math:`d = |\Delta x|+|\Delta y|+|\Delta z|+\cdots`. It has, however, 
 been chosen that using multi-dimensional and non-Euclidean tessellations 
-obscures the visualization of the data rather than enhance it. 
+obscures the visualization of the data rather than enhancing it. 
 Furthermore, the used SciPi-package spatial_ does not natively support 
 changes of metric and a rewriting is far outside of the scope of this 
 software suite.

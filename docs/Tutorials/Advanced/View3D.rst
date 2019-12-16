@@ -1,6 +1,6 @@
 Advanced View3D tutorial
 ^^^^^^^^^^^^^^^^^^^^^^^^
-Assuming that the Quick visualization from the Quick tutorials is understood, this tutorial seeks to introduce more advanced features for the 3D viewer object. As shown below, one can specify whether or not a grid is to be plotted with the key word arguments "grid". Further, the code below defines a function to create animations for the viwer object making use of of the 
+Assuming that the Quick visualization from the Quick tutorials is understood, this tutorial seeks to introduce more advanced features for the 3D viewer object. As shown below, one can specify whether or not a grid is to be plotted with the key word arguments "grid". Further, the code below defines a function to create animations from the viewer object making use of the matplotlib animation package.
 
 .. code-block:: python
    :linenos:

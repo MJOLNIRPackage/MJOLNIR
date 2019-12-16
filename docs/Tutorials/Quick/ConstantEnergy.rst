@@ -1,6 +1,6 @@
 Plotting a Q plane for constant energy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-After one has gotten an overview of the data measured through the Viewer3D (explained in `<QuickView3D.html>`_ the next step is to plot only as single plane of constant energy as function of H, K, and L or :math:`Q_x` and :math:`Q_y` depending on the boolean state of the "rlu" key word argument. Two different binning methods are currently provided: Polar and XY. What is done is that the points measured are binned either. For explanation of units and size of bins, see below
+After one has gotten an overview of the data measured through the Viewer3D (explained in `<QuickView3D.html>`_ the next step is to plot only a single plane of constant energy as function of H, K, and L or :math:`Q_x` and :math:`Q_y` depending on the boolean state of the "rlu" key word argument. Two different binning methods are currently provided: Polar and XY. Either the points are binned using position (qx, qy) in rectangular or polar coordinates. For explanation of units and size of bins, see below
 
 .. code-block:: python
    :linenos:

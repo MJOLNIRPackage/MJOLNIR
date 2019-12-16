@@ -10,7 +10,7 @@ In general, it is expected that a CAMEA-like instrument is to be run during expe
     - External parameter
 
 However, in the initial phase of set-up other scans might be conducted. The data conversion thus 
-does not require a specific scan but allows for all types. This does then require the user to choose corresponding visualizations correspondingly.
+does not require a specific scan but allows for all types. This does then require the user to choose visualizations correspondingly.
 
 .. The most common operation is expected to be a rotate of the back-end into a suitable :math:`A4` and :math:`E_i` position to cover the interesting physics, and then a performance of an :math:`A3` scan. The rotation angle of this scan depends on the symmetry of the crystal in the given scattering plane as performing a 360 degrees scan with a 90 degrees symmetry does not provide additional information. After such a scan, would rotate :math:`A4` by half a wedge coverage angle (3.75 degrees) to cover the dark angles and then perform an identical :math:`A3` scan. This could be performed with different incoming energies to expand the covered area in the energy direction.
 

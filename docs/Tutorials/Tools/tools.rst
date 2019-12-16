@@ -1,6 +1,6 @@
 Overview of _tools
 ^^^^^^^^^^^^^^^^^^
-Some different tools have been developed taking care of different aspects of the MJOLNIR package. Some are used as decorators and does thus not make sense to utilize outside of the package itself. Below, the binEdges and fileListGenerator will be shown. 
+Some different tools have been developed taking care of different aspects of the MJOLNIR package. Some are used as decorators and thus do not make sense to utilize outside of the package itself. Below, the binEdges and fileListGenerator will be shown. 
 
 .. code-block:: python
    :linenos:
@@ -46,7 +46,7 @@ Mostely, one needs to combine files with different run numbers. These are often 
 
 Binning
 -------
-When dealing with data that is non-uniformly distributed it is sometimes necessary to have a function that creates suitable bins all containing  data. This is exactly what the _tools.binEdges does. It starts the first bin starts 0.1 times the tolerance away from the first unique entry and iterates through the list of points. For each step, as long as the distance between the current value and the next is less than the tolerance the bin is expanded. If the distance is greater, a bin is created in the middle between the last accepted and the rejected point. This insures that all points are within a bin and that no bins are empty. For the last point of the list, it is checked if the difference between last bin edge and point is smaller than tolerance*1.1 and if so, a bin is created of size tolerance. Otherwise, the las bin edge is 0.1*tolerance away from last point. An example is shown in the above code generating the figure below:
+When dealing with data that is non-uniformly distributed it is sometimes necessary to have a function that creates suitable bins all containing  data. This is exactly what the _tools.binEdges does. The first bin starts 0.1 times the tolerance the tolerance away from the first unique entry and iterates through the list of points. For each step, as long as the distance between the current value and the next is less than the tolerance the bin is expanded. If the distance is greater, a bin is created in the middle between the last accepted and the rejected point. This insures that all points are within a bin and that no bins are empty. For the last point of the list, it is checked if the difference between last bin edge and point is smaller than tolerance*1.1 and if so, a bin is created of size tolerance. Otherwise, the last bin edge is 0.1*tolerance away from last point. An example is shown in the above code generating the figure below:
  .. figure:: Binning.png
   :width: 30%
   :align: center

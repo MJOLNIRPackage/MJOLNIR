@@ -1,7 +1,7 @@
 Calibration inspection
 ======================
 
-Inspection of the current normalization table used to convert the raw data measured into actual scattering intensities is of great importance. It holds the information of energy and A4 value of all of the individual pixels and does thus govern the convertion into reciprocal space. Furthermore, it contains the normalization needed to take care of detector sensitivity, space angle coverage, as well as analyser efficiency. Due to this vital role, it has been made possible to easily plot the contents of the calibration table.
+Inspection of the current normalization table used to convert the raw data measured into actual scattering intensities is of great importance. It holds the information of energy and A4 value of all of the individual pixels and thus governs the convertion into reciprocal space. Furthermore, it contains the normalization needed to take care of detector sensitivity, space angle coverage, as well as analyser efficiency. Due to this vital role, it has been made possible to easily plot the contents of the calibration table.
 
 The script *MJOLNIRCalibrationInspector* and it has the following help text::
 
@@ -29,10 +29,10 @@ The script *MJOLNIRCalibrationInspector* and it has the following help text::
 First of all, if the program is run without any arguments, a file dialog will appear asking for a file to be plotted. From this file, the default plots will be created and the file directory is saved in an external settings file such that next time the program is run the file dialog will open on this location.
 
 As seen in the description, the user can choose which plots are to be generated and whether to save the results or simply inspect them visually. As a default the script uses the 8 pixel binning and creates an A4 plot. 
-This can be changed by invoking the *-b binning* or *-p PlotType* flags for binnning and plotting respectively. The binning choosen should as one of the provided in the file (usually 1, 3, or 8), and the plotting possibilities are "A4","Normalization","Ef", and "EfOverview".
+This can be changed by invoking the *-b binning* or *-p PlotType* flags for binnning and plotting respectively. The binning chosen should as one of the provided in the file (usually 1, 3, or 8), and the plotting possibilities are "A4","Normalization","Ef", and "EfOverview".
 
 Providing a saving location with the use of the *-s savelocation* or *--save savelocation* makes the script save the figures in the corresponding path. It should be a directory and not a file path. 
-The figures are saved with selfexplanartory titles in a png format such as they can be opened on all OS's without problems.
+The figures are saved with selfexplanartory titles in a png format such that they can be opened on all OS's without problems.
 
 An example of the four different figures produces is the following, when choosing binning 1, 3, and 8:
 

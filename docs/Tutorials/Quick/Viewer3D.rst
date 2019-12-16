@@ -37,11 +37,11 @@ being the two projections in :math:`\vec{Q}` and energy. The data is always plot
 +-----------------+------------------------------------------------------+
 |    Key press    | Effect                                               |
 +-----------------+------------------------------------------------------+
-|        0        | Chang plotting such that projection 0 is constant    |
+|        0        | Change plotting such that projection 0 is constant   |
 +-----------------+------------------------------------------------------+
-|        1        | Chang plotting such that projection 1 is constant    |
+|        1        | Change plotting such that projection 1 is constant   |
 +-----------------+------------------------------------------------------+
-|        2        | Chang plotting such that energy is constant          |
+|        2        | Change plotting such that energy is constant         |
 +-----------------+------------------------------------------------------+
 |  \+ or UpArrow  | Increment step along constant axis                   |
 +-----------------+------------------------------------------------------+

@@ -1,7 +1,7 @@
 History of data files
 =====================
 
-Both during and experiment and especially after, one can lose the overview of which data files contain which data. With a 
+Both during an experiment and especially after, one can lose the overview of which data files contain which data. With a 
 command line tool that prints out the most important properties of data files, this can be overcome.
 
 The script *MJOLNIRHistory* and it has the following help text::

@@ -100,9 +100,9 @@ Many different kwargs are possible for the cutting method and most of them shoul
 +----------------+---------------------------------------------------------------------------------+----------------+------+
 |    dataFiles   | List of converted data files to be used                                         | None           | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
-|      vmin      | Minimal value used for the coluor scale                                         | min(Intensity) | N/A  |
+|      vmin      | Minimal value used for the colour scale                                         | min(Intensity) | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
-|      vmax      | Maximal value used for the coluor scale                                         | max(Intensity) | N/A  |
+|      vmax      | Maximal value used for the colour scale                                         | max(Intensity) | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
 |       log      | If the logarithm to the intensity is to be plotted (+1e-20)                     | False          | N/A  |
 +----------------+---------------------------------------------------------------------------------+----------------+------+
@@ -120,7 +120,7 @@ Many different kwargs are possible for the cutting method and most of them shoul
 Working with return data
 ------------------------
 
-Having created the plot as wanted, the natural next step is to look at the actual data return from the method. This data is exactly the same as what would have been returned by utilizing the non-plotting version cutQELine with the same arguments (except for plotting specifics). Of most interest are the DataList, BinListTotal, and centerPositionTotal, containing the position/intensity of the cuts, and binning counts as function of segment and bin, as well as the edges and centers of these bins. That is, DataList is a pandas DataFrame with columns containing "H", "K", "L", "Energy", "Qx", "Qy", "Intensity"  (neutron count), "Int" (noralized intensity), "BinCount" (neutron positions binned in single pixel), "Normalization", "Monitor". As an example, the normalized intensities as function of :math:`L` for the third segment at five different energies are plotted. 
+Having created the plot as wanted, the natural next step is to look at the actual data returned from the method. This data is exactly the same as what would have been returned by utilizing the non-plotting version cutQELine with the same arguments (except for plotting specifics). Of most interest are the DataList, BinListTotal, and centerPositionTotal, containing the position/intensity of the cuts, and binning counts as function of segment and bin, as well as the edges and centers of these bins. That is, DataList is a pandas DataFrame with columns containing "H", "K", "L", "Energy", "Qx", "Qy", "Intensity"  (neutron count), "Int" (noralized intensity), "BinCount" (neutron positions binned in single pixel), "Normalization", "Monitor". As an example, the normalized intensities as function of :math:`L` for the third segment at five different energies are plotted. 
 
 .. figure:: plotCutQELineMnF21D.png
   :width: 65%

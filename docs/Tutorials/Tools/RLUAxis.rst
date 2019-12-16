@@ -87,7 +87,7 @@ As the axis object makes use of the non-standard "GridHelperCurveLinear" many fe
 
 
 
-As to the data plotted in the axis. Plotting directly into the axis corresponds to plotting the :math:`Q_x` :math:`Q_y` system which in this case produces a square box around (0,0). However, wanting to plot things in terms of reciprocal lattice unites one has two options: Plot corresponding to projection or calculate :math:`Q_x` :math:`Q_y` from HKL points. Both of these methods are shown in the first example resulting in the two parallellograms plotted on top of each other. Notice that the blue box does not have the same height as the two others due to the length of the H00 being 1.187 /AA and not unity. 
+As to the data plotted in the axis. Plotting directly into the axis corresponds to plotting the :math:`Q_x` :math:`Q_y` system which in this case produces a square box around (0,0). However, wanting to plot things in terms of reciprocal lattice units one has two options: Plot corresponding to projection or calculate :math:`Q_x` :math:`Q_y` from HKL points. Both of these methods are shown in the first example resulting in the two parallellograms plotted on top of each other. Notice that the blue box does not have the same height as the two others due to the length of the H00 being 1.187 /AA and not unity. 
 
 .. figure:: RLUAxis2.png
   :width: 50%
@@ -100,7 +100,7 @@ The second example has a crystal with unit cell [9.843  9.843  9.843 90.    90. 
 Technical details
 -----------------
 
-It was chosen to make use of the "GridHelperCurveLinear" despite the difficulties arising from it as this allows for plotting in RLU coordinates without having to skew data. That is, it is possible to keep data as measured by the instrument (sort of circular) while still providing all information about the reciprocal space to the user. As mentioned, some calculations happen behind the scenes when dealing with this object; most of the in the sample object itself. Mathematically what happens is as follows:
+It was chosen to make use of the "GridHelperCurveLinear" despite the difficulties arising from it as this allows for plotting in RLU coordinates without having to skew data. That is, it is possible to keep data as measured by the instrument (sort of circular) while still providing all information about the reciprocal space to the user. As mentioned, some calculations happen behind the scenes when dealing with this object; most of them in the sample object itself. Mathematically what happens is as follows:
 
 The general relationship between measured points from the instrument, denoted :math:`(Q_x,Q_y,Q_z)` for the two in-plane components along x and y, and the one out of plane, and the reciprocal lattice units HKL is given by the UB matrix
 
@@ -108,7 +108,7 @@ The general relationship between measured points from the instrument, denoted :m
 
     \begin{pmatrix}Q_x\\Q_y\\Q_z\end{pmatrix} = UB \cdot \begin{pmatrix}H\\K\\L\end{pmatrix}
 
-From the geometrical constraints of the CAMEA backend, all scattering is performed in plane. But in other words, the :math:`Q_z` is always 0. Thus one can use a simple projection matrix from 2D to 3D:
+From the geometrical constraints of the CAMEA backend, all scattering is performed in plane. In other words, the :math:`Q_z` is always 0. Thus one can use a simple projection matrix from 2D to 3D:
 
 .. math::
 
@@ -166,7 +166,7 @@ Here it is clear that the convert matrix is not necessarily simple to find from 
 Tick marks
 ----------
 
-The discussion of the location of the tick marks is quite long and deserves a section of it's own. It all revolves about the usage of the curve linear axis, which is provided as an experimental/development feature in the *matplotlib* package. This in change then introduces some difficulties with the compability of the code with both python 2 and 3 as some calls are only supported with python 3. Thus to keep the compability of MJOLNIR to both versions, the customization of tick locations and number is only used for python versions 3. 
+The discussion of the location of the tick marks is quite long and deserves a section of its own. It all revolves about the usage of the curve linear axis, which is provided as an experimental/development feature in the *matplotlib* package. This in change then introduces some difficulties with the compability of the code with both python 2 and 3 as some calls are only supported with python 3. Thus to keep the compability of MJOLNIR to both versions, the customization of tick locations and number is only used for python versions 3. 
 
  Codewise, what is done is to create two subclasses of the *mticker.MultipleLocator* and the *mticker.MaxLocator* classes designed to calculate the positions of tick marks using two different methods. The *MaxLocator* expects a integer input signifying the maximal number of ticks along the given axis, which are chosen at 'suitable' positions and will update with zooming and panning. 
  
