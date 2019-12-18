@@ -479,7 +479,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
 
     def format_coord(x,y): # pragma: no cover # x is H,K,L and y is  energy
         xformated = ', '.join(['{} = {}'.format(Y[0],Y[1]) for Y in zip(['h','k','l'],['{:.4f}'.format(X) for X in x])])
-        return '{}, E, {:.4f}'.format(xformated,y)
+        return '{}, E={:.4f}'.format(xformated,y)
     
     
     ax.set_xlabel('{} [RLU]'.format(projectionVectorFormated))
