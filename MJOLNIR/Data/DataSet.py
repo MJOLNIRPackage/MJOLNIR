@@ -2469,7 +2469,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2489,6 +2489,8 @@ class DataSet(object):
             - grid (Bool): If true, grid is plotted. If float or integer, value is used as zorder of grid (Default False)
 
             - axis (int): Axis shown initially (default 2)
+
+            - counts (bool): If set true, data shown is number of neutrons/pixel
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -2516,11 +2518,12 @@ class DataSet(object):
             axes = None
 
         Data,bins = self.binData3D(dx=dQx,dy=dQy,dz=dE,rlu=rlu)
-        warnings.simplefilter('ignore')
-        Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
-        warnings.simplefilter('once')
-
-        Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log)
+        
+        if counts:
+            Intensity = Data[0]/Data[3]
+            Viewer = Viewer3D.Viewer3D(Data=Intensity,bins=bins,axis=axis,ax=axes,grid=grid,log=log)
+        else:
+            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log)
         return Viewer
 
     def convertToQxQy(self,HKL):
