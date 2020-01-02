@@ -509,7 +509,7 @@ class DataSet(object):
         I,Mon,Norm,BinC = Data
         DataValues = [Qx,Qy,H,K,L,Energy,I,Mon,Norm,BinC]
         columns = ['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount']
-        dtypes = [np.float]*6+[np.int]*4
+        dtypes = [np.float]*6+[np.int]*2+[np.float]+[np.int]
 
         pdData = pd.DataFrame()
         if not len(I) == 0:
