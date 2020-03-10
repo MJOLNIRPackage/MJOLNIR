@@ -639,6 +639,18 @@ def rotationMatrix(alpha,beta,gamma,format='deg'):
 
 @KwargChecker()
 def vectorAngle(V1,V2):
+    """calculate angle between V1 and V2.
+    
+    Args:
+    
+        - V1 (list): List or array of numbers
+        
+        - V2 (list): List or array of numbers
+        
+    Return:
+        
+        - theta (float): Angle in degrees between the two vectors
+    """
     return np.arccos(np.dot(V1,V2.T)/(np.linalg.norm(V1)*np.linalg.norm(V2)))
 
 
