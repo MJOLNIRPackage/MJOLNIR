@@ -56,6 +56,8 @@ class DataFile(object):
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
                     instr = getInstrument(f)
                     if self.type == 'hdf':
+                        if np.shape(np.array(instr.get('detector/counts'))) == ():
+                            raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
                         self.I = np.array(instr.get('detector/counts')).swapaxes(1,2)
                     else:
                         self.I=np.array(f.get('entry/data/intensity'))
@@ -659,7 +661,9 @@ class DataFile(object):
                     Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
 
         EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
-        EfNormalization = EfNormalization[:,0].reshape(1,A4.shape[0],EPrDetector*binning)#(EfNormalization[:,0]*np.sqrt(2*np.pi)*EfNormalization[:,2]).reshape(1,A4.shape[0],EPrDetector*binning)
+        #EfNormalization = EfNormalization[:,0].reshape(1,A4.shape[0],EPrDetector*binning)#
+        EfNormalization = EfNormalization[:,0]*(np.sqrt(2*np.pi)*EfNormalization[:,2])
+        EfNormalization.shape = (1,A4.shape[0],EPrDetector*binning)
         A3 = np.deg2rad(np.array(self.A3))+A3Zero #file.get('/entry/sample/rotation_angle/')
         if A3.shape[0]==1:
             A3 = A3*np.ones((steps))
