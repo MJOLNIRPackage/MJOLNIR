@@ -1887,7 +1887,7 @@ class DataSet(object):
         
             # Create mouse over function
             def format_coord(x,y,edgeQDistance,centerPos,EnergyBins,DataList,rlu,offset,self):# pragma: no cover
-                val = calculateIndex(x,y,offset,EnergyBins,edgeQDistance,textReturn=True)
+                val = calculateIndex(x,y,offset,EnergyBins,edgeQDistance,DataList,textReturn=True)
                 if type(val)==str:
                     return val
                 segID,Eindex,index = val
@@ -1900,7 +1900,7 @@ class DataSet(object):
                     H,K,L, E = centerPos[segID][Eindex][index]
                     return "h = {0:.3f}, h = {1:.3f}, l = {2:.3f}, E = {3:.3f}, I = {4:.3e}".format(H+0.0,K+0.0,L+0.0,E,Intensity)
 
-            def calculateIndex(x,y,offset,EnergyBins,edgeQDistance,textReturn): # pragma: no cover
+            def calculateIndex(x,y,offset,EnergyBins,edgeQDistance,DataList,textReturn): # pragma: no cover
                 if x<offset[0] or x>=offset[-1]:
                     if textReturn == True:
                         return "x out of range: {:.3}".format(x)
@@ -1941,7 +1941,7 @@ class DataSet(object):
                 index = edgeQDistance[segID][Eindex].searchsorted(xInSegment) - 1
                 
                 return segID,Eindex,index
-            ax.calculateIndex = lambda x,y: calculateIndex(x,y,offset,actualEnergy,edgeQDistance,textReturn=False)#EnergyBins
+            ax.calculateIndex = lambda x,y: calculateIndex(x,y,offset,actualEnergy,edgeQDistance,DataList,textReturn=False)#EnergyBins
             def onclick(event,ax,DataList): # pragma: no cover
                 if ax.in_axes(event):
                     try:
@@ -2551,6 +2551,27 @@ class DataSet(object):
             - HKL (array): Converted QxQy points in HKL
         """
         return convertToHKL(self.sample[0],QxQy)
+
+    def updateCalibration(self,calibFiles,overwrite=False):
+        """Update calibrations for all data files in data set. Does not save the changes.
+        
+        Args:
+            
+            - calibrationFile (string or list): calibration file, as generated from MJOLNIR.Geometry.Instrument or list of these.
+            
+        Kwargs:
+            
+            - overwrite (bool): If true, previous binnings will be overwritten if new files contain same binning (default False)
+        
+    .. note::
+        Changes performed by this method is not saved to disk.     
+            
+        """
+        for d in self:
+            d.updateCalibration(calibFiles,overwrite=overwrite)
+
+
+
 
 def load(filename):
     """Function to load an object from a pickled file.
@@ -5302,3 +5323,34 @@ def test_DataSet_ELine():
     assert(np.logical_and(np.all(CutData['qy']<=Q1raw[1]*0.99),np.all(CutData['qy']>=Q2raw[1]*1.01)))
 
     assert(np.all([np.all(np.logical_and(B[0]>=Emin*0.99,B[0]<=Emax*1.05)) for B in Bins])) # Allow for slightly heigher energy
+
+
+def test_updateCalibration():
+    calibFiles = ['Data/Normalization80_1.calib',
+                    'Data/Normalization80_3.calib',
+                    'Data/Normalization80_5.calib']
+
+
+    ds = DataSet('Data/camea2018n000136.hdf')
+    
+    df = ds[0]
+
+    df.loadBinning(1)
+
+    binnings = df.possibleBinnings # is 1,3,8
+    edges = df.instrumentCalibrationEdges
+
+    ds.updateCalibration(calibFiles)
+
+    df.loadBinning(1)
+    newBinnings = df.possibleBinnings # is 1,3,8,5
+    newEdges = df.instrumentCalibrationEdges
+    assert(len(newBinnings)!=len(binnings)) # Addition of binning 5
+    assert(not np.any(newEdges!=edges)) # Check if all elemenst are equal
+
+
+    ds.updateCalibration(calibFiles,overwrite=True)
+    df.loadBinning(1)
+
+    newEdges = df.instrumentCalibrationEdges
+    assert(np.any(newEdges!=edges)) # Check if all elemenst are equal
