@@ -1070,6 +1070,56 @@ class DataFile(object):
 
         fd.close()
 
+    def updateCalibration(self,calibrationFile,overwrite=False):
+        """Update calibrations for the data file. Does not save the changes.
+        
+        Args:
+            
+            - calibrationFile (string or list): calibration file, as generated from MJOLNIR.Geometry.Instrument or list of these.
+            
+        Kwargs:
+            
+            - overwrite (bool): If true, previous binnings will be overwritten if new files contain same binning (default False)
+        
+    .. note::
+        Changes performed by this method is not saved to disk. If this is wanted, use the saveNXsqom method.      
+            
+        """
+        
+        try:
+            len(calibrationFile)
+        except TypeError:
+            calibrationFile = [calibrationFile]
+            
+        currentBinnings = self.possibleBinnings
+        calibrations = {}
+        newBinnings = []
+        
+        for binning in self.possibleBinnings:
+            self.loadBinning(binning)
+            calibrations[binning] = [self.instrumentCalibrationEf,self.instrumentCalibrationA4,self.instrumentCalibrationEdges]
+        
+        
+        
+        for f in calibrationFile:
+            with  open(f) as file:
+                line = file.readline()
+                
+            pixel = int(re.search(r'\w*\spixel',line)[0].split(' ')[0])
+            if overwrite == False and pixel in currentBinnings: # Do not overwrote current values
+                warnings.warn('Binning {} from file "{}" is skipped as overwrite is set to False.'.format(pixel,f))
+                continue
+                
+            newBinnings.append(pixel)
+            data = np.loadtxt(f,skiprows=3,delimiter=',')
+            EfTable = data[:,[3,4,5,6]]
+            A4 = data[:,-1]
+            bound = data[:,[7,8]]
+            calibrations[pixel] = [EfTable,A4,bound]
+
+        self.instrumentCalibrations = np.array([c for c in calibrations.values()])
+        self.possibleBinnings = np.array(list(calibrations.keys()))
+
     def saveHDF(self,saveFileName):
         """Save current HDF file object into an HDF file.
 
@@ -1894,6 +1944,34 @@ def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
     #assert(False)
 
 
+def test_updateCalibration():
+    calibFiles = ['Data/Normalization80_1.calib',
+                    'Data/Normalization80_3.calib',
+                    'Data/Normalization80_5.calib']
+
+
+    df = DataFile('Data/camea2018n000136.hdf')
+    print(df.I)
+    print('----------------------')
+    df.loadBinning(1)
+
+    binnings = df.possibleBinnings # is 1,3,8
+    edges = df.instrumentCalibrationEdges
+
+    df.updateCalibration(calibFiles)
+
+    df.loadBinning(1)
+    newBinnings = df.possibleBinnings # is 1,3,8,5
+    newEdges = df.instrumentCalibrationEdges
+    assert(len(newBinnings)!=len(binnings)) # Addition of binning 5
+    assert(not np.any(newEdges!=edges)) # Check if all elemenst are equal
+
+
+    df.updateCalibration(calibFiles,overwrite=True)
+    df.loadBinning(1)
+
+    newEdges = df.instrumentCalibrationEdges
+    assert(np.any(newEdges!=edges)) # Check if all elemenst are equal
 
 #
 #def test_DataFile_BoundaryCalculation(quick):
