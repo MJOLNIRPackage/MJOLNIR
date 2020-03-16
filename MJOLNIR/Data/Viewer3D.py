@@ -359,7 +359,7 @@ def onclick(self,x,y,returnText=False): # pragma: no cover
         Norm = self.Normalization[ID[0],ID[1],ID[2]]
         Mon = self.Monitor[ID[0],ID[1],ID[2]]
         NC = self.NormCounts[ID[0],ID[1],ID[2]]
-        printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+        printString+=', Cts = {:}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
 
     if returnText:
         return printString
