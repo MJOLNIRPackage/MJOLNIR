@@ -1100,12 +1100,13 @@ class DataFile(object):
             calibrations[binning] = [self.instrumentCalibrationEf,self.instrumentCalibrationA4,self.instrumentCalibrationEdges]
         
         
+        express = re.compile(r'\w*\spixel')
         
         for f in calibrationFile:
             with  open(f) as file:
                 line = file.readline()
                 
-            pixel = int(re.search(r'\w*\spixel',line)[0].split(' ')[0])
+            pixel = int(express.findall(line)[0].split(' ')[0])
             if overwrite == False and pixel in currentBinnings: # Do not overwrote current values
                 warnings.warn('Binning {} from file "{}" is skipped as overwrite is set to False.'.format(pixel,f))
                 continue
