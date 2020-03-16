@@ -2,7 +2,7 @@
 #
 
 test:
-	python -m pytest -vv MJOLNIR
+	coverage run python -m pytest -vv MJOLNIR
 	coverage report
 	coverage html
 
