@@ -354,8 +354,6 @@ class Sample(object):
     
         Args:
             
-            - sample (DataFile.Sample): Sample object for which Currat-Axe is to be calculated.
-            
             - Ei (float/list): Incoming energy in meV.
             
             - Ef (float/list): Outgoing energy in meV.
