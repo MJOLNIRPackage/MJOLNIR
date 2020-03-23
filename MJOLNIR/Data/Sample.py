@@ -257,6 +257,11 @@ class Sample(object):
         if np.any(boolcheck):
             raise AttributeError('Sample object is missing: {}.'.format(', '.join(str(x) for x in checks[boolcheck])))
         
+        if self.projectionVector1[np.argmax(np.abs(self.projectionVector1))]<0:
+            self.projectionVector1*=-1
+        if self.projectionVector2[np.argmax(np.abs(self.projectionVector2))]<0:
+            self.projectionVector2*=-1
+
         V1 = self.projectionVector1.copy()
         #V1/=np.linalg.norm(V1)
         V2 = self.projectionVector2.copy()
@@ -429,7 +434,7 @@ def calcProjectionVectors(R1,R2,norm=None):
     if np.sum(Zeros) == 2 or np.sum(Zeros)==1: # Easy case where the two vectors are to be along the x, y, or z directions
         if Zeros[0] == True:
             V1 = np.array([1.0,0.0,0.0])
-            V2 = np.cross(V1,NV)
+            V2 = np.cross(NV,V1)
         elif Zeros[1]:
             V1 = np.array([0.0,1.0,0.0])
             V2 = np.cross(NV,V1)
