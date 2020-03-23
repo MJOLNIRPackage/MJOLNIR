@@ -304,8 +304,13 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
 
     ax.format_coord = ax.sample.format_coord
     ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
-    ax.set_xlabel('{} [RLU]'.format(', '.join([str(x) for x in ax.sample.projectionVector1.astype(int)])))
-    ax.set_ylabel('{} [RLU]'.format(', '.join([str(x) for x in ax.sample.projectionVector2.astype(int)])))
+
+    def beautifyLabel(vec):
+        Vec = [x.astype(int) if np.isclose(x.astype(float)-x.astype(int),0.0) else x.astype(float) for x in vec]
+        return '{} [RLU]'.format(', '.join([str(x) for x in Vec]))
+
+    ax.set_xlabel(beautifyLabel(ax.sample.projectionVector1))
+    ax.set_ylabel(beautifyLabel(ax.sample.projectionVector2))
 
     if pythonVersion==3: # Only for python 3
         ax.calculateTicks = lambda value:calculateTicks(value,ax.sample.projectionAngle)
@@ -419,9 +424,12 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
         angle = np.arccos(np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2)))
         orientationMatrix = np.ones(3)
 
-    v2Length = np.linalg.norm(v2)
+    sample = copy.deepcopy(DataSet.sample)
     
+    v1,v2 = sample[0].projectionVector1,sample[0].projectionVector2
+    angle = np.sign(np.dot(np.cross(v1,v2),sample[0].planeNormal))*sample[0].projectionAngle
     
+    v2Length = np.linalg.norm(v2)/np.linalg.norm(v1)
     projectionMatrix = np.linalg.inv(np.array([[1,0],[np.cos(angle)*v2Length,np.sin(angle)*v2Length]]).T)
     
     projectionVectorQX = np.dot(np.dot(projectionMatrix,[1,0]),np.array([v1,v2]))
@@ -469,7 +477,8 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
                                         lambda x,y:tr(projectionVectorLength,x,y)))
     
     ax = SubplotHost(figure, 1, 1, 1, grid_helper=grid_helper)
-    
+    ax.sample = sample[0]
+
     figure.add_subplot(ax)
     #ax.set_aspect(1.)
     ax.grid(True, zorder=0)
