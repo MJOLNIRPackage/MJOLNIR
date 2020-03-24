@@ -29,7 +29,7 @@ install:
 script: 
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov MJOLNIR; fi
   - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test MJOLNIR/ -vv --ignore=MJOLNIR/CommandLineScripts/MJOLNIRHistory.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIR3DView.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRConvert.py; fi
-  - if [and([ $TRAVIS_PYTHON_VERSION != 3.6 ], [[ $TRAVIS_PYTHON_VERSION != 3.5 ])]; then py.test MJOLNIR/ -vv ; fi
+  - if [and([ $TRAVIS_PYTHON_VERSION != 3.6 ], [ $TRAVIS_PYTHON_VERSION != 3.5 ])]; then py.test MJOLNIR/ -vv ; fi
 
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
