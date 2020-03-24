@@ -1,0 +1,1 @@
+collect_ignore_glob = ["MJOLNIR/CommandLineScripts/MJOLNIRHistory.py","MJOLNIR/CommandLineScripts/MJOLNIR3DView.py","MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py","MJOLNIR/CommandLineScripts/MJOLNIRConvert.py"]
