@@ -63,3 +63,6 @@ if VMin is None:
 V.caxis = [VMin,VMax]
 
 plt.show()
+
+def main():
+    pass

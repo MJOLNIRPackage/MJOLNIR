@@ -70,3 +70,6 @@ if saveFile != '':
     with open(saveFile,'w') as f:
         f.write(returnText)
             
+
+def main():
+    pass

@@ -45,3 +45,6 @@ else:
 for file in files:
     dataSet = DataSet.DataSet(dataFiles = file)
     dataSet.convertDataFile(binning=binning,saveLocation=saveLocation,saveFile=True)
+
+def main():
+    pass

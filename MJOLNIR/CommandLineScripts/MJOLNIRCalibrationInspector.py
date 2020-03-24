@@ -116,3 +116,6 @@ if saveFile==True:
             
 
 plt.show()
+
+def main():
+    pass
