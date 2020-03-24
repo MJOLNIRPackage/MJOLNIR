@@ -27,7 +27,7 @@ install:
 #  - pip install -r requirements.txt
 
 script: 
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then pytest MJOLNIR/ -vv --cov MJOLNIR;  else pytest MJOLNIR/ -vv;
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov MJOLNIR;  else py.test MJOLNIR/ -vv;
 
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
