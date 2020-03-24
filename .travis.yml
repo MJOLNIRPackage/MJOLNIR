@@ -8,6 +8,7 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
   
 
 #before_install:
@@ -21,16 +22,12 @@ services:
   - xvfb
 
 install:
-  - pip install pytest>=3.6 pycodestyle python-coveralls pytest_cov==2.5
+  - pip install pytest>=3.6 pycodestyle python-coveralls pytest_cov>=2.5
   - pip install .
 #  - pip install -r requirements.txt
 
 script: 
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
-    then py.test MJOLNIR/ -vv --cov MJOLNIR;
-    else if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]];
-    then py.test MJOLNIR/ -vv --ignore=MJOLNIR/CommandLineScripts/MJOLNIRHistory.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIR3DView.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRConvert.py;
-    else py.test MJOLNIR/ -vv;
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov MJOLNIR;  else py.test MJOLNIR/ -vv;
 
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
