@@ -5,8 +5,10 @@ import re
 import MJOLNIR._tools
 import numpy as np
 
-settingsFile = os.path.join(*[x for x in os.path.split(__file__)[:-1]])
-settingsFile = os.path.join(settingsFile,'.settings')
+from os.path import expanduser
+settingsFile = expanduser("~") # Use home folder for storing settings file
+
+settingsFile = os.path.join(settingsFile,'.MJOLNIRsettings')
 
 rawFileFormats = ' '.join([x for x in ['.hdf']])
 convertedFileFormats = ' '.join([x for x in ['*.nxs']])
