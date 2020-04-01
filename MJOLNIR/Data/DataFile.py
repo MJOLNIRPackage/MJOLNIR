@@ -1120,6 +1120,7 @@ class DataFile(object):
 
         self.instrumentCalibrations = np.array([c for c in calibrations.values()])
         self.possibleBinnings = np.array(list(calibrations.keys()))
+        self.binning = -1
 
     def saveHDF(self,saveFileName):
         """Save current HDF file object into an HDF file.
