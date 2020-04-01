@@ -1855,7 +1855,7 @@ class DataSet(object):
                 for i in xvalues:
                     positionValues = binminmaxList[i]*direction[segID]+qstart[segID]
                     my_xticks.append('\n'.join([('{:.'+str(tickRound)+'f}').format(x+0.0) for x in positionValues]))
-                
+
                 
                 
                 xticks.append(binminmaxList[xvalues]*distanceChange[segID] +offset[segID]) # binDistanceAll[xvalues]
@@ -2469,7 +2469,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2491,6 +2491,8 @@ class DataSet(object):
             - axis (int): Axis shown initially (default 2)
 
             - counts (bool): If set true, data shown is number of neutrons/pixel
+
+            - adjustable (bool): If set true, 2 sliders will be present allowing to fine tune the c-axis (Default True)
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -2521,9 +2523,9 @@ class DataSet(object):
         
         if counts:
             Intensity = Data[0]/Data[3]
-            Viewer = Viewer3D.Viewer3D(Data=Intensity,bins=bins,axis=axis,ax=axes,grid=grid,log=log)
+            Viewer = Viewer3D.Viewer3D(Data=Intensity,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable)
         else:
-            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log)
+            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable)
         return Viewer
 
     def convertToQxQy(self,HKL):
