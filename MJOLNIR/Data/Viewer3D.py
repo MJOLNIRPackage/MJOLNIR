@@ -15,7 +15,8 @@ from matplotlib.widgets import Slider
 from MJOLNIR import _tools
 import functools
 
-
+pythonVersion = sys.version_info[0]
+pythonSubVersion = sys.version_info[1]
 
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
@@ -193,7 +194,7 @@ class Viewer3D(object):
         self.setPlane(1)
         self.setPlane(0)
 
-        if adjustable:
+        if adjustable and pythonVersion>2 and pythonSubVersion>5:
 
             ax_cmin = plt.axes([0.87, 0.1, 0.05, 0.7])
             ax_cmax  = plt.axes([0.93, 0.1, 0.05, 0.7])
