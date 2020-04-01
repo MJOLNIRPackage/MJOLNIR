@@ -13,12 +13,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 from MJOLNIR import _tools
+import functools
 
 
 
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
-    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, **kwargs):#pragma: no cover
+    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -33,10 +34,11 @@ class Viewer3D(object):
             - axis (int): Axis along which the interactive plot slices the data (default 2).
 
             - log (bool): If true, the log 10 of the intensity is plotted (default False).
-
             - ax (matplotlib axis): Matplotlib axis into which one plots data (Default None).
 
             - grid (bool/int): If int, grid will be plotted with zorder=int, if True, grid is plotted at zorder=-10 (Default False).
+
+            - adjustable (bool): If set true, 2 sliders will be present allowing to fine tune the c-axis (Default True)
 
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
@@ -122,7 +124,7 @@ class Viewer3D(object):
             else:
                 raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
 
-            self.figure.set_size_inches(10,7)
+            self.figure.set_size_inches(11,7)
        
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
@@ -191,6 +193,14 @@ class Viewer3D(object):
         self.setPlane(1)
         self.setPlane(0)
 
+        if adjustable:
+
+            ax_cmin = plt.axes([0.87, 0.1, 0.05, 0.7])
+            ax_cmax  = plt.axes([0.93, 0.1, 0.05, 0.7])
+
+            addColorbarSliders(self,c_min=self.caxis[0],c_max=self.caxis[1],c_minval=self.caxis[0],\
+                c_maxval=self.caxis[1],ax_cmin=ax_cmin,ax_cmax=ax_cmax,log=False)
+
     @property 
     def caxis(self):
         return self._caxis
@@ -208,6 +218,21 @@ class Viewer3D(object):
             raise AttributeError(ErrMsg.format(caxis,type(caxis)))
         self._caxis = caxis
         self.im.set_clim(caxis)
+        cmin,cmax = caxis
+        fig = self.ax.get_figure()
+        #if not _internal:
+        if hasattr(fig,'s_cmin'): # The method addColorbarSliders has been called
+            for s in [fig.s_cmin,fig.s_cmax]:
+                if s._log:
+                    s.valmin = np.log10(cmin)
+                    s.valmax = np.log10(cmax)
+                else:
+                    s.valmin = cmin
+                    s.valmax = cmax
+                    s.ax.set_ylim(s.valmin,s.valmax)
+            fig.s_cmin.set_val(cmin)
+            fig.s_cmax.set_val(cmax)
+
         self.colorbar.update_bruteforce(self.im)
 
     def set_clim(self,cmin,cmax=None):
@@ -476,3 +501,103 @@ def sliders_on_changed(self,val): # pragma: no cover
             self.plot()
     if hasattr(self.ax,'_step'):
         self.ax._step=self.calculateValue()
+
+
+def addColorbarSliders(self,c_min,c_max,c_minval,c_maxval,ax_cmin,ax_cmax,log=True):
+    """Add two colorbars controling the colour axis
+
+    args:
+
+        self (Viewer3D object): Current object
+
+        c_min (float): Minimal color value
+
+        c_max (float): Maximal color value
+
+        c_minval (float): Starting value of lower bound
+
+        c_maxval (float): Starting value of upper  bound
+
+        ax_cmin (mpl axes): Axis in which lower bound slider is to be shown
+        
+        ax_cmax (mpl axes): Axis in which upper bound slider is to be shown
+        
+    Kwargs:
+    
+
+        log (bool): If true, sliders are logarithmic
+
+    """
+
+    fig = self.ax.get_figure()
+    if log==True:
+        fig.s_cmin = Slider(ax_cmin, 'min', np.log10(c_min+1e-20), np.log10(c_max), valinit=np.log10(c_min+1e-20),orientation='vertical',valfmt='%2.1f')
+        fig.s_cmax = Slider(ax_cmax, 'max', np.log10(c_min+1e-20), np.log10(c_max), valinit=np.log10(c_max),orientation='vertical',valfmt='%2.1f')
+    else:
+        fig.s_cmin = Slider(ax_cmin, 'min', c_min, c_max, valinit=c_min,orientation='vertical',valfmt='%2.1e')
+        fig.s_cmax = Slider(ax_cmax, 'max', c_min, c_max, valinit=c_max,orientation='vertical',valfmt='%2.1e')
+
+    fig.s_cmin._log = log
+    fig.s_cmax._log = log
+    for s in [fig.s_cmin,fig.s_cmax]:
+        s.label.set_fontsize(12)
+        s.valtext.set_fontsize(12)
+    
+    def update(fig,val, bar=None, s=None,log=log):
+        _cmin =fig.s_cmin.val# np.log10(fig.s_cmin.val)
+        _cmax =fig.s_cmax.val# np.log10(fig.s_cmax.val)
+        if _cmin>_cmax:
+            if bar == 'min': # If lower bar is change push max upwards
+                _cmax = _cmin
+                if log:
+                    fig.s_cmax.set_val(np.power(10,_cmax))
+                else:
+                    fig.s_cmax.set_val(_cmax)
+            else:
+                _cmin = _cmax
+                if log:
+                    fig.s_cmin.set_val(np.power(10,_cmin))
+                else:
+                    fig.s_cmin.set_val(_cmin)
+        
+        if log:
+            
+            #self.caxis = (np.power(10,_cmin), np.power(10,_cmax))
+            self.im.set_clim([np.power(10,_cmin), np.power(10,_cmax)])
+            fig.s_cmax.valtext.set_text(_cmin)
+            fig.s_cmax.valtext.set_text(_cmax)
+            self._caxis = (np.power(10,_cmin), np.power(10,_cmax))
+        else:
+            
+            #self.caxis = (_cmin,_cmax)
+            self.im.set_clim([_cmin,_cmax])
+            self._caxis = (_cmin,_cmax)
+        plt.draw()
+        self.colorbar.update_bruteforce(self.im)
+    
+    
+    fig.s_cmin.on_changed(lambda val,*arg,**kwargs: update(fig,val,*arg,bar='min',**kwargs))
+    fig.s_cmax.on_changed(lambda val,*arg,**kwargs: update(fig,val,*arg,bar='max',**kwargs))
+    
+     
+    
+   
+    fig._savefig = fig.savefig
+    
+
+    @functools.wraps(fig.savefig)
+    def savefig(fname,hide = [ax_cmin,ax_cmax],fig=fig,**kwargs):
+    
+        unhide = []
+        for obj in hide:
+            if obj.get_visible():
+                obj.set_visible(False)
+                unhide.append(obj)
+            
+        fig._savefig(fname,**kwargs)
+        for obj in unhide:
+            obj.set_visible(True)
+            
+        fig.canvas.draw()
+    
+    fig.savefig = savefig
