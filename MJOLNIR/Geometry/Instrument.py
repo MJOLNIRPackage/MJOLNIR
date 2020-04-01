@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import os
 import scipy.optimize
+from scipy.stats import norm
 import h5py as hdf
 import datetime
 import pytest
@@ -308,7 +309,8 @@ class Instrument(GeometryConcept.GeometryConcept):
             f.write(string)
 
     @_tools.KwargChecker()
-    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False,mask=True):
+    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/', 
+    tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
         Generates 4 different tables:
@@ -336,6 +338,8 @@ class Instrument(GeometryConcept.GeometryConcept):
             - plot (boolean): Set to True if pictures of all fit are to be stored in savelocation
 
             - mask (boolean): If True the lower 100 pixels are set to 0
+
+            - adaptiveBinning (boolean): If true pixel bins are asigned to give same Gaussian area of intensity for all pixels (default False)
 
         .. warning::
             At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Gaussian width of Vanadium peaks.
@@ -544,7 +548,24 @@ class Instrument(GeometryConcept.GeometryConcept):
                         for j in range(analysers):
                             center = int(round(sortedPeakPos[i,j]))
                             width = activePixels[i,j].sum()
-                            pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
+                            
+                            if adaptiveBinning: # Adaptive binning with equal Gaussian area for each pixel piece
+
+                                binStart,binEnd = [center-width/2.0,center+width/2.0]
+                                binMid = center#(binStart+binEnd)/2.0
+
+                                binWidth = (binEnd-binStart)/(2.0*NumberOfSigmas)
+                                totalArea = norm.cdf(NumberOfSigmas)-norm.cdf(-NumberOfSigmas)
+                                areaOutside = norm.cdf(-NumberOfSigmas)
+
+                                areaPerBin = totalArea/detpixels
+
+                                areaLeftOfBin = [areaOutside+n*areaPerBin for n in range(detpixels+1)]
+
+                                pixelAreas = np.round(norm.ppf(areaLeftOfBin)*binWidth+binMid).astype(int)
+                            else:
+                                pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
+
                             for k in range(detpixels):
                                 binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
                                 ECenter = Ei[np.argmax(binPixelData)]
@@ -576,6 +597,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                                     plt.close()
 
                                 fittedParameters[i,j,k]=res[0]
+                                fittedParameters[i,j,k,0] = np.sum(binPixelData) # Use sum of points as amplitude 25-03-2020 JL
                                 if plot: # pragma: no cover
                                     plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
                                     plt.scatter(EiLocal,binPixelData,color=colors[:,k])
