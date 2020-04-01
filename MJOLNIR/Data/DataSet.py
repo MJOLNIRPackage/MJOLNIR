@@ -334,6 +334,7 @@ class DataSet(object):
             #file.close()
             
             convertedFiles.append(convFile)
+        self._convertedFiles = []
         self.convertedFiles = convertedFiles    
         self._getData()
             
