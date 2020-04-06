@@ -349,6 +349,11 @@ class DataSet(object):
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
             self.scanParameterValues,self.scanParameterUnits,self.mask = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
 
+        if len(self.convertedFiles)!=0:
+            self.sample = [d.sample for d in self]
+        elif len(self.dataFiles)!=0:
+            self.sample = [d.sample for d in self]
+
     @_tools.KwargChecker()
     def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None):
         """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
@@ -520,7 +525,7 @@ class DataSet(object):
         return pdData,[binpositionsTotal,orthopos,EArray]
 
     
-    @_tools.KwargChecker(function=plt.errorbar,include=[_tools.MPLKwargs,'ticks','tickRound','mfc','markeredgewidth','markersize']) #Advanced KWargs checker for figures
+    @_tools.KwargChecker(function=plt.errorbar,include=[*_tools.MPLKwargs,'ticks','tickRound','mfc','markeredgewidth','markersize']) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
@@ -612,7 +617,7 @@ class DataSet(object):
         ax.errorbar(Data['binDistance'],INT,yerr=INT_err,**kwargs)
 
         ax.set_xticks(Data['binDistance'].iloc[xvalues])
-        ax.set_xticklabels(my_xticks,fontsize=10, multialignment="center",ha="center")
+        ax.set_xticklabels(my_xticks, multialignment="center",ha="center")
         
         def calculateIndex(binDistance,x):
             return np.argmin(np.abs(binDistance-x))
@@ -620,7 +625,7 @@ class DataSet(object):
         ax.calculateIndex = lambda x: calculateIndex(Data['binDistance'],x)
         
         if rlu==False:
-            ax.set_xlabel('$Q_x/A$\n$Q_y/A$\nE/meV', fontsize=8)
+            ax.set_xlabel('$Q_x/A$\n$Q_y/A$\nE/meV')
             def format_coord(x,y,ax,binCenter):# pragma: no cover
                 index = ax.calculateIndex(x)
                 qx,qy,E = binCenter[index]
@@ -630,7 +635,7 @@ class DataSet(object):
                 index = ax.calculateIndex(x)
                 h,k,l,E = binCenter[index]
                 return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}, I = {4:0.4e}".format(h,k,l,E,y)
-            ax.set_xlabel('$Q_h/A$\n$Q_k/A$\n$Q_l/A$\nE/meV', fontsize=8)
+            ax.set_xlabel('$Q_h/A$\n$Q_k/A$\n$Q_l/A$\nE/meV')
 
         
         def onclick(event,ax,Data):# pragma: no cover
@@ -903,7 +908,7 @@ class DataSet(object):
                         EBinEdges=EBinEdges,qMinBin=qMinBin,constantBins=constantBins)
 
     
-    @_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax'])
+    @_tools.KwargChecker(function=plt.pcolormesh,include=[*_tools.MPLKwargs,'vmin','vmax','edgecolors'])
     def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
@@ -976,7 +981,7 @@ class DataSet(object):
             return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(qbins[EIndex][qIndex],eMean[EIndex],Intensity)
             
         ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[['Int','EnergyCut']],qbins)
-        ax.set_xlabel('|q| [1/A]')
+        ax.set_xlabel(r'|q| [1/A]')
         ax.set_ylabel('E [meV]')
         
         def set_clim(VMin,VMax,pmesh):
@@ -1869,12 +1874,12 @@ class DataSet(object):
                 plt.plot([offset,offset],[np.min(EnergyBins[-1]),np.max(EnergyBins[-1])],'k',linewidth=seperatorWidth)
             
             ax.set_xticks(np.concatenate(xticks))
-            ax.set_xticklabels(np.concatenate(xticklabels),fontsize=8, multialignment="center",ha="center")
+            ax.set_xticklabels(np.concatenate(xticklabels), multialignment="center",ha="center")
             ax.EnergyBins = EnergyBins
             if rlu==True:
-                ax.set_xlabel('$H$\n$K$\n$L$', fontsize=8)
+                ax.set_xlabel('$H$\n$K$\n$L$')
             else:
-                ax.set_xlabel('$Q_x/A$\n$Q_y/A$', fontsize=8)
+                ax.set_xlabel('$Q_x/A$\n$Q_y/A$')
             
             ax.xaxis.set_label_coords(1.15, -0.025) 
             ax.set_ylabel('E [meV]')
