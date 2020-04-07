@@ -272,10 +272,16 @@ class DataSet(object):
         return self[::-1]
     
     def __delitem__(self,index):
-        if index < len(self.dataFiles):
-            del self.dataFiles[index]
+        if len(self.convertedFiles) > 0:
+            if index < len(self.convertedFiles):
+                del self.convertedFiles[index]
+            else:
+                raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self.convertedFiles)))
         else:
-            raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self)))
+            if index < len(self.dataFiles):
+                del self.dataFiles[index]
+            else:
+                raise IndexError('Provided index {} is out of bounds for DataSet with length {}.'.format(index,len(self.dataFiles)))
         self._getData
 
 
