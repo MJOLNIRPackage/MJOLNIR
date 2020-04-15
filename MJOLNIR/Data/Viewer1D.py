@@ -194,7 +194,7 @@ class Viewer1D: # pragma: no cover
             dataLabel = [str(x) for x in np.arange(len(YData))]    
         
         if len(xLabel)!=len(XData) and xLabel!='':
-            raise AttributeError('Provided x-labels do not match number of x-values. ({} labels and {} x-values)'.format(len(xLabel),len(self.XData)))
+            raise AttributeError('Provided x-labels do not match number of x-values. ({} labels and {} x-values)'.format(len(xLabel),len(XData)))
         if len(dataLabel)!=len(YData) and dataLabel!='':
             raise AttributeError('Provided data labels do not match number of y values. ({} labels and {} x-values)'.format(len(dataLabel),len(YData)))
         
@@ -284,7 +284,7 @@ class Viewer1D: # pragma: no cover
                     
                 labels[self.xID] = '*'+labels[self.xID]
                 self.ax.legend(labels)
-                self.ax.legend_.draggable(True)
+#                self.ax.legend_.draggable(True)
                 
         if not self.xLabel is '':
             self.ax.set_xlabel(self.xLabel[self.xID])
