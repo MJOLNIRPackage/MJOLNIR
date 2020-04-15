@@ -531,7 +531,7 @@ class DataSet(object):
         return pdData,[binpositionsTotal,orthopos,EArray]
 
     
-    @_tools.KwargChecker(function=plt.errorbar,include=[*_tools.MPLKwargs,'ticks','tickRound','mfc','markeredgewidth','markersize']) #Advanced KWargs checker for figures
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
         """Plotting wrapper for the cut1D method. Generates a 1D plot with bins at positions corresponding to the distance from the start point. 
         Adds the 3D position on the x axis with ticks.
@@ -914,7 +914,7 @@ class DataSet(object):
                         EBinEdges=EBinEdges,qMinBin=qMinBin,constantBins=constantBins)
 
     
-    @_tools.KwargChecker(function=plt.pcolormesh,include=[*_tools.MPLKwargs,'vmin','vmax','edgecolors'])
+    @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','edgecolors']]))
     def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
