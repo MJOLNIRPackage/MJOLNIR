@@ -47,7 +47,7 @@ class DataFile(object):
                 self.type = 'MultiFLEXX'
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
-            self.name = fileLocation.split('/')[-1]
+            self.name = os.path.basename(fileLocation)
             self.fileLocation = os.path.abspath(fileLocation)		
 			
             if not self.type == 'MultiFLEXX':
