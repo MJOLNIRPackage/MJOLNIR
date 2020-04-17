@@ -618,10 +618,10 @@ class DataFile(object):
         
         self.loadBinning(binning)
         
-        EfNormalization = self.instrumentCalibrationEf
-        A4Normalization = self.instrumentCalibrationA4#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
-        EdgesNormalization = self.instrumentCalibrationEdges#np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
-        Data = self.I#np.array(instrument.get('detector/data'))
+        EfNormalization = self.instrumentCalibrationEf.copy()
+        A4Normalization = self.instrumentCalibrationA4.copy()#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
+        EdgesNormalization = self.instrumentCalibrationEdges.copy()#np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
+        Data = self.I.copy()#np.array(instrument.get('detector/data'))
         
 
         detectors = Data.shape[1]

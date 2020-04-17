@@ -2647,19 +2647,22 @@ class DataSet(object):
             raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
         
         
+        dataFiles = [d.original_file if d.type=='nxs' else d for d in self]
         
-        ax.X = [d.scanValues for d in self]
+        for d in dataFiles:
+            d.loadBinning(1)
+
+        ax.X = [d.scanValues for d in dataFiles]
+       
+        analyzerPixels = [d.instrumentCalibrationEdges[analyzer+detector*8] for d,analyzer,detector in zip(dataFiles,analyzerSelection,detectorSelection)] # Find pixel limits for specified selection (8 Energies/detector)
+        
+        ax.I = [np.sum(d.I[:,detector,pixels[0]:pixels[1]],axis=1) for d,detector,pixels in zip(dataFiles,detectorSelection,analyzerPixels)]
         
         
-        analyzerPixels = [d.instrumentCalibrationEdges[analyzer+detector*8] for d,analyzer,detector in zip(self,analyzerSelection,detectorSelection)] # Find pixel limits for specified selection (8 Energies/detector)
-        
-        ax.I = [np.sum(d.I[:,detector,pixels[0]:pixels[1]],axis=1) for d,detector,pixels in zip(self,detectorSelection,analyzerPixels)]
-        
-        
-        ax.parameter = self[0].scanParameters
+        ax.parameter = dataFiles[0].scanParameters
         # If parameter is in nameChange, change it. Otherwise keep it
         ax.parameter = [nameChange.get(p, p) for p in ax.parameter]
-        ax.unit = self[0].scanUnits
+        ax.unit = dataFiles[0].scanUnits
         
         ax.xlabels = ['{} [{}s]'.format(p,u) for p,u in zip(ax.parameter,ax.unit)]
         ax.__labels__ = ax.xlabels.copy()
