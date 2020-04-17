@@ -2600,7 +2600,7 @@ class DataSet(object):
             newX = [intrextrapoate(x,X[0],XX)[0] for XX in X[1:]]
             
             xs = [fstring.format(XX) for fstring,XX in zip(xFormatString,np.concatenate([[x],newX],axis=0))]
-            return ', '.join([label+' = '+str(X) for X,label in zip([*xs,y],labels)])
+            return ', '.join([label+' = '+str(X) for X,label in zip(np.concatenate([xs,[y]],axis=0),labels)])
         
         def onclick(event,ax):# pragma: no cover
             if ax.in_axes(event):
