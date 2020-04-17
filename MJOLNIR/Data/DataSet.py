@@ -2665,7 +2665,7 @@ class DataSet(object):
         ax.unit = dataFiles[0].scanUnits
         
         ax.xlabels = ['{} [{}s]'.format(p,u) for p,u in zip(ax.parameter,ax.unit)]
-        ax.__labels__ = ax.xlabels.copy()
+        ax.__labels__ = np.array(ax.xlabels).copy()
         ax.__labels__.append('Int [count]')
         
         plots = []
