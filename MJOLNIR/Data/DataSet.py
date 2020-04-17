@@ -2636,13 +2636,13 @@ class DataSet(object):
         
         # If no detector or analyzer is provided use dasel from file
         if analyzerSelection is None:
-            analyzerSelection = [d.analyzerSelection[0] for d in self]
+            analyzerSelection = [d.analyzerSelection for d in self]
         elif len(analyzerSelection) != len(self):
             raise AttributeError('Provided analyzerSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(analyzerSelection)))
             
         
         if detectorSelection is None:
-            detectorSelection = [d.detectorSelection[0] for d in self]
+            detectorSelection = [d.detectorSelection for d in self]
         elif len(detectorSelection) != len(self):
             raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
         

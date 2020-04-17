@@ -127,8 +127,8 @@ class DataFile(object):
                     for att,value in zip(attributes,values):
                         setattr(self,value,np.array(f.get('entry/CAMEA/analyzer/{}'.format(att))))
                     self.analyzerType = np.array(f.get('entry/CAMEA/analyzer/type'))[0]
-                    self.analyzerSelection = np.array(f.get('entry/CAMEA/analyzer/analyzer_selection'))
-                    self.detectorSelection = np.array(f.get('entry/CAMEA/detector/detector_selection'))
+                    self.analyzerSelection = int(np.array(f.get('entry/CAMEA/analyzer/analyzer_selection'))[0])
+                    self.detectorSelection = int(np.array(f.get('entry/CAMEA/detector/detector_selection'))[0])
 
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
