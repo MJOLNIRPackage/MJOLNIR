@@ -2540,6 +2540,152 @@ class DataSet(object):
             Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable)
         return Viewer
 
+
+    def plot1D(self,detectorSelection=None,analyzerSelection=None, legend=True, grid=-10):
+        """plot 1D figures of data in the specified DASEL.
+        
+        kwargs:
+            detectorSelection (int): Detector to be used (default from file)
+            
+            analyzerSelection (int): Analyzer segment to be used (default from file)
+
+            legend (bool list): Insert legend with provided names or file names (default True)
+
+            grid (bool, Int): If true plot at grid on figure. If integer set zorder of grid (default -10)
+            
+        returns:
+            Ax (list): List of axes in which data are plotted.
+        """
+
+        # Names to be changed for readability
+        nameChange = {'polar_angle':'A4',
+                'rotation_angle':'A3'}
+        
+        
+        def intrextrapoate(oldPosition,oldValues,newValues):
+            """interpolates between old and new through linear regression and returns best estimate at old positions
+            
+            arg:
+            oldPosition (list): List of position to estimate the new value at (in coordinates of oldValues)
+            
+            oldValues (list): List of old values 
+            
+            newValues (list): List of new values
+            
+            return:
+                newPosition (list): estimate of newValue at oldPosition
+            """
+                
+            oldOffset = oldValues[0]
+            oldSize = np.diff([oldValues[0],oldValues[-1]])
+            
+            newOffset = newValues[0]
+            newSize = np.diff([newValues[0],newValues[-1]])
+            
+            X = (oldPosition-oldOffset)/oldSize  # Linear interpolation
+        
+            newPosition = X*newSize+newOffset # Convert to new values
+            return newPosition
+        
+        
+        
+        def format_coord(x,y,X,labels):
+            """format coordinates according to x and y. When X is multidimensional an approximation for its value at x is estimated"""
+            fmtOrder = np.ceil(-np.log(np.mean(np.abs(np.diff(X,axis=1)),axis=1)))
+            fmtOrder = [o if o>0 else 0 for o in (fmtOrder).astype(int)]
+            
+            xFormatString = ['{:.'+str(fO)+'f}' for fO in fmtOrder] # Format to use enough decimals to show all changes
+            
+            # Calculate estimates for values of X[i] at x
+            newX = [intrextrapoate(x,X[0],XX)[0] for XX in X[1:]]
+            
+            xs = [fstring.format(XX) for fstring,XX in zip(xFormatString,[x,*newX])]
+            return ', '.join([label+' = '+str(X) for X,label in zip([*xs,y],labels)])
+        
+        def onclick(event,ax):# pragma: no cover
+            if ax.in_axes(event):
+                try:
+                    C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
+                except:
+                    pass
+                else:
+                    if C != 0: # Cursor corresponds to arrow
+                        return
+        
+                x = event.xdata
+                y = event.ydata
+                if hasattr(ax,'__format_coord__'):
+                    print(ax.__format_coord__(x,y))
+                else:
+                    print(ax.format_coord(x,y))
+        
+    
+        
+        if len(self)>1:
+            if not np.all([self[-1].scanParameters == d.scanParameters for d in self[:-1]]):
+                raise AttributeError('Provided data files do not have the same scan variables!')
+        
+        if legend:
+            if legend is True:
+                legend = [d.name for d in self]
+            else:
+                if len(legend) != len(self):
+                    raise AttributeError('Provided list of legends does not match length of dataset. Expected {}, but got {}'.format(len(self),len(legend)))
+        
+        _,ax = plt.subplots()
+        
+        # If no detector or analyzer is provided use dasel from file
+        if analyzerSelection is None:
+            analyzerSelection = [d.analyzerSelection[0] for d in self]
+        elif len(analyzerSelection) != len(self):
+            raise AttributeError('Provided analyzerSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(analyzerSelection)))
+            
+        
+        if detectorSelection is None:
+            detectorSelection = [d.detectorSelection[0] for d in self]
+        elif len(detectorSelection) != len(self):
+            raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
+        
+        
+        
+        ax.X = [d.scanValues for d in self]
+        
+        
+        analyzerPixels = [d.instrumentCalibrationEdges[analyzer+detector*8] for d,analyzer,detector in zip(self,analyzerSelection,detectorSelection)] # Find pixel limits for specified selection (8 Energies/detector)
+        
+        ax.I = [np.sum(d.I[:,detector,pixels[0]:pixels[1]],axis=1) for d,detector,pixels in zip(self,detectorSelection,analyzerPixels)]
+        
+        
+        ax.parameter = self[0].scanParameters
+        # If parameter is in nameChange, change it. Otherwise keep it
+        ax.parameter = [nameChange.get(p, p) for p in ax.parameter]
+        ax.unit = self[0].scanUnits
+        
+        ax.xlabels = ['{} [{}s]'.format(p,u) for p,u in zip(ax.parameter,ax.unit)]
+        ax.__labels__ = ax.xlabels.copy()
+        ax.__labels__.append('Int [count]')
+        
+        plots = []
+        for X,I in zip(ax.X,ax.I):
+            plots.append(ax.scatter(X[0],I))
+            
+        
+        ax.set_ylabel('Int [count]')
+        
+        
+        ax.__format_coord__ = lambda x,y: format_coord(x,y,X=np.concatenate(ax.X,axis=0),labels=ax.__labels__)
+        ax.format_coord = lambda x,y: ax.__format_coord__(x,y)
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax))
+        #        ax.format_xdata = lambda x: format_xdata(x,ax)#ax.X,ax.xlabels)
+        ax.set_xlabel(ax.xlabels[0])
+        if legend:
+            for plot,lab in zip(plots,legend):
+                plot.set_label(lab)
+            ax.legend()
+        
+        ax.grid(grid)
+        return ax
+
     def convertToQxQy(self,HKL):
         """Convert array or vector of HKL point(s) to corresponding Qx and QY
 
@@ -5368,3 +5514,42 @@ def test_updateCalibration():
 
     newEdges = df.instrumentCalibrationEdges
     assert(np.any(newEdges!=edges)) # Check if all elemenst are equal
+
+
+def testPlot1D_Error():
+    DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
+     # Scan variables are A3 and A3+A4
+    dataset = DataSet(DataFile)
+    dataset[0].scanParameters = ['Ei']
+    try:
+        dataset.plot1D() # Two different scan types
+        assert False
+    except AttributeError:
+        assert True
+        
+    DataFile = ['Data/camea2018n000137.hdf','Data/camea2018n000137.hdf']
+    dataset = DataSet(DataFile)
+    try:
+        dataset.plot1D(analyzerSelection=[0]) # Not enough analyzers provided
+        assert False
+    except AttributeError:
+        assert True
+    try:
+        dataset.plot1D(detectorSelection=[0]) # Not enough detectors provided
+        assert False
+    except AttributeError:
+        assert True
+        
+    try:
+        dataset.plot1D(legend=[0]) # Not enough legend labels provided
+        assert False
+    except AttributeError:
+        assert True
+        
+def testPlot1D():
+    DataFile = ['Data/camea2018n000137.hdf','Data/camea2018n000137.hdf']
+    dataset = DataSet(DataFile)
+    ax = dataset.plot1D()
+    
+    ax = dataset.plot1D(legend=['1','2'],detectorSelection=[0,0],analyzerSelection=[5,5],grid=True)
+    assert True
