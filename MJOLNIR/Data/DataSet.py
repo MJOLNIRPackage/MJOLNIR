@@ -2599,7 +2599,7 @@ class DataSet(object):
             # Calculate estimates for values of X[i] at x
             newX = [intrextrapoate(x,X[0],XX)[0] for XX in X[1:]]
             
-            xs = [fstring.format(XX) for fstring,XX in zip(xFormatString,[x,*newX])]
+            xs = [fstring.format(XX) for fstring,XX in zip(xFormatString,np.concatenate([[x],newX],axis=0))]
             return ', '.join([label+' = '+str(X) for X,label in zip([*xs,y],labels)])
         
         def onclick(event,ax):# pragma: no cover
