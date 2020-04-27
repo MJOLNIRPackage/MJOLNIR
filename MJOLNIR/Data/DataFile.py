@@ -16,6 +16,7 @@ from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
 import MJOLNIR.Data.Sample
 import re
+import copy
 
 multiFLEXXDetectors = 31*5
 reFloat = r'-?\d*\.\d*'
@@ -49,6 +50,7 @@ class DataFile(object):
                 raise AttributeError('File is not of type nxs or hdf.')
             self.name = os.path.basename(fileLocation)
             self.fileLocation = os.path.abspath(fileLocation)		
+            self._binning = 1
 			
             if not self.type == 'MultiFLEXX':
                 with hdf.File(fileLocation,mode='a') as f:
@@ -142,9 +144,9 @@ class DataFile(object):
                         self.A3Off = [0.0]
                     self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     if self.type == 'hdf':
-                        self.binning=1 # Choose standard binning 1
+                        self.binning=np.max(self.possibleBinnings).astype(int) # Choose standard binning max
                     else:
-                        self.binning = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0]
+                        self.binning = int(np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0])
                     calibrations = []
                     for binning in self.possibleBinnings:
                         Ef = np.array(instr.get('calib{}/final_energy'.format(str(binning))))
@@ -280,15 +282,48 @@ class DataFile(object):
             else:
                 self._A4 = A4
 
+    @property
+    def binning(self):
+        return self._binning
+
+    @binning.getter
+    def binning(self):
+        try:
+            len(self._binning)
+        except TypeError:
+            return self._binning
+        else:
+            return self._binning[0]
+        
+
+    @binning.setter
+    def binning(self,value):
+        try:
+            len(value)
+        except TypeError:
+            pass
+        else:
+            value = value[0]
+        if hasattr(self,'possibleBinnings'):
+            if not value in self.possibleBinnings:
+                raise AttributeError('Wanted binning ({}) not allowed in {}. Possible binnings are: {}'.format(value,self.name,self.possibleBinnings))
+            
+            self._binning = value
+        
+            self.loadBinning(value)
+        else:
+            
+            self._binning = value
+
     def updateProperty(self,dictionary):
         if isinstance(dictionary,dict):
             for key in dictionary.keys():
-                self.__setattr__(key,dictionary[key])
+                self.__setattr__(key,copy.deepcopy(dictionary[key]))
 
     def __eq__(self,other):
         return len(self.difference(other))==0
     
-    def difference(self,other,keys = set(['sample','instrument','Ei','I','_A3','_A4','binning','scanParameters','Monitor'])):
+    def difference(self,other,keys = set(['sample','instrument','Ei','I','_A3','_A4','_binning','scanParameters','Monitor'])):
         """Return the difference between two data files by keys"""
         dif = []
         if not set(self.__dict__.keys()) == set(other.__dict__.keys()): # Check if same generation and type (hdf or nxs)
@@ -608,21 +643,20 @@ class DataFile(object):
         if self.instrument == 'CAMEA':
             EPrDetector = 8 
             if binning is None:
-                binning = 8
+                binning = self.binning
         elif self.type in ['MultiFLEXX','FlatCone']:
-            EPrDetector = 1
+            EPrDetector = self.binning
             if binning is None:
-                binning = 1
+                binning = self.binning
         else:
             raise AttributeError('Instrument type of data file not understood. {} was given.'.format(self.instrument))
-        
         self.loadBinning(binning)
         
         EfNormalization = self.instrumentCalibrationEf.copy()
         A4Normalization = self.instrumentCalibrationA4.copy()#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
         EdgesNormalization = self.instrumentCalibrationEdges.copy()#np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
         Data = self.I.copy()#np.array(instrument.get('detector/data'))
-        
+
 
         detectors = Data.shape[1]
         steps = Data.shape[0]
@@ -630,7 +664,7 @@ class DataFile(object):
         if self.type in ['MultiFLEXX','FlatCone']:
             Data.shape = (Data.shape[0],Data.shape[1],-1)
 
-        A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
+        A4Zero = self.A4Off.copy()#file.get('entry/sample/polar_angle_zero')
         
         
         if A4Zero is None:
@@ -648,7 +682,7 @@ class DataFile(object):
         A4=A4.reshape(detectors,binning*EPrDetector,order='C')
 
         PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
-        A4File = self.A4
+        A4File = self.A4.copy()
         
         A4File = A4File.reshape((-1,1,1))
 
@@ -660,16 +694,18 @@ class DataFile(object):
                 for k in range(binning):
                     Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
 
+        
         EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
         #EfNormalization = EfNormalization[:,0].reshape(1,A4.shape[0],EPrDetector*binning)#
         EfNormalization = EfNormalization[:,0]*(np.sqrt(2*np.pi)*EfNormalization[:,2])
+        
         EfNormalization.shape = (1,A4.shape[0],EPrDetector*binning)
-        A3 = np.deg2rad(np.array(self.A3))+A3Zero #file.get('/entry/sample/rotation_angle/')
+        A3 = np.deg2rad(np.array(self.A3).copy())+A3Zero #file.get('/entry/sample/rotation_angle/')
         if A3.shape[0]==1:
             A3 = A3*np.ones((steps))
         
         A3.resize((steps,1,1))
-        Ei = self.Ei.reshape(-1,1,1)#np.array(instrument.get('monochromator/energy'))
+        Ei = self.Ei.copy().reshape(-1,1,1)#np.array(instrument.get('monochromator/energy'))
         if False:
             kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
             
@@ -691,7 +727,7 @@ class DataFile(object):
         DeltaE = Ei-EfMean
         if DeltaE.shape[0]==1:
             DeltaE = DeltaE*np.ones((steps,1,1))
-        Monitor = self.Monitor.reshape((steps,1,1))
+        Monitor = self.Monitor.copy().reshape((steps,1,1))
         Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
         Normalization = EfNormalization*np.ones((steps,1,1))
 
@@ -824,15 +860,25 @@ class DataFile(object):
         """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
 
 
-        if binning is None or (binning == self.binning and hasattr(self,'instrumentCalibrationEf')):
-            binning = self.binning
+        if binning is None or not hasattr(self,'instrumentCalibrations'):
+            return
+        
+        if not binning in self.possibleBinnings:
+            raise AttributeError('Wanted binning not in possible binnings!')
+        binID = list(self.possibleBinnings).index(binning)
+        self.instrumentCalibrationEf,self.instrumentCalibrationA4,self.instrumentCalibrationEdges = self.instrumentCalibrations[binID]
+        try:
+            len(binning)
+        except TypeError:
+            pass
         else:
-            if not binning in self.possibleBinnings:
-                raise AttributeError('Wanted binning not in possible binnings!')
-            binID = list(self.possibleBinnings).index(binning)
-            
-            self.instrumentCalibrationEf,self.instrumentCalibrationA4,self.instrumentCalibrationEdges = self.instrumentCalibrations[binID]
-            self.binning = binning
+            binning = binning[0]
+        self._binning = binning
+
+        self.instrumentCalibrationEf.shape = (-1,4)
+        self.instrumentCalibrationA4.shape = (-1)
+        self.instrumentCalibrationEdges.shape = (-1,2)
+        
 
     @_tools.KwargChecker()
     def calculateEdgePolygons(self,addEdge=True): # pragma: no cover
@@ -1120,7 +1166,7 @@ class DataFile(object):
 
         self.instrumentCalibrations = np.array([c for c in calibrations.values()])
         self.possibleBinnings = np.array(list(calibrations.keys()))
-        self.binning = -1
+        
 
     def saveHDF(self,saveFileName):
         """Save current HDF file object into an HDF file.
