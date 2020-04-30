@@ -765,7 +765,7 @@ class DataSet(object):
             _local,position = self.cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,
                                     width=width,minPixel=minPixel,Emin=EnergyBins[i],Emax=EnergyBins[i+1],
                                     plotCoverage=False,extend=extend,constantBins=constantBins,dataFiles=dataFiles,rlu=False)                                      
-            
+
             _local['energyCut'] = i
             dataFrame.append(_local)
 
@@ -1903,8 +1903,9 @@ class DataSet(object):
                 if type(val)==str:
                     return val
                 segID,Eindex,index = val
+                dfOffset = DataList['energyCut'][DataList['qCut']==segID].min()
 
-                Intensity = DataList['Int'][np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex)].iloc[index]  #Int[segID][Eindex][index][0]
+                Intensity = DataList['Int'][np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex+dfOffset)][index]  #Int[segID][Eindex][index][0]
                 if rlu==False: 
                     qx, qy, E = centerPos[segID][Eindex][index]
                     return "qx = {0:.3f}, qy = {1:.3f}, E = {2:.3f}, I = {3:.3e}".format(qx+0.0,qy+0.0,E,Intensity)
@@ -1967,8 +1968,10 @@ class DataSet(object):
                     y = event.ydata
                     printString = ax.format_coord(x,y)
                     segID,Eindex,index = ax.calculateIndex(x,y)
+                    dfOffset = DataList['energyCut'][DataList['qCut']==segID].min()
+                    Eindex+=dfOffset
                     if index < len(DataList[np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex)]) and index>=0:
-                        dataPoint = DataList[np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex)].iloc[index]
+                        dataPoint = DataList[np.logical_and(DataList['qCut']==segID,DataList['energyCut']==Eindex)][index]
                         if not np.any([x==-1 for x in [segID,Eindex,index]]):
                             cts = int(dataPoint['Intensity'])
                             Mon = int(dataPoint['Monitor'])
