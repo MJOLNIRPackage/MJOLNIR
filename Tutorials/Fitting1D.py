@@ -39,7 +39,8 @@ def Tester():
     ax,Data,Bin,center,Distance = ds.plotCutQELine(QPoints=[q1,q2,q3],width=0.05,minPixel=0.01,EnergyBins=EBins)
     
     # Extract axis and save figure
-    ax.get_figure().savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/RawQEPlot.png',format='png',dpi=600)
+    fig = ax.get_figure()
+    fig.savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/RawQEPlot.png',format='png',dpi=600)
     
     # Define plotting parameters for error bar plot to be created
     ErrorBarKwargs = {'markersize':4, 'capsize':2,'elinewidth':1,'markeredgewidth':2,'mfc':'white','fmt':'o'}
@@ -148,7 +149,8 @@ def Tester():
             # plot the errorbar on top of intensity data
     
 
-    ax.get_figure().savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/FittedQEPlot.png',format='png',dpi=600)
+    fig = ax.get_figure()
+    fig.savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/FittedQEPlot.png',format='png',dpi=600)
     
     
 title = 'Fitting of sequential 2D plots in as 1D Gaussians'

@@ -40,10 +40,14 @@ def formatCode(text,indentChar = '   ', skipHeader=1):
             end = line.find(')')
             line = line[:start] + 'fileName=SimpleInstrument.xml' + line[end:]
 
-        if line.find('/home/lass/Dropbox/PhD/CAMEAData/')!=-1:
+        while(line.find('/home/lass/Dropbox/PhD/CAMEAData/')!=-1):
             text = '/home/lass/Dropbox/PhD/CAMEAData/'
             line = line[:line.find(text)]+'/Path/To/Data/'+line[line.find(text)+len(text):]
-            
+
+        while(line.find('/home/lass/Dropbox/PhD/')!=-1):
+            start = line.find('/home/lass/Dropbox/PhD/') # Find position in line
+            end = line[start:].find("'") # Find next ' in line
+            line = line[:start]+'/Path/To/Save/Folder/'+line[start+end:]
         newText.append(line)
             
     return '\n'.join(newText)

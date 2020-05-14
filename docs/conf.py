@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.abspath('../MJOLNIR/Data'))
 # -- Project information -----------------------------------------------------
 
 project = u'MJOLNIR'
-copyright = u'2019, Jakob Lass'
+copyright = u'2020, Jakob Lass'
 author = u'Jakob Lass'
 
 # The short X.Y version
