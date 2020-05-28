@@ -24,7 +24,7 @@ pythonVersion = sys.version_info[0]
 
 
 
-class CutObject(object):
+class CutObject(object):# pragma: no test
     def __init__(self,*returnValues, **kwargsCut): # dataSet = None, args = None, kwargs = None, cutFunction = None
         dataSet = kwargsCut.get('dataSet',None)
         args = kwargsCut.get('args',None)
@@ -267,7 +267,7 @@ class CutObject(object):
     
 
 
-class ParameterDictionary(dict):
+class ParameterDictionary(dict): # pragma: no test
     def __init__(self,*args,**kwargs):
         self._dict = dict(*args,**kwargs)
         self._updated =False
