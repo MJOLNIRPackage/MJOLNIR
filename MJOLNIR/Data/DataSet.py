@@ -13,6 +13,7 @@ from matplotlib.collections import PatchCollection,PolyCollection
 import matplotlib.ticker as ticker
 from matplotlib.patches import Polygon
 from MJOLNIR.Data import Viewer3D,RLUAxes
+from MJOLNIR.Data import Mask
 import MJOLNIR.Data.DataFile
 import MJOLNIR.Data.Sample
 from MJOLNIR import _tools
@@ -175,9 +176,31 @@ class DataSet(object):
     @mask.setter
     def mask(self,mask):
         if isinstance(mask,list):
+            if isinstance(mask[0],Mask.MaskingObject): # If list of maskobjects is provided
+                if not len(mask) == len(self): #not the same number of masks as data files
+                    raise AttributeError('Provided number of masks ({}) does not match number of data files ({})'.format(len(mask),len(self)))
+                self._maskingObject = mask
+                for m,df in zip(mask,self):
+                    df.mask = m
+                masksum = -1
+            elif hasattr(self,'_maskingObject'): # not masking object but self has one, delete it
+                del self._maskingObject
             masksum = np.sum([np.sum(x) for x  in mask])
+            self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
+
+        elif isinstance(mask,Mask.MaskingObject):
+            self._maskingObject = mask
+            m = []
+            for df in self:
+                df.mask = mask
+                m.append(df._mask)
+            mask = m
+            masksum = -1
         else:
+            if hasattr(self,'_maskingObject'): # not masking object but self has one, delete it
+                del self._maskingObject
             masksum = np.sum(mask)
+            self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
         if masksum==0:
             pass#warnings.warn('Provided mask has no masked elements!')
         elif masksum==self.I.size:
@@ -186,7 +209,8 @@ class DataSet(object):
         for _,val in self.__dict__.items():
             if hasattr(val,'extractData'):
                 val.mask = mask
-        self.maskIndices = np.cumsum([np.sum(1-M) for M in self.mask])[:-1]
+
+        self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
 
     @property
     def settings(self):
@@ -5558,3 +5582,21 @@ def testPlot1D():
     
     ax = dataset.plot1D(legend=['1','2'],detectorSelection=[0,0],analyzerSelection=[5,5],grid=True)
     assert True
+
+def testMasking():
+    DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
+     # Scan variables are A3 and A3+A4
+    ds = DataSet(DataFile)
+    ds.convertDataFile()
+
+    circ = Mask.circleMask(center=np.array([1.0,0.0]),radiusPoint=np.array([1.1,0.0]),coordinates =['h','k'])
+    Emask = Mask.lineMask(1.7,end=2.0,coordinates='energy')
+    rect = Mask.rectangleMask(corner1=np.array([1.0,0.0]),corner2=np.array([1.5,0.5]),coordinates=['h','k'])
+
+    mask = circ*Emask+Emask*rect
+    ds.mask = mask
+    masks = [mask(df) for df in ds]
+    print(np.sum(ds.I.mask))
+    assert(np.sum(ds.I.mask)==np.sum([np.sum(m) for m in masks]))
+    
+

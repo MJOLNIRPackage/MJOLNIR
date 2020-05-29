@@ -14,6 +14,7 @@ import shapely
 from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
+from MJOLNIR.Data import Mask
 import MJOLNIR.Data.Sample
 import re
 import copy
@@ -51,7 +52,8 @@ class DataFile(object):
             self.name = os.path.basename(fileLocation)
             self.fileLocation = os.path.abspath(fileLocation)		
             self._binning = 1
-			
+            self._mask = False
+
             if not self.type == 'MultiFLEXX':
                 with hdf.File(fileLocation,mode='a') as f:
                     sample=f.get('/entry/sample')
@@ -314,6 +316,34 @@ class DataFile(object):
         else:
             
             self._binning = value
+
+    @property
+    def mask(self):
+        return self._mask
+
+    @mask.getter
+    def mask(self):
+        return self._mask
+
+    @mask.setter
+    def mask(self,mask):
+        if isinstance(mask,Mask.MaskingObject):
+            coordsInside = np.array([hasattr(self,coord) for coord in mask.coordinates])
+            if not np.all(coordsInside):
+                names = np.array(mask.coordinates)
+                raise AttributeError('Provided mask has coord(s) not in DataFile:','\n'.join(names[np.logical_not(coordsInside)]))
+            self._maskingObject = mask
+        elif hasattr(self,'_maskingObject'): # if _maskingObject exists from ealier, delete it
+            del self._maskingObject
+        if hasattr(self,'I'): # if identity has    
+            if hasattr(self,'_maskingObject'):
+                self._mask = self._maskingObject(self) # Generate boolean mask
+            else:
+                if not np.all(self.I.shape == mask.shape):
+                    raise AttributeError('Shape of provided mask {} does not match shape of data {}.'.format(mask.shape,self.I.shape))
+                self._mask = mask
+        else:
+            self._mask = mask
 
     def updateProperty(self,dictionary):
         if isinstance(dictionary,dict):
@@ -664,7 +694,7 @@ class DataFile(object):
         if self.type in ['MultiFLEXX','FlatCone']:
             Data.shape = (Data.shape[0],Data.shape[1],-1)
 
-        A4Zero = self.A4Off.copy()#file.get('entry/sample/polar_angle_zero')
+        A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
         
         
         if A4Zero is None:
@@ -1667,7 +1697,7 @@ def extractData(files):
     mask = []
     for datafile in files:
         I.append(datafile.I)
-        if(files[0].type=='nxs'):
+        if(datafile.type=='nxs'):
             qx.append(datafile.qx)
             qy.append(datafile.qy)
             energy.append(datafile.energy)
