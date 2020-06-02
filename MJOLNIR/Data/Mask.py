@@ -565,16 +565,17 @@ class circleMask(MaskingObject):
     
     dimensionality = '2D'
     
-    def __init__(self,center,radiusPoint,maskInside=True,coordinates=None):
+    def __init__(self,center,radiusPoint=None,radius=None,maskInside=True,coordinates=None):
         """Generate a circular mask with center at center and edge at radiusPoint.
         
         args:
             center (2d point): center
             
-            radiusPoint (2d point): Circumference goes through this point
-            
-            
         kwargs:
+            radiusPoint (2d point): Circumference goes through this point (default None)
+
+            radius (float): radius if  circle/sphere. If set, it overrides radiusPoint (default none)
+
             maskInside (bool): If true, points inside is masked otherwise outside (default True)
             
             coordinates (list of str): List containing names of attributes on point object. If None, use x,y (default None)
@@ -597,10 +598,17 @@ class circleMask(MaskingObject):
         """
         super().__init__(coordinates=coordinates,maskInside=maskInside)
         
-        
         self.center = np.array(center,dtype=float).reshape(-1,1)
         if self.center.shape[0] == 3: # 3D sphere
             self.dimensionality = '3D'
+
+        if not radius is None:
+            radiusVector= np.zeros_like(self.center)
+            radiusVector[0] = radius
+            radiusPoint = self.center + radiusVector
+        else:
+            if radiusPoint is None:
+                raise AttributeError('Either radius or radiusPoint is to be set.')
         radiusPoint = np.array(radiusPoint,dtype=float).reshape(-1,1)
         self.radius = np.linalg.norm(radiusPoint-self.center)
         self.radiusPoint = radiusPoint
@@ -930,13 +938,22 @@ def test_circleMask():
     for name,coord in zip(['X','Y','Z'],[X,Y,Z]):
         setattr(points,name,coord)
         
+    try:
+        circ0 = circleMask(center=[0.5,0.5])
+        assert False
+    except AttributeError:
+        assert True
+
     circ1 = circleMask(center=[0.5,0.5],radiusPoint=[1,0.5],coordinates=['X','Y'])
     circ2 = circleMask(center=[0.5,0.5],radiusPoint=[1,0.5])
-    
+    circ3 = circleMask(center=[0.5,0.5],radius=0.5)
+
     assert(np.isclose(circ1.radius,0.5))
+    assert(np.isclose(circ3.radius,0.5))
     mask = circ1(points)
     assert(np.sum(mask)==10450)
     assert(np.all(mask==circ2(X,Y)))
+    assert(np.all(mask==circ3(X,Y)))
     assert(circ2(0.5,0.5))
     assert(circ2(0.9,0.9) == False)
     assert(circ2(np.cos(np.pi/4)*0.5+0.501,np.cos(np.pi/4)*0.5+0.501) == False)
