@@ -1,7 +1,12 @@
-
+from __future__ import division
 from abc import ABCMeta
 import numpy as np
 import warnings
+# Compability of python 2 and 3 with metaclasses
+# Python 2 and 3:
+from six import with_metaclass
+# or
+from future.utils import with_metaclass
 
 def requiredArguments(func,requiredNames):
     """Return list of arguments not found in arguments of func"""
@@ -48,10 +53,10 @@ class MaskingObjectMeta(ABCMeta):
             if len(ErrorMessage)>0:
                 raise TypeError('\n'.join(ErrorMessage))
         
-        return super().__new__(mcls,name,bases,namespace)
+        return ABCMeta.__new__(mcls,name,bases,namespace)
     
             
-class MaskingObject(metaclass=MaskingObjectMeta):
+class MaskingObject(with_metaclass(MaskingObjectMeta)):
     """Base class for all masking objects"""
     dimensionality = '2D'
     def __init__(self,coordinates=None,maskInside=True):
@@ -238,7 +243,7 @@ class lineMask(MaskingObject):
             >>> inside = points[mask].T
             
         """
-        super().__init__(coordinates=coordinates,maskInside=maskInside)
+        super(lineMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
         
         self.start = start
         self.end = end
@@ -301,7 +306,7 @@ class rectangleMask(MaskingObject):
             >>> plt.scatter(*np.array([b.corners]).T,color='g')
             
         """
-        super().__init__(coordinates=coordinates,maskInside=maskInside)
+        super(rectangleMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
         
         self.corner1 = np.array(corner1,dtype=float)
         self.corner2 = np.array(corner2,dtype=float)
@@ -405,7 +410,7 @@ class boxMask(MaskingObject):
             
         
         """
-        super().__init__(coordinates=coordinates,maskInside=maskInside)
+        super(boxMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
         self.corner1 = np.array(corner1,dtype=float)
         self.corner2 = np.array(corner2,dtype=float)
         self.corner3 = np.array(corner3,dtype=float)
@@ -596,7 +601,7 @@ class circleMask(MaskingObject):
             >>> plt.scatter(*np.array([b.corners]).T,color='g')
             
         """
-        super().__init__(coordinates=coordinates,maskInside=maskInside)
+        super(circleMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
         
         self.center = np.array(center,dtype=float).reshape(-1,1)
         if self.center.shape[0] == 3: # 3D sphere
@@ -681,7 +686,7 @@ class indexMask(MaskingObject):
             maskInside (bool): If true, points inside is masked otherwise outside (default True)
         
         """
-        super().__init__(coordinates=None,maskInside=maskInside)
+        super(indexMask,self).__init__(coordinates=None,maskInside=maskInside)
         self.axis = axis
         self.start = start
         self.end = end
@@ -690,7 +695,7 @@ class indexMask(MaskingObject):
         raise NotImplementedError('It is not possible to plot a 1D masks.')
     
     def __call__(self,x,*args):
-        points = np.concatenate([x,*args])
+        points = x#np.concatenate([[x],args])
         
         if not len(points.shape)>self.axis:
             raise AttributeError('Masking axis is {}, but shape of x is {}.'.format(self.axis,points))
@@ -765,7 +770,7 @@ def test_BooleanAlgebra():
     class simpleMaskingObject(MaskingObject):
         dimensionality = '1D'
         def __init__(self,coordinates=None,maskInside=True):
-            super().__init__(coordinates=coordinates,maskInside=maskInside)
+            super(simpleMaskingObject,self).__init__(coordinates=coordinates,maskInside=maskInside)
             
         
         def __call__(self):
