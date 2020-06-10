@@ -2567,8 +2567,57 @@ class DataSet(object):
             Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable)
         return Viewer
 
+    def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):
+        """cut 1D data to be used for 1D raw plot using specified DASEL.
 
-    def plot1D(self,detectorSelection=None,analyzerSelection=None, legend=True, grid=-10):
+        kwargs:
+            detectorSelection (int): Detector to be used (default from file)
+            
+            analyzerSelection (int): Analyzer segment to be used (default from file)
+
+        returns:
+
+        """
+        if len(self)>1:
+            if not np.all([self[-1].scanParameters == d.scanParameters for d in self[:-1]]):
+                raise AttributeError('Provided data files do not have the same scan variables!')
+        
+        # If no detector or analyzer is provided use dasel from file
+        if analyzerSelection is None:
+            analyzerSelection = [d.analyzerSelection for d in self]
+        elif len(analyzerSelection) != len(self):
+            raise AttributeError('Provided analyzerSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(analyzerSelection)))
+            
+        
+        if detectorSelection is None:
+            detectorSelection = [d.detectorSelection for d in self]
+        elif len(detectorSelection) != len(self):
+            raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
+        
+        
+        dataFiles = [d.original_file if d.type=='nxs' else d for d in self]
+        
+        for d in dataFiles:
+            d.loadBinning(1)
+
+        X = [d.scanValues for d in dataFiles]
+       
+        analyzerPixels = [d.instrumentCalibrationEdges[analyzer+detector*8] for d,analyzer,detector in zip(dataFiles,analyzerSelection,detectorSelection)] # Find pixel limits for specified selection (8 Energies/detector)
+        
+        I = [np.sum(d.I[:,detector,pixels[0]:pixels[1]],axis=1) for d,detector,pixels in zip(dataFiles,detectorSelection,analyzerPixels)]
+        
+        # Names to be changed for readability
+        nameChange = {'polar_angle':'A4',
+                'rotation_angle':'A3'}
+        parameter = dataFiles[0].scanParameters
+        # If parameter is in nameChange, change it. Otherwise keep it
+        parameter = [nameChange.get(p, p) for p in parameter]
+        unit = dataFiles[0].scanUnits
+
+        return X,I,parameter,unit
+         
+
+    def plotRaw1D(self,detectorSelection=None,analyzerSelection=None, legend=True, grid=-10):
         """plot 1D figures of data in the specified DASEL.
         
         kwargs:
@@ -2584,12 +2633,8 @@ class DataSet(object):
             Ax (list): List of axes in which data are plotted.
         """
 
-        # Names to be changed for readability
-        nameChange = {'polar_angle':'A4',
-                'rotation_angle':'A3'}
         
-        
-        def intrextrapoate(oldPosition,oldValues,newValues):
+        def intrextrapolate(oldPosition,oldValues,newValues):
             """interpolates between old and new through linear regression and returns best estimate at old positions
             
             arg:
@@ -2624,7 +2669,7 @@ class DataSet(object):
             xFormatString = ['{:.'+str(fO)+'f}' for fO in fmtOrder] # Format to use enough decimals to show all changes
             
             # Calculate estimates for values of X[i] at x
-            newX = [intrextrapoate(x,X[0],XX)[0] for XX in X[1:]]
+            newX = [intrextrapolate(x,X[0],XX)[0] for XX in X[1:]]
              
             xs = [fstring.format(XX) for fstring,XX in zip(xFormatString,np.concatenate([[x],newX],axis=0))]
             return ', '.join([label+' = '+str(X) for X,label in zip(np.concatenate([xs,[y]],axis=0),labels)])
@@ -2648,9 +2693,9 @@ class DataSet(object):
         
     
         
-        if len(self)>1:
-            if not np.all([self[-1].scanParameters == d.scanParameters for d in self[:-1]]):
-                raise AttributeError('Provided data files do not have the same scan variables!')
+        
+        _,ax = plt.subplots()
+        
         
         if legend:
             if legend is True:
@@ -2658,39 +2703,9 @@ class DataSet(object):
             else:
                 if len(legend) != len(self):
                     raise AttributeError('Provided list of legends does not match length of dataset. Expected {}, but got {}'.format(len(self),len(legend)))
-        
-        _,ax = plt.subplots()
-        
-        # If no detector or analyzer is provided use dasel from file
-        if analyzerSelection is None:
-            analyzerSelection = [d.analyzerSelection for d in self]
-        elif len(analyzerSelection) != len(self):
-            raise AttributeError('Provided analyzerSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(analyzerSelection)))
-            
-        
-        if detectorSelection is None:
-            detectorSelection = [d.detectorSelection for d in self]
-        elif len(detectorSelection) != len(self):
-            raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
-        
-        
-        dataFiles = [d.original_file if d.type=='nxs' else d for d in self]
-        
-        for d in dataFiles:
-            d.loadBinning(1)
 
-        ax.X = [d.scanValues for d in dataFiles]
-       
-        analyzerPixels = [d.instrumentCalibrationEdges[analyzer+detector*8] for d,analyzer,detector in zip(dataFiles,analyzerSelection,detectorSelection)] # Find pixel limits for specified selection (8 Energies/detector)
-        
-        ax.I = [np.sum(d.I[:,detector,pixels[0]:pixels[1]],axis=1) for d,detector,pixels in zip(dataFiles,detectorSelection,analyzerPixels)]
-        
-        
-        ax.parameter = dataFiles[0].scanParameters
-        # If parameter is in nameChange, change it. Otherwise keep it
-        ax.parameter = [nameChange.get(p, p) for p in ax.parameter]
-        ax.unit = dataFiles[0].scanUnits
-        
+        ax.X,ax.I,ax.parameter,ax.unit = self.cutRaw1D(detectorSelection=detectorSelection,analyzerSelection=analyzerSelection)
+
         ax.xlabels = ['{} [{}s]'.format(p,u) for p,u in zip(ax.parameter,ax.unit)]
         ax.__labels__ = np.concatenate([ax.xlabels,['Int [count]']],axis=0)
         
@@ -5545,13 +5560,13 @@ def test_updateCalibration():
     assert(np.any(newEdges!=edges)) # Check if all elemenst are equal
 
 
-def testPlot1D_Error():
+def testplotRaw1D_Error():
     DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
      # Scan variables are A3 and A3+A4
     dataset = DataSet(DataFile)
     dataset[0].scanParameters = ['Ei']
     try:
-        dataset.plot1D() # Two different scan types
+        dataset.plotRaw1D() # Two different scan types
         assert False
     except AttributeError:
         assert True
@@ -5559,28 +5574,28 @@ def testPlot1D_Error():
     DataFile = ['Data/camea2018n000137.hdf','Data/camea2018n000137.hdf']
     dataset = DataSet(DataFile)
     try:
-        dataset.plot1D(analyzerSelection=[0]) # Not enough analyzers provided
+        dataset.plotRaw1D(analyzerSelection=[0]) # Not enough analyzers provided
         assert False
     except AttributeError:
         assert True
     try:
-        dataset.plot1D(detectorSelection=[0]) # Not enough detectors provided
+        dataset.plotRaw1D(detectorSelection=[0]) # Not enough detectors provided
         assert False
     except AttributeError:
         assert True
         
     try:
-        dataset.plot1D(legend=[0]) # Not enough legend labels provided
+        dataset.plotRaw1D(legend=[0]) # Not enough legend labels provided
         assert False
     except AttributeError:
         assert True
         
-def testPlot1D():
+def testplotRaw1D():
     DataFile = ['Data/camea2018n000137.hdf','Data/camea2018n000137.hdf']
     dataset = DataSet(DataFile)
-    ax = dataset.plot1D()
+    ax = dataset.plotRaw1D()
     
-    ax = dataset.plot1D(legend=['1','2'],detectorSelection=[0,0],analyzerSelection=[5,5],grid=True)
+    ax = dataset.plotRaw1D(legend=['1','2'],detectorSelection=[0,0],analyzerSelection=[5,5],grid=True)
     assert True
 
 def testMasking():
