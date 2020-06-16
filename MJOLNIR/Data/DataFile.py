@@ -83,8 +83,8 @@ class DataFile(object):
                     else:
                         self.Monitor=np.array(f.get('entry/data/monitor'))
                     self.Time = np.array(f.get('entry/control/time'))
-                    self.startTime = np.array(f.get('entry/start_time'))
-                    self.endTime = np.array(f.get('entry/end_time'))
+                    self.startTime = np.array(f.get('entry/start_time'))[0]
+                    self.endTime = np.array(f.get('entry/end_time'))[0]
                     self.experimentIdentifier = np.array(f.get('entry/experiment_identifier'))[0]
                     self.comment = np.array(f.get('entry/comment'))[0]
                     self.proposalId = np.array(f.get('entry/proposal_id'))[0]
@@ -1210,10 +1210,10 @@ class DataFile(object):
         
         def addMetaData(self,entry):
             dset = entry.create_dataset('start_time',(1,),dtype='<S70')
-            dset[0] = self.startTime
+            dset[0] = np.string_(self.startTime)
 
             dset = entry.create_dataset('end_time',(1,),dtype='<S70')
-            dset[0] = self.endTime
+            dset[0] = np.string_(self.endTime)
             
             dset = entry.create_dataset('experiment_identifier',(1,),dtype='<S70')
             dset[0] = self.experimentIdentifier.encode('utf8')
