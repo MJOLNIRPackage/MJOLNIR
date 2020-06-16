@@ -190,6 +190,7 @@ class DataFile(object):
             else: # type is multiFLEXX
                 self.loadMultiFLEXXData(fileLocation)
             
+            self.scanSteps = self.scanValues.shape[1]
             if True:
                 for attr in dir(self):
                     # If attribute is a function or property, skip it
