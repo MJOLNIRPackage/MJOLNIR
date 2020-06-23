@@ -44,7 +44,8 @@ From this it is clear that the number of horizontal Gaussians changes for the se
    ax,Data,Bin,center,Distance = ds.plotCutQELine(QPoints=[q1,q2,q3],width=0.05,minPixel=0.01,EnergyBins=EBins)
    
    # Extract axis and save figure
-   ax.get_figure('figure0.png',format='png').savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/RawQEPlot.png',format='png',dpi=600)
+   fig = ax.get_figure()
+   fig.savefig('figure0.png',format='png')
    
    # Define plotting parameters for error bar plot to be created
    ErrorBarKwargs = {'markersize':4, 'capsize':2,'elinewidth':1,'markeredgewidth':2,'mfc':'white','fmt':'o'}
@@ -153,7 +154,8 @@ From this it is clear that the number of horizontal Gaussians changes for the se
        # plot the errorbar on top of intensity data
    
    
-   ax.get_figure('figure1.png',format='png').savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/FittedQEPlot.png',format='png',dpi=600)
+   fig = ax.get_figure()
+   fig.savefig('figure1.png',format='png')
    
 
 In the above code, a lot of things are going, showing just one way of treating the data. If one does not like to work with pandas DataFrames, one can convert them into a set of numpy arrays. However, this then requires the user to deal with all of the indices themself. Further, if LMFIT is not your cup of tea, many other fitting routines exist for Python.

@@ -67,7 +67,7 @@ Assuming that the Quick visualization from the Quick tutorials is understood, th
    frames = np.arange(3,nFrames-3)
    frames = np.concatenate([frames,np.flip(frames[1:-1])]) # 
    # Generate animation as mp4 and create key frame as plane 75
-   View3DAnimator(Viewer,'ViewerAnimationEPlane','/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/',frames=frames,keyFrame=75,fps=7)
+   View3DAnimator(Viewer,'ViewerAnimationEPlane','/Path/To/Save/Folder/',frames=frames,keyFrame=75,fps=7)
    
 
 With the above code a similar picture as shown in the simple tutorial is generated:
