@@ -558,7 +558,7 @@ class DataSet(object):
     #@_tools.uFitWrapper1D
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
-            """Can only perform cuts for a constant energy plane of definable width.
+        """Can only perform cuts for a constant energy plane of definable width.
             
             - q2 (3D or 2D array): End position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
             
