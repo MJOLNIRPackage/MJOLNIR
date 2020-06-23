@@ -761,7 +761,7 @@ def get_default_args(func):
     returns a dictionary of arg_name:default_values for the input function
     """
     if int(sys.version[0])>2:
-        args, varargs, keywords, defaults,*_ = inspect.getfullargspec(func)    
+        args, varargs, keywords, defaults,kwonly,kwonlydefaults,annotations = inspect.getfullargspec(func)    
     else:
         args, varargs, keywords, defaults = inspect.getargspec(func)
     return dict(zip(args[-len(defaults):], defaults))
