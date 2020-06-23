@@ -7,7 +7,7 @@ import logging
 import math
 from MJOLNIR.Marray import *
 import os
-from ufit import Dataset
+#from ufit import Dataset
 import inspect
 import matplotlib
 
