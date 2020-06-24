@@ -1808,6 +1808,8 @@ def test_DataFile_equility():
 
 def test_DataFile_plotA4():
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
     fileName = 'Data/camea2018n000136.hdf'
     fileName2= 'Data/camea2018n000136.nxs'
     file = DataFile(fileName)
