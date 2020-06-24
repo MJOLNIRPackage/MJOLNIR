@@ -1,5 +1,7 @@
 sudo: required
 dist: xenial
+services:
+  - xvfb
 
 language: python
 
@@ -14,11 +16,9 @@ python:
 #- sudo apt-get -qq update && sudo apt-get install -y --no-install-recommends texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
 
 
-#before_script: # configure a headless display to test plot generation
-  #- sleep 3 # give xvfb some time to start
+before_script: # configure a headless display to test plot generation
+  - sleep 3 # give xvfb some time to start
 
-services:
-  - xvfb
 
 install:
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
