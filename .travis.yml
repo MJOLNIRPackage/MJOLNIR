@@ -16,9 +16,10 @@ python:
 #- sudo apt-get -qq update && sudo apt-get install -y --no-install-recommends texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
 
 
-#before_script: # configure a headless display to test plot generation
-# - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x24"
-#  - sleep 3 # give xvfb some time to start
+before_script: # configure a headless display to test plot generation
+  - xvfb-run --server-args="-screen 0 1024x768x24"
+  - sleep 3 # give xvfb some time to start
+#  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x24"
 
 
 install:
