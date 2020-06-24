@@ -437,8 +437,8 @@ class DataSet(object):
 
         return returnData,bins
 
-    #@_tools.uFitWrapper1D
-    @_tools.KwargChecker()#include=['ufit'])
+    @_tools.uFitWrapper1D
+    @_tools.KwargChecker(include=['ufit'])
     def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
@@ -555,8 +555,8 @@ class DataSet(object):
         return pdData,[binpositionsTotal,orthopos,EArray]
 
 
-    #@_tools.uFitWrapper1D
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
+    @_tools.uFitWrapper1D
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize','ufit']])) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
         """Can only perform cuts for a constant energy plane of definable width.
             
@@ -4886,6 +4886,31 @@ def test_DataSet_1Dcut():
     assert(np.all(np.isclose(D1,D2)))
     
     assert(np.all(np.array([np.all(np.isclose(b1[i],b2[i])) for i in range(len(b1))]).flatten()))
+
+
+def test_DataSet_1Dcut_ufit():
+    q1 =  np.array([1.23,-1.51])
+    q2 =  np.array([1.54, -1.25])
+    width = 0.1
+
+    plt.ioff()
+    convertFiles = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
+    
+    ds = DataSet(dataFiles = convertFiles)
+    ds.convertDataFile(saveFile=False)
+
+    ax,dataset = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.',ticks=5,tickRound=2,ufit=True)
+    dataset2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,ufit=True)
+    
+
+    files = ', '.join([x.replace('hdf','nxs').split('/')[-1] for x in convertFiles])
+
+    assert(np.all([np.all(x==y) for x,y in zip(dataset.fit_columns,dataset2.fit_columns)]))
+    assert(dataset.meta == dataset2.meta)
+
+    assert(dataset.meta['instrument'] == 'CAMEA')
+    assert(dataset.meta['datafilename'] == files)
+
     
 
 def test_DataSet_1DcutE():
