@@ -1,4 +1,4 @@
-import sys
+import sys,os
 sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../..')
@@ -8,7 +8,6 @@ from MJOLNIR import _tools
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import os
 import scipy.optimize
 from scipy.stats import norm
 import h5py as hdf

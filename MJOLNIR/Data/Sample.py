@@ -226,7 +226,7 @@ class Sample(object):
         #np.all(self.orientationMatrix==other.orientationMatrix)])
 
     def initialize(self):
-
+        """Initialize the Sample object. Automatically called during __init__method."""
         # From http://gisaxs.com/index.php/Unit_cell
         self.realVectorA = np.array([self.a,0,0])
         self.realVectorB = self.b*np.array([cosd(self.gamma),sind(self.gamma),0.0])#np.dot(np.array([self.b,0,0]),rotationMatrix(0,0,self.gamma))
@@ -323,20 +323,24 @@ class Sample(object):
         return Pos[0],Pos[1]   
 
 
-    def format_coord(self,x,y): # Convert from Qx,Qy to HKL
+    def format_coord(self,x,y):
+        """Format coordinates from QxQy in rotated frame into HKL."""
         x, y = np.asarray(x), np.asarray(y)
         rlu = self.calculateQxQyToHKL(x,y)#np.dot(self.orientationMatrixINV,np.array([x,y,0]))
         return "h = {0:.3f}, k = {1:.3f}, l = {2:.3f}".format(rlu[0],rlu[1],rlu[2])
 
-    def calculateQxQyToHKL(self,x,y): # convert from Qx,Qy to HKL
+    def calculateQxQyToHKL(self,x,y):
+        """convert from Qx,Qy to HKL."""
         pos = np.array([x,y,np.zeros_like(x)])
         return np.einsum('ij,j...->i...',self.orientationMatrixINV,pos)
 
-    def calculateHKLToQxQy(self,H,K,L): # convert HKL to Qx,Qy
+    def calculateHKLToQxQy(self,H,K,L):
+        """convert HKL to Qx,Qy."""
         pos = np.array([H,K,L])
         return np.einsum('ij,j...->i...',self.orientationMatrix,pos)[:2]
 
     def calculateHKLtoProjection(self,H,K,L):
+        """convert from projections to HKL."""
         HKL = np.array([H,K,L])
         #points = np.einsum('i...,ij...->i...',HKL,self.PM)
         points = np.einsum('ij,j...->i...',_tools.invert(self.PM),HKL)

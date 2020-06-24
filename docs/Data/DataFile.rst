@@ -14,6 +14,7 @@ Data File
 	DataFile.DataFile.calculateEdgePolygons
 	DataFile.DataFile.difference
 	DataFile.DataFile.loadBinning
+	DataFile.DataFile.loadMultiFLEXXData
 	DataFile.DataFile.plotA4
 	DataFile.DataFile.plotEf
 	DataFile.DataFile.plotEfOverview

@@ -766,6 +766,7 @@ def get_default_args(func):
 
 
 def uFitWrapper1D(func):
+    """Wrapper for cut1D method on DataSet object returning uFit.Dataset object in stead of standard."""
     @functools.wraps(func)
     def uFitWrappedFunc(*args,**kwargs):
         if 'ufit' in kwargs:

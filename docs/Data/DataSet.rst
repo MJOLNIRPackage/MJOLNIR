@@ -37,6 +37,7 @@ DataSet Object and Methods
 Object to take care of all data conversion and treatment taking it from raw hdf5 files obtained at the instrument into re-binned data sets converted to S(q,omega). 
 
 .. automodule:: DataSet
+   :members:
 
 .. _DataSet:
 
