@@ -36,7 +36,7 @@ setup(
         },
     python_requires='>=3.5',
     install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
-                    'pip>=20','sip>=5.3','PyQt5==5.10','ufit'], # ,'ufit'
+                    'pip>=20','sip>=5.3','PyQt5==5.13','ufit'], # ,'ufit'
     
     classifiers=[
         'Development Status :: 3 - Alpha',
