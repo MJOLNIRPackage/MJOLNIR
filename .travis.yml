@@ -4,11 +4,11 @@ dist: xenial
 language: python
 
 python:
-  - "2.7"
   - "3.5"
   - "3.6"
   - "3.7"
   - "3.8"
+  - "3.9"
   
 
 #before_install:
@@ -23,6 +23,7 @@ services:
 
 install:
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+  - pip install --update pip
   - pip install .
 #  - pip install -r requirements.txt
 
