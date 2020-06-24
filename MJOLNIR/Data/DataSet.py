@@ -4761,7 +4761,8 @@ def test_DataSet_full_test():
 
     dataset = DataSet(dataFiles=DataFile)
     dataset.convertDataFile(saveLocation='Data/',saveFile=True)
-
+    import matplotlib
+    matplotlib.use('Agg')
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     
     warnings.simplefilter('ignore')
@@ -4794,6 +4795,9 @@ def test_DataSet_Visualization():
     Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [MJOLNIR.Data.DataFile.DataFile('Data/camea2018n000136.nxs')])
     
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     warnings.simplefilter('ignore')
     Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
     warnings.simplefilter('once')
@@ -4838,6 +4842,9 @@ def test_DataSet_1Dcut():
     width = 0.1
 
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     convertFiles = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
@@ -4894,6 +4901,9 @@ def test_DataSet_1Dcut_ufit():
     width = 0.1
 
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     convertFiles = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
@@ -4919,6 +4929,9 @@ def test_DataSet_1DcutE():
     Emin = 1.5
     Emax = 2.5
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     convertFiles = ['Data/camea2018n000137.hdf']
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile(saveFile=True)
@@ -4964,6 +4977,9 @@ def test_DataSet_2Dcut():
     minPixel=0.02
     EnergyBins = np.linspace(2,3,4)
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     convertFiles = ['Data/camea2018n000137.hdf']
 
     Datset = DataSet(dataFiles = convertFiles)
@@ -5026,6 +5042,9 @@ def test_DataSet_cutPowder():
     Tolerance = 0.01
 
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     convertFiles = ['Data/camea2018n000136.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
@@ -5048,6 +5067,9 @@ def test_DataSet_cutPowder():
 
 def test_DataSet_createRLUAxes():
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     fig = plt.figure()
     convertFiles = ['Data/camea2018n000136.hdf']
     
@@ -5071,6 +5093,9 @@ def test_DataSet_createRLUAxes():
 
 def test_DataSet_createQEAxes():
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     convertFiles = ['Data/camea2018n000136.hdf']
     
     ds = DataSet(dataFiles = convertFiles)
@@ -5093,6 +5118,9 @@ def test_DataSet_createQEAxes():
 
 def test_DataSet_plotQPlane():
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
+
     convertFiles = ['Data/camea2018n000137.hdf']#'TestData/ManuallyChangedData/A3.hdf']
     
     Datset = DataSet(dataFiles = convertFiles)
@@ -5357,7 +5385,9 @@ def test_DataSet_plotCutQELine():
     EnergyBins = np.linspace(1.7,2.7,11)
     minPixel = 0.001
     width=0.1
-    
+    import matplotlib
+    matplotlib.use('Agg')
+
     DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
     dataset = DataSet(convertedFiles=DataFile)
     dataset.convertDataFile(saveFile=False)
@@ -5497,6 +5527,8 @@ def test_DataSet_MultiFLEXX():
 
     ds = DataSet(fileLocation)
     ds.convertDataFile(saveFile = False)
+    import matplotlib
+    matplotlib.use('Agg')
 
     V = ds.View3D(0.05,0.05,0.5,grid=True)
 
@@ -5505,6 +5537,8 @@ def test_DataSet_ELine():
     dataset = DataSet(DataFile)
 
     dataset.convertDataFile()
+    import matplotlib
+    matplotlib.use('Agg')
 
     Q1 = [1.0,-0.185,0.0]
     Q2 = [0.5,1.5,0.0]
@@ -5583,6 +5617,9 @@ def testplotRaw1D_Error():
      # Scan variables are A3 and A3+A4
     dataset = DataSet(DataFile)
     dataset[0].scanParameters = ['Ei']
+    import matplotlib
+    matplotlib.use('Agg')
+
     try:
         dataset.plotRaw1D() # Two different scan types
         assert False
@@ -5611,6 +5648,9 @@ def testplotRaw1D_Error():
 def testplotRaw1D():
     DataFile = ['Data/camea2018n000137.hdf','Data/camea2018n000137.hdf']
     dataset = DataSet(DataFile)
+    import matplotlib
+    matplotlib.use('Agg')
+
     ax = dataset.plotRaw1D()
     
     ax = dataset.plotRaw1D(legend=['1','2'],detectorSelection=[0,0],analyzerSelection=[5,5],grid=True)

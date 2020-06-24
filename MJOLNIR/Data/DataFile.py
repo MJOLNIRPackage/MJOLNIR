@@ -1837,6 +1837,8 @@ def test_DataFile_plotA4():
     
 def test_DataFile_plotEf():
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
     fileName = 'Data/camea2018n000136.hdf'
     fileName2= 'Data/camea2018n000136.nxs'
     assertFile(fileName2)
@@ -1863,6 +1865,8 @@ def test_DataFile_plotEf():
 
 def test_DataFile_plotEfOverview():
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
     fileName = 'Data/camea2018n000136.hdf'
     fileName2= 'Data/camea2018n000136.nxs'
     assertFile(fileName2)
@@ -1890,6 +1894,8 @@ def test_DataFile_plotEfOverview():
 
 def test_DataFile_plotNormalization():
     plt.ioff()
+    import matplotlib
+    matplotlib.use('Agg')
     fileName = 'Data/camea2018n000136.hdf'
     fileName2= 'Data/camea2018n000136.nxs'
     file = DataFile(fileName)
