@@ -34,9 +34,9 @@ setup(
                             'MJOLNIRCalibrationInspector = MJOLNIR.CommandLineScripts.MJOLNIRCalibrationInspector:main',
                             'MJOLNIR3DView = MJOLNIR.CommandLineScripts.MJOLNIR3DView:main']
         },
-    python_requires='>=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*',
-    install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future'], # ,'ufit'
-    #data_files=[('MJOLNIR/TestData',['TestData/CAMEA_Full_2.xml','TestData/EnergyNormalization_2.calib','TestData/EnergyNormalization_3.calib','TestData/EnergyNormalization_8.calib','TestData/VanNormalization.h5','TestData/VanNormalization.nxs','TestData/cameasim2018n000005.nxs'])],
+    python_requires='>=3.5',
+    install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
+                    'pip>=20','sip>=5.3','PyQt5','ufit'], # ,'ufit'
     
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -46,9 +46,8 @@ setup(
         'Topic :: Scientific/Engineering :: Physics',
         'Topic :: Scientific/Engineering :: Visualization',
         'Topic :: Scientific/Engineering :: Information Analysis',
-        'Programming Language :: Python :: 2.7',
-        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7'],
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8'],
     )
