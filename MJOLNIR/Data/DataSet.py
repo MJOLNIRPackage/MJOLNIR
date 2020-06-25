@@ -30,6 +30,7 @@ from shapely.geometry import Point as PointS
 from shapely.vectorized import contains
 import time
 import warnings
+from ufit import Dataset
 
 pythonVersion = sys.version_info[0]
 
@@ -437,9 +438,8 @@ class DataSet(object):
 
         return returnData,bins
 
-    @_tools.uFitWrapper1D
-    @_tools.KwargChecker(include=['ufit'])
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None):
+    @_tools.KwargChecker()
+    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,ufit=False):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -471,6 +471,8 @@ class DataSet(object):
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
             - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+            - ufit (bool): If True a uFit Dataset object is returned in stead of pandas data frame
         
         
         Returns:
@@ -552,12 +554,54 @@ class DataSet(object):
             for dat,col,typ in zip(DataValues,columns,dtypes):
                 pdData[col] = dat.astype(typ)
             pdData['Int'] = pdData['Intensity']*pdData['BinCount']/(pdData['Normalization']*pdData['Monitor'])
-        return pdData,[binpositionsTotal,orthopos,EArray]
 
+        
+        if not ufit:
+            return pdData,[binpositionsTotal,orthopos,EArray]
+        
+        
+        if rlu:
+            variables = ['H','K','L']
+        else:
+            variables = ['Qx','Qy']
+        variables = variables+['Energy']
 
-    @_tools.uFitWrapper1D
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize','ufit']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,**kwargs):  
+        
+        # Calculate the binDistance to be used by the ufit dataset
+        pdData['binDistance'] = np.linalg.norm(pdData[variables]-np.array(pdData[variables].iloc[1]),axis=1)
+            
+        dirVec = np.array(q2)-np.array(q1)
+        dirVec /= np.linalg.norm(dirVec)
+        offset = np.dot(q1,dirVec)
+        
+        # Differently defined than binDistance (offset is taken into account)
+        x = pdData['binDistance']+offset
+        pdData['binDistance'] = x
+        
+        # Calcualte mean energy from bins (last return value)
+        Energy = np.mean(EArray)
+        # Create meta data for uFit dataset
+        meta = dict()
+        
+        meta['instrument'] = self[0].instrument
+        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
+        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
+        meta['datafilename'] = ', '.join(d.name for d in self)
+        
+        dist,Int = np.array(pdData[['binDistance','Int']]).T
+        err = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Monitor']*pdData['Normalization'])
+        data = np.array([dist,Int,err]).T
+        xcol = ', '.join([str(x) for x in dirVec])+', '+str(Energy)+' [RLU,meV]'
+        ycol = 'Intensity'
+        name = 'Intensity'
+        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
+        
+        return ufitData
+
+        
+    
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,ufit=False,**kwargs):  
         """Can only perform cuts for a constant energy plane of definable width.
             
             - q2 (3D or 2D array): End position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
@@ -585,6 +629,8 @@ class DataSet(object):
             - tickRound (int): Decimals to be used when creating ticks
 
             - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+            - ufit (bool): If True a uFit Dataset object is returned in stead of pandas data frame
         
         Returns:
             
@@ -691,7 +737,36 @@ class DataSet(object):
         
         ax.format_coord = lambda x,y: format_coord(x,y,ax,np.array(Data[variables]))
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data))
-        return ax,Data,[binpositionsTotal,orthopos,EArray]
+        if not ufit:
+            return ax,Data,[binpositionsTotal,orthopos,EArray]
+        pdData = Data
+        # Differently defined than binDistance (offset is taken into account)
+        dirVec = np.array(q2)-np.array(q1)
+        dirVec /= np.linalg.norm(dirVec)
+        offset = np.dot(q1,dirVec)
+
+        x = pdData['binDistance']+offset
+        pdData['binDistance'] = x
+        
+        # Calcualte mean energy from bins (last return value)
+        Energy = np.mean(EArray)
+        # Create meta data for uFit dataset
+        meta = dict()
+        
+        meta['instrument'] = self[0].instrument
+        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
+        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
+        meta['datafilename'] = ', '.join(d.name for d in self)
+        
+        dist,Int = np.array(pdData[['binDistance','Int']]).T
+        err = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Monitor']*pdData['Normalization'])
+        data = np.array([dist,Int,err]).T
+        xcol = ', '.join([str(x) for x in dirVec])+', '+str(Energy)+' [RLU,meV]'
+        ycol = 'Intensity'
+        name = 'Intensity'
+        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
+        
+        return ax,ufitData
 
     
     @_tools.KwargChecker()

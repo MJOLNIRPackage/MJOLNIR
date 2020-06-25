@@ -7,7 +7,6 @@ import logging
 import math
 from MJOLNIR.Marray import *
 import os
-from ufit import Dataset
 import inspect
 import matplotlib
 
@@ -765,75 +764,6 @@ def get_default_args(func):
     return dict(zip(args[-len(defaults):], defaults))
 
 
-def uFitWrapper1D(func):
-    """Wrapper for cut1D method on DataSet object returning uFit.Dataset object in stead of standard."""
-    @functools.wraps(func)
-    def uFitWrappedFunc(*args,**kwargs):
-        if 'ufit' in kwargs:
-            ufit = kwargs['ufit']
-            del kwargs['ufit']
-        else:
-            ufit = False
-        returnValues = func(*args,**kwargs)
-        
-        
-        if not ufit:
-            return returnValues
-        
-        data = returnValues[-2] # the Pandas Dataframe is first if cut and second if plot (or second last in both cases)
-        
-        if hasattr(func,'_original'): # The method is decorated by KwargChecker
-            totalKwargs = get_default_args(func._original)
-        else:
-            totalKwargs = get_default_args(func)
-        
-        if totalKwargs['rlu']:
-            variables = ['H','K','L']
-        else:
-            variables = ['Qx','Qy']
-        variables = variables+['Energy']
-        self = args[0]
-        q1 = args[1]
-        q2 = args[2]
-        
-        # Calculate the binDistance to be used by the ufit dataset
-        data['binDistance'] = np.linalg.norm(data[variables]-np.array(data[variables].iloc[1]),axis=1)
-            
-        dirVec = np.array(q2)-np.array(q1)
-        dirVec /= np.linalg.norm(dirVec)
-        offset = np.dot(q1,dirVec)
-        
-        # Differently defined than binDistance (offset is taken into account)
-        x = data['binDistance']+offset
-        data['binDistance'] = x
-        
-        # Calcualte mean energy from bins (last return value)
-        Energy = np.mean(returnValues[-1][2])
-        # Create meta data for uFit dataset
-        meta = dict()
-        
-        meta['instrument'] = self[0].instrument
-        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
-        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
-        meta['datafilename'] = ', '.join(d.name for d in self)
-        
-        dist,Int = np.array(data[['binDistance','Int']]).T
-        err = np.sqrt(data['Intensity'])*data['BinCount']/(data['Monitor']*data['Normalization'])
-        data = np.array([dist,Int,err]).T
-        xcol = ', '.join([str(x) for x in dirVec])+', '+str(Energy)+' [RLU,meV]'
-        ycol = 'Intensity'
-        name = 'Intensity'
-        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
-        
-        # Find axis object and return this as well
-        axisIndex = np.array([isinstance(x,matplotlib.axes.Axes) for x in returnValues],dtype=bool)
-        if np.sum(axisIndex)>0: # if at least one axis element is present
-            return np.array(returnValues)[axisIndex],ufitData
-        else:
-            return ufitData
-
-    return uFitWrappedFunc
-    
 
 
 ############# TESTING
