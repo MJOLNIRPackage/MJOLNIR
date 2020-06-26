@@ -516,7 +516,8 @@ class DataSet(object):
             else:
                 positions = np.array([qx,qy,energy])
             
-
+        if np.all(np.isclose(q1,q2)):
+            raise AttributeError('Provided Q points are equal. Got ({}) and ({}).'.format(', '.join([str(x) for x in q1]),', '.join([str(x) for x in q2])))
 
         Data,[binpositionsTotal,orthopos,EArray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
                                                                 minPixel=minPixel,Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,
