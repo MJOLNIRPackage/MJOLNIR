@@ -2251,7 +2251,7 @@ class DataSet(object):
 
     
     @_tools.KwargChecker()
-    def cut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False):
+    def cut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ufit=False):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
@@ -2275,6 +2275,8 @@ class DataSet(object):
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
 
             - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+            - ufit (bool): If True a uFit Dataset object is returned in stead of pandas data frame
             
         Returns:
             
@@ -2334,10 +2336,30 @@ class DataSet(object):
         data['binDistance'] = np.linalg.norm(data[variables]-np.array(data[variables].iloc[1]),axis=1)
         
         data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
+        if not ufit:
+            return data,bins
+        
+        
+        # Create meta data for uFit dataset
+        meta = dict()
+        
+        meta['instrument'] = self[0].instrument
+        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
+        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
+        meta['datafilename'] = ', '.join(d.name for d in self)
+        
+        dist,Int = np.array(data[['Energy','Int']]).T
+        err = np.sqrt(data['Intensity'])*data['BinCount']/(data['Monitor']*data['Normalization'])
+        data = np.array([dist,Int,err]).T
+        xcol = 'E [meV]'
+        ycol = 'Intensity'
+        name = 'Intensity'
+        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
+        
+        return ufitData
 
-        return data,bins
-
-    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ax=None,**kwargs):
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
+    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ax=None,ufit=False,**kwargs):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
@@ -2361,6 +2383,8 @@ class DataSet(object):
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
 
             - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+            - ufit (bool): If True a uFit Dataset object is returned in stead of pandas data frame
 
             - ax (matplotlib.axes): If None, new axis is created in which to plot (default None)
 
@@ -2446,7 +2470,27 @@ class DataSet(object):
 
         ax.format_coord = lambda x,y: format_coord(x,y,ax,np.array(Data[variables]))
 
-        return ax,Data,bins
+        if not ufit:
+            return ax,Data,bins
+        
+        
+        # Create meta data for uFit dataset
+        meta = dict()
+        
+        meta['instrument'] = self[0].instrument
+        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
+        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
+        meta['datafilename'] = ', '.join(d.name for d in self)
+        
+        dist,Int = np.array(Data[['Energy','Int']]).T
+        err = np.sqrt(Data['Intensity'])*Data['BinCount']/(Data['Monitor']*Data['Normalization'])
+        data = np.array([dist,Int,err]).T
+        xcol = 'E [meV]'
+        ycol = 'Intensity'
+        name = 'Intensity'
+        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
+        
+        return ax,ufitData
 
 
     def cutELine(self, Q1, Q2, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False):
@@ -5165,6 +5209,19 @@ def test_DataSet_1DcutE():
     ax,Data2,[bins2] = Datset.plotCut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     assert(Data.equals(Data2))
     assert(np.all(np.isclose(bins,bins2)))
+
+    ufitData = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
+    ax,ufitData2 = Datset.plotCut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
+
+    files = ', '.join([x.replace('hdf','nxs').split('/')[-1] for x in convertFiles])
+    
+    assert(np.all([np.all(np.isclose(x,y,equal_nan=True)) for x,y in zip(ufitData.fit_columns,ufitData2.fit_columns)]))
+    assert(ufitData.meta == ufitData2.meta)
+
+    assert(ufitData.meta['instrument'] == 'CAMEA')
+    assert(ufitData.meta['datafilename'] == files)
+
+
 
 def test_DataSet_2Dcut():
     q1 =  np.array([1.23,-1.25])
