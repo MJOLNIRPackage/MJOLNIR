@@ -691,7 +691,8 @@ class DataSet(object):
         ax.set_xticklabels(my_xticks, multialignment="center",ha="center")
         
         def calculateIndex(binDistance,x):
-            return np.argmin(np.abs(binDistance-x))
+            idx = np.argmin(np.abs(binDistance-x))
+            return idx
 
         ax.calculateIndex = lambda x: calculateIndex(Data['binDistance'],x)
         
@@ -2445,7 +2446,8 @@ class DataSet(object):
         ax.set_xticklabels(my_xticks, multialignment="center",ha="center")
 
         def calculateIndex(binDistance,x):
-            return np.argmin(np.abs(binDistance-x))
+            idx = np.argmin(np.abs(binDistance-x))
+            return idx
 
         ax.calculateIndex = lambda x: calculateIndex(Data['binDistance'],x)
 
