@@ -653,7 +653,11 @@ class DataFile(object):
                 warnings.warn('Instrument of type "{}" is not supported yet....'.format(self.type))
                 #raise NotImplementedError('Instrument of type "{}" is not supported yet....'.format(self.type))
 
+        # Create Dasel
 
+        self.analyzerSelection = 0
+        self.detectorSelection = 0
+        self.comment = ''
         ### Weird additional changes:
 
         if self.type == 'MultiFLEXX':
