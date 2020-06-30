@@ -287,7 +287,7 @@ class DataSet(object):
     def append(self,item):
         try:
             correctDataFiles = isListOfDataFiles(item)
-            [self._dataFiles.append(file) for file in correctDataFiles if file.type=='hdf']
+            [self._dataFiles.append(file) for file in correctDataFiles if file.type=='hdf' or file.type=='MultiFLEXX' or file.type=='FlatCone']
             [self._convertedFiles.append(file) for file in correctDataFiles if file.type=='nxs']
         except Exception as e:
             raise(e)
