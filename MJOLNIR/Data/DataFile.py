@@ -676,7 +676,7 @@ class DataFile(object):
             if binning is None:
                 binning = self.binning
         elif self.type in ['MultiFLEXX','FlatCone']:
-            EPrDetector = self.binning
+            EPrDetector = 1
             if binning is None:
                 binning = self.binning
         else:
