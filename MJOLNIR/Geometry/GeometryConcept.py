@@ -58,7 +58,7 @@ class GeometryConcept(object):
         """
         Args:
 
-            - ax (matplotlib axis): 3D matplotlib axis into whicht plotting is performed
+            - ax (matplotlib axis): 3D matplotlib axis into which plotting is performed
 
         .. warning::
             Method not incorporated, but acts as virtual method.
@@ -72,7 +72,7 @@ class GeometryConcept(object):
     def save(self, filename):
         try:                                # Opening the given file with an error catch
             fileObject = open(filename, 'wb')
-        except IOError as e:                        # Catch all IO-errors
+        except IOError as e:   # pragma: no cover
             print("Error in opening file:\n{}".format(e))
         else:
                 pickle.dump(self, fileObject, -1)
@@ -82,7 +82,7 @@ class GeometryConcept(object):
         """Method to load an object from a pickled file."""
         try:                                # Opening the given file with an error catch
             fileObject = open(filename, 'rb')
-        except IOError as e:                        # Catch all IO-errors
+        except IOError as e: # pragma: no cover
             print("Error in opening file:\n{}".format(e))
         else:
             tmp_dict = pickle.load(fileObject)
@@ -107,7 +107,7 @@ def test_Concept_plot():
         assert False
     except NotImplementedError:
         assert True
-
+    print(str(Concept))
     
 
 
@@ -172,6 +172,7 @@ def test_Object_init():
 def test_position():
     GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
     GenericObject.position = (0.0,0.0,0.0)
+    print(str(GenericObject))
     assert(np.all(GenericObject.position==(0.0,0.0,0.0)))
 
 def test_Object_position_exception():

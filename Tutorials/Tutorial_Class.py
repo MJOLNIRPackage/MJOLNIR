@@ -14,7 +14,7 @@ import sys
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 
 def formatCode(text,indentChar = '   ', skipHeader=1):
-    """Formater for raw code strings to doct string formation"""
+    """Formater for raw code strings to doc string formation"""
     
     text= text.split('\n')[skipHeader:]
     
@@ -40,10 +40,14 @@ def formatCode(text,indentChar = '   ', skipHeader=1):
             end = line.find(')')
             line = line[:start] + 'fileName=SimpleInstrument.xml' + line[end:]
 
-        if line.find('/home/lass/Dropbox/PhD/CAMEAData/')!=-1:
+        while(line.find('/home/lass/Dropbox/PhD/CAMEAData/')!=-1):
             text = '/home/lass/Dropbox/PhD/CAMEAData/'
             line = line[:line.find(text)]+'/Path/To/Data/'+line[line.find(text)+len(text):]
-            
+
+        while(line.find('/home/lass/Dropbox/PhD/')!=-1):
+            start = line.find('/home/lass/Dropbox/PhD/') # Find position in line
+            end = line[start:].find("'") # Find next ' in line
+            line = line[:start]+'/Path/To/Save/Folder/'+line[start+end:]
         newText.append(line)
             
     return '\n'.join(newText)
@@ -84,7 +88,7 @@ class Tutorial(object):
         
         if result != 0:
             return None
-            #raise RuntimeError('An error occured while running pytest for "{}" defined in function "{}"'.format(codeFunctionName,codeLocation))    
+            #raise RuntimeError('An error occurred while running pytest for "{}" defined in function "{}"'.format(codeFunctionName,codeLocation))    
         else:
             print('Test successful!')
         fileLocation = self.fileLocation

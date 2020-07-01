@@ -2,10 +2,14 @@
 #
 
 test:
-	python -m pytest -vv MJOLNIR
+	coverage run python -m pytest -vv MJOLNIR
+	coverage report
+	coverage html
 
 quicktest:
-	python -m pytest -vv MJOLNIR --quick
+	coverage run -m pytest -vv MJOLNIR --quick
+	coverage report
+	coverage html
 
 tutorials:
 	python clean.py docs/Tutorials/Advanced
@@ -23,15 +27,20 @@ wheel:
 	python setup.py sdist
 
 version = $(shell python cut.py $(shell ls -t dist/* | head -1))
+
+upload:
+	twine upload $(shell ls -t dist/* | head -1) -r testpypi
+	twine upload $(shell ls -t dist/* | head -1) -r pypi
+
+
 version: 
 	echo 'Creating version $(version)'
 	python Update.py $(version)
 	make tutorials
-	git add setup.py docs/conf.py docs/Tutorials/*
+	git add setup.py docs/conf.py docs/Tutorials/* docs/index.rst MJOLNIR/__init__.py
 	git commit -m 'Update version'
+	git tag -a $(version) -m \'$(version)\'
 	make wheel
-	twine upload $(shell ls -t dist/* | head -1) -r testpypi
-	twine upload $(shell ls -t dist/* | head -1) -r pypi
 	git push
 	git push --tags
 

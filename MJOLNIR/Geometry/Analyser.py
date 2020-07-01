@@ -20,7 +20,7 @@ class Analyser(GeometryConcept.GeometryObject):
 
             - direction (float 3): Direction of analyser
 
-            - d_spacing (float): The d spacing in Anstrom (default 3.35)
+            - d_spacing (float): The d spacing in Angstrom (default 3.35)
 
             - mosaicity (float): The standard deviation of mosaicity in arcminutes (default 60)
         """
@@ -167,7 +167,7 @@ class FlatAnalyser(Analyser):
             
             - AttributeError
             
-            - NotImplimentedError
+            - NotImplementedError
         
 
         """
@@ -286,7 +286,7 @@ def test_FlatAnalyser_str():
     assert(str(Analyser)=='FlatAnalyser located at '+np.array2string(np.array([0.0,1.0,0.0])))
 
 
-def test_FlatAnalser_kwChecker():
+def test_FlatAnalyser_kwChecker():
 
     try:
         Analyser = FlatAnalyser(Position=(0.0,1.0,0.0),direction=(1.0,0,0))

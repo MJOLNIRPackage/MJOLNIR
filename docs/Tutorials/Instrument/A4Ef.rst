@@ -1,6 +1,6 @@
 Calculate A4 and Ef
 ^^^^^^^^^^^^^^^^^^^
-With a virtual representation of the instrument, as explained in the `Instrument <instrument.rst#Build-simple-instrument>`__ tutorial, the first thing is to calcualte the corresponding A4 and Ef values. This is done by simply accessing the corresponding attributes of the instrument object. The instrument needs to have it initialize method called such that it calculates the A4 and Ef values when a wedge has been appended.
+With a virtual representation of the instrument, as explained in the `Instrument <instrument.rst#Build-simple-instrument>`__ tutorial, the first thing is to calculate the corresponding A4 and Ef values. This is done by simply accessing the corresponding attributes of the instrument object. The instrument needs to have it initialize method called such that it calculates the A4 and Ef values when a wedge has been appended.
 
 .. code-block:: python
    :linenos:
@@ -33,10 +33,10 @@ The values printed are given below. [[array([-1.57079633, -1.57079633, -1.570796
        4.81164763]), array([4.83218148, 5.46500461, 6.20544497, 3.84580212, 4.2900502 ,
        4.82331491])]]
 
-Notice that the number of pixels and how these are splitted are given to the detector. What happens is that the detector splits it's pixels into two lists; pixels before and after 2 and 8 respectively are discarted as non-acive, while pixels 2-4 and 5-7 corresponds to the two areas 'seeing' the two detectors. That is, the "ManyToMany" concept has been given as default. Another concept exists, the "OneToOne", as tabulated below.
+Notice that the number of pixels and how these are splitted are given to the detector. What happens is that the detector splits it's pixels into two lists; pixels before and after 2 and 8 respectively are discarted as non-active, while pixels 2-4 and 5-7 corresponds to the two areas 'seeing' the two detectors. That is, the "ManyToMany" concept has been given as default. Another concept exists, the "OneToOne", as tabulated below.
 
 +------------+---------------------------------------------------+--------------------------------------------------------------------+
-| Concept    | Effect                                            | Requirenment                                                       |
+| Concept    | Effect                                            | Requirement                                                        |
 +============+===================================================+====================================================================+
 | OneToOne   | Each detector "sees" only one analyser.           | The number of detectors and analysers in the wedge is to be equal. |
 +------------+---------------------------------------------------+--------------------------------------------------------------------+

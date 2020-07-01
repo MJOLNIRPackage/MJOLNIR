@@ -2,7 +2,7 @@ Viewer3D
 ========
 
 In this section, the interactivity of the Viewer3D is explained. 
-It is assumed that an instance has already been create (for example, see `Quick plotting of data <QuickView3D>`_). 
+It is assumed that an instance has already been created (for example, see `Quick plotting of data <QuickView3D>`_). 
 For a given data set, the viewer will look something like the picture below:
 
 |pic1| |pic2|
@@ -37,11 +37,11 @@ being the two projections in :math:`\vec{Q}` and energy. The data is always plot
 +-----------------+------------------------------------------------------+
 |    Key press    | Effect                                               |
 +-----------------+------------------------------------------------------+
-|        0        | Chang plotting such that projection 0 is constant    |
+|        0        | Change plotting such that projection 0 is constant   |
 +-----------------+------------------------------------------------------+
-|        1        | Chang plotting such that projection 1 is constant    |
+|        1        | Change plotting such that projection 1 is constant   |
 +-----------------+------------------------------------------------------+
-|        2        | Chang plotting such that energy is constant          |
+|        2        | Change plotting such that energy is constant         |
 +-----------------+------------------------------------------------------+
 |  \+ or UpArrow  | Increment step along constant axis                   |
 +-----------------+------------------------------------------------------+

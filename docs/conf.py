@@ -19,21 +19,21 @@ import sys
 import os
 
 
-sys.path.insert(0, os.path.abspath('../MJOLNIR/'))
-sys.path.insert(0, os.path.abspath('../MJOLNIR/Geometry'))
-sys.path.insert(0, os.path.abspath('../MJOLNIR/Statistics'))
-sys.path.insert(0, os.path.abspath('../MJOLNIR/Data'))
+sys.path.append(os.path.abspath('../MJOLNIR'))
+sys.path.append(os.path.abspath('../MJOLNIR/Geometry'))
+sys.path.append(os.path.abspath('../MJOLNIR/Statistics'))
+sys.path.append(os.path.abspath('../MJOLNIR/Data'))
 
 # -- Project information -----------------------------------------------------
 
 project = u'MJOLNIR'
-copyright = u'2019, Jakob Lass'
+copyright = u'2020, Jakob Lass'
 author = u'Jakob Lass'
 
 # The short X.Y version
-version = u'1.0.8'
+version = u'1.1.10'
 # The full version, including alpha/beta/rc tags
-release = u'1.0.8'
+release = u'1.1.10'
 
 
 
@@ -57,7 +57,8 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
     'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx'
+    'sphinx.ext.intersphinx',
+    'sphinx.ext.napoleon'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -182,7 +183,7 @@ texinfo_documents = [
 todo_include_todos = True
 autoclass_content = "both"
 
-autodoc_mock_imports = ['matplotlib', 'matplotlib.pyplot','shapely']
+autodoc_mock_imports = ['matplotlib', 'matplotlib.pyplot','shapely','mpl_toolkits','ufit']
 
 
 

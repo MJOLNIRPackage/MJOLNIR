@@ -1,34 +1,38 @@
 sudo: required
-dist: trusty
+dist: xenial
+services:
+  - xvfb
 
 language: python
 
 python:
-  - "2.7"
   - "3.5"
   - "3.6"
-#  - "3.7"
-
+  - "3.7"
+  - "3.8"
+  
 
 #before_install:
 #- sudo apt-get -qq update && sudo apt-get install -y --no-install-recommends texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
 
 
 before_script: # configure a headless display to test plot generation
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
+#  - xvfb-run --server-args="-screen 0 1024x768x24"
   - sleep 3 # give xvfb some time to start
+#  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x24"
+
 
 install:
-  - pip install pytest>=3.6 pycodestyle python-coveralls pytest_cov==2.5
+  - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+  - pip install --upgrade pip
   - pip install .
 #  - pip install -r requirements.txt
 
 script: 
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
-    then py.test MJOLNIR/ -vv --cov MJOLNIR;
-    else py.test MJOLNIR/ -vv;
-    fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov=MJOLNIR/; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test MJOLNIR/ -vv --ignore=MJOLNIR/CommandLineScripts/MJOLNIRHistory.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIR3DView.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRConvert.py; fi
+  - if [[ $TRAVIS_PYTHON_VERSION > 3.6 ]]; then py.test MJOLNIR/ -vv; fi
+  - if [[ $TRAVIS_PYTHON_VERSION < 3.5 ]]; then py.test MJOLNIR/ -vv; fi
 
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];

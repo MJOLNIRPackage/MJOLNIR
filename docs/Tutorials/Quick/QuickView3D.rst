@@ -6,9 +6,10 @@ For the initial overview of what has been measured and for viewing some features
    :linenos:
 
    from MJOLNIR.Data import DataSet
+   import numpy as np
    
    # Location of raw data file. Can also be given as a single string
-   fileName = ['/Path/To/Data/camea2018n000136.hdf','/home/lass/Dropbox/PhD/CAMEAData/camea2018n000137.hdf']
+   fileName = ['/Path/To/Data/camea2018n000136.hdf','/Path/To/Data/camea2018n000137.hdf']
    # Define the DataSet object and provide file(s)
    ds = DataSet.DataSet(dataFiles=fileName)
    # Run the converter. This automatically generates nxs-file(s) in location
@@ -17,7 +18,9 @@ For the initial overview of what has been measured and for viewing some features
    
    # With saveFile = False, converted files are not saved to disk but stays
    # only in RAM. 
-   
+   mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
+   mask[:,:,:3]=True
+   ds.mask = mask
    
    # Plotting data quickly in equi-sized voxels can be done by
    Viewer = ds.View3D(0.03,0.03,0.05)
@@ -27,14 +30,14 @@ For the initial overview of what has been measured and for viewing some features
    # coordinates (orthogonal and in units of 1/AA) by issuing rlu=False above.
    
    Viewer.caxis=(1e-7,2.5e-6)
-   # Without any intervention data is usualy plotted on a useless coler scale.
-   # This is countered by specifying min and max for color by the call above.
+   # Without any intervention data is usually plotted on a useless colour scale.
+   # This is countered by specifying min and max for colour by the call above.
    # Alternatively, one can provide this as input to View3D 
    
    # Set title of plot
    Viewer.ax.set_title('Magnon ComponentA3Scan')
    
-   # Change to plane number 10. As default, the viewer cuts for contant energy
+   # Change to plane number 44. As default, the viewer cuts for contant energy
    # and with a binning of 8 pixels/segment around 64 planes are available.
    Viewer.setPlane(44)
    

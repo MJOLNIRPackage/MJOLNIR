@@ -1,9 +1,23 @@
-Optimizing of the plotA3A4 rountine
------------------------------------
-In order to make the method *plotA3A4* usefull in a practical mannor, it needs to be somewhat fast in its computation. Otherwise, one will not use it and instead use binning, or even worse another program! And as it is already mentioned in the documentation, the computation time for generating all pixels individually for the methods plotA3A4 and plotQPatches is too long for practical use. Thus, an optimization of the underlying algorithm made sense to persue. Before changing any code, the end test was set up: By first running the old method and then the new, two results are generated and they are checked to be idential. Is so, and the with a speed-up, the goal is reached.
+Optimizing of the plotA3A4 routine
+----------------------------------
+In order to make the method *plotA3A4* useful in a practical manner, 
+it needs to be somewhat fast in its computation. Otherwise, one will 
+not use it and instead use binning, or even worse another program! 
+And as it is already mentioned in the documentation, the computation 
+time for generating all pixels individually for the methods plotA3A4 
+and plotQPatches is too long for practical use. Thus, an optimization 
+of the underlying algorithm made sense to pursue. Before changing any 
+code, the end test was set up: By first running the old method and 
+then the new, two results are generated and they are checked to be 
+identical. Is so, and the with a speed-up, the goal is reached.
 
 
-Thus, before headlessly trying to perform optimization, a test of the current speed is needed. The following is a dump of times for the un-optimized function using four files and one plane with 8 subplanes (T0Phonon10meV.nxs, T0Phonon10meV90A4InterlaceA3.nxs, T0Phonon10meV93_5A4.nxs, and T0Phonon10meV93_5A4InterlaceA3.nxs, planes 8 through 15):
+Thus, before headlessly trying to perform optimization, a test of the 
+current speed is needed. The following is a dump of times for the 
+un-optimized function using four files and one plane with 8 
+sub-planes (T0Phonon10meV.nxs, T0Phonon10meV90A4InterlaceA3.nxs, 
+T0Phonon10meV93_5A4.nxs, and T0Phonon10meV93_5A4InterlaceA3.nxs, 
+planes 8 through 15):
 
 +-------------------------+----------------+------------------+
 |Function                 | Time [s]       | Uncertainty [s]  |
@@ -43,7 +57,12 @@ From this it is clear that three functions are to be looked at: *voronoiTessella
 
 Voronoi Tessellation subroutine
 -------------------------------
-Individual functions are timed by the using *my_timing_N* decorator. This allows for a partitioning of the program into smaller pieces that are easier to be optimized individually. Also when chaning code in these sub-functions, the test was of course that the output is identical to the old one. This method is not the optimal for speeding up the code as it is most probable that chaning larger coding structures might allow for a quicker speedup. 
+Individual functions are timed by the using *my_timing_N* decorator. This allows 
+for a partitioning of the program into smaller pieces that are easier to be 
+optimized individually. Also when changing code in these sub-functions, the test 
+was of course that the output is identical to the old one. This method is not the 
+optimal for speeding up the code as it is most probable that changing larger coding 
+structures might allow for a quicker speed-up. 
 
 Below is a table of the resulting computational times for the tests used showing a clear speed-up of around 1.7 for real data. 
 
@@ -59,6 +78,10 @@ Below is a table of the resulting computational times for the tests used showing
 |4 Data files and 8 planes ``*``| 10.93 :math:`\pm` 0.08| 6.3  :math:`\pm` 0.2  | 1.72 :math:`\pm` 0.06 |
 +-------------------------------+-----------------------+-----------------------+-----------------------+
 
-``*``: setup from above.
+``*``: set-up from above.
 
-The speed-up comes mainly from two changes; when generating the return data the intersections points of all of the polygons where recalculated while only the polygons cut by the boundary needed to be calculated. Secondly, when testing if all data points are within the boundary a list comprehension is changed into the vectorized *contains* function from the *shapely.vectorized* sub-library.
+The speed-up comes mainly from two changes; when generating the return data the 
+intersections points of all of the polygons where recalculated while only the 
+polygons cut by the boundary needed to be calculated. Secondly, when testing if 
+all data points are within the boundary a list comprehension is changed into the 
+vectorized *contains* function from the *shapely.vectorized* sub-library.

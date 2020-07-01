@@ -39,3 +39,8 @@ TestData/A4/*
 
 Tutorials/*.nxs
 Report/
+
+.coverage*
+*/.coverage*
+
+coverage_html_report

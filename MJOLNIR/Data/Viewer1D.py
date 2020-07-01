@@ -131,7 +131,7 @@ class Viewer1D: # pragma: no cover
         
         Args:
             
-            - XData (list): List of x-valies in shape (m,n) for m data series and n scan points.
+            - XData (list): List of x-values in shape (m,n) for m data series and n scan points.
             
             - YData (list): List of y-values in shape (m,n) for m data series and n scan points.
             
@@ -139,7 +139,7 @@ class Viewer1D: # pragma: no cover
             
         Kwargs:
             
-            - fitFunction (FittingFunction): Custumized object to perform fitting (default Gaussian).
+            - fitFunction (FittingFunction): Customized object to perform fitting (default Gaussian).
             
             - xLabel (list): X label text in shape (m) for m scan parameters (default '', nothing plotted).
             
@@ -194,7 +194,7 @@ class Viewer1D: # pragma: no cover
             dataLabel = [str(x) for x in np.arange(len(YData))]    
         
         if len(xLabel)!=len(XData) and xLabel!='':
-            raise AttributeError('Provided x-labels do not match number of x-values. ({} labels and {} x-values)'.format(len(xLabel),len(self.XData)))
+            raise AttributeError('Provided x-labels do not match number of x-values. ({} labels and {} x-values)'.format(len(xLabel),len(XData)))
         if len(dataLabel)!=len(YData) and dataLabel!='':
             raise AttributeError('Provided data labels do not match number of y values. ({} labels and {} x-values)'.format(len(dataLabel),len(YData)))
         
@@ -284,7 +284,7 @@ class Viewer1D: # pragma: no cover
                     
                 labels[self.xID] = '*'+labels[self.xID]
                 self.ax.legend(labels)
-                self.ax.legend_.draggable(True)
+#                self.ax.legend_.draggable(True)
                 
         if not self.xLabel is '':
             self.ax.set_xlabel(self.xLabel[self.xID])

@@ -34,10 +34,10 @@ def Tester():
     EnergyBins = np.linspace(np.min(Energies),np.max(Energies),31)
     
     fig = plt.figure(figsize=(14,6))
-    
+    ax = fig.gca()
     ax,DataLists,Bins,BinCenters,Offsets = \
     ds.plotCutQELine(QPoints=QPoints, width=width, minPixel=minPixel, \
-                     fig=fig, EnergyBins=EnergyBins)
+                     ax=ax, EnergyBins=EnergyBins)
     
     # Change the colorbar of the plot
     ax.set_clim(0,2e-5)
@@ -47,11 +47,11 @@ def Tester():
 title = 'Cutting through data in Q and E'
 
 introText = 'After the initial viewing of the data acquired through `Viewer3D <Viewer3D>`_ the next step is to perform cuts. '\
-+'Normally, what is wanted is the intensity measured as a function of :math:`\\vec{Q}` and energy in a 2D plot along a sepcified '\
++'Normally, what is wanted is the intensity measured as a function of :math:`\\vec{Q}` and energy in a 2D plot along a specified '\
 +'direction through space. Often these are specified using the RLU units and questions about the number neutrons hitting a '\
-+'point or if one actually has covered reicprocal space in such a fasion that an article picture can be generated. All of this can '\
++'point or if one actually has covered reciprocal space in such a fasion that an article picture can be generated. All of this can '\
 +'be check through the use of the plotCutQELine method as shown below. This method creates a dedicated axis element (and figure if '\
-+'needed) containing the intensity as function of position in :math:`\\vec{Q}` and energy with a given widht, certain height in energy '\
++'needed) containing the intensity as function of position in :math:`\\vec{Q}` and energy with a given width, certain height in energy '\
 +'and a minimum pixel size along the :math:`\\vec{Q}` direction. As indicated by the name, one can provide a list of :math:`\\vec{Q}` points '\
 +'to be visited, with the only restriction that they should contain data and that they are connected. That is, providing three positions '\
 +'results in a plot with two segments connecting point 1 and 2 as well as 2 and 3.'
@@ -60,7 +60,7 @@ outroText = '\nWith the above code the 2D cut through the MnF2 data set has been
 +'python version using the mouse allows for further study of the data. Hovering over a given pixel reveals the position as '\
 +'well as the intensity. Further, clicking (with the pointer) prints the position, intensity, and specific informations about '\
 +'how many neutron counts (cts), total normalization (Norm), total monitor (Mon), and pixels binned together (NormCount) in that bin. '\
-+'Many further tweaks are possible through the use of kwargs as explaind in the `Advanced plotCutQELine <../Advanced/plotCutQELine.html>`_ tutorial.'\
++'Many further tweaks are possible through the use of kwargs as explained in the `Advanced plotCutQELine <../Advanced/plotCutQELine.html>`_ tutorial.'\
 +'\n\n'\
 +'.. figure:: plotCutQELineMnF2.png\n  :width: 95%\n  :align: center\n\n'\
 +'\n\nIn the code above, the function fileListGenerator is further explained in `Tools Tutorials <../Scripting.html>`_.'

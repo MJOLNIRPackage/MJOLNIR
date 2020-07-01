@@ -1,4 +1,4 @@
-import sys
+import sys,os
 sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../..')
@@ -8,8 +8,8 @@ from MJOLNIR import _tools
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import os
 import scipy.optimize
+from scipy.stats import norm
 import h5py as hdf
 import datetime
 import pytest
@@ -26,7 +26,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
         Kwargs:
             
-            - position (float 3d): Position of the instrument alwasy at origin(?) (default (0,0,0))
+            - position (float 3d): Position of the instrument always at origin (default (0,0,0))
 
             - wedges (list of wedges or single wedge): Wedge or list of wedges which the instrument consists of (default empty)
 
@@ -123,7 +123,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         return string
 
     def initialize(self):
-        """Method to initialize and perform analytical calulations of scattering quantities. 
+        """Method to initialize and perform analytical calculations of scattering quantities. 
         Initializes:
 
             -  A4: Matrix holding pixel A4. Shape (len(Wedges),len(detectors),pixels)
@@ -136,6 +136,8 @@ class Instrument(GeometryConcept.GeometryConcept):
             raise ValueError('Instrument does not contain any wedges and can thus not be initialized.')
         self._A4 = []
         self._Ef = []
+        self._pixelPosition = []
+        self._analyserPosition = []
         beamDirection = np.array([0.0,1.0,0.0])
 
         for wedge in self.wedges:
@@ -149,10 +151,11 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             A6 = [np.arccos(np.divide(np.einsum('ij,ij->i',analyserPixelPositions[i],relPos[i]),
                 np.linalg.norm(analyserPixelPositions[i],axis=1)*np.linalg.norm(relPos[i],axis=1))) for i in range(len(analyserPixelPositions))]
-            Ef = [np.power(factorLambdasqrtE/(wedge.analysers[0].d_spacing*2.0*np.sin(A6Sub/2.0)),2.0) for A6Sub in A6] ## TODO: d_spacing Make generic
+            Ef = [np.power(factorLambdasqrtE/(wedge.analysers[0].d_spacing*2.0*np.sin(A6Sub/2.0)),2.0) for A6Sub in A6] 
             self._A4.append(A4)
             self._Ef.append(Ef)
-
+            self._pixelPosition.append(detectorPixelPositions)
+            self._analyserPosition.append(analyserPixelPositions)
 
 
 
@@ -305,7 +308,8 @@ class Instrument(GeometryConcept.GeometryConcept):
             f.write(string)
 
     @_tools.KwargChecker()
-    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/',tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'],plot=False,mask=True):
+    def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/', 
+    tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
         Generates 4 different tables:
@@ -334,376 +338,390 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - mask (boolean): If True the lower 100 pixels are set to 0
 
+            - adaptiveBinning (boolean): If true pixel bins are asigned to give same Gaussian area of intensity for all pixels (default False)
+
         .. warning::
-            At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Guassian width of Vanadium peaks.
+            At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Gaussian width of Vanadium peaks.
 
         """
         self.initialize()
         
-        VanFile = hdf.File(Vanadiumdatafile,'r')
-        if not A4datafile == False:
-            A4File = hdf.File(A4datafile,'r')
-            A4FileInstrument = getInstrument(A4File)
-            A4FileInstrumentType = A4FileInstrument.name.split('/')[-1]
+        with hdf.File(Vanadiumdatafile,'r') as VanFile:
+            if not A4datafile == False: # pragma: no cover
+                A4File = hdf.File(A4datafile,'r')
+                A4FileInstrument = getInstrument(A4File)
+                A4FileInstrumentType = A4FileInstrument.name.split('/')[-1]
 
 
-        VanFileInstrument = getInstrument(VanFile)
-        
-
-        VanFileInstrumentType = VanFileInstrument.name.split('/')[-1]
-        
-        if not A4datafile == False:
-            if VanFileInstrumentType == A4FileInstrumentType:
-                InstrumentType = VanFileInstrumentType
-            else:
-                raise AttributeError('The provided Vanadium and Powder files does not have the same instrument type ({} and {} respectively).'.format(VanFileInstrumentType,A4FileInstrumentType))        
-        InstrumentType = VanFileInstrumentType
-        if InstrumentType=='CAMEA':
-
-            if savelocation[-1]!='/':
-                savelocation+='/'
+            VanFileInstrument = getInstrument(VanFile)
             
-            Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)
+
+            VanFileInstrumentType = VanFileInstrument.name.split('/')[-1]
             
-            if True: #Mask pixels where spurion is present
-                Data[:,:,:100]=0
-
-            Ei = np.array(VanFileInstrument.get('monochromator/energy')).astype(float)
-            analysers = 8
-            pixels = self.wedges[0].detectors[0].pixels
-            detectors = len(self.A4[0])*len(self.A4)
-            detectorsorInWedge = len(self.A4[0])
-            wedges = len(self.A4)
-            if pixels!=Data.shape[2]:
-                raise ValueError('The number of pixels ({}) in the data file does not match instrument description ({})!'.format(pixels,Data.shape[2]))
-
-            bins = []
-            for table in tables:
-                if table=='Unbinned':
-                    bins.append(pixels)
-                elif table=='PrismaticHighDefinition':
-                    bins.append(8)
-                elif table=='PrismaticLowDefinition':
-                    bins.append(3)
-                elif table=='Single':
-                    bins.append(1)
-                elif isinstance(table,int):
-                    bins.append(table)
+            if not A4datafile == False: # pragma: no cover
+                if VanFileInstrumentType == A4FileInstrumentType:
+                    InstrumentType = VanFileInstrumentType
                 else:
-                    raise AttributeError("Provided table attribute ({}) not recognized, should be 'Unbinned','PrismaticHighDefinition','PrismaticLowDefinition','Single', and/or integer.".format(table))
-            if len(bins)==0:
-                raise AttributeError("No binning has been chosen for normalization routine.")
-            # Initial finding of peaks
-            peakPos = np.ones((detectors,analysers),dtype=float)*(-1)
-            peakVal = np.zeros_like(peakPos,dtype=float)
-            peakWidth = np.ones_like(peakPos,dtype=float)
-            peakBackg = np.zeros_like(peakPos,dtype=float)
+                    raise AttributeError('The provided Vanadium and Powder files does not have the same instrument type ({} and {} respectively).'.format(VanFileInstrumentType,A4FileInstrumentType))        
+            InstrumentType = VanFileInstrumentType
+            if InstrumentType=='CAMEA':
 
-            # Looking only at pixel direction (integration over E)
-            ESummedData = Data.sum(axis=1)
-            dataSubtracted = np.array(ESummedData.copy(),dtype=float)
+                if savelocation[-1]!='/':
+                    savelocation+='/'
+                
+                Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)
+                
+                if False: #Mask pixels where spurion is present
+                    Data[:,:,:100]=0
 
-            
+                Ei = np.array(VanFileInstrument.get('monochromator/energy')).astype(float)
+                analysers = 8
+                pixels = self.wedges[0].detectors[0].pixels
+                detectors = len(self.A4[0])*len(self.A4)
+                detectorsorInWedge = len(self.A4[0])
+                wedges = len(self.A4)
+                if pixels!=Data.shape[2]:
+                    raise ValueError('The number of pixels ({}) in the data file does not match instrument description ({})!'.format(pixels,Data.shape[2]))
 
-            if plot: # pragma: no cover
-                plt.ioff()
-                plt.figure(figsize=(16,11))
-                if not os.path.exists(savelocation+'Raw'):
-                    os.makedirs(savelocation+'Raw')
-                for i in range(detectors):
-                    plt.clf()
-                    plt.scatter(np.arange(pixels),np.sum(Data[:][i],axis=0),s=5)
-                    plt.ylim(0,np.max(np.sum(Data[i],axis=0))*1.1)
-                    plt.xlabel('Pixel')
-                    plt.ylabel('Intensity [arg]')
-                    plt.title('Vanadium normalization detector '+str(i))
-                    plt.tight_layout()
-                    plt.savefig(savelocation+'Raw/detector'+str(i)+'.png',format='png', dpi=150)
-            
-            for j in range(analysers):
-                peakPos[:,j],peakVal[:,j] = findPeak(dataSubtracted) # Find a peak in data
-                for i in range(detectors):
-                    guess = [peakVal[i,j],float(peakPos[i,j]),20,np.min(ESummedData[i])]
-                   
-                    res = scipy.optimize.curve_fit(Gaussian,np.arange(ESummedData.shape[1]),dataSubtracted[i,:],p0=[guess])
-                    peakPos[i,j] = res[0][1]
-                    peakVal[i,j] = res[0][0]
-                    peakWidth[i,j]= res[0][2]
-                    if peakPos[i,j]>ESummedData.shape[1]:
-                        raise ValueError('Peak found at {} for analyser {} and detector {}'.format(peakPos[i,j],j,i))
-                    # Generate peak as the one fitted and subtract it from signal
-                    x=np.arange(pixels)
-                    y = Gaussian(x,peakVal[i,j],peakPos[i,j],peakWidth[i,j],peakBackg[i,j])
-                    peak = y>peakVal[i,j]*0.05
-                    dataSubtracted[i,peak]= 0
-            
-            if plot: # pragma: no cover
-                x = np.arange(pixels)
-                for k in range(wedges):
-                    plt.clf()
-                    plt.suptitle('Fits')
-                    for i in range(detectorsorInWedge):
-                        y=np.zeros_like(x,dtype=float)
-                        plt.subplot(4, 4, i+1)
-                        plt.scatter(np.arange(pixels),ESummedData[i+13*k],s=4)
-                        for j in range(analysers):
-                            y += Gaussian(x,peakVal[i+13*k,j],peakPos[i+13*k,j],peakWidth[i+13*k,j],peakBackg[i+13*k,j])
-                            plt.plot([peakPos[i+13*k,j],peakPos[i+13*k,j]],[0,np.max(ESummedData[i+13*k])*1.1])
-                        plt.plot(x,y,'k')
+                bins = []
+                for table in tables:
+                    if isinstance(table,int):
+                        bins.append(table)
+                    else:
+                        raise AttributeError("Provided table attribute ({}) not recognized an integer.".format(table))
+                if len(bins)==0:
+                    raise AttributeError("No binning has been chosen for normalization routine.")
+                # Initial finding of peaks
+                peakPos = np.ones((detectors,analysers),dtype=float)*(-1)
+                peakVal = np.zeros_like(peakPos,dtype=float)
+                peakWidth = np.ones_like(peakPos,dtype=float)
+                peakBackg = np.zeros_like(peakPos,dtype=float)
+
+                # Looking only at pixel direction (integration over E)
+                ESummedData = Data.sum(axis=1)
+                dataSubtracted = np.array(ESummedData.copy(),dtype=float)
+
+                
+
+                if plot: # pragma: no cover
+                    plt.ioff()
+                    plt.figure(figsize=(16,11))
+                    if not os.path.exists(savelocation+'Raw'):
+                        os.makedirs(savelocation+'Raw')
+                    for i in range(detectors):
+                        plt.clf()
+                        plt.scatter(np.arange(pixels),np.sum(Data[:][i],axis=0),s=5)
+                        plt.ylim(0,np.max(np.sum(Data[i],axis=0))*1.1)
                         plt.xlabel('Pixel')
                         plt.ylabel('Intensity [arg]')
-                        plt.title('Detector {}'.format(i+13*k))
-                        plt.ylim(0,np.max(ESummedData[i+13*k])*1.1)
-
-                    plt.tight_layout()
-                    plt.savefig(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
-                    print('Saving: {}'.format(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png'))
-
-            
-            ## Sort the positions such that peak 1 is the furthermost left peak and assert diff(pos)>100
-            sortedPeakPosArg = np.argsort(peakPos,axis=1)
-            sortedPeakPos = np.sort(peakPos,axis=1)
-            sortedPeakPos[np.logical_or(sortedPeakPos>pixels,sortedPeakPos<0)]=5*pixels # High number
-
-            sortedPeakPosArg2 = np.argsort(sortedPeakPos,axis=1)
-            sortedPeakPos.sort(axis=1)
-
-            #differences = np.diff(sortedPeakPos,axis=1)
-            #outliers = np.zeros_like(peakPos,dtype=bool)
-            #outliers[:,:-1]=differences<pixels/100
-            #sortedPeakPos[outliers]=5*pixels
-            sortedPeakPosArg3 = np.argsort(sortedPeakPos,axis=1)
-            argSort = np.array([sortedPeakPosArg[i,sortedPeakPosArg2[i,sortedPeakPosArg3[i,:]]] for i in range(detectors)])
-            sortedPeakPos = np.sort(sortedPeakPos,axis=1)
-            peaks=np.sum(sortedPeakPos<7*pixels,axis=1) # Number of peaks found
-
-            if np.any(peaks!=analysers):
-                raise ValueError('Wrong number of peaks, {} found in detector(s): {}\nIn total error in {} detector(s).'.format(peaks[peaks!=analysers],np.arange(peaks.shape[0])[peaks!=analysers],np.sum(peaks!=analysers)))
-
-            pixelpos  = np.array([peakPos[i,argSort[i]] for i in range(detectors)])
-            widths    = np.array([peakWidth[i,argSort[i]] for i in range(detectors)])
-
-             ## Define the active detector area
-            sigmas = NumberOfSigmas # Active area is all pixels inside of pm 3 sigmas
-
-            lowerPixel = pixelpos-sigmas*widths
-            upperPixel = pixelpos+sigmas*widths
-
-            split = (lowerPixel[:,1:]-upperPixel[:,:-1])/2+upperPixel[:,:-1]
-
-            extendedSplit=np.zeros((split.shape[0],split.shape[1]+2))
-            extendedSplit[:,1:-1] = split
-            extendedSplit[:,-1]=np.ones((split.shape[0]))*pixels
-
-            x=np.arange(pixels)
-            activePixels = np.zeros((detectors,analysers,pixels),dtype=bool)
-            for i in range(detectors):
-                if plot: # pragma: no cover
-                    plt.clf()
-                    plt.title('Detector {} Active pixels'.format(i))
-                    plt.scatter(x,ESummedData[i],s=4,color='black')
+                        plt.title('Vanadium normalization detector '+str(i))
+                        plt.tight_layout()
+                        plt.savefig(savelocation+'Raw/detector'+str(i)+'.png',format='png', dpi=150)
+                
                 for j in range(analysers):
-                    activePixels[i,j] = np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])
-                    if plot: plt.scatter(x[np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])], # pragma: no cover
-                        ESummedData[i,np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],s=4,color='red')
-                if plot: # pragma: no cover
-                    plt.ylim(0,np.max(ESummedData[i])*1.1)
-                    plt.xlabel('Pixel')
-                    plt.ylabel('Intensity [arg]')
-                    plt.savefig(savelocation+'/Raw/Active_'+str(i)+'.png',format='png', dpi=150)
-
-            Eguess = np.zeros_like(peakPos,dtype=int)
-            for i in range(Eguess.shape[0]):
-                for j in range(analysers):
-                    Eguess[i,j]=np.argmax(Data[i,:,int(pixelpos[i,j])])
-            
-            fitParameters = []
-            activePixelRanges = []
-            for detpixels in bins:
-                if detpixels*analysers*3>len(Ei):
-                    warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3),category=RuntimeWarning,stacklevel=2)
-                    
-                if plot: # pragma: no cover
-                    EiX = np.linspace(Ei[0],Ei[-1],len(Ei))
-                    if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
-                        os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
-                    colors=np.zeros((3,detpixels))
-                    if pixels==1:
-                        colors[:,0]=[0.65,0.2,0.45]
-                    else:
-                        colors[0]=np.linspace(0.3,1.0,detpixels)
-                        colors[1]=np.linspace(0.2,0.2,detpixels)
-                        colors[2]=np.linspace(0.8,0.1,detpixels)
-                    plt.suptitle('{} pixels'.format(detpixels))
-
-                fittedParameters=np.zeros((detectors,analysers,detpixels,4))
-                activePixelDetector=[]
-                for i in range(detectors):
-                    activePixelAnalyser = []
-                    if plot: # pragma: no cover
-                        plt.clf()
-                        plt.title('Detector {}, {} pixels'.format(i,detpixels))
-                        x =np.linspace(0,detpixels,len(Ei))
-                    for j in range(analysers):
-                        center = int(round(sortedPeakPos[i,j]))
-                        width = activePixels[i,j].sum()
-                        pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
-                        for k in range(detpixels):
-                            binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
-                            ECenter = Ei[np.argmax(binPixelData)]
-                            ECutLow = ECenter-0.4
-                            ECutHigh= ECenter+0.4
-                            TopId = np.argmin(np.abs(Ei-ECutHigh))
-                            BotId = np.argmin(np.abs(ECutLow-Ei))
-                            if TopId<BotId:
-                                _ = TopId
-                                TopId = BotId
-                                BotId = _
-                            binPixelData = binPixelData[BotId:TopId]
-                            EiLocal = Ei[BotId:TopId]
-                            Bg = np.min(binPixelData[[0,-1]])
-                            guess = np.array([np.max(binPixelData), ECenter,0.005,Bg],dtype=float)
-                            try:
-                                res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
-                                
-                            except:
-                                if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
-                                    os.makedirs(savelocation+'/{}_pixels'.format(detpixels))
-                                if not plot:
-                                    plt.ioff
-                                plt.figure()
-                                plt.scatter(EiLocal,binPixelData)
-                                plt.plot(Ei,Gaussian(Ei,*guess))
-                            
-                                plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
-                                plt.close()
-
-                            fittedParameters[i,j,k]=res[0]
-                            if plot: # pragma: no cover
-                                plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
-                                plt.scatter(EiLocal,binPixelData,color=colors[:,k])
-                        activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
-                    activePixelDetector.append(activePixelAnalyser)
-                    if plot: # pragma: no cover
-                        plt.grid('on')
-                        plt.xlabel('Ei [meV]')
-                        plt.ylabel('Weight [arb]')
-                        plt.tight_layout(rect=(0,0,1,0.95))
-                        plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=150)
-                        print('Saving: {}'.format(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i)))
-
-                if not A4datafile is False: # pragma: no cover
-                    # Perform A4 calibration
-                    A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
-                    EiFile = np.array(A4FileInstrument.get('monochromator/energy'))[0]
-                    A4FileIntensity = np.array(A4FileInstrument.get('detector/data'))
-
-                    factorsqrtEK = 0.694692
-                    ki = np.sqrt(EiFile)*factorsqrtEK
-
-                    Qvec = 1.8049 # Angstrom <----------------------CHANGE!
-
-                    # q = 2 k sin(theta)
-                    theta = np.arcsin(Qvec/(2*ki))
-    
-                    A4 = np.array(self.A4)
-                    A4=A4.reshape(A4.shape[0]*A4.shape[1],A4.shape[2],order='C')
-                    EPrDetector = len(self.wedges[0].detectors[0].split)+1
-
-                    
-                    pixelList = np.array(activePixelDetector).reshape(A4.shape[0],EPrDetector,detpixels+1).astype(int)
-                    PixelEdge = np.array([[pixelList[:,:,i],pixelList[:,:,i+1]] for i in range(detpixels)]).transpose((2,3,0,1))
-                    PixelEnergy = fittedParameters[:,:,:,1].reshape(A4.shape[0],EPrDetector*detpixels)
-
-                    ## Find detector analyser combi corresponding to energy
-                    SoftwarePixel = np.array([np.argmin(np.abs(x-EiFile)) for x in PixelEnergy])
-
-                    MeanA4Instr = np.zeros((A4.shape[0],EPrDetector*detpixels))
-                    MeanIntensity = np.zeros((len(A4FileValue),A4.shape[0],EPrDetector*detpixels))
-                    for i in range(A4.shape[0]): # For each detector
-                        for j in range(EPrDetector):
-                            for k in range(detpixels):
-                                MeanIntensity[:,i,j*detpixels+k] = np.sum(A4FileIntensity[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
-                                MeanA4Instr[i,j*detpixels+k] = np.mean(A4[i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]])
-                                
-                    x = A4FileValue
-                    A4FitValue = np.zeros((A4.shape[0]))
-
-                    
-                    if plot==True:
-                        plt.clf()
-                    for i in range(104):
-                        y = MeanIntensity[:,i,SoftwarePixel[i]]
-                        if plot==True:
-                            plt.scatter(x,y)
-                        
-                        guess=[np.max(y),x[np.argmax(y)],3,0]
+                    peakPos[:,j],peakVal[:,j] = findPeak(dataSubtracted) # Find a peak in data
+                    for i in range(detectors):
+                        guess = [peakVal[i,j],float(peakPos[i,j]),20,np.min(ESummedData[i])]
                         try:
-                            fit = scipy.optimize.curve_fit(Gaussian,x,y,p0=[guess])
-                        except:
-                            A4FitValue[i]=guess[1]
+                            res = scipy.optimize.curve_fit(Gaussian,np.arange(ESummedData.shape[1]),dataSubtracted[i,:],p0=[guess])
+                        except RuntimeError:
+                            raise RuntimeError('Fitting did not converge at detector {} analyser {}'.format(i,j))
+                        peakPos[i,j] = res[0][1]
+                        peakVal[i,j] = res[0][0]
+                        peakWidth[i,j]= res[0][2]
+                        if peakPos[i,j]>ESummedData.shape[1]:
+                            raise ValueError('Peak found at {} for analyser {} and detector {}'.format(peakPos[i,j],j,i))
+                        # Generate peak as the one fitted and subtract it from signal
+                        x=np.arange(pixels)
+                        y = Gaussian(x,peakVal[i,j],peakPos[i,j],peakWidth[i,j],peakBackg[i,j])
+                        peak = y>peakVal[i,j]*0.05
+                        dataSubtracted[i,peak]= 0
+                
+                if plot: # pragma: no cover
+                    x = np.arange(pixels)
+                    for k in range(wedges):
+                        plt.clf()
+                        plt.suptitle('Fits')
+                        for i in range(detectorsorInWedge):
+                            y=np.zeros_like(x,dtype=float)
+                            plt.subplot(4, 4, i+1)
+                            plt.scatter(np.arange(pixels),ESummedData[i+13*k],s=4)
+                            for j in range(analysers):
+                                y += Gaussian(x,peakVal[i+13*k,j],peakPos[i+13*k,j],peakWidth[i+13*k,j],peakBackg[i+13*k,j])
+                                plt.plot([peakPos[i+13*k,j],peakPos[i+13*k,j]],[0,np.max(ESummedData[i+13*k])*1.1])
+                            plt.plot(x,y,'k')
+                            plt.xlabel('Pixel')
+                            plt.ylabel('Intensity [arg]')
+                            plt.title('Detector {}'.format(i+13*k))
+                            plt.ylim(0,np.max(ESummedData[i+13*k])*1.1)
+
+                        plt.tight_layout()
+                        plt.savefig(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png',format='png', dpi=150)
+                        print('Saving: {}'.format(savelocation+r'/Raw/Fit_wedge_'+str(k)+'.png'))
+
+                
+                ## Sort the positions such that peak 1 is the furthermost left peak and assert diff(pos)>100
+                sortedPeakPosArg = np.argsort(peakPos,axis=1)
+                sortedPeakPos = np.sort(peakPos,axis=1)
+                sortedPeakPos[np.logical_or(sortedPeakPos>pixels,sortedPeakPos<0)]=5*pixels # High number
+
+                sortedPeakPosArg2 = np.argsort(sortedPeakPos,axis=1)
+                sortedPeakPos.sort(axis=1)
+
+                #differences = np.diff(sortedPeakPos,axis=1)
+                #outliers = np.zeros_like(peakPos,dtype=bool)
+                #outliers[:,:-1]=differences<pixels/100
+                #sortedPeakPos[outliers]=5*pixels
+                sortedPeakPosArg3 = np.argsort(sortedPeakPos,axis=1)
+                argSort = np.array([sortedPeakPosArg[i,sortedPeakPosArg2[i,sortedPeakPosArg3[i,:]]] for i in range(detectors)])
+                sortedPeakPos = np.sort(sortedPeakPos,axis=1)
+                peaks=np.sum(sortedPeakPos<7*pixels,axis=1) # Number of peaks found
+
+                if np.any(peaks!=analysers):
+                    raise ValueError('Wrong number of peaks, {} found in detector(s): {}\nIn total error in {} detector(s).'.format(peaks[peaks!=analysers],np.arange(peaks.shape[0])[peaks!=analysers],np.sum(peaks!=analysers)))
+
+                pixelpos  = np.array([peakPos[i,argSort[i]] for i in range(detectors)])
+                widths    = np.array([peakWidth[i,argSort[i]] for i in range(detectors)])
+
+                ## Define the active detector area
+                sigmas = NumberOfSigmas # Active area is all pixels inside of pm 3 sigmas
+
+                lowerPixel = pixelpos-sigmas*widths
+                upperPixel = pixelpos+sigmas*widths
+
+                split = (lowerPixel[:,1:]-upperPixel[:,:-1])/2+upperPixel[:,:-1]
+
+                extendedSplit=np.zeros((split.shape[0],split.shape[1]+2))
+                extendedSplit[:,1:-1] = split
+                extendedSplit[:,-1]=np.ones((split.shape[0]))*pixels
+
+                x=np.arange(pixels)
+                activePixels = np.zeros((detectors,analysers,pixels),dtype=bool)
+                for i in range(detectors):
+                    if plot: # pragma: no cover
+                        plt.clf()
+                        plt.title('Detector {} Active pixels'.format(i))
+                        plt.scatter(x,ESummedData[i],s=4,color='black')
+                    for j in range(analysers):
+                        activePixels[i,j] = np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])
+                        if plot: plt.scatter(x[np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])], # pragma: no cover
+                            ESummedData[i,np.logical_and(x>lowerPixel[i,j],x<upperPixel[i,j])],s=4,color='red')
+                    if plot: # pragma: no cover
+                        plt.ylim(0,np.max(ESummedData[i])*1.1)
+                        plt.xlabel('Pixel')
+                        plt.ylabel('Intensity [arg]')
+                        plt.savefig(savelocation+'/Raw/Active_'+str(i)+'.png',format='png', dpi=150)
+
+                Eguess = np.zeros_like(peakPos,dtype=int)
+                for i in range(Eguess.shape[0]):
+                    for j in range(analysers):
+                        Eguess[i,j]=np.argmax(Data[i,:,int(pixelpos[i,j])])
+                
+                fitParameters = []
+                activePixelRanges = []
+                for detpixels in bins:
+                    if detpixels*analysers*3>len(Ei):
+                        warnings.warn('Fitting might be unstable due to {} pixels being fitted using only {} energies ({} free parameters).'.format(detpixels,len(Ei),detpixels*analysers*3),category=RuntimeWarning,stacklevel=2)
+                        
+                    if plot: # pragma: no cover
+                        EiX = np.linspace(Ei[0],Ei[-1],len(Ei))
+                        if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
+                            os.makedirs(savelocation+'/{}_pixels'.format(detpixels)) 
+                        colors=np.zeros((3,detpixels))
+                        if pixels==1:
+                            colors[:,0]=[0.65,0.2,0.45]
                         else:
-                            A4FitValue[i] = fit[0][1]
+                            colors[0]=np.linspace(0.3,1.0,detpixels)
+                            colors[1]=np.linspace(0.2,0.2,detpixels)
+                            colors[2]=np.linspace(0.8,0.1,detpixels)
+                        plt.suptitle('{} pixels'.format(detpixels))
 
-                    if plot==True: # pragma: no cover
-                        if not os.path.exists(savelocation+'A4'):
-                            os.makedirs(savelocation+'A4')
-                        plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=150)
+                    fittedParameters=np.zeros((detectors,analysers,detpixels,4))
+                    activePixelDetector=[]
+                    for i in range(detectors):
+                        activePixelAnalyser = []
+                        if plot: # pragma: no cover
+                            plt.clf()
+                            plt.title('Detector {}, {} pixels'.format(i,detpixels))
+                            x =np.linspace(0,detpixels,len(Ei))
+                        for j in range(analysers):
+                            center = int(round(sortedPeakPos[i,j]))
+                            width = activePixels[i,j].sum()
+                            
+                            if adaptiveBinning: # Adaptive binning with equal Gaussian area for each pixel piece
 
-                    A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
+                                binStart,binEnd = [center-width/2.0,center+width/2.0]
+                                binMid = center#(binStart+binEnd)/2.0
 
-                    if plot==True: # pragma: no cover
-                        plt.clf()
-                        plt.scatter(range(A4.shape[0]),A4FitValue)
-                        plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
-                        plt.legend(['File','Geometry'])
-                        plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=150)
+                                binWidth = (binEnd-binStart)/(2.0*NumberOfSigmas)
+                                totalArea = norm.cdf(NumberOfSigmas)-norm.cdf(-NumberOfSigmas)
+                                areaOutside = norm.cdf(-NumberOfSigmas)
 
-                        diff = A4FitValue-MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi#+2*theta*180.0/np.pi
-                        plt.clf()
-                        plt.scatter(range(A4.shape[0]),diff)
-                        plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=150)
+                                areaPerBin = totalArea/detpixels
 
-                else: # Use nominal A4 values from calculation
-                    #A4FitValue = []
-                    #for i in range(8):
-                    #    for j in range(13):
-                    #        A4FitValue.append(-(i*8+j*0.55))
-                    #A4FitValue = np.array(A4FitValue)
-                    A4 = np.array(self.A4).reshape(104,1024)
-                    A4Pixel = []
+                                areaLeftOfBin = [areaOutside+n*areaPerBin for n in range(detpixels+1)]
+
+                                pixelAreas = np.round(norm.ppf(areaLeftOfBin)*binWidth+binMid).astype(int)
+                            else:
+                                pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
+
+                            for k in range(detpixels):
+                                binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
+                                ECenter = Ei[np.argmax(binPixelData)]
+                                ECutLow = ECenter-0.4
+                                ECutHigh= ECenter+0.4
+                                TopId = np.argmin(np.abs(Ei-ECutHigh))
+                                BotId = np.argmin(np.abs(ECutLow-Ei))
+                                if TopId<BotId:
+                                    _ = TopId
+                                    TopId = BotId
+                                    BotId = _
+                                binPixelData = binPixelData[BotId:TopId]
+                                EiLocal = Ei[BotId:TopId]
+                                Bg = np.min(binPixelData[[0,-1]])
+                                guess = np.array([np.max(binPixelData), ECenter,0.005,Bg],dtype=float)
+                                try:
+                                    res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
+                                    
+                                except: # pragma: no cover
+                                    if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
+                                        os.makedirs(savelocation+'/{}_pixels'.format(detpixels))
+                                    if not plot:
+                                        plt.ioff
+                                    plt.figure()
+                                    plt.scatter(EiLocal,binPixelData)
+                                    plt.plot(Ei,Gaussian(Ei,*guess))
+                                
+                                    plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
+                                    plt.close()
+
+                                fittedParameters[i,j,k]=res[0]
+                                fittedParameters[i,j,k,0] = np.sum(binPixelData) # Use sum of points as amplitude 25-03-2020 JL
+                                if plot: # pragma: no cover
+                                    plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k]),color='black')
+                                    plt.scatter(EiLocal,binPixelData,color=colors[:,k])
+                            activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
+                        activePixelDetector.append(activePixelAnalyser)
+                        if plot: # pragma: no cover
+                            plt.grid('on')
+                            plt.xlabel('Ei [meV]')
+                            plt.ylabel('Weight [arb]')
+                            plt.tight_layout(rect=(0,0,1,0.95))
+                            plt.savefig(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i),format='png',dpi=150)
+                            print('Saving: {}'.format(savelocation+'/{}_pixels/Detector{}.png'.format(detpixels,i)))
+
+                    if not A4datafile is False: # pragma: no cover
+                        # Perform A4 calibration
+                        A4FileValue = np.array(A4FileInstrument.get('detector/polar_angle'))
+                        EiFile = np.array(A4FileInstrument.get('monochromator/energy'))[0]
+                        A4FileIntensity = np.array(A4FileInstrument.get('detector/data'))
+
+                        factorsqrtEK = 0.694692
+                        ki = np.sqrt(EiFile)*factorsqrtEK
+
+                        Qvec = 1.8049 # Angstrom <----------------------CHANGE!
+
+                        # q = 2 k sin(theta)
+                        theta = np.arcsin(Qvec/(2*ki))
+        
+                        A4 = np.array(self.A4)
+                        A4=A4.reshape(A4.shape[0]*A4.shape[1],A4.shape[2],order='C')
+                        EPrDetector = len(self.wedges[0].detectors[0].split)+1
+
+                        
+                        pixelList = np.array(activePixelDetector).reshape(A4.shape[0],EPrDetector,detpixels+1).astype(int)
+                        PixelEdge = np.array([[pixelList[:,:,i],pixelList[:,:,i+1]] for i in range(detpixels)]).transpose((2,3,0,1))
+                        PixelEnergy = fittedParameters[:,:,:,1].reshape(A4.shape[0],EPrDetector*detpixels)
+
+                        ## Find detector analyser combi corresponding to energy
+                        SoftwarePixel = np.array([np.argmin(np.abs(x-EiFile)) for x in PixelEnergy])
+
+                        MeanA4Instr = np.zeros((A4.shape[0],EPrDetector*detpixels))
+                        MeanIntensity = np.zeros((len(A4FileValue),A4.shape[0],EPrDetector*detpixels))
+                        for i in range(A4.shape[0]): # For each detector
+                            for j in range(EPrDetector):
+                                for k in range(detpixels):
+                                    MeanIntensity[:,i,j*detpixels+k] = np.sum(A4FileIntensity[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
+                                    MeanA4Instr[i,j*detpixels+k] = np.mean(A4[i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]])
+                                    
+                        x = A4FileValue
+                        A4FitValue = np.zeros((A4.shape[0]))
+
+                        
+                        if plot==True:
+                            plt.clf()
+                        for i in range(104):
+                            y = MeanIntensity[:,i,SoftwarePixel[i]]
+                            if plot==True:
+                                plt.scatter(x,y)
+                            
+                            guess=[np.max(y),x[np.argmax(y)],3,0]
+                            try:
+                                fit = scipy.optimize.curve_fit(Gaussian,x,y,p0=[guess])
+                            except:
+                                A4FitValue[i]=guess[1]
+                            else:
+                                A4FitValue[i] = fit[0][1]
+
+                        if plot==True: # pragma: no cover
+                            if not os.path.exists(savelocation+'A4'):
+                                os.makedirs(savelocation+'A4')
+                            plt.savefig(savelocation+'A4'+'/A4_{}.png'.format(detpixels),format='png',dpi=150)
+
+                        A4FitValue+=2*theta*180.0/np.pi # offset relative to expected from powder line
+
+                        if plot==True: # pragma: no cover
+                            plt.clf()
+                            plt.scatter(range(A4.shape[0]),A4FitValue)
+                            plt.scatter(range(A4.shape[0]),MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi)
+                            plt.legend(['File','Geometry'])
+                            plt.savefig(savelocation+'A4'+'/Points_{}.png'.format(detpixels),format='png',dpi=150)
+
+                            diff = A4FitValue-MeanA4Instr[:,int(np.round(np.mean(SoftwarePixel)))]*180.0/np.pi#+2*theta*180.0/np.pi
+                            plt.clf()
+                            plt.scatter(range(A4.shape[0]),diff)
+                            plt.savefig(savelocation+'A4'+'/diff_{}.png'.format(detpixels),format='png',dpi=150)
+
+                    else: # Use nominal A4 values from calculation
+                        #A4FitValue = []
+                        #for i in range(8):
+                        #    for j in range(13):
+                        #        A4FitValue.append(-(i*8+j*0.55))
+                        #A4FitValue = np.array(A4FitValue)
+                        A4 = np.array(self.A4).reshape(104,1024)
+                        A4Pixel = []
+                        for i in range(len(fittedParameters)):
+                            for j in range(len(fittedParameters[i])):
+                                for k in range(len(fittedParameters[i][j])):
+                                    #print(activePixelDetector[i][j][k],activePixelDetector[i][j][k+1])
+                                    A4Pixel.append(np.mean(A4[i,activePixelDetector[i][j][k]:activePixelDetector[i][j][k+1]]))
+                        A4Pixel = np.array(A4Pixel).reshape(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
+                        #print(A4Pixel.shape)
+                        #print(len(activePixelDetector))
+                        #print(len(activePixelDetector[0]))
+                        #print(len(activePixelDetector[0][0]))
+                        #print(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
+                        #h=kk
+                        A4FitValue = np.rad2deg(A4Pixel)
+
+                    fitParameters.append(fittedParameters)
+                    activePixelRanges.append(np.array(activePixelDetector))
+                    tableString = 'Normalization for {} pixel(s) using VanData {} and A4Data{}\nPerformed {}\nDetector,Energy,Pixel,Amplitude,Center,Width,Background,lowerBin,upperBin,A4Offset\n'.format(detpixels,Vanadiumdatafile,A4datafile,datetime.datetime.now())
                     for i in range(len(fittedParameters)):
                         for j in range(len(fittedParameters[i])):
                             for k in range(len(fittedParameters[i][j])):
-                                #print(activePixelDetector[i][j][k],activePixelDetector[i][j][k+1])
-                                A4Pixel.append(np.mean(A4[i,activePixelDetector[i][j][k]:activePixelDetector[i][j][k+1]]))
-                    A4Pixel = np.array(A4Pixel).reshape(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
-                    #print(A4Pixel.shape)
-                    #print(len(activePixelDetector))
-                    #print(len(activePixelDetector[0]))
-                    #print(len(activePixelDetector[0][0]))
-                    #print(len(fittedParameters),len(fittedParameters[i]),len(fittedParameters[i][j]))
-                    #h=kk
-                    A4FitValue = np.rad2deg(A4Pixel)
+                                tableString+=str(i)+','+str(j)+','+str(k)+','+','.join([str(x) for x in fittedParameters[i][j][k]])
+                                tableString+=','+str(activePixelRanges[-1][i][j][k])+','+str(activePixelRanges[-1][i][j][k+1])
+                                tableString+=','+str(A4FitValue[i,j,k])+'\n'
+                    tableName = 'Normalization_{}.calib'.format(detpixels)
+                    print('Saving {} pixel data to {}'.format(detpixels,savelocation+tableName))
+                    file = open(savelocation+tableName,mode='w')
 
-                fitParameters.append(fittedParameters)
-                activePixelRanges.append(np.array(activePixelDetector))
-                tableString = 'Normalization for {} pixel(s) using VanData {} and A4Data{}\nPerformed {}\nDetector,Energy,Pixel,Amplitude,Center,Width,Background,lowerBin,upperBin,A4Offset\n'.format(detpixels,Vanadiumdatafile,A4datafile,datetime.datetime.now())
-                for i in range(len(fittedParameters)):
-                    for j in range(len(fittedParameters[i])):
-                        for k in range(len(fittedParameters[i][j])):
-                            tableString+=str(i)+','+str(j)+','+str(k)+','+','.join([str(x) for x in fittedParameters[i][j][k]])
-                            tableString+=','+str(activePixelRanges[-1][i][j][k])+','+str(activePixelRanges[-1][i][j][k+1])
-                            tableString+=','+str(A4FitValue[i,j,k])+'\n'
-                tableName = 'Normalization_{}.calib'.format(detpixels)
-                print('Saving {} pixel data to {}'.format(detpixels,savelocation+tableName))
-                file = open(savelocation+tableName,mode='w')
-
-                file.write(tableString)
-                file.close()
-        VanFile.close()
-        if not A4datafile is False:
-            A4File.close()
+                    file.write(tableString)
+                    file.close()
+        
+            if not A4datafile is False: # pragma: no cover
+                A4File.close()
 
 def parseXML(Instr,fileName):
     import xml.etree.ElementTree as ET
@@ -806,7 +824,8 @@ def Gaussian(x,A,mu,sigma,b):
 def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
-def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90]): # pragma: no cover
+# TODO: Make the reader create a true HDF file with all attributes set
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90],factor=10000,detectors=104): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -821,11 +840,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
 
     Kwargs:
 
-        - CalibrationFile (str or list of str): Location of calibration file(s) wanted in HdF file (defailt None)
+        - CalibrationFile (str or list of str): Location of calibration file(s) wanted in HdF file (default None)
 
         - pixels (int): Number of pixels on detectors (default 1024)
 
         - cell (list): Cell parameters passed into the hdf file (default [5,5,5,90,90,90])
+
+        - factor (float): Overall scale factor for intensity
 
     """
     def addMetaData(entry,title):
@@ -944,6 +965,23 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             dset = monoSlit.create_dataset(x,(1,),'float32')
             dset[0] = 0.0
             dset.attrs['units'] = 'mm'
+    
+    def addAna(inst):
+        ana = inst.create_group('analyzer')
+        ana.attrs['NX_class'] = np.string_('NXcrystal')
+
+        dset = ana.create_dataset('type',(1,),dtype='S70')
+        dset[0] = b"Pyrolithic Graphite"
+        
+        dset = ana.create_dataset('d_spacing',(1,),'float32')
+        dset[0] = 3.354
+        dset.attrs['units'] = 'anstrom'
+
+        dset = ana.create_dataset('nominal_energy',(1,),'float32')
+        dset[0] = 0.0
+        dset.attrs['units'] = 'mev'
+
+        
 
     def addDetector(inst):
         det = inst.create_group('detector')
@@ -958,14 +996,17 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         fin.close()
         return detlist
 
-    def readDetFile(fname,pixels=1024):
+    def readDetFile(fname,pixels=1024,factor=10000):
         detdata = np.zeros((pixels),dtype='int32')
         f = open(fname,'r')
         psddata = f.readlines()
         f.close()
         idx = 0
+        a3 = 0
+        a4 = 0
+        ei = 0
         for line in psddata:
-            if line.find('EI=') > 0:
+            if line.find('EI=') >0 or line.find(' SourceE=') > 0:
                 l = line.split('=')
                 ei = float(l[1])
             if line.find('A3=') > 0:
@@ -978,32 +1019,34 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
                 idx = idx + 1
                 break
             idx = idx + 1
+        
         detind = 0
-
         for i in range(idx+1,pixels+idx-1):
             l = psddata[i].split()
 
-            detdata[detind] = int(round(10000.*float(l[1])))
+            detdata[detind] = int(round(factor*float(l[1])))
+            #if l[1]!='0':
+            #    print(float(l[1])*factor)
             detind = detind + 1
         return detdata,a3,a4,ei
 
-    def readScanPointData(dir,detlist,Numpoints,pixels=1024):
-        frame = np.zeros((104,pixels),dtype='int32')
+    def readScanPointData(dir,detlist,Numpoints,pixels=1024,factor=10000,detectors=104):
+        frame = np.zeros((detectors,pixels),dtype='int32')
         i = 0
         for detfile in detlist:
-            detdata, a3, a4, ei = readDetFile(dir +'/' + str(Numpoints) + '/' + detfile)
+            detdata, a3, a4, ei = readDetFile(dir +'/' + str(Numpoints) + '/' + detfile,factor=factor,pixels=pixels)
             frame[i] = detdata
             i = i + 1
         return frame,a3,a4,ei
 
-    def readScanData(dir,Numpoints,pixels=1024):
-        detlist = readDetSequence()
-        data = np.zeros((Numpoints,104,pixels),dtype='int32')
+    def readScanData(dir,Numpoints,pixels=1024,factor=10000,detectors=104):
+        detlist = readDetSequence()[:detectors]
+        data = np.zeros((Numpoints,detectors,pixels),dtype='int32')
         a3 = []
         a4 = []
         ei = []
         for n in range(Numpoints):
-            frame, a3n, a4n, ein = readScanPointData(dir,detlist,n)
+            frame, a3n, a4n, ein = readScanPointData(dir,detlist,n,factor=factor,pixels=pixels,detectors=detectors)
             a3.append(a3n)
             a4.append(a4n)
             ei.append(ein)
@@ -1021,6 +1064,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         ub[1,1] = 1.
         ub[2,2] = 1.
         dset = sam.create_dataset('orientation_matrix',data=ub)
+        dset = sam.create_dataset('plane_vector_1',data=[1,0,0,0,0,0,0])
+        dset = sam.create_dataset('plane_vector_2',data=[0,1,0,0,0,0,0])
 
         normal = np.zeros((3,),dtype='float32')
         normal[2] = 1.0
@@ -1062,16 +1107,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
         det = entry['CAMEA/detector']
-        dset = det.create_dataset('counts',data=data )
+        dset = det.create_dataset('counts',data=data.swapaxes(1,2), compression="gzip", compression_opts=9)
         dset.attrs['target'] = np.string_('/entry/CAMEA/detector/counts')
         nxdata['counts'] = dset
 
         dset = det.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)))
         dset.attrs['target'] = np.string_('/entry/CAMEA/detector/summed_counts')
         nxdata['summed_counts'] = dset
-
-        #online = det.create_dataset('online',data=np.ones((data.shape[1],),dtype=bool))
-        #online.attrs['units']=np.string_('Boolean for detector state')
 
         sam = entry['sample']
 
@@ -1157,47 +1199,47 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         vals = [0]*Numpoints
         dset = pb.create_dataset('data',data=vals,dtype='int32')
 
-    f = hdf.File(fileName,'w')
-    f.attrs['file_name'] = np.string_(fileName)
-    f.attrs['file_time'] = np.string_(b'2018-03-22T16:44:02+01:00')
-    
-    entry = f.create_group('entry')
-    entry.attrs['NX_class'] = np.string_('NXentry')
+    with hdf.File(fileName,'w') as f:
+        f.attrs['file_name'] = np.string_(fileName)
+        f.attrs['file_time'] = np.string_(b'2018-03-22T16:44:02+01:00')
+        
+        entry = f.create_group('entry')
+        entry.attrs['NX_class'] = np.string_('NXentry')
 
-    addMetaData(entry,np.string_(title))
-    
-    #------------ Instrument
-    inst = entry.create_group(b'CAMEA')
-    inst.attrs['NX_class'] = np.string_('NXinstrument')
-    
-    if not CalibrationFile is None:
-        #calib = inst.create_group(b'calibration')
-        if not isinstance(CalibrationFile,list):
-            CalibrationFile=[CalibrationFile]
-        for i in range(len(CalibrationFile)):
-            calibrationData = np.genfromtxt(CalibrationFile[i],skip_header=3,delimiter=',')
-            binning = CalibrationFile[i].split('/')[-1].split('_')[-1].split('.')[0]
-            pixelCalib = inst.create_group('calib{}'.format(binning))
+        addMetaData(entry,np.string_(title))
+        
+        #------------ Instrument
+        inst = entry.create_group(b'CAMEA')
+        inst.attrs['NX_class'] = np.string_('NXinstrument')
+        
+        if not CalibrationFile is None:
+            #calib = inst.create_group(b'calibration')
+            if not isinstance(CalibrationFile,list):
+                CalibrationFile=[CalibrationFile]
+            for i in range(len(CalibrationFile)):
+                calibrationData = np.genfromtxt(CalibrationFile[i],skip_header=3,delimiter=',')
+                binning = CalibrationFile[i].split('/')[-1].split('_')[-1].split('.')[0]
+                pixelCalib = inst.create_group('calib{}'.format(binning))
 
-            pixelCalib.create_dataset('final_energy'.format(binning),data=calibrationData[:,4],dtype='float32')
-            pixelCalib.create_dataset('background'.format(binning),data=calibrationData[:,6],dtype='float32')
-            pixelCalib.create_dataset('width'.format(binning),data=calibrationData[:,5],dtype='float32')
-            pixelCalib.create_dataset('amplitude'.format(binning),data=calibrationData[:,3],dtype='float32')
-            pixelCalib.create_dataset('boundaries'.format(binning),data=calibrationData[:,7:9],dtype='int')
-            pixelCalib.create_dataset('a4offset'.format(binning),data=calibrationData[:,9],dtype='float32')
-            
-    
-    addMono(inst)
-    
-    addDetector(inst)
-    
-    addSample(entry,np.string_(sample),cell)
-    import os
-    Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
-    data,a3,a4,ei = readScanData(fname,Numpoints)
-    storeScanData(entry,data,a3,a4,ei)
-
-    f.close()
+                pixelCalib.create_dataset('final_energy'.format(binning),data=calibrationData[:,4],dtype='float32')
+                pixelCalib.create_dataset('background'.format(binning),data=calibrationData[:,6],dtype='float32')
+                pixelCalib.create_dataset('width'.format(binning),data=calibrationData[:,5],dtype='float32')
+                pixelCalib.create_dataset('amplitude'.format(binning),data=calibrationData[:,3],dtype='float32')
+                pixelCalib.create_dataset('boundaries'.format(binning),data=calibrationData[:,7:9],dtype='int')
+                pixelCalib.create_dataset('a4offset'.format(binning),data=calibrationData[:,9],dtype='float32')
+                
+        
+        addMono(inst)
+        addAna(inst)
+        
+        addDetector(inst)
+        
+        addSample(entry,np.string_(sample),cell)
+        import os
+        Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
+        data,a3,a4,ei = readScanData(fname,Numpoints,factor=factor,pixels=pixels,detectors=detectors)
+        storeScanData(entry,data,a3,a4,ei)
+        
 
 
 # _________________________TESTS____________________________________________
@@ -1519,8 +1561,8 @@ def test_Normalization_tables(quick):
         assert True
 
     if not quick==True:
-        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='Data/',plot=False,tables=['Single',3,8]) 
+        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation='Data/',plot=False,tables=[1,3,8]) 
     else:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=['Single']) 
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation='Data/',plot=False,tables=[1]) 
 
 

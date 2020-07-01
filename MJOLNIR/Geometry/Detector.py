@@ -93,9 +93,9 @@ class TubeDetector1D(Detector):
 
             - diameter (float): Diameter of tube in meters (default 0.02)
 
-            - split (list int): Edge pixels for slitting the tube into areas lidt by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
+            - split (list int): Edge pixels for slitting the tube into areas lid by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
 
-            split (list int): Edge pixels for slitting the tube into areas lidt by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
+            split (list int): Edge pixels for slitting the tube into areas lid by analysers (default [0,57,57*2,57*3,57*4,57*5,57*6,57*7,57*8])
 
         Raises:
             
@@ -137,7 +137,7 @@ class TubeDetector1D(Detector):
     @length.setter
     def length(self,length):
         if(length<0):
-            raise AttributeError('The lenght of the detector tube must be grater than 0.')
+            raise AttributeError('The length of the detector tube must be grater than 0.')
         self._length = length
 
     @property
