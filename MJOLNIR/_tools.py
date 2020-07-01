@@ -12,7 +12,8 @@ import matplotlib
 
 MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
-def cutObject(func):
+#Unused
+def cutObject(func): # pragma: no cover
     import MJOLNIR.Statistics.CutObject
     @functools.wraps(func)
     def newFunction(*args,**kwargs):
@@ -673,8 +674,8 @@ def generateLabel(vector):
     label = '('+', '.join(local)+')'
     return label
 
-
-def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitude,EMin,EMax,spinWaveEnergyErr=None):
+# TODO: Write a test/update this function
+def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitude,EMin,EMax,spinWaveEnergyErr=None): # pragma: no cover
     """Write fitted values for spin wave(s) into a SpinW readable format.
     
     Args:
