@@ -739,14 +739,6 @@ def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitud
     np.savetxt(file,dataMatrix.T,fmt='%+.7e',delimiter = ' ', header=titles,comments='')
 
 
-def get_default_args(func):
-    """
-    returns a dictionary of arg_name:default_values for the input function
-    """
-    args, _, _, defaults, *_ = inspect.getfullargspec(func)    
-
-    return dict(zip(args[-len(defaults):], defaults))
-
 
 def generateLabel(vec,labels=['H','K','L']):
     """Format a scattering vector with individual letters.
