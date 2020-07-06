@@ -562,95 +562,50 @@ class DataSet(object):
         if not ufit:
             return pdData,[binpositionsTotal,orthopos,EArray]
         
-        
         if rlu:
-            variables = ['H','K','L']
             q1,q2 = self.convertToHKL([q1,q2])
-        else:
-            variables = ['Qx','Qy']
-        variables = variables+['Energy']
-
-        
-        # Calculate the binDistance to be used by the ufit dataset
-        pdData['binDistance'] = np.linalg.norm(pdData[variables]-np.array(pdData[variables].iloc[1]),axis=1)
-            
-        dirVec = np.array(q2)-np.array(q1)
-        dirVec /= np.linalg.norm(dirVec)
-        offset = np.dot(q1,dirVec)
-        
-        # Differently defined than binDistance (offset is taken into account)
-        x = pdData['binDistance']+offset
-        pdData['binDistance'] = x
-        
-        # Calcualte mean energy from bins (last return value)
-        Energy = np.mean(EArray)
-        # Create meta data for uFit dataset
-        meta = dict()
-        
-        meta['instrument'] = self[0].instrument
-        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
-        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
-        meta['datafilename'] = ', '.join(d.name for d in self)
-        
-        dist,Int = np.array(pdData[['binDistance','Int']]).T
-        err = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Monitor']*pdData['Normalization'])
-        data = np.array([dist,Int,err]).T
-        xcol = '\n'.join(['{:.3}'.format(np.round(x,3)) for x in dirVec])+'\n'+'{:.3}'.format(np.round(Energy,3))
-        if rlu:
-            xcol+='\n[RLU,meV]'
-        else:
-            xcol+='\n[1/AA,meV]'
-        ycol = 'Intensity'
-        name = 'Intensity'
-        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
+        ufitData = self.generateUFitDataset(pdData,q1,q2,rlu,width=width,Emin=Emin,Emax=Emax,minPixel=minPixel)
         
         return ufitData
 
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,ufit=False,**kwargs):  
-        """Can only perform cuts for a constant energy plane of definable width.
-            
-            - q2 (3D or 2D array): End position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
-            
-            - width (float): Full width of cut in q-plane in 1/AA.
-            
-            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
-            
-            - Emin (float): Minimal energy to include in cut.
-            
-            - Emax (float): Maximal energy to include in cut
-            
-        Kwargs:
-            
-            - rlu (bool): If True, coordinates given are interpreted as (h,k,l) otherwise as (qx,qy)
-            
-            - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
-            
-            - kwargs: All other keywords will be passed on to the ax.errorbar method.
-
-            - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
-
-            - ticks (int): Number of tick marks to be used
-
-            - tickRound (int): Decimals to be used when creating ticks
-
-            - constantBins (bool): If True only bins of size minPixel is used (default False)
-
-            - ufit (bool): If True a uFit Dataset object is returned in stead of pandas data frame
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,Data=None,dataFiles=None,constantBins=False,ufit=False,**kwargs):  
+        """plot new or already performed cut.
         
-        Returns:
-            
-            - ax (matplotlib axis): Matplotlib axis into which the plot was put.
-            
-            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for 1D cut.
-            
-            - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
-                        
+        Args:
+                
+                - q1 (3D or 2D array): Start position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
+                
+                - q2 (3D or 2D array): End position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
+                
+                - width (float): Full width of cut in q-plane in 1/AA, only needed for new cut (default None)
+                
+                - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
+
+                - Emin (float): Minimal energy to include in cut.
+                
+                - Emax (float): Maximal energy to include in cut.
+                
+            Kwargs:
+                
+                - Data (pandas Dataframe): Data, if previously made cut is to be plotted (default None)
+                
+                - rlu (bool): If True, coordinates given are interpreted as (h,k,l) otherwise as (qx,qy)
+        
+                - extend (bool): Whether or not the cut from q1 to q2 is to be extended throughout the data (default true)
+                
+                - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
+        
+                - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
+        
+                - constantBins (bool): If True only bins of size minPixel is used (default False)
+        
         """
-        Data,[binpositionsTotal,orthopos,EArray] = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,\
-        plotCoverage=plotCoverage,extend=extend,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
+        if Data is None:
+            Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,rlu=rlu,plotCoverage=plotCoverage,constantBins=constantBins)
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
@@ -665,25 +620,28 @@ class DataSet(object):
             variables = ['H','K','L']
         else:
             variables = ['Qx','Qy']
-       
+    
         variables = variables+['Energy']
         if not 'ticks' in kwargs:
             ticks = 5
         else:
             ticks = kwargs['ticks']
             kwargs = _tools.without_keys(dictionary=kwargs, keys='ticks')
-
+        
         if not 'tickRound' in kwargs:
             tickRound = 3
         else:
             tickRound = kwargs['tickRound']
             kwargs = _tools.without_keys(dictionary=kwargs,keys='tickRound')
-
+            
+        if not 'fmt' in kwargs:
+            kwargs['fmt'] = '.'
+        
         xvalues = np.round(np.linspace(0,num-1,ticks)).astype(int)
         my_xticks=[]
         for i in xvalues:
             my_xticks.append('\n'.join(map(lambda x:('{:.'+str(tickRound)+'f}').format(x),[np.round(Data[var][i],tickRound) for var in variables])))
-   
+        
         
         Data['binDistance'] = np.linalg.norm(Data[variables]-np.array(Data[variables].iloc[1]),axis=1)
         
@@ -693,15 +651,16 @@ class DataSet(object):
         
         if not 'label' in kwargs:
             kwargs['label'] = 'Data'
+            
         ax.errorbar(Data['binDistance'],INT,yerr=INT_err,**kwargs)
-
+        
         ax.set_xticks(Data['binDistance'].iloc[xvalues])
         ax.set_xticklabels(my_xticks, multialignment="center",ha="center")
         
         def calculateIndex(binDistance,x):
             idx = np.argmin(np.abs(binDistance-x))
             return idx
-
+        
         ax.calculateIndex = lambda x: calculateIndex(Data['binDistance'],x)
         
         if rlu==False:
@@ -716,7 +675,7 @@ class DataSet(object):
                 h,k,l,E = binCenter[index]
                 return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}, I = {4:0.4e}".format(h,k,l,E,y)
             ax.set_xlabel('$Q_h/A$\n$Q_k/A$\n$Q_l/A$\nE/meV')
-
+        
         
         def onclick(event,ax,Data):# pragma: no cover
             if ax.in_axes(event):
@@ -727,7 +686,7 @@ class DataSet(object):
                 else:
                     if C != 0: # Cursor corresponds to arrow
                         return
-
+        
                 x = event.xdata
                 y = event.ydata
                 printString = ax.format_coord(x,y)
@@ -739,8 +698,8 @@ class DataSet(object):
                 NC = int(Data['BinCount'][0])
                 printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
                 print(printString)
-
-
+        
+        
         ax.xaxis.set_label_coords(1.15, -0.025)
         ax.set_ylabel('Int [arb]')
         plt.tight_layout()
@@ -748,38 +707,15 @@ class DataSet(object):
         
         ax.format_coord = lambda x,y: format_coord(x,y,ax,np.array(Data[variables]))
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data))
-        if not ufit:
-            return ax,Data,[binpositionsTotal,orthopos,EArray]
-        pdData = Data
-        # Differently defined than binDistance (offset is taken into account)
-        dirVec = np.array(q2)-np.array(q1)
-        dirVec = np.divide(dirVec,np.linalg.norm(dirVec))
-        offset = np.dot(q1,dirVec)
+        
+        if ufit==True:
+            print(Emin,Emax)
+            ufitdata = self.generateUFitDataset(pdData=Data,q1=q1,q2=q2,rlu=rlu,width=width,Emin=Emin,Emax=Emax,minPixel=minPixel)
+            return ax,ufitdata
+        
+        return ax,Data,bins
 
-        x = pdData['binDistance']+offset
-        pdData['binDistance'] = x
-        
-        # Calcualte mean energy from bins (last return value)
-        Energy = np.mean(EArray)
-        # Create meta data for uFit dataset
-        meta = dict()
-        
-        meta['instrument'] = self[0].instrument
-        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
-        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
-        meta['datafilename'] = ', '.join(d.name for d in self)
-        
-        dist,Int = np.array(pdData[['binDistance','Int']]).T
-        err = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Monitor']*pdData['Normalization'])
-        data = np.array([dist,Int,err]).T
-        xcol = ', '.join([str(x) for x in dirVec])+', '+str(Energy)+' [RLU,meV]'
-        ycol = 'Intensity'
-        name = 'Intensity'
-        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
-        
-        return ax,ufitData
 
-    
     @_tools.KwargChecker()
     def cutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,extend=True,dataFiles=None,constantBins=False):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
@@ -2348,22 +2284,7 @@ class DataSet(object):
         if not ufit:
             return data,bins
         
-        
-        # Create meta data for uFit dataset
-        meta = dict()
-        
-        meta['instrument'] = self[0].instrument
-        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
-        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
-        meta['datafilename'] = ', '.join(d.name for d in self)
-        
-        dist,Int = np.array(data[['Energy','Int']]).T
-        err = np.sqrt(data['Intensity'])*data['BinCount']/(data['Monitor']*data['Normalization'])
-        data = np.array([dist,Int,err]).T
-        xcol = 'E [meV]'
-        ycol = 'Intensity'
-        name = 'Intensity'
-        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
+        ufitData = self.generateUFitDataset(data,q1=q,q2=None,rlu=rlu,width=width,minPixel=minPixel,Emin=E1,Emax=E2,QDirection=False)
         
         return ufitData
 
@@ -2434,6 +2355,9 @@ class DataSet(object):
             tickRound = kwargs['tickRound']
             kwargs = _tools.without_keys(dictionary=kwargs,keys='tickRound')
 
+        if not 'fmt' in kwargs:
+            kwargs['fmt'] = '.'
+
         xvalues = np.round(np.linspace(0,num-1,ticks)).astype(int)
         my_xticks=[]
         for i in xvalues:
@@ -2482,7 +2406,6 @@ class DataSet(object):
 
         if not ufit:
             return ax,Data,bins
-        
         
         # Create meta data for uFit dataset
         meta = dict()
@@ -3010,6 +2933,112 @@ class DataSet(object):
         """
         for d in self:
             d.updateCalibration(calibFiles,overwrite=overwrite)
+
+
+    def generateUFitDataset(self, pdData,q1,q2,rlu,width,minPixel,Emin,Emax,QDirection=True):
+        """Generate uFitDataset from cut.
+
+        Args:
+
+            - pdData (pandas dataframe): Data generated from 1D cut
+
+            - q1 (array): Start point for cut
+
+            - q2 (array): End point for cut
+
+            - rlu (bool): If in reciprocal lattice unites or not
+
+            - width (float): Width size (used for rounding of labels)
+
+            - minPixel (float): Minimum pixel size (used for rounding of labels)
+
+            - Emin (float): Minimum energy
+             
+            - Emax (float): Maximum energy
+
+        Kwargs:
+
+            - QDirection (bool): If true ufitdata is created along Q, otherwise energy (default True)
+
+        """
+
+        if rlu:
+            variables = ['H','K','L']
+        else:
+            variables = ['Qx','Qy']
+        variables = variables
+
+        if QDirection:
+            QRounding = int(-np.round(np.log10(minPixel)))
+            ERounding = int(np.round(6/(np.linalg.norm(Emin-Emax))))
+            ERounding = np.max([ERounding,1])
+            QRounding = np.max([QRounding,1])
+
+            dirVec = np.array(q2)-np.array(q1)
+            if rlu:
+                dirVec = _tools.LengthOrder(dirVec)
+            else:
+                dirVec = _tools.Norm2D(dirVec)
+
+            pdData['binDistance'] = np.linalg.norm(pdData[variables]-np.array(pdData[variables].iloc[1]),axis=1)/np.linalg.norm(dirVec)
+
+            startPos = pdData[variables].iloc[0]   
+
+            if rlu:
+                xdirection = _tools.generateLabel(np.round(dirVec,QRounding))[1:-1].split(', ')
+            else:
+                xdirection = _tools.generateLabel(np.round(dirVec,QRounding),labels=['Qx','Qy'])[1:-1].split(', ')
+            xConstantOffset = np.round(startPos,QRounding)
+            xlabel = []
+            for l,val in zip(xdirection,xConstantOffset):
+                if np.isclose(val,0):
+                    xlabel.append(l)
+                elif l=='0':
+                    xlabel.append('{}'.format(val))
+                else:
+                    xlabel.append(l+'{:+}'.format(val))
+
+        else:
+            ERounding = int(-np.round(np.log10(minPixel)))
+            QRounding = int(-np.round(np.log10(width)))
+
+            ERounding = np.max([ERounding,1])
+            QRounding = np.max([QRounding,1])
+            pdData['binDistance'] = pdData['Energy']
+
+
+            xlabel = [str(x) for x in np.array(q1,dtype=float).round(QRounding)]
+
+        
+        x = np.array(pdData['binDistance'])
+
+        # Calcualte mean energy from bins (last return value)
+        Energy = (Emin+Emax)*0.5
+        # Create meta data for uFit dataset
+        meta = dict()
+
+        meta['instrument'] = self[0].instrument
+        meta['experiment'] = ', '.join(d.experimentIdentifier for d in self)
+        meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
+        meta['datafilename'] = ', '.join(d.name for d in self)
+
+        Int = np.array(pdData['Int'])
+        err = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Monitor']*pdData['Normalization'])
+        data = np.array([x,Int,err]).T
+
+        
+
+        xcol = '\n'.join(xlabel)+'\n'+'{:.3}'.format(np.round(Energy,ERounding))
+        if rlu:
+            xcol+='\n[RLU,meV]'
+        else:
+            xcol+='\n[1/AA,meV]'
+        ycol = 'Intensity'
+        name = 'Intensity'
+        ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
+        return ufitData
+
+
 
 
 
