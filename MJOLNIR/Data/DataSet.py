@@ -565,6 +565,7 @@ class DataSet(object):
         
         if rlu:
             variables = ['H','K','L']
+            q1,q2 = self.convertToHKL([q1,q2])
         else:
             variables = ['Qx','Qy']
         variables = variables+['Energy']
@@ -594,7 +595,11 @@ class DataSet(object):
         dist,Int = np.array(pdData[['binDistance','Int']]).T
         err = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Monitor']*pdData['Normalization'])
         data = np.array([dist,Int,err]).T
-        xcol = ', '.join([str(x) for x in dirVec])+', '+str(Energy)+' [RLU,meV]'
+        xcol = '\n'.join(['{:.3}'.format(np.round(x,3)) for x in dirVec])+'\n'+'{:.3}'.format(np.round(Energy,3))
+        if rlu:
+            xcol+='\n[RLU,meV]'
+        else:
+            xcol+='\n[1/AA,meV]'
         ycol = 'Intensity'
         name = 'Intensity'
         ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
