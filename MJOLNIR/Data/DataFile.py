@@ -159,9 +159,9 @@ class DataFile(object):
                         A4 = np.array(instr.get('calib{}/a4offset'.format(str(binning))))
                         bound = np.array(instr.get('calib{}/boundaries'.format(str(binning))))
                         calibrations.append([EfTable,A4,bound])
-                    self.instrumentCalibrations = np.array(calibrations)
+                    self.instrumentCalibrations = np.array(calibrations,dtype=object)
                     self.loadBinning(self.binning)
-                    
+                        
                     self.temperature = np.array(sample.get('temperature'))
                     self.magneticField = np.array(sample.get('magnetic_field'))
                     self.electricField = np.array(sample.get('electric_field'))

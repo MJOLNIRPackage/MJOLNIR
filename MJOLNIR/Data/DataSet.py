@@ -1637,7 +1637,7 @@ class DataSet(object):
             binDistance.append(_binDistance)
             
         DataList = pd.concat(DataList)
-        return DataList,np.array(BinList),np.array(centerPosition),np.array(binDistance)
+        return DataList,np.array(BinList,dtype=object),np.array(centerPosition,dtype=object),np.array(binDistance,dtype=object)
 
     
     @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar','edgecolors']]))
