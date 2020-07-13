@@ -664,7 +664,7 @@ class DataSet(object):
         ax.calculateIndex = lambda x: calculateIndex(Data['binDistance'],x)
         
         if rlu==False:
-            ax.set_xlabel('$Q_x/A$\n$Q_y/A$\nE/meV')
+            ax.set_xlabel(r'$Q_x [\AA^{-1}]$'+'\n'+r'$Q_y [\AA^{-1}]$'+'\n'+r'E [meV]')
             def format_coord(x,y,ax,binCenter):# pragma: no cover
                 index = ax.calculateIndex(x)
                 qx,qy,E = binCenter[index]
@@ -674,7 +674,7 @@ class DataSet(object):
                 index = ax.calculateIndex(x)
                 h,k,l,E = binCenter[index]
                 return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}, I = {4:0.4e}".format(h,k,l,E,y)
-            ax.set_xlabel('$Q_h/A$\n$Q_k/A$\n$Q_l/A$\nE/meV')
+            ax.set_xlabel('$Q_h$ [RLU]\n$Q_k$ [RLU]\n$Q_l$ [RLU]\nE [meV]')
         
         
         def onclick(event,ax,Data):# pragma: no cover
@@ -701,7 +701,7 @@ class DataSet(object):
         
         
         ax.xaxis.set_label_coords(1.15, -0.025)
-        ax.set_ylabel('Int [arb]')
+        ax.set_ylabel('$I$ [arb.u.]')
         plt.tight_layout()
         
         
@@ -1026,7 +1026,7 @@ class DataSet(object):
             return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(qbins[EIndex][qIndex],eMean[EIndex],Intensity)
             
         ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[['Int','EnergyCut']],qbins)
-        ax.set_xlabel(r'|q| [1/A]')
+        ax.set_xlabel(r'$|q| [\AA^{-1}]$')
         ax.set_ylabel('E [meV]')
         
         def set_clim(VMin,VMax,pmesh):
@@ -1338,6 +1338,7 @@ class DataSet(object):
 
         if colorbar:
             ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
+            ax.colorbar.set_label('$I$ [arb.u.]', rotation=270)
 
         ax.set_clim(vmin,vmax)
         if _3D:
@@ -1550,7 +1551,7 @@ class DataSet(object):
             
         Kwargs:
         
-            - width (float): Width of the cut in 1/A (default 0.1).
+            - width (float): Width of the cut in 1/AA (default 0.1).
             
             - minPixel (float): Minimal size of binning along the cutting directions. Points will be binned if they arecloser than minPixel (default=0.01)
         
@@ -1922,14 +1923,15 @@ class DataSet(object):
             ax.set_xticklabels(np.concatenate(xticklabels), multialignment="center",ha="center")
             ax.EnergyBins = EnergyBins
             if rlu==True:
-                ax.set_xlabel('$H$\n$K$\n$L$')
+                ax.set_xlabel('$Q_h$ [RLU]\n$Q_k$ [RLU]\n$Q_l$ [RLU]')
             else:
-                ax.set_xlabel('$Q_x/A$\n$Q_y/A$')
+                ax.set_xlabel(r'$Q_x [\AA^{-1}]$'+'\n'+r'$Q_y [\AA^{-1}]$')
             
             ax.xaxis.set_label_coords(1.15, -0.025) 
             ax.set_ylabel('E [meV]')
             if colorbar:
                 ax.colorbar = ax.get_figure().colorbar(pmeshs[0],pad=0.1,format='%.2E')
+                ax.colorbar.set_label('$I$ [arb.u.]', rotation=270)
             #plt.tight_layout()
             if 'pmeshs' in ax.__dict__:
                 ax.pmeshs = np.concatenate([ax.pmeshs,pmeshs],axis=0)
@@ -2089,8 +2091,8 @@ class DataSet(object):
             #    ax.set_xlabel(_tools.generateLabel(self.sample[0].projectionVector1)+ ' [RLU]')
             #    ax.set_ylabel(_tools.generateLabel(self.sample[0].projectionVector2)+ ' [RLU]')
             #else:
-            ax.set_xlabel('qx [1/A]')
-            ax.set_ylabel('qy [1/A]')
+            ax.set_xlabel(r'Qx [$\AA^{-1}$]')
+            ax.set_ylabel(r'Qy [$\AA^{-1}$]')
             ax.set_zlabel('E [meV]')
     
             setattr(sf.__class__,'set_clim',set_clim_local)
@@ -2384,7 +2386,7 @@ class DataSet(object):
         ax.calculateIndex = lambda x: calculateIndex(Data['binDistance'],x)
 
         if rlu==False:
-            ax.set_xlabel('$Q_x/A$\n$Q_y/A$\nE/meV')
+            ax.set_xlabel(r'$Q_x [\AA^{-1}]$'+'\n'+r'$Q_y [\AA^{-1}]$'+'\n'+'E/meV')
             def format_coord(x,y,ax,binCenter):# pragma: no cover
                 index = ax.calculateIndex(x)
                 qx,qy,E = binCenter[index]
@@ -2394,11 +2396,11 @@ class DataSet(object):
                 index = ax.calculateIndex(x)
                 h,k,l,E = binCenter[index]
                 return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}, I = {4:0.4e}".format(h,k,l,E,y)
-            ax.set_xlabel('$Q_h/A$\n$Q_k/A$\n$Q_l/A$\nE/meV')
+            ax.set_xlabel('$Q_h$ [RLU]\n$Q_k$ [RLU]\n$Q_l$ [RLU]\nE [meV]')
 
         
         ax.xaxis.set_label_coords(1.15, -0.025)
-        ax.set_ylabel('Int [arb]')
+        ax.set_ylabel('$I$ [arb.u.]')
         plt.tight_layout()
 
 
@@ -2874,7 +2876,7 @@ class DataSet(object):
             plots.append(ax.scatter(X[0],I))
             
         
-        ax.set_ylabel('Int [count]')
+        ax.set_ylabel('Int [counts]')
         
         
         ax.__format_coord__ = lambda x,y: format_coord(x,y,X=np.concatenate(ax.X,axis=0),labels=ax.__labels__)
@@ -3032,7 +3034,7 @@ class DataSet(object):
         if rlu:
             xcol+='\n[RLU,meV]'
         else:
-            xcol+='\n[1/AA,meV]'
+            xcol+='\n'+r'[$\AA^{-1}$,meV]'
         ycol = 'Intensity'
         name = 'Intensity'
         ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
@@ -3176,8 +3178,8 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
             ax.scatter(positions2D[0][insideWidth],positions2D[1][insideWidth],s=0.5,zorder=100)
         if plotPoints:
             ax.set_aspect('equal', 'datalim')
-            ax.set_xlabel('Qx [1/A]')
-            ax.set_ylabel('Qy [1/A]')
+            ax.set_xlabel(r'Qx [$\AA^{-1}$]')
+            ax.set_ylabel(r'Qy [$\AA^{-1}$]')
 
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
