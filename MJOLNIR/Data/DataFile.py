@@ -731,8 +731,8 @@ class DataFile(object):
 
         
         EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
-        #EfNormalization = EfNormalization[:,0].reshape(1,A4.shape[0],EPrDetector*binning)#
-        EfNormalization = EfNormalization[:,0]*(np.sqrt(2*np.pi)*EfNormalization[:,2])
+        EfNormalization = EfNormalization[:,0]#.reshape(1,A4.shape[0],EPrDetector*binning)#
+        #EfNormalization = EfNormalization[:,0]*(np.sqrt(2*np.pi)*EfNormalization[:,2])
         
         EfNormalization.shape = (1,A4.shape[0],EPrDetector*binning)
         A3 = np.deg2rad(np.array(self.A3).copy())+A3Zero #file.get('/entry/sample/rotation_angle/')
@@ -1527,7 +1527,10 @@ def getScanParameter(f):
             fItem = f.get('/entry/data/{}'.format(item))
             scanUnits.append(decodeStr(fItem.attrs['units']))
             scanValues.append(np.array(fItem))
-            scanDataPosition.append(decodeStr(fItem.attrs['target']))
+            try:
+                scanDataPosition.append(decodeStr(fItem.attrs['target']))
+            except:
+                pass
 
 
     return scanParameters,np.array(scanValues),scanUnits,scanDataPosition
