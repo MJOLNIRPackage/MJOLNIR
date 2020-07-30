@@ -828,7 +828,8 @@ def findPeak(data):
     return [np.argmax(data,axis=1),np.max(data,axis=1)]
 
 # TODO: Make the reader create a true HDF file with all attributes set
-def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90],factor=10000,detectors=104): # pragma: no cover
+def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90],factor=10000,detectors=104,\
+    ub=None,plane_vector_1=None,plane_vector_2=None,plane_normal=None): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -1063,23 +1064,29 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             data[n] = frame
         return data,a3,a4,ei
         
-    def addSample(entry,name,cell):
+    def addSample(entry,name,cell,ub=None,plane_vector_1=None,plane_vector_2=None,plane_normal=None):
         sam = entry.create_group('sample')
         sam.attrs['NX_class'] = np.string_('NXsample')
         dset = sam.create_dataset('name',(1,),dtype='S70')
         dset[0] = np.string_(name)
-
-        ub = np.zeros((3,3,),dtype='float32')
-        ub[0,0] = 1.
-        ub[1,1] = 1.
-        ub[2,2] = 1.
+        if ub is None:
+            ub = np.zeros((3,3,),dtype='float32')
+            ub[0,0] = 1.
+            ub[1,1] = 1.
+            ub[2,2] = 1.
         dset = sam.create_dataset('orientation_matrix',data=ub)
-        dset = sam.create_dataset('plane_vector_1',data=[1,0,0,0,0,0,0])
-        dset = sam.create_dataset('plane_vector_2',data=[0,1,0,0,0,0,0])
+        if plane_vector_1 is None:
+            plane_vector_1=[1,0,0,0,0,0,0]
+        dset = sam.create_dataset('plane_vector_1',data=plane_vector_1)
+        if plane_vector_2 is None:
+            plane_vector_2=[0,1,0,0,0,0,0]
+        dset = sam.create_dataset('plane_vector_2',data=plane_vector_2)
 
-        normal = np.zeros((3,),dtype='float32')
-        normal[2] = 1.0
-        dset = sam.create_dataset('plane_normal',data=normal)
+        if plane_normal is None:
+            normal = np.zeros((3,),dtype='float32')
+            normal[2] = 1.0
+
+        dset = sam.create_dataset('plane_normal',data=plane_normal)
 
         cell = np.array(cell,dtype='float32')
         dset = sam.create_dataset('unit_cell',data=cell)
@@ -1253,7 +1260,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         
         addDetector(inst)
         
-        addSample(entry,np.string_(sample),cell)
+        addSample(entry,np.string_(sample),cell,ub,plane_vector_1,plane_vector_2,plane_normal)
         import os
         Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
         data,a3,a4,ei = readScanData(fname,Numpoints,factor=factor,pixels=pixels,detectors=detectors)
