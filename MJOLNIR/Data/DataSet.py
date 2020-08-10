@@ -3184,6 +3184,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,plotCoverage=F
     return [intensity,MonitorCount,Normalization,normcounts],[binpositionsTotal,orthopos,np.array([Emin,Emax])]
 
 
+
 def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#,plotCoverage=False):
     """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
     the width attribute. 
