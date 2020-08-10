@@ -4,9 +4,11 @@ from pyqtgraph.Qt import QtGui, QtCore
 import numpy as np
 import pyqtgraph as pg
 from MJOLNIR import _tools
+import matplotlib.pyplot as plt
 
 class Interactive3DViewer(QtGui.QWidget):
     def __init__(self,data,bins,sample,log=False,*args,**kwargs):
+        plt.close(plt.gca().get_figure()) # Mega hack to save the day (close annoying mpl figure....... not a fan). MDT = magic don't touch
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         super().__init__(*args,**kwargs)
@@ -26,9 +28,16 @@ class Interactive3DViewer(QtGui.QWidget):
         # Create the region-of-interest line segment
         self.roi = pg.ROI([1, 0], [1,1], pen='r', resizable=True)
         self.roi.setSize([1,0.1])
-        self.roi.addScaleHandle([0.5, 1], [0.5, 0.5])
+        self.roi.addScaleHandle([0.5, 1], [0.5, 0.5],)
         self.roi.addScaleHandle([0, 0.5], [0.5, 0.5])
         self.roi.addRotateHandle([1.0, 1.0], [0.5, 0.5])
+
+        # Change color of roi markers
+        handleColor = QtGui.QColor(255,102,0)
+        for handle in self.roi.getHandles():
+            handle.pen.setColor(handleColor)
+
+
         self.imv1.addItem(self.roi)
         
         
