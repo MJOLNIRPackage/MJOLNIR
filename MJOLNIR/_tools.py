@@ -657,23 +657,6 @@ def vectorAngle(V1,V2):
     return np.arccos(np.dot(V1,V2.T)/(np.linalg.norm(V1)*np.linalg.norm(V2)))
 
 
-def generateLabel(vector):
-    """Generate a label for a given HKL vector"""
-    HKL = ['H','K','L']
-    local = []
-    for value,direction in zip(vector,HKL):
-        if np.isclose(np.abs(value),1.0):
-            base = direction
-            if np.sign(value)==-1:
-                base ='-'+base
-            local.append(base)
-        elif np.isclose(value,0.0):
-            local.append('0')
-        else:
-            local.append('{:.0f}{}'.format(value,direction))
-    label = '('+', '.join(local)+')'
-    return label
-
 # TODO: Write a test/update this function
 def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitude,EMin,EMax,spinWaveEnergyErr=None): # pragma: no cover
     """Write fitted values for spin wave(s) into a SpinW readable format.
@@ -756,16 +739,41 @@ def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitud
     np.savetxt(file,dataMatrix.T,fmt='%+.7e',delimiter = ' ', header=titles,comments='')
 
 
-def get_default_args(func):
+
+def generateLabel(vec,labels=['H','K','L']):
+    """Format a scattering vector with individual letters.
+    
+    Args:
+    
+        - vec (array): Vector to be formated.
+
+    Kwargs:
+        
+        - lables (list): Letters to use for formating (default ['H','K','L']) 
+        
     """
-    returns a dictionary of arg_name:default_values for the input function
-    """
-    args, _, _, defaults, *_ = inspect.getfullargspec(func)    
-
-    return dict(zip(args[-len(defaults):], defaults))
-
-
-
+    # Individual letters
+    integers = np.isclose(np.abs(vec)-np.floor(np.abs(vec)),0.0)
+    signs = np.sign(vec)
+    vec = np.abs(vec)
+    zeros = np.isclose(vec,0.0)
+    ones = np.isclose(vec,1.0)
+    
+    label = []
+    for l,i,s,z,o,v in zip(labels,integers,signs,zeros,ones,vec):
+        sign= '-' if s==-1 else ''
+        if not i: # not an integer
+            label.append(''.join([sign,str(v),l]))
+        else: # It is an integer
+            if z: # if zero
+                label.append('0')
+            elif o: # if one
+                label.append(''.join([sign,l]))
+            else: # if integer different from 0 or +- 1
+                label.append(''.join([sign,str(int(v)),l]))
+                
+    returnLabel = ''.join(['(',', '.join([x for x in label]),')'])
+    return returnLabel
 
 ############# TESTING
 
@@ -899,3 +907,8 @@ def test_generateLabel():
     v = [1,-1,2]
     label = generateLabel(v)
     assert(label=='(H, -K, 2L)')
+
+    v = np.array([-0.5,22.0000,-3.0])
+    label = generateLabel(v)
+    assert(label=='(-0.5H, 22K, -3L)')
+

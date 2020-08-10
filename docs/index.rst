@@ -26,39 +26,43 @@ tutorials and guides on how to make use of MJOLNIR.
    Optimizations/Optimization
 
 
-.. toctree::
-   :maxdepth: 1
+.. .. toctree::
+..   :maxdepth: 1
+..
+..   Commissioning/Commissioning
+..
 
-   Commissioning/Commissioning
+.. table:: Current informations
+   :widths: grid
+   :align: left
+
+   +------------+
+   |  |version| |
+   +------------+
+   |    |doi|   |
+   +------------+
+   |   |pypi|   |
+   +------------+
+   |  |travis|  |
+   +------------+
+   | |coverall| |
+   +------------+
 
 
-| 
+.. |travis| image:: https://travis-ci.org/MJOLNIRPackage/MJOLNIR.svg?branch=master
+    :target: https://travis-ci.org/MJOLNIRPackage/MJOLNIR
 
-As the software is to be used by a broad user group, it is of great importance to support a wide range of python versions. Below is the current list of supported versions.
+.. |coverall| image:: https://coveralls.io/repos/github/MJOLNIRPackage/MJOLNIR/badge.svg?branch=master
+    :target: https://coveralls.io/github/MJOLNIRPackage/MJOLNIR?branch=master
 
-|travis| |coverall| |python34| * |python35| |python36| |python37| |python38| *
+.. |pypi| image:: https://img.shields.io/pypi/pyversions/MJOLNIR
+    :alt: PyPI - Python Version
+    :target: https://pypi.org/project/MJOLNIR/   
 
-.. note::
-    Python 3.4 is believed to be compatible but is not tested due to updates in testing framework.
-    Python 3.8 is supported by the package but some of the dependencies might not be supported on all operating systems.
 
-.. |travis| image:: https://travis-ci.org/Jakob-Lass/MJOLNIR.svg?branch=develop
-    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
+.. |doi| image:: https://zenodo.org/badge/117703167.svg
+    :target: https://zenodo.org/badge/latestdoi/117703167
 
-.. |coverall| image:: https://coveralls.io/repos/github/Jakob-Lass/MJOLNIR/badge.svg?branch=develop
-    :target: https://coveralls.io/github/Jakob-Lass/MJOLNIR?branch=develop
-
-.. |python34| image:: https://img.shields.io/badge/python-3.4-yellow.svg
-    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR   
-
-.. |python35| image:: https://img.shields.io/badge/python-3.5-brightgreen.svg
-    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR 
-
-.. |python36| image:: https://img.shields.io/badge/python-3.6-brightgreen.svg
-    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
-
-.. |python37| image:: https://img.shields.io/badge/python-3.7-brightgreen.svg
-    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
-
-.. |python38| image:: https://img.shields.io/badge/python-3.8-brightgreen.svg
-    :target: https://travis-ci.org/Jakob-Lass/MJOLNIR
+.. |version| image:: https://img.shields.io/github/v/release/MJOLNIRPackage/MJOLNIR   
+    :alt: GitHub release (latest by date)
+    :target: https://github.com/MJOLNIRPackage/MJOLNIR
