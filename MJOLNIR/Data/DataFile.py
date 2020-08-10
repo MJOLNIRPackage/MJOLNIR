@@ -700,8 +700,8 @@ class DataFile(object):
             Data.shape = (Data.shape[0],Data.shape[1],-1)
 
         A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
-        
-        
+
+       
         if A4Zero is None:
             A4Zero=0.0
         else:
@@ -721,7 +721,7 @@ class DataFile(object):
         
         A4File = A4File.reshape((-1,1,1))
 
-        A4Mean = -(A4.reshape((1,detectors,binning*EPrDetector))+np.deg2rad(A4File-A4Zero))
+        A4Mean = (A4.reshape((1,detectors,binning*EPrDetector))+np.deg2rad(A4File-A4Zero))
         
         Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
         for i in range(detectors): # for each detector
@@ -755,7 +755,7 @@ class DataFile(object):
             UB = self.sample.orientationMatrix
             UBINV = np.linalg.inv(UB)
             HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3),
-                -np.rad2deg(A4Mean)],Ei,EfMean)
+                np.rad2deg(A4Mean)],Ei,EfMean)
             H,K,L = np.swapaxes(np.swapaxes(HKL,1,2),0,3)
             self.sample.B = TasUBlib.calculateBMatrix(self.sample.cell)
 
@@ -1522,7 +1522,7 @@ def getScanParameter(f):
     
     for item in f.get('/entry/data/'):
         if not item in ['counts','summed_counts','en','h','intensity','k','l','monitor',
-        'normalization','qx','qy']:
+        'normalization','qx','qy'] and item[-4:]!='zero':
             scanParameters.append(item)
             fItem = f.get('/entry/data/{}'.format(item))
             scanUnits.append(decodeStr(fItem.attrs['units']))
