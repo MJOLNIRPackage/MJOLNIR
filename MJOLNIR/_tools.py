@@ -753,11 +753,11 @@ def generateLabel(vec,labels=['H','K','L']):
         
     """
     # Individual letters
-    integers = np.isclose(np.abs(vec)-np.floor(np.abs(vec)),0.0)
+    integers = np.isclose(np.abs(vec)-np.floor(np.abs(vec)),0.0,atol=1e-4)
     signs = np.sign(vec)
     vec = np.abs(vec)
-    zeros = np.isclose(vec,0.0)
-    ones = np.isclose(vec,1.0)
+    zeros = np.isclose(vec,0.0,atol=1e-4)
+    ones = np.isclose(vec,1.0,atol=1e-4)
     
     label = []
     for l,i,s,z,o,v in zip(labels,integers,signs,zeros,ones,vec):
