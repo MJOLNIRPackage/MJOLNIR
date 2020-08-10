@@ -77,7 +77,10 @@ class Marray(object):
             else:
                 if self.multidimensional:
                     for i in range(len(self)):
-                        self._data[i].mask = mask[i]
+                        if self._data[i].shape == (1,):
+                            self._data[i].mask = np.all(mask[i])
+                        else:
+                            self._data[i].mask = mask[i]
                 else:
                     self._data.mask = mask
     def __iter__(self):
