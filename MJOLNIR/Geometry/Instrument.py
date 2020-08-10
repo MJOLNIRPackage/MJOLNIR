@@ -829,7 +829,7 @@ def findPeak(data):
 
 # TODO: Make the reader create a true HDF file with all attributes set
 def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,cell=[5,5,5,90,90,90],factor=10000,detectors=104,\
-    ub=None,plane_vector_1=None,plane_vector_2=None,plane_normal=None): # pragma: no cover
+    ub=None,plane_vector_1=None,plane_vector_2=None,plane_normal=None,rotation_angle_zero=0.0,polar_angle_offset=0.0): # pragma: no cover
     """Convert McStas simulation to h5 format.
     
     Args:
@@ -1119,7 +1119,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             tth.append(2.*th)
         return theta,tth
 
-    def storeScanData(entry,data,a3,a4,ei):
+    def storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=0.0,polar_angle_offset=0.0):
         nxdata = entry.create_group('data')
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
@@ -1139,31 +1139,32 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         scanType='Unknown'
         scanvars = ''
         if isVaried(a3):
-            dset = sam.create_dataset('rotation_angle',data=a3)
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([0.0]))
-            dset.attrs['target'] = np.string_('/entry/CAMEA/sample/rotation_angle')
+            dset = sam.create_dataset('rotation_angle',data=np.array(a3))
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([rotation_angle_zero]))
+            dset.attrs['target'] = np.string_('/entry/sample/rotation_angle')
             nxdata['rotation_angle'] = dset
-            nxdata['rotation_angle_zero'] = dset_zero
             scanType = 'cscan a3 {} da3 {} np {} mn 10000'.format(np.mean(a3),np.mean(np.diff(a3)),len(a3))
             scanvars+='a3'
         else:
-            dset = sam.create_dataset('rotation_angle',(1,),dtype='float32')
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([0.0]))
+            dset = sam.create_dataset('rotation_angle',(1,),dtype='float32',data=a3[0])
+            dset_zero = sam.create_dataset('rotation_angle_zero',data=np.array([rotation_angle_zero]))
 
         dset.attrs['units'] = np.string_('degrees')
         dset_zero.attrs['units'] = np.string_('degrees')
 
         if isVaried(a4):
             dset = sam.create_dataset('polar_angle',data=a4)
-            dset.attrs['target'] = np.string_('/entry/CAMEA/sample/polar_angle')
+            dset.attrs['target'] = np.string_('/entry/CAMEA/analyzer/polar_angle')
             nxdata['polar_angle'] = dset
-            dset_zero = sam.create_dataset('polar_angle_offset',(1,),dtype='float32',data=0.0)
-            nxdata['polar_angle_offset'] = dset_zero
             scanType = 'cscan a4 {} da4 {} np {} mn 10000'.format(np.mean(a4),np.mean(np.diff(a4)),len(a4))
             scanvars+='a4'
         else:
-            dset = sam.create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
-            dset_zero = sam.create_dataset('polar_angle_offset',(1,),dtype='float32',data=0.0)
+            #dset = sam.create_dataset('polar_angle',(1,),dtype='float32',data=-a4[0])
+            #dset_zero = sam.create_dataset('polar_angle_offset',(1,),dtype='float32',data=polar_angle_offset)
+
+            dset = entry['CAMEA/analyzer'].create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
+        dset_zero = entry['CAMEA/analyzer'].create_dataset('polar_angle_offset',(1,),dtype='float32',data=polar_angle_offset)
+
         dset.attrs['units'] = np.string_('degrees')
         dset_zero.attrs['units'] = np.string_('degrees')
         
@@ -1189,14 +1190,6 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             dset[0] = tth[0]
         dset = entry['CAMEA/monochromator/rotation_angle']    
         dset.attrs['units'] = np.string_('degrees')
-        dset = entry['sample/polar_angle']    
-        dset.attrs['units'] = np.string_('degrees')
-        
-        dset = entry['CAMEA/analyzer'].create_dataset('polar_angle',(1,),dtype='float32',data=a4[0])
-        dset_zero = entry['CAMEA/analyzer'].create_dataset('polar_angle_offset',(1,),dtype='float32',data=0.0)
-
-        dset.attrs['units'] = np.string_('degrees')
-        dset_zero.attrs['units'] = np.string_('degrees')
 
         #dset = mono.create_dataset('summed_counts',data=np.sum(data,axis=(1,2)));
         #dset.attrs['units'] = np.string_('counts')
@@ -1264,7 +1257,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         import os
         Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
         data,a3,a4,ei = readScanData(fname,Numpoints,factor=factor,pixels=pixels,detectors=detectors)
-        storeScanData(entry,data,a3,a4,ei)
+        storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=rotation_angle_zero,polar_angle_offset=polar_angle_offset)
         
 
 
