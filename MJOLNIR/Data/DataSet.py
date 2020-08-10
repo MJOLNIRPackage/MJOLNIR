@@ -29,11 +29,14 @@ from shapely.geometry import Polygon as PolygonS
 from shapely.geometry import Point as PointS
 from shapely.vectorized import contains
 import time
+from . import Viewer3DPyQtGraph
+from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import warnings
 from ufit import Dataset
 
 pythonVersion = sys.version_info[0]
 
+_cache = []
 
 class DataSet(object):
     @_tools.KwargChecker(include=['Author']) 
@@ -2670,7 +2673,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2694,6 +2697,8 @@ class DataSet(object):
             - counts (bool): If set true, data shown is number of neutrons/pixel
 
             - adjustable (bool): If set true, 2 sliders will be present allowing to fine tune the c-axis (Default True)
+
+            - customSlicer (bool): If true, utilize the interactive viewer based on PyQtGraph
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -2724,7 +2729,25 @@ class DataSet(object):
         
         if counts:
             Intensity = Data[0]/Data[3]
-            Viewer = Viewer3D.Viewer3D(Data=Intensity,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable)
+            Data = Intensity
+            
+        if customSlicer == True:
+            
+            if QtWidgets.QApplication.instance() is None:
+                _cache.append(QtWidgets.QApplication(sys.argv))
+            win = QtGui.QMainWindow()
+            win.resize(800,800)
+            win.setWindowTitle('Interactive View3D')
+            win.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+            win.destroyed.connect(lambda: _cache.remove(win))
+            _cache.append(win)
+            
+            Viewer = Viewer3DPyQtGraph.Interactive3DViewer(Data,bins,self.sample[0],log=log)
+            win.setCentralWidget(Viewer)
+            win.show()
+            
+            
+
         else:
             Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable)
         return Viewer
