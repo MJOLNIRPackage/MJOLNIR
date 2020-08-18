@@ -234,7 +234,7 @@ class FlatAnalyser(Analyser):
             angleZ = self.direction # Energy-determining angle
         
         x=np.linspace(-Width, Width, n)
-        y=np.linspace(-Height/2, Height/2, n)
+        y=np.linspace(-Height, Height, n)
         Xc, Yc=np.meshgrid(x, y)
         Zcrot = np.sin(angleZ)*Xc
 
