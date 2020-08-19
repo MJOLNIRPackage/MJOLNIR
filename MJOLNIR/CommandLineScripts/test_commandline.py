@@ -134,15 +134,15 @@ def test_Convert_binning():
     assert(f.binning == 8)
     subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-b 1'])
     f = DataFile.DataFile(dataFiles[0].replace('hdf','nxs'))
-    assert(f.name == dataFiles[0].split('/')[1].replace('hdf','nxs'))
+    assert(f.name == dataFiles[0].split(os.path.sep)[1].replace('hdf','nxs'))
     assert(f.binning == 1)
     
 def test_Convert_SaveLocation():
-    if not os.path.isdir('Data/Data'):
-          os.makedirs('Data/Data')
-    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-s Data/'])
-    fileName = dataFiles[0].split('/')[1].replace('hdf','nxs')
-    f = DataFile.DataFile('Data/'+fileName)
+    if not os.path.isdir(os.path.join('Data','Data')):
+          os.makedirs(os.path.join('Data','Data'))
+    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-s Data'+os.path.sep])
+    fileName = dataFiles[0].split(os.path.sep)[1].replace('hdf','nxs')
+    f = DataFile.DataFile('Data'+os.path.sep+fileName)
     
     assert(f.binning == 8)
     print(fileName)

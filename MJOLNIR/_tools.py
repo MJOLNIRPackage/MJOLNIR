@@ -865,7 +865,7 @@ def test_binEdges():
 def test_fileListGenerator():
     numberStr = '0,20-23-24,4000'
     year = 2018
-    folder = '/home/camea'
+    folder = os.path.join('','home','camea')
     try:
         files = fileListGenerator(numberStr,folder,year)
         assert False # Too many dasches
@@ -876,9 +876,9 @@ def test_fileListGenerator():
 
     files = fileListGenerator(numberStr,folder,year)
     filesCorrect = np.array([
-        '/home/camea/camea2018n000000.hdf', '/home/camea/camea2018n000020.hdf', 
-        '/home/camea/camea2018n000021.hdf', '/home/camea/camea2018n000022.hdf', 
-        '/home/camea/camea2018n000023.hdf', '/home/camea/camea2018n004000.hdf'])
+        os.path.join('','home','camea','camea2018n000000.hdf'), os.path.join('','home','camea','camea2018n000020.hdf'), 
+        os.path.join('','home','camea','camea2018n000021.hdf'), os.path.join('','home','camea','camea2018n000022.hdf'), 
+        os.path.join('','home','camea','camea2018n000023.hdf'), os.path.join('','home','camea','camea2018n004000.hdf')])
     assert(np.all(filesCorrect == np.array(files)))
 
 
