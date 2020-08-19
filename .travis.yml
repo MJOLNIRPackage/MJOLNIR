@@ -1,7 +1,7 @@
 sudo: required
 dist: xenial
-#services:
-#  - xvfb
+services:
+  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb; fi
 
 language: python
 # ===== Linux ======
