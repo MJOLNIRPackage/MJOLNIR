@@ -23,7 +23,7 @@ matrix:
         - pip3 install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
-      script: then py.test MJOLNIR/ -vv
+      script: py.test MJOLNIR/ -vv
     - name: "Python 3.8.0 on macOS 10.14"
       os: osx
       osx_image: xcode11.3  # Python 3.8.0 running on macOS 10.14.6
@@ -34,25 +34,25 @@ matrix:
         - pip3 install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
-      script: then py.test MJOLNIR/ -vv
+      script: py.test MJOLNIR/ -vv
     - name: "Python 3.5.4 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - python3 --version
+        - python --version
         - sleep 3 # give xvfb some time to start
-        - pip3 install -U pip
+        - pip install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
-      script: then py.test MJOLNIR/ -vv
+      script: py.test MJOLNIR/ -vv
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
     - name: "Python 3.6.8 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - python3 --version
+        - python --version
         - sleep 3 # give xvfb some time to start
-        - pip3 install -U pip
+        - pip install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
@@ -60,9 +60,9 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - python3 --version
+        - python --version
         - sleep 3 # give xvfb some time to start
-        - pip3 install -U pip
+        - pip install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
@@ -70,9 +70,9 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - python3 --version
+        - python --version
         - sleep 3 # give xvfb some time to start
-        - pip3 install -U pip
+        - pip install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
