@@ -1085,8 +1085,8 @@ class DataFile(object):
 
         if os.path.exists(saveFileName):
             warnings.warn('The file {} exists alread. Old file will be renamed to {}.'.format(saveFileName,saveFileName+'_old'))
-            if os.path.exists(saveFileName,saveFileName+'_old'):
-                os.remove(saveFileName,saveFileName+'_old')
+            if os.path.exists(saveFileName+'_old'):
+                os.remove(saveFileName+'_old')
             os.rename(saveFileName,saveFileName+'_old')
         fd = hdf.File(saveFileName,'w')
         fs = hdf.File(datafile.fileLocation,'r')

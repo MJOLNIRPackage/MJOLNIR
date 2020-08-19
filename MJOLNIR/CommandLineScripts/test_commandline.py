@@ -27,26 +27,7 @@ def test_CalibrationInspector_Help_Text():
     if sys.platform == 'win32':
         helpText = b'usage: MJOLNIRCalibrationInspector.exe [-h] [-s SAVE]\r\n                                       [-p [PLOTLIST [PLOTLIST ...]]]\r\n                                       [-b BINNING]\r\n                                       [DataFile]\r\n\r\nInspection tool to visualize calibration tables in a data file.\r\n\r\npositional arguments:\r\n  DataFile              Data file from which calibration table is to be\r\n                        plotted. If none provided file dialogue will appear.\r\n\r\noptional arguments:\r\n  -h, --help            show this help message and exit\r\n  -s SAVE, --save SAVE  Location to which the generated file will be saved.\r\n  -p [PLOTLIST [PLOTLIST ...]], --plot [PLOTLIST [PLOTLIST ...]]\r\n                        List of wanted plots to be generated. Should be\r\n                        "A4","Normalization","Ef","EfOverview". Default all of\r\n                        them.\r\n  -b BINNING, --binning BINNING\r\n                        Binning to be inspected. Default \'8\'\r\n'
     else:
-        helpText = b"""usage: MJOLNIRCalibrationInspector{} [-h] [-s SAVE]
-                                       [-p [PLOTLIST [PLOTLIST ...]]] [-b BINNING]
-                                       [DataFile]
-
-    Inspection tool to visualize calibration tables in a data file.
-
-    positional arguments:
-      DataFile              Data file from which calibration table is to be
-                            plotted. If none provided file dialogue will appear.
-
-    optional arguments:
-      -h, --help            show this help message and exit
-      -s SAVE, --save SAVE  Location to which the generated file will be saved.
-      -p [PLOTLIST [PLOTLIST ...]], --plot [PLOTLIST [PLOTLIST ...]]
-                            List of wanted plots to be generated. Should be
-                            "A4","Normalization","Ef","EfOverview". Default all of
-                            them.
-      -b BINNING, --binning BINNING
-                            Binning to be inspected. Default '8'
-    """
+        helpText = b'usage: MJOLNIRCalibrationInspector [-h] [-s SAVE]\n                                   [-p [PLOTLIST [PLOTLIST ...]]] [-b BINNING]\n                                   [DataFile]\n\nInspection tool to visualize calibration tables in a data file.\n\npositional arguments:\n  DataFile              Data file from which calibration table is to be\n                        plotted. If none provided file dialogue will appear.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  -s SAVE, --save SAVE  Location to which the generated file will be saved.\n  -p [PLOTLIST [PLOTLIST ...]], --plot [PLOTLIST [PLOTLIST ...]]\n                        List of wanted plots to be generated. Should be\n                        "A4","Normalization","Ef","EfOverview". Default all of\n                        them.\n  -b BINNING, --binning BINNING\n                        Binning to be inspected. Default \'8\'\n'
 
     assert(result == helpText)
 
