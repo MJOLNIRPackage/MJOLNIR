@@ -44,6 +44,7 @@ matrix:
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
         - pip3 install .
       script: py.test MJOLNIR/ -vv
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
@@ -56,6 +57,7 @@ matrix:
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
         - pip3 install .
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
     - name: "Python 3.7.9 on Windows"
@@ -67,6 +69,7 @@ matrix:
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
         - pip3 install .
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
     - name: "Python 3.8.5 on Windows"
@@ -78,6 +81,7 @@ matrix:
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
         - pip3 install .
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 before_install:
