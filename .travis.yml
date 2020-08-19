@@ -4,29 +4,82 @@ services:
   - xvfb
 
 language: python
+# ===== Linux ======
 
 python:
-  - "3.5"
-  - "3.6"
-  - "3.7"
-  - "3.8"
-  
-
-#before_install:
-#- sudo apt-get -qq update && sudo apt-get install -y --no-install-recommends texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
-
-
-before_script: # configure a headless display to test plot generation
-#  - xvfb-run --server-args="-screen 0 1024x768x24"
-  - sleep 3 # give xvfb some time to start
-#  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x24"
-
-
-install:
+  - 3.5
+  - 3.6
+  - 3.7
+  - 3.8
+matrix:
+  include:      
+    - name: "Python 3.7.5 on macOS 10.14"
+      os: osx
+      osx_image: xcode10.2  # Python 3.7.5 running on macOS 10.14.3
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+      script: then py.test MJOLNIR/ -vv
+    - name: "Python 3.8.0 on macOS 10.14"
+      os: osx
+      osx_image: xcode11.3  # Python 3.8.0 running on macOS 10.14.6
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+      script: then py.test MJOLNIR/ -vv
+    - name: "Python 3.5.4 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+      script: then py.test MJOLNIR/ -vv
+      env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
+    - name: "Python 3.6.8 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.7.9 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+    - name: "Python 3.8.5 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+before_install:
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
   - pip install --upgrade pip
   - pip install .
-#  - pip install -r requirements.txt
 
 script: 
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov=MJOLNIR/; fi
