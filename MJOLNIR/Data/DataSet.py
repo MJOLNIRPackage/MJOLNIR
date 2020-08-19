@@ -6014,3 +6014,16 @@ def testMasking():
     assert(np.sum(ds.I.mask)==np.sum([np.sum(m) for m in masks]))
     
 
+def testupdateSampleParameters():
+    DataFile = ['Data/camea2018n000136.hdf','Data/camea2018n000137.hdf']
+    ds = DataSet(DataFile)
+
+    unitCell = ds.sample[0].unitCell
+    unitCell[:2]*=2.0
+    ds.updateSampleParameters(unitCell=unitCell)
+    newCell = ds.sample[0].cell
+    newUB = ds.sample[0].UB
+
+    for d in ds:
+        assert(np.all(np.isclose(d.sample.cell,newCell)))
+        assert(np.all(np.isclose(d.sample.UB,newUB)))
