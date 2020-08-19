@@ -574,7 +574,7 @@ class DataSet(object):
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,Data=None,dataFiles=None,constantBins=False,ufit=False,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,Data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
         Args:
@@ -604,6 +604,8 @@ class DataSet(object):
                 - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
         
                 - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+                - outputFunction (function): Function called on output string (default print)
         
         """
         if Data is None:
@@ -680,7 +682,7 @@ class DataSet(object):
             ax.set_xlabel('$Q_h$ [RLU]\n$Q_k$ [RLU]\n$Q_l$ [RLU]\nE [meV]')
         
         
-        def onclick(event,ax,Data):# pragma: no cover
+        def onclick(event,ax,Data,outputFunction):# pragma: no cover
             if ax.in_axes(event):
                 try:
                     C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -700,7 +702,7 @@ class DataSet(object):
                 Norm = float(Data['Normalization'][0])
                 NC = int(Data['BinCount'][0])
                 printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-                print(printString)
+                outputFunction(printString)
         
         
         ax.xaxis.set_label_coords(1.15, -0.025)
@@ -709,7 +711,7 @@ class DataSet(object):
         
         
         ax.format_coord = lambda x,y: format_coord(x,y,ax,np.array(Data[variables]))
-        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data))
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data,outputFunction=outputFunction))
         
         if ufit==True:
             print(Emin,Emax)
@@ -957,7 +959,7 @@ class DataSet(object):
 
     
     @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','edgecolors']]))
-    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True,**kwargs):
+    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True,outputFunction=print,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
         .. note::
@@ -980,6 +982,8 @@ class DataSet(object):
             - log (bool): If true, logarithm to intensity is plotted (default False)
 
             - colorbar (bool): If True a colorbar is added to the figure (default True)
+
+            - outputFunction (function): Function called on output strung (default print)
 
             - kwargs: All other keywords will be passed on to the ax.pcolormesh method.
         
@@ -1038,7 +1042,7 @@ class DataSet(object):
 
         ax.set_clim = lambda VMin,VMax: set_clim(VMin,VMax,pmeshs)
         
-        def onclick(event,ax,dat):# pragma: no cover
+        def onclick(event,ax,dat,outputFunction):# pragma: no cover
             if ax.in_axes(event):
                 try: 
                     c = ax.get_figure().canvas.cursor().shape()
@@ -1059,7 +1063,7 @@ class DataSet(object):
                 Norm = _local['Normalization'][index]
                 NC = _local['BinCount'][index]
                 printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-                print(printString)
+                outputFunction(printString)
 
         if not 'vmin' in kwargs or not 'vmax' in kwargs:
             if log:
@@ -1071,7 +1075,7 @@ class DataSet(object):
             
             ax.set_clim(minVal,maxVal)
         ax.pmeshs = pmeshs
-        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data))
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data,outputFunction=outputFunction))
         if colorbar:
             ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
 
@@ -1088,7 +1092,7 @@ class DataSet(object):
         raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQEAxes))
     
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
-    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,xScale=1.0,yScale=1.0,**kwargs):
+    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,xScale=1.0,yScale=1.0,outputFunction=print,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
             
         Kwargs:
@@ -1122,6 +1126,8 @@ class DataSet(object):
             - colorbar (bool): If True, a colorbar is created in figure (default False)
 
             - zorder (int): If provided decides the z ordering of plot (default 10)
+
+            - outputFunction (function): Function called on output string (default print)
             
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
@@ -1352,7 +1358,7 @@ class DataSet(object):
             else:
                 ax.set_zlim(minEBins-0.1,maxEBins+0.1)
         else:
-            def onclick(ax, event,Qx,Qy,data): # pragma: no cover
+            def onclick(ax, event,Qx,Qy,data,outputFunction): # pragma: no cover
                 if event.xdata is not None and ax.in_axes(event):
                     try:
                         C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -1389,8 +1395,8 @@ class DataSet(object):
                     printString+='I = {:.4E}'.format(Intensity)
                     printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
 
-                print(printString)
-            ax.cid = ax.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(ax,x,Qx,Qy,[intensity,monitorCount,Normalization,NormCount]))
+                outputFunction(printString)
+            ax.cid = ax.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(ax,x,Qx,Qy,[intensity,monitorCount,Normalization,NormCount],outputFunction=outputFunction))
             
         if len(Qx)!=0:
             xmin = np.min([np.min(qx) for qx in Qx])
@@ -1645,7 +1651,7 @@ class DataSet(object):
 
     
     @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','tickRound','plotSeperator','cmap','colorbar','edgecolors']]))
-    def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs):
+    def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=False,outputFunction=print,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
         Args:
@@ -1681,6 +1687,8 @@ class DataSet(object):
             - log (bool): If true the plotted intensity is the logarithm of the intensity (default False)
 
             - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+            - outputFunction (function): Function called on output string (default print)
 
         Return:  m = Q points, n = energy bins
             
@@ -1999,7 +2007,7 @@ class DataSet(object):
                 
                 return segID,Eindex,index
             ax.calculateIndex = lambda x,y: calculateIndex(x,y,offset,actualEnergy,edgeQDistance,DataList,textReturn=False)#EnergyBins
-            def onclick(event,ax,DataList): # pragma: no cover
+            def onclick(event,ax,DataList,outputFunction): # pragma: no cover
                 if ax.in_axes(event):
                     try:
                         C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -2023,9 +2031,9 @@ class DataSet(object):
                             NC = int(dataPoint['BinCount'])
                             printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
                     
-                    print(printString)
+                    outputFunction(printString)
             ax.format_coord = lambda x,y: format_coord(x,y,edgeQDistance,centerPositionTotal,actualEnergy,DataList,rlu,offset,self)#EnergyBins
-            ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList))
+            ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,DataList,outputFunction=outputFunction))
             ax.edgeQDistance = edgeQDistance   
             ax.offset = offset  
             
@@ -2673,7 +2681,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,outputFunction=print,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2749,7 +2757,7 @@ class DataSet(object):
             
 
         else:
-            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable)
+            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable,outputFunction=outputFunction)
         return Viewer
 
     def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):
@@ -2819,16 +2827,20 @@ class DataSet(object):
         """
 
         
-        def intrextrapolate(oldPosition,oldValues,newValues):
+        def intrextrapolate(oldPosition,oldValues,newValues,outputFunction=print):
             """interpolates between old and new through linear regression and returns best estimate at old positions
             
             arg:
-            oldPosition (list): List of position to estimate the new value at (in coordinates of oldValues)
+                - oldPosition (list): List of position to estimate the new value at (in coordinates of oldValues)
             
-            oldValues (list): List of old values 
+                - oldValues (list): List of old values 
             
-            newValues (list): List of new values
-            
+                - newValues (list): List of new values
+
+            kwargs:
+
+                - outputFunction (function): Function called on output string (default print)
+
             return:
                 newPosition (list): estimate of newValue at oldPosition
             """
@@ -2859,7 +2871,7 @@ class DataSet(object):
             xs = [fstring.format(XX) for fstring,XX in zip(xFormatString,np.concatenate([[x],newX],axis=0))]
             return ', '.join([label+' = '+str(X) for X,label in zip(np.concatenate([xs,[y]],axis=0),labels)])
         
-        def onclick(event,ax):# pragma: no cover
+        def onclick(event,ax,outputFunction):# pragma: no cover
             if ax.in_axes(event):
                 try:
                     C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -2872,9 +2884,9 @@ class DataSet(object):
                 x = event.xdata
                 y = event.ydata
                 if hasattr(ax,'__format_coord__'):
-                    print(ax.__format_coord__(x,y))
+                    outputFunction(ax.__format_coord__(x,y))
                 else:
-                    print(ax.format_coord(x,y))
+                    outputFunction(ax.format_coord(x,y))
         
     
         
@@ -2904,7 +2916,7 @@ class DataSet(object):
         
         ax.__format_coord__ = lambda x,y: format_coord(x,y,X=np.concatenate(ax.X,axis=0),labels=ax.__labels__)
         ax.format_coord = lambda x,y: ax.__format_coord__(x,y)
-        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax))
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,outputFunction=outputFunction))
         #        ax.format_xdata = lambda x: format_xdata(x,ax)#ax.X,ax.xlabels)
         ax.set_xlabel(ax.xlabels[0])
         if legend:
@@ -3062,6 +3074,17 @@ class DataSet(object):
         name = 'Intensity'
         ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
         return ufitData
+
+    def updateSampleParameters(self,unitCell):
+        """Update unit cell parameters and corresponding UB matrix
+
+        Args:
+
+            - unitCell (list): List of cell parameters (a,b,c,alpha,beta,gamma)
+
+        """
+        for d in self:
+            d.sample.updateSampleParameters(unitCell=unitCell)
 
 
 

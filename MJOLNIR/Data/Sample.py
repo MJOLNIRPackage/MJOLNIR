@@ -126,6 +126,7 @@ class Sample(object):
         self.alpha = unitCell[3]
         self.beta  = unitCell[4]
         self.gamma = unitCell[5]
+        self.updateCell()
         
     @property
     def a(self):
@@ -228,25 +229,7 @@ class Sample(object):
     def initialize(self):
         """Initialize the Sample object. Automatically called during __init__method."""
         # From http://gisaxs.com/index.php/Unit_cell
-        self.realVectorA = np.array([self.a,0,0])
-        self.realVectorB = self.b*np.array([cosd(self.gamma),sind(self.gamma),0.0])#np.dot(np.array([self.b,0,0]),rotationMatrix(0,0,self.gamma))
-        self.realVectorC = self.c*np.array([cosd(self.beta),(cosd(self.alpha)-cosd(self.beta)*cosd(self.gamma))/sind(self.gamma),
-        np.sqrt(1-cosd(self.beta)**2-((cosd(self.alpha)-cosd(self.beta)*cosd(self.gamma))/sind(self.gamma))**2)])#np.dot(np.array([self.c,0,0]),rotationMatrix(0,self.beta,0))
-        
-        self.volume = np.abs(np.dot(self.realVectorA,np.cross(self.realVectorB,self.realVectorC)))
-        self.reciprocalVectorA = 2*np.pi*np.cross(self.realVectorB,self.realVectorC)/self.volume
-        self.reciprocalVectorB = 2*np.pi*np.cross(self.realVectorC,self.realVectorA)/self.volume
-        self.reciprocalVectorC = 2*np.pi*np.cross(self.realVectorA,self.realVectorB)/self.volume
-        
-
-        bv1,bv2,bv3 = self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC
-        a1,a2,a3,alpha1,alpha2,alpha3= self.unitCell
-        
-        b1,b2,b3 = [np.linalg.norm(x) for x in [bv1,bv2,bv3]]
-        beta1 = np.rad2deg(_tools.vectorAngle(bv2,bv3))
-        beta2 = np.rad2deg(_tools.vectorAngle(bv3,bv1))
-        beta3 = np.rad2deg(_tools.vectorAngle(bv1,bv2))
-        self.cell = [a1,a2,a3,b1,b2,b3,alpha1,alpha2,alpha3,beta1,beta2,beta3]
+        self.updateCell()
         self.B = TasUBlib.calculateBMatrix(self.cell)
         #self.reciprocalMatrix = np.array([self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC]).T
 
@@ -419,6 +402,63 @@ class Sample(object):
             
             returnVal.shape = returnValShape # Shape (l,m,n,3) or (l,m,n,2)
         return returnVal
+
+    def updateCell(self,unitCell=None):
+        """Update cell parameters with current unit cell values.
+
+        Kwargs:
+            
+            - unitCell (list): List of a,b,c,alpha,beta,gamma. If None, use self.unitCell (default None)
+
+        """
+        if unitCell is None:
+            unitCell = self.unitCell
+        else:
+            self.unitCell = unitCell
+
+        self.realVectorA = np.array([self.a,0,0])
+        self.realVectorB = self.b*np.array([cosd(self.gamma),sind(self.gamma),0.0])#np.dot(np.array([self.b,0,0]),rotationMatrix(0,0,self.gamma))
+        self.realVectorC = self.c*np.array([cosd(self.beta),(cosd(self.alpha)-cosd(self.beta)*cosd(self.gamma))/sind(self.gamma),
+        np.sqrt(1-cosd(self.beta)**2-((cosd(self.alpha)-cosd(self.beta)*cosd(self.gamma))/sind(self.gamma))**2)])#np.dot(np.array([self.c,0,0]),rotationMatrix(0,self.beta,0))
+        
+        self.volume = np.abs(np.dot(self.realVectorA,np.cross(self.realVectorB,self.realVectorC)))
+        self.reciprocalVectorA = 2*np.pi*np.cross(self.realVectorB,self.realVectorC)/self.volume
+        self.reciprocalVectorB = 2*np.pi*np.cross(self.realVectorC,self.realVectorA)/self.volume
+        self.reciprocalVectorC = 2*np.pi*np.cross(self.realVectorA,self.realVectorB)/self.volume
+        
+
+        bv1,bv2,bv3 = self.reciprocalVectorA,self.reciprocalVectorB,self.reciprocalVectorC
+        a1,a2,a3,alpha1,alpha2,alpha3= self.unitCell
+        
+        b1,b2,b3 = [np.linalg.norm(x) for x in [bv1,bv2,bv3]]
+        beta1 = np.rad2deg(_tools.vectorAngle(bv2,bv3))
+        beta2 = np.rad2deg(_tools.vectorAngle(bv3,bv1))
+        beta3 = np.rad2deg(_tools.vectorAngle(bv1,bv2))
+        self.cell = [a1,a2,a3,b1,b2,b3,alpha1,alpha2,alpha3,beta1,beta2,beta3]
+
+
+    def updateSampleParameters(self,unitCell):
+        """Update the sample parameters and change UB matrix as well.
+
+        Args: 
+
+            - unitCell (list): List of cell parameters. If None use self.unitCell
+
+        """
+        
+        UB = self.UB
+        B = self.B
+        U = np.dot(UB,np.linalg.inv(B))
+        
+        self.updateCell(unitCell)
+        newB = TasUBlib.calculateBMatrix(self.cell)
+        newUB = np.dot(U,newB)
+        
+        self.UB = newUB
+        self.orientationMatrix = newUB
+        self.calculateProjections()
+
+
 
 
 def calcProjectionVectors(R1,R2,norm=None):

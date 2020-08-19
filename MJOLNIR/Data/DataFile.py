@@ -1201,6 +1201,16 @@ class DataFile(object):
 
         self.instrumentCalibrations = np.array([c for c in calibrations.values()])
         self.possibleBinnings = np.array(list(calibrations.keys()))
+
+    def updateSampleParameters(self,unitCell):
+        """Update unit cell parameters and corresponding UB matrix
+
+        Args:
+
+            - unitCell (list): List of cell parameters (a,b,c,alpha,beta,gamma)
+
+        """
+        self.sample.updateSampleParameters(unitCell=unitCell) 
         
 
     def saveHDF(self,saveFileName):
