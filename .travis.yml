@@ -1,7 +1,7 @@
 sudo: required
 dist: xenial
-services:
-  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb; fi
+#services:
+#  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then xvfb; fi
 
 language: python
 # ===== Linux ======
@@ -41,9 +41,9 @@ matrix:
       before_install:
         - python --version
         - sleep 3 # give xvfb some time to start
-        - pip install -U pip
-        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
-        - pip install .
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip3 install .
       script: py.test MJOLNIR/ -vv
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
     - name: "Python 3.6.8 on Windows"
@@ -52,9 +52,9 @@ matrix:
       before_install:
         - python --version
         - sleep 3 # give xvfb some time to start
-        - pip install -U pip
-        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
-        - pip install .
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip3 install .
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
     - name: "Python 3.7.9 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
@@ -62,9 +62,9 @@ matrix:
       before_install:
         - python --version
         - sleep 3 # give xvfb some time to start
-        - pip install -U pip
-        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
-        - pip install .
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip3 install .
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
     - name: "Python 3.8.5 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
@@ -72,14 +72,19 @@ matrix:
       before_install:
         - python --version
         - sleep 3 # give xvfb some time to start
-        - pip install -U pip
-        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
-        - pip install .
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip3 install .
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 before_install:
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
   - pip install --upgrade pip
   - pip install .
+
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
 
 script: 
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov=MJOLNIR/; fi
