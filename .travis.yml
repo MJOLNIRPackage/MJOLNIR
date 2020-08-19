@@ -39,6 +39,7 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
+        - choco install python --version 3.5.4
         - python --version
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
@@ -50,6 +51,7 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
+        - choco install python --version 3.6.8
         - python --version
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
@@ -60,6 +62,7 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
+        - choco install python --version 3.7.9
         - python --version
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
@@ -70,6 +73,7 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
+        - choco install python --version 3.8.5
         - python --version
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
