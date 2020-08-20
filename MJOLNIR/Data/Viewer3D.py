@@ -342,6 +342,9 @@ class Viewer3D(object):
             pass
         self.ax.grid(self.grid,zorder=self.gridZOrder)
 
+    def set_title(self,title):
+        self.ax.set_title(title)
+
 
 def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
     if event.xdata is not None and self.ax.in_axes(event):

@@ -214,6 +214,9 @@ class Interactive3DViewer(QtGui.QWidget):
         self.imv1.setLevels(vMin,vMax)
         self.imv2.setLevels(vMin,vMax)
 
+    def set_title(self,title):
+        self.parent().window().setWindowTitle(title)
+
         
 
 from pyqtgraph import ptime
