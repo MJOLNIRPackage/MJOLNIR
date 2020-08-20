@@ -714,7 +714,6 @@ class DataSet(object):
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data,outputFunction=outputFunction))
         
         if ufit==True:
-            print(Emin,Emax)
             ufitdata = self.generateUFitDataset(pdData=Data,q1=q1,q2=q2,rlu=rlu,width=width,Emin=Emin,Emax=Emax,minPixel=minPixel)
             return ax,ufitdata
         
