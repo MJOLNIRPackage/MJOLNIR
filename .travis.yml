@@ -93,8 +93,8 @@ before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start; sleep 3; fi
 
 script: 
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test test/ -vv --cov=MJOLNIR/; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test test/ -vv --ignore=MJOLNIR/CommandLineScripts/MJOLNIRHistory.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIR3DView.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRConvert.py; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test test/ -vv --cov=test/; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test test/ -vv --ignore=test/CommandLineScripts/MJOLNIRHistory.py --ignore=test/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=test/CommandLineScripts/MJOLNIR3DView.py --ignore=test/CommandLineScripts/MJOLNIRConvert.py; fi
   - if [[ $TRAVIS_PYTHON_VERSION > 3.6 ]]; then py.test test/ -vv; fi
   - if [[ $TRAVIS_PYTHON_VERSION < 3.5 ]]; then py.test test/ -vv; fi
 
