@@ -14,8 +14,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib._pylab_helpers
 
-plt.ion()
-
 from MJOLNIR.CommandLineScripts import _tools
 import sys,os
 settingsName = 'CalibrationInspectorDir'
@@ -120,7 +118,7 @@ if saveFile==True:
             f.savefig(os.path.join(saveLocation,title+'.png'))
             
 
-plt.show()
+
 
 def main():
-    pass
+    plt.show()
