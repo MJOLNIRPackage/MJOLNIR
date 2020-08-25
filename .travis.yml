@@ -23,7 +23,7 @@ matrix:
         - pip3 install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
-      script: py.test MJOLNIR/ -vv
+      script: py.test test/ -vv
     - name: "Python 3.8.0 on macOS 10.14"
       os: osx
       osx_image: xcode11.3  # Python 3.8.0 running on macOS 10.14.6
@@ -34,7 +34,7 @@ matrix:
         - pip3 install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
-      script: py.test MJOLNIR/ -vv
+      script: py.test test/ -vv
     - name: "Python 3.5.4 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
@@ -46,7 +46,7 @@ matrix:
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - python setup.py sdist
         - pip3 install .
-      script: py.test MJOLNIR/ -vv
+      script: py.test test/ -vv
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
     - name: "Python 3.6.8 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
@@ -93,10 +93,10 @@ before_script:
   - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start; sleep 3; fi
 
 script: 
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov=MJOLNIR/; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test MJOLNIR/ -vv --ignore=MJOLNIR/CommandLineScripts/MJOLNIRHistory.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIR3DView.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRConvert.py; fi
-  - if [[ $TRAVIS_PYTHON_VERSION > 3.6 ]]; then py.test MJOLNIR/ -vv; fi
-  - if [[ $TRAVIS_PYTHON_VERSION < 3.5 ]]; then py.test MJOLNIR/ -vv; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test test/ -vv --cov=MJOLNIR/; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test test/ -vv --ignore=MJOLNIR/CommandLineScripts/MJOLNIRHistory.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIR3DView.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRConvert.py; fi
+  - if [[ $TRAVIS_PYTHON_VERSION > 3.6 ]]; then py.test test/ -vv; fi
+  - if [[ $TRAVIS_PYTHON_VERSION < 3.5 ]]; then py.test test/ -vv; fi
 
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];
