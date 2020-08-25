@@ -1600,7 +1600,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
     A4 = np.asarray([A4]).flatten()
     Ei = np.asarray([Ei]).flatten()
     isChanging = np.array([len(A3)>1,len(A4)>1,len(Ei)>1])
-    isChangingData = np.array([A3,A4,Ei])[isChanging]
+    isChangingData = np.array([A3,A4,Ei],dtype=object)[isChanging]
     
     if np.sum(isChanging)>1:
             # Check if all arrays then have same shape
@@ -1660,7 +1660,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
                     bound = data[:,[7,8]]
                     calib.append([EfTable,A4,bound])
                     binning.append(len(A4)/(104*8))
-            df.instrumentCalibrations = np.array(calib)
+            df.instrumentCalibrations = np.array(calib,dtype=object)
             df.possibleBinnings = binning
             df.loadBinning(1)
     

@@ -411,7 +411,7 @@ def test_DataSet_1Dcut_ufit():
     dataset2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,ufit=True)
     
 
-    files = ', '.join([x.replace('hdf','nxs').split('/')[-1] for x in convertFiles])
+    files = ', '.join([x.replace('hdf','nxs').split(os.path.sep)[-1] for x in convertFiles])
 
     assert(np.all([np.all(x==y) for x,y in zip(dataset.fit_columns,dataset2.fit_columns)]))
     assert(dataset.meta == dataset2.meta)
@@ -477,7 +477,7 @@ def test_DataSet_1DcutE():
     ufitData = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
     ax,ufitData2 = Datset.plotCut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
 
-    files = ', '.join([x.replace('hdf','nxs').split('/')[-1] for x in convertFiles])
+    files = ', '.join([x.replace('hdf','nxs').split(os.path.sep)[-1] for x in convertFiles])
     
     assert(np.all([np.all(np.isclose(x,y,equal_nan=True)) for x,y in zip(ufitData.fit_columns,ufitData2.fit_columns)]))
     assert(ufitData.meta == ufitData2.meta)
