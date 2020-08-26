@@ -13,7 +13,7 @@ from MJOLNIR.Data import Mask
 
 pythonVersion = sys.version_info[0]
 
-dataPath = 'Data'
+dataPath = 'samlpedata'
 
 def test_DataSet_Creation():
 

@@ -7,7 +7,7 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 import os
 
-dataPath = 'Data'
+dataPath = 'samlpedata'
 
 
 def test_DataFile():

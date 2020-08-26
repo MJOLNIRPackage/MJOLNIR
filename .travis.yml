@@ -23,6 +23,8 @@ matrix:
         - pip3 install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
+        - wget -UseBasicParsing 'https://www.psi.ch/en/media/60041/download'
+        - unzip download
       script: py.test test/ -vv
     - name: "Python 3.8.0 on macOS 10.14"
       os: osx
@@ -34,6 +36,8 @@ matrix:
         - pip3 install -U pip
         - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - pip install .
+        - wget -UseBasicParsing 'https://www.psi.ch/en/media/60041/download'
+        - unzip download
       script: py.test test/ -vv
     - name: "Python 3.5.4 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
@@ -46,6 +50,8 @@ matrix:
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - python setup.py sdist
         - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
       script: py.test test/ -vv
       env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
     - name: "Python 3.6.8 on Windows"
@@ -59,6 +65,8 @@ matrix:
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - python setup.py sdist
         - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
       env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
     - name: "Python 3.7.9 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
@@ -71,6 +79,8 @@ matrix:
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - python setup.py sdist
         - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
       env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
     - name: "Python 3.8.5 on Windows"
       os: windows           # Windows 10.0.17134 N/A Build 17134
@@ -83,11 +93,15 @@ matrix:
         - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
         - python setup.py sdist
         - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
 before_install:
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
   - pip install --upgrade pip
   - pip install .
+  - wget 'https://www.psi.ch/en/media/60041/download' 
+  - unzip download
 
 #before_script:
 #  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start; sleep 3; fi

@@ -3,7 +3,7 @@ import subprocess
 import os,sys
 import pytest
 
-dataFiles = [os.path.join('Data',f) for f in ['camea2018n000136.hdf','camea2018n000136.nxs',
+dataFiles = [os.path.join('samlpedata',f) for f in ['camea2018n000136.hdf','camea2018n000136.nxs',
 'camea2018n000137.nxs',
 'camea2018n000178.hdf']]
 

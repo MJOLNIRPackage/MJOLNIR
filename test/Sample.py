@@ -6,7 +6,7 @@ import os
 import numpy as np
 import MJOLNIR.TasUBlibDEG as TasUBlib
 
-dataPath = 'Data'
+dataPath = 'samlpedata'
 
 
 
