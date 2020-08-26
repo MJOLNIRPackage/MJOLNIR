@@ -78,7 +78,6 @@ def test_Analyser_height():
 
 def test_FlatAnalyser_plot():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    plt.ioff()
     fig = plt.figure()
     ax = fig.gca(projection='3d')
 
