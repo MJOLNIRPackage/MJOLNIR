@@ -309,7 +309,7 @@ def test_instrument_create_xml():
 @pytest.mark.unit
 def test_Normalization_tables(quick):
 
-    Instr = Instrument(fileName=os.path.join(dataPath,'CAMEA_Updated.xml'))
+    Instr = Instrument(fileName=os.path.join('Data','CAMEA_Updated.xml'))
     Instr.initialize()
 
     NF = os.path.join(dataPath,'camea2018n000038.hdf')

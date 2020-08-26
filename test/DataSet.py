@@ -1042,7 +1042,7 @@ def test_DataSet_OxfordList():
 
 
 def test_DataSet_MultiFLEXX():
-    fileLocation = _tools.fileListGenerator('65059',folder=os.path.join(dataPath,''),instrument='MultiFLEXX')
+    fileLocation = _tools.fileListGenerator('65059',folder=os.path.join('Data',''),instrument='MultiFLEXX')
 
     ds = DataSet(fileLocation)
     ds.convertDataFile(saveFile = False)

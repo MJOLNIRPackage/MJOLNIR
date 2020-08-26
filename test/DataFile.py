@@ -246,8 +246,8 @@ def test_DataFile_SaveLoad():
 
 
 def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
-    nf = np.array([os.path.join(dataPath,'Normalization_1.calib'),
-    os.path.join(dataPath,'Normalization_3.calib'),os.path.join(dataPath,'Normalization_8.calib')])
+    nf = np.array([os.path.join('Data','Normalization_1.calib'),
+    os.path.join('Data','Normalization_3.calib'),os.path.join('Data','Normalization_8.calib')])
 
     A3 = np.linspace(0,180,181)
     A4 = -16
@@ -277,9 +277,9 @@ def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
 
 
 def test_updateCalibration():
-    calibFiles = [os.path.join(dataPath,'Normalization80_1.calib'),
-                    os.path.join(dataPath,'Normalization80_3.calib'),
-                    os.path.join(dataPath,'Normalization80_5.calib')]
+    calibFiles = [os.path.join('Data','Normalization80_1.calib'),
+                    os.path.join('Data','Normalization80_3.calib'),
+                    os.path.join('Data','Normalization80_5.calib')]
 
 
     df = DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
