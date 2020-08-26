@@ -1101,9 +1101,9 @@ def test_DataSet_ELine():
 
 
 def test_updateCalibration():
-    calibFiles = [os.path.join(dataPath,'Normalization80_1.calib'),
-                    os.path.join(dataPath,'Normalization80_3.calib'),
-                    os.path.join(dataPath,'Normalization80_5.calib')]
+    calibFiles = [os.path.join('Data','Normalization80_1.calib'),
+                    os.path.join('Data','Normalization80_3.calib'),
+                    os.path.join('Data','Normalization80_5.calib')]
 
 
     ds = DataSet(os.path.join(dataPath,'camea2018n000136.hdf'))
