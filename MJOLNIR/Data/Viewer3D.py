@@ -189,7 +189,10 @@ class Viewer3D(object):
         except ValueError:
             maxVal = 1
         self.caxis = [np.nanmin(self.masked_array),maxVal]
-        self.ax.grid(self.grid,zorder=self.gridZOrder)
+        if self.grid:
+            self.ax.grid(self.grid,zorder=self.gridZOrder)
+        else:
+            self.ax.grid(self.grid)
 
         self.setAxis(viewAxis) # Set view plane to correct
         ## Hack for this to look nice as just changing direction does not render correctly
@@ -340,8 +343,10 @@ class Viewer3D(object):
         ylim = self.ax.get_ylim()
         if self.axis == 2:
             pass
-        self.ax.grid(self.grid,zorder=self.gridZOrder)
-
+        if self.grid:
+            self.ax.grid(self.grid,zorder=self.gridZOrder)
+        else:
+            self.ax.grid(self.grid)
     def set_title(self,title):
         self.ax.set_title(title)
 
