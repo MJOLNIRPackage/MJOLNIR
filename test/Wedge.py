@@ -4,6 +4,8 @@ import MJOLNIR.Geometry.Detector as Detector
 import MJOLNIR.Geometry.Analyser as Analyser
 import warnings
 import numpy as np
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 

@@ -2,6 +2,8 @@ import numpy as np
 from MJOLNIR.Data.DataFile import DataFile,decodeStr,createEmptyDataFile,assertFile
 from MJOLNIR import _tools
 import MJOLNIR.Data.Sample
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import os
 

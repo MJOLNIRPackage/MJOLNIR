@@ -5,6 +5,8 @@ import MJOLNIR.Geometry.Wedge as Wedge
 import pytest
 import numpy as np
 import warnings
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 import os

@@ -1,6 +1,8 @@
 import numpy as np
 
 from MJOLNIR.Geometry.GeometryConcept import  GeometryConcept, GeometryObject
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 def test_Concept_init():

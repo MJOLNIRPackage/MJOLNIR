@@ -3,6 +3,8 @@ import MJOLNIR.Data.DataFile
 from MJOLNIR.Data.DataSet import DataSet,calculateGrid3D,binData3D,cut1DE,fmt,figureRowColumns,centeroidnp,compareNones,OxfordList, load
 from MJOLNIR import _tools
 import MJOLNIR.Data.Sample
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import os,sys
 import warnings

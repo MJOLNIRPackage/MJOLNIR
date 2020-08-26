@@ -1,5 +1,7 @@
 import numpy as np
 from MJOLNIR.Geometry.Detector import Detector, TubeDetector1D
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 
