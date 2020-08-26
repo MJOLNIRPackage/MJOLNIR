@@ -79,12 +79,12 @@ def test_Analyser_height():
         assert True
 
 
-#def test_FlatAnalyser_plot():
-#    Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-#    fig = plt.figure()
-#    ax = fig.gca(projection='3d')
-#
-#    Analyser.plot(ax)
+def test_FlatAnalyser_plot():
+    Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+
+    Analyser.plot(ax)
     
 def test_FlatAnalyser_str():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
