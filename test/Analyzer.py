@@ -2,6 +2,7 @@ from MJOLNIR.Geometry.Analyser import Analyser, FlatAnalyser
 import numpy as np
 import warnings
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 def test_init():
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
