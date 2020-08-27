@@ -20,7 +20,7 @@ pythonSubVersion = sys.version_info[1]
 
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
-    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, **kwargs):#pragma: no cover
+    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -40,6 +40,8 @@ class Viewer3D(object):
             - grid (bool/int): If int, grid will be plotted with zorder=int, if True, grid is plotted at zorder=-10 (Default False).
 
             - adjustable (bool): If set true, 2 sliders will be present allowing to fine tune the c-axis (Default True)
+
+            - outputFunction (function): Function called on output string (default print)
 
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
@@ -180,14 +182,17 @@ class Viewer3D(object):
         #    self.ax.set_xlim(np.min([xlim[0],ylim[0]]),np.max([xlim[1],ylim[1]]))
         self.Energy_slider.set_val(self.value)
 
-        self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event))
+        self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
         
         try:
             maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
         except ValueError:
             maxVal = 1
         self.caxis = [np.nanmin(self.masked_array),maxVal]
-        self.ax.grid(self.grid,zorder=self.gridZOrder)
+        if self.grid:
+            self.ax.grid(self.grid,zorder=self.gridZOrder)
+        else:
+            self.ax.grid(self.grid)
 
         self.setAxis(viewAxis) # Set view plane to correct
         ## Hack for this to look nice as just changing direction does not render correctly
@@ -338,7 +343,12 @@ class Viewer3D(object):
         ylim = self.ax.get_ylim()
         if self.axis == 2:
             pass
-        self.ax.grid(self.grid,zorder=self.gridZOrder)
+        if self.grid:
+            self.ax.grid(self.grid,zorder=self.gridZOrder)
+        else:
+            self.ax.grid(self.grid)
+    def set_title(self,title):
+        self.ax.set_title(title)
 
 
 def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
@@ -353,7 +363,7 @@ def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
         return function(self,event.xdata,event.ydata,*args,**kwargs)
 
 
-def onclick(self,x,y,returnText=False): # pragma: no cover
+def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
     idz = self.value
     axis = self.axis
 
@@ -390,7 +400,7 @@ def onclick(self,x,y,returnText=False): # pragma: no cover
     if returnText:
         return printString
     else:
-        print(printString)
+        outputFunction(printString)
         
 def onkeypress(event,self): # pragma: no cover
     if event.key in ['+','up']:

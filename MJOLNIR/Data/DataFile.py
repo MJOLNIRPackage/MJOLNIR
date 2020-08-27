@@ -55,7 +55,7 @@ class DataFile(object):
             self._mask = False
 
             if not self.type == 'MultiFLEXX':
-                with hdf.File(fileLocation,mode='a') as f:
+                with hdf.File(fileLocation,mode='r') as f:
                     sample=f.get('/entry/sample')
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
                     instr = getInstrument(f)
@@ -1085,6 +1085,8 @@ class DataFile(object):
 
         if os.path.exists(saveFileName):
             warnings.warn('The file {} exists alread. Old file will be renamed to {}.'.format(saveFileName,saveFileName+'_old'))
+            if os.path.exists(saveFileName+'_old'):
+                os.remove(saveFileName+'_old')
             os.rename(saveFileName,saveFileName+'_old')
         fd = hdf.File(saveFileName,'w')
         fs = hdf.File(datafile.fileLocation,'r')
@@ -1201,6 +1203,16 @@ class DataFile(object):
 
         self.instrumentCalibrations = np.array([c for c in calibrations.values()])
         self.possibleBinnings = np.array(list(calibrations.keys()))
+
+    def updateSampleParameters(self,unitCell):
+        """Update unit cell parameters and corresponding UB matrix
+
+        Args:
+
+            - unitCell (list): List of cell parameters (a,b,c,alpha,beta,gamma)
+
+        """
+        self.sample.updateSampleParameters(unitCell=unitCell) 
         
 
     def saveHDF(self,saveFileName):
@@ -1588,7 +1600,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
     A4 = np.asarray([A4]).flatten()
     Ei = np.asarray([Ei]).flatten()
     isChanging = np.array([len(A3)>1,len(A4)>1,len(Ei)>1])
-    isChangingData = np.array([A3,A4,Ei])[isChanging]
+    isChangingData = np.array([A3,A4,Ei],dtype=object)[isChanging]
     
     if np.sum(isChanging)>1:
             # Check if all arrays then have same shape
@@ -1648,7 +1660,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
                     bound = data[:,[7,8]]
                     calib.append([EfTable,A4,bound])
                     binning.append(len(A4)/(104*8))
-            df.instrumentCalibrations = np.array(calib)
+            df.instrumentCalibrations = np.array(calib,dtype=object)
             df.possibleBinnings = binning
             df.loadBinning(1)
     
@@ -1762,328 +1774,6 @@ def extractData(files):
     else:
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,mask
-
-
-
-
-
-# --------------------------- TESTS -------------------------
-
-
-
-
-def test_DataFile():
-    try:
-        DF = DataFile('/nope.txt')
-        assert False
-    except:
-        assert True
-
-    try:
-        DF= DataFile('Data/CAMEA_Full.xml') # Wrong file
-        assert False
-    except:
-        assert True
-
-    files = ['Data/camea2018n000137.hdf',
-             'Data/camea2018n000137.nxs']
-    DF1 = DataFile(files[0])
-    assertFile(files[1])
-    DF2 = DataFile(files[1])
-    s = str(DF2)
-    sampleS = str(DF2.sample)
-    print(str(DF1.sample))
-    print(str(DF2.sample))
-    assert(DF1.sample == DF2.sample)
-
-def test_DataFile_equility():
-    f1 = DataFile('Data/camea2018n000136.hdf')
-    print('----------')
-    f2 = DataFile('Data/camea2018n000136.hdf')
-    assert(f1==f2)
-    print('----------')
-    f3 = DataFile(f2)
-    assert(f1==f3)
-    print('----------')
-    f4 = DataFile('Data/camea2018n000137.hdf')
-    assert(f1!=f4)
-    f5 = f2.convert(binning=8)
-    f5.saveNXsqom('Data/camea2018n000136.nxs')
-    f3 = DataFile('Data/camea2018n000136.nxs')
-    assert(f1==f3)
-    print('----------')
-
-def test_DataFile_plotA4():
-    plt.ioff()
-    import matplotlib
-    matplotlib.use('Agg')
-    fileName = 'Data/camea2018n000136.hdf'
-    fileName2= 'Data/camea2018n000136.nxs'
-    file = DataFile(fileName)
-    
-
-    try:
-        file.plotA4(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-
-    fig = file.plotA4(1)
-    fig2 = file.plotA4()
-    assertFile(fileName2)
-    file2 = DataFile(fileName2)
-    try:
-        file2.plotA4(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-    
-    file2.plotA4(binning=1)
-    plt.close('all')
-
-    
-def test_DataFile_plotEf():
-    plt.ioff()
-    import matplotlib
-    matplotlib.use('Agg')
-    fileName = 'Data/camea2018n000136.hdf'
-    fileName2= 'Data/camea2018n000136.nxs'
-    assertFile(fileName2)
-    file = DataFile(fileName)
-
-    try:
-        file.plotEf(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-
-    fig = file.plotEf(1)
-    fig2 = file.plotEf()
-    
-    file2 = DataFile(fileName2)
-    try:
-        file2.plotEf(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-
-    file2.plotEf(binning=1)
-    plt.close('all')
-
-def test_DataFile_plotEfOverview():
-    plt.ioff()
-    import matplotlib
-    matplotlib.use('Agg')
-    fileName = 'Data/camea2018n000136.hdf'
-    fileName2= 'Data/camea2018n000136.nxs'
-    assertFile(fileName2)
-
-    file = DataFile(fileName)
-
-    try:
-        file.plotEfOverview(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-
-    fig = file.plotEfOverview(1)
-    fig2 = file.plotEfOverview()
-
-    file2 = DataFile(fileName2)
-    try:
-        file2.plotEfOverview(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-
-    file2.plotEfOverview(binning=1)
-    plt.close('all')
-
-def test_DataFile_plotNormalization():
-    plt.ioff()
-    import matplotlib
-    matplotlib.use('Agg')
-    fileName = 'Data/camea2018n000136.hdf'
-    fileName2= 'Data/camea2018n000136.nxs'
-    file = DataFile(fileName)
-    assertFile(fileName2)
-
-    try:
-        file.plotNormalization(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-
-    fig = file.plotNormalization(1)
-    fig2 = file.plotNormalization()
-
-    file2 = DataFile(fileName2)
-    try:
-        file2.plotNormalization(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
-
-    file2.plotNormalization(binning=1)
-    plt.close('all')
-
-def test_DataFile_decodeString():
-    a = b'String'
-    b = 'String'
-
-    c =1.1 # Float
-
-    assert(decodeStr(a)==decodeStr(b))
-    assert(c == decodeStr(c))
-
-def test_DataFile_ScanParameter():
-
-    files = ['Data/camea2018n000136.hdf','Data/camea2018n000136.nxs']
-    assertFile(files[1])
-    for file in files:
-        dfile = DataFile(file)
-        assert(dfile.scanParameters[0]=='rotation_angle')
-        assert(len(dfile.scanParameters)==len(dfile.scanUnits))
-        assert(len(dfile.scanParameters)==len(dfile.scanValues))
-        assert(len(dfile.scanParameters)==1)
-        assert(dfile.scanUnits[0]=='degree')
-        ##assert(np.all(dfile.scanValues==np.arange(0,150,1)))
-
-
-def test_DataFile_Error():
-    df = DataFile('Data/camea2018n000136.hdf')
-
-    # Not implimented
-    try:
-        df+df
-        assert False
-    except NotImplementedError:
-        assert True
-
-    df.instrument = 'WrongInstrument'
-    try:
-        df.convert(binning=1)
-        assert False
-    except AttributeError:
-        assert True
-    
-    df2 = DataFile('Data/camea2018n000136.nxs')
-    try:
-        df.saveNXsqom('Data/saving.nxs')
-        assert False
-    except AttributeError: # File does not have original_file attribute
-        assert True
-
-    df2.type = 'WrongType'
-    try:
-        df2.saveNXsqom('Data/saving.nxs')
-        assert False
-    except AttributeError: # Manually change type to wrong
-        assert True
-
-
-def test_DataFile_SaveLoad():
-    df = DataFile('Data/camea2018n000136.hdf')
-    df.saveHDF('Data/camea2018n000136_2.hdf')
-    df2= DataFile('Data/camea2018n000136_2.hdf')
-    failed = []
-
-    for att,val in df.__dict__.items():
-        if att in ['name','fileLocation']: # Name and location are to be different
-            continue
-        if isinstance(val,np.ndarray):
-            if val.dtype == 'O':
-                continue
-            try:
-                test = np.all(np.isclose(val,getattr(df2,att)))
-            except:
-                test = np.all(val==getattr(df2,att))
-        else:
-            test = val == getattr(df2,att)
-        if not test:
-            failed.append(att)
-    print(failed)
-    assert(len(failed)==0)
-    os.remove(df2.fileLocation)
-
-
-def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
-    nf = np.array(['Data/Normalization_1.calib',
-    'Data/Normalization_3.calib','Data/Normalization_8.calib'])
-
-    A3 = np.linspace(0,180,181)
-    A4 = -16
-    Ei = 5.5
-    Monitor = 1e5
-    sample = MJOLNIR.Data.Sample.Sample(a=6.0,b=6.0,c=12.2,projectionVector2=[1,0,0],projectionVector1=[0,2,1],gamma=120.,beta=80.,alpha=90.)
-
-    try:
-        _ = createEmptyDataFile(A3=10,A4=10,Ei=10,sample=sample) # No change in any parameter
-        assert False
-    except AttributeError:
-        assert True
-    
-    try:
-        _ = createEmptyDataFile(A3=[10,11],A4=[10,11,12],Ei=10,sample=sample) # Two parameters change but not with the same shape
-        assert False
-    except AttributeError:
-        assert True
-    
-
-    df = createEmptyDataFile(A3=A3,A4=A4,Ei=Ei,sample=sample,Monitor=Monitor,normalizationFiles = nf)
-    
-    # Check the contents of df
-    assert(df.sample == sample)
-    assert(len(df.possibleBinnings)==len(nf))
-    #assert(False)
-
-
-def test_updateCalibration():
-    calibFiles = ['Data/Normalization80_1.calib',
-                    'Data/Normalization80_3.calib',
-                    'Data/Normalization80_5.calib']
-
-
-    df = DataFile('Data/camea2018n000136.hdf')
-    print(df.I)
-    print('----------------------')
-    df.loadBinning(1)
-
-    binnings = df.possibleBinnings # is 1,3,8
-    edges = df.instrumentCalibrationEdges
-
-    df.updateCalibration(calibFiles)
-
-    df.loadBinning(1)
-    newBinnings = df.possibleBinnings # is 1,3,8,5
-    newEdges = df.instrumentCalibrationEdges
-    assert(len(newBinnings)!=len(binnings)) # Addition of binning 5
-    assert(not np.any(newEdges!=edges)) # Check if all elemenst are equal
-
-
-    df.updateCalibration(calibFiles,overwrite=True)
-    df.loadBinning(1)
-
-    newEdges = df.instrumentCalibrationEdges
-    assert(np.any(newEdges!=edges)) # Check if all elemenst are equal
-
-#
-#def test_DataFile_BoundaryCalculation(quick):
-#    if quick==True:
-#        binning = [1,3,8]
-#    else:
-#        binning = [1]
-#    for B in binning:
-#        print('Using binning {}'.format(B))
-#        df = DataFile('Data/camea2018n000017.hdf')
-#        converted = df.convert(binning=B)
-#        EP,EBins = converted.calculateEdgePolygons()
-#        areas = np.array([e.area for e in EP])
-#        assert(np.all(areas>2.0)) # Value found by running algorithm
-#        assert(len(EBins)==B*8+1)
-        
-
-
 
 def assertFile(file):
     """Make sure that file exists for methods to work"""

@@ -2,12 +2,12 @@
 #
 
 test:
-	coverage run python -m pytest -vv MJOLNIR
+	coverage run -m python pytest -vv test
 	coverage report
 	coverage html
 
 quicktest:
-	coverage run -m pytest -vv MJOLNIR --quick
+	coverage run -m pytest -vv test
 	coverage report
 	coverage html
 
@@ -20,7 +20,7 @@ tutorials:
 	make html
 
 fulltest:
-	python -m pytest -vv MJOLNIR
+	python -m pytest -vv test
 
 
 wheel:

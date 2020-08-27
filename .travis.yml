@@ -4,35 +4,113 @@ services:
   - xvfb
 
 language: python
+# ===== Linux ======
 
 python:
-  - "3.5"
-  - "3.6"
-  - "3.7"
-  - "3.8"
-  
-
-#before_install:
-#- sudo apt-get -qq update && sudo apt-get install -y --no-install-recommends texlive-fonts-recommended texlive-latex-extra texlive-fonts-extra dvipng texlive-latex-recommended
-
-
-before_script: # configure a headless display to test plot generation
-#  - xvfb-run --server-args="-screen 0 1024x768x24"
-  - sleep 3 # give xvfb some time to start
-#  - "/sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -ac -screen 0 1280x1024x24"
-
-
-install:
+  - 3.5
+  - 3.6
+  - 3.7
+  - 3.8
+matrix:
+  include:      
+    - name: "Python 3.7.5 on macOS 10.14"
+      os: osx
+      osx_image: xcode10.2  # Python 3.7.5 running on macOS 10.14.3
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+        - wget -UseBasicParsing 'https://www.psi.ch/en/media/60041/download'
+        - unzip download
+      script: py.test test/ -vv
+    - name: "Python 3.8.0 on macOS 10.14"
+      os: osx
+      osx_image: xcode11.3  # Python 3.8.0 running on macOS 10.14.6
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+        - wget -UseBasicParsing 'https://www.psi.ch/en/media/60041/download'
+        - unzip download
+      script: py.test test/ -vv
+    - name: "Python 3.5.4 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.5.4
+        - python --version
+        - sleep 3 # give xvfb some time to start
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
+        - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
+      script: py.test test/ -vv
+      env: PATH=/c/Python35:/c/Python35/Scripts:$PATH
+    - name: "Python 3.6.8 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.6.8
+        - python --version
+        - sleep 3 # give xvfb some time to start
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
+        - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
+      env: PATH=/c/Python36:/c/Python36/Scripts:$PATH
+    - name: "Python 3.7.9 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.7.9
+        - python --version
+        - sleep 3 # give xvfb some time to start
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
+        - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
+      env: PATH=/c/Python37:/c/Python37/Scripts:$PATH
+    - name: "Python 3.8.5 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.8.5
+        - python --version
+        - sleep 3 # give xvfb some time to start
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
+        - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
+      env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+before_install:
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
   - pip install --upgrade pip
   - pip install .
-#  - pip install -r requirements.txt
+  - wget 'https://www.psi.ch/en/media/60041/download' 
+  - unzip download
+
+#before_script:
+#  - if [ "$TRAVIS_OS_NAME" = "linux" ]; then export DISPLAY=:99.0; sh -e /etc/init.d/xvfb start; sleep 3; fi
 
 script: 
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test MJOLNIR/ -vv --cov=MJOLNIR/; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test MJOLNIR/ -vv --ignore=MJOLNIR/CommandLineScripts/MJOLNIRHistory.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIR3DView.py --ignore=MJOLNIR/CommandLineScripts/MJOLNIRConvert.py; fi
-  - if [[ $TRAVIS_PYTHON_VERSION > 3.6 ]]; then py.test MJOLNIR/ -vv; fi
-  - if [[ $TRAVIS_PYTHON_VERSION < 3.5 ]]; then py.test MJOLNIR/ -vv; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]]; then py.test test/ -vv --cov=test/; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 3.5 ]]; then py.test test/ -vv --ignore=test/CommandLineScripts/MJOLNIRHistory.py --ignore=test/CommandLineScripts/MJOLNIRCalibrationInspector.py --ignore=test/CommandLineScripts/MJOLNIR3DView.py --ignore=test/CommandLineScripts/MJOLNIRConvert.py; fi
+  - if [[ $TRAVIS_PYTHON_VERSION > 3.6 ]]; then py.test test/ -vv; fi
+  - if [[ $TRAVIS_PYTHON_VERSION < 3.5 ]]; then py.test test/ -vv; fi
 
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == 3.6 ]];

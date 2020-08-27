@@ -44,3 +44,5 @@ Report/
 */.coverage*
 
 coverage_html_report
+samlpedata/*
+docs/Commissioning/*
