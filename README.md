@@ -5,7 +5,7 @@ Neutron scattering software to be used at CAMEA-like Neutron Instruments.
 ## Installation
 This package is to be install through the Python Package Manager by issuing 
 
-```bash
+```shell
 pip install MJOLNIR
 ```
 

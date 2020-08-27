@@ -12,7 +12,7 @@ Tool for quick viewing of data with viewer3D
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-plt.ion()
+
 import os
 import sys
 from MJOLNIR.CommandLineScripts import _tools
@@ -62,7 +62,6 @@ if VMin is None:
 
 V.caxis = [VMin,VMax]
 
-plt.show()
 
 def main():
-    pass
+    plt.show()

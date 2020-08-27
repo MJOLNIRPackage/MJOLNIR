@@ -1,13 +1,11 @@
 from MJOLNIR.Data import DataFile
 import subprocess
-import os
+import os,sys
 import pytest
 
-dataFiles = ['Data/camea2018n000136.hdf','Data/camea2018n000136.nxs',
-'Data/camea2018n000137.nxs',
-'Data/camea2018n000178.hdf']
-
-multiFLEXXDataFiles = ['/home/lass/Dropbox/PhD/Software/MJOLNIR/Data/065059']
+dataFiles = [os.path.join('Data',f) for f in ['camea2018n000136.hdf','camea2018n000136.nxs',
+'camea2018n000137.nxs',
+'camea2018n000178.hdf']]
 
 returnText = [b'camea2018n000136.hdf: sc a3 0 da3 0.5 np 121 mn 150000	A3 scan around 1 0 0 YMnO3 T=10, 2T= -20\n',
 b'camea2018n000136.nxs: sc a3 0 da3 0.5 np 121 mn 150000	A3 scan around 1 0 0 YMnO3 T=10, 2T= -20\n',
@@ -15,33 +13,20 @@ b'camea2018n000137.nxs: sc a3 0 da3 0.5 np 121 mn 150000	A3 scan around 1 0 0 YM
 b'camea2018n000178.hdf: sc a3 0 da3 1 np 181 mn 100000	PbTi T=1.5K Ei=5.5 2t=-10 HHL plane around 1 1 0\n'
 ]
 
-
+if sys.platform == 'win32':
+    returnText = [t[:-1] + b'\r\n' for t in returnText]
 
 
 ## Calibration inspector
 
 def test_CalibrationInspector_Help_Text():
     result = subprocess.check_output(['MJOLNIRCalibrationInspector','-h'])
-    helpText = b"""usage: MJOLNIRCalibrationInspector [-h] [-s SAVE]
-                                   [-p [PLOTLIST [PLOTLIST ...]]] [-b BINNING]
-                                   [DataFile]
+    if sys.platform == 'win32':
+        print(result)
+        helpText = b'usage: MJOLNIRCalibrationInspector [-h] [-s SAVE]\r\n                                   [-p [PLOTLIST [PLOTLIST ...]]] [-b BINNING]\r\n                                   [DataFile]\r\n\r\nInspection tool to visualize calibration tables in a data file.\r\n\r\npositional arguments:\r\n  DataFile              Data file from which calibration table is to be\r\n                        plotted. If none provided file dialogue will appear.\r\n\r\noptional arguments:\r\n  -h, --help            show this help message and exit\r\n  -s SAVE, --save SAVE  Location to which the generated file will be saved.\r\n  -p [PLOTLIST [PLOTLIST ...]], --plot [PLOTLIST [PLOTLIST ...]]\r\n                        List of wanted plots to be generated. Should be\r\n                        "A4","Normalization","Ef","EfOverview". Default all of\r\n                        them.\r\n  -b BINNING, --binning BINNING\r\n                        Binning to be inspected. Default \'8\'\r\n'
+    else:
+        helpText = b'usage: MJOLNIRCalibrationInspector [-h] [-s SAVE]\n                                   [-p [PLOTLIST [PLOTLIST ...]]] [-b BINNING]\n                                   [DataFile]\n\nInspection tool to visualize calibration tables in a data file.\n\npositional arguments:\n  DataFile              Data file from which calibration table is to be\n                        plotted. If none provided file dialogue will appear.\n\noptional arguments:\n  -h, --help            show this help message and exit\n  -s SAVE, --save SAVE  Location to which the generated file will be saved.\n  -p [PLOTLIST [PLOTLIST ...]], --plot [PLOTLIST [PLOTLIST ...]]\n                        List of wanted plots to be generated. Should be\n                        "A4","Normalization","Ef","EfOverview". Default all of\n                        them.\n  -b BINNING, --binning BINNING\n                        Binning to be inspected. Default \'8\'\n'
 
-Inspection tool to visualize calibration tables in a data file.
-
-positional arguments:
-  DataFile              Data file from which calibration table is to be
-                        plotted. If none provided file dialogue will appear.
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -s SAVE, --save SAVE  Location to which the generated file will be saved.
-  -p [PLOTLIST [PLOTLIST ...]], --plot [PLOTLIST [PLOTLIST ...]]
-                        List of wanted plots to be generated. Should be
-                        "A4","Normalization","Ef","EfOverview". Default all of
-                        them.
-  -b BINNING, --binning BINNING
-                        Binning to be inspected. Default '8'
-"""
     assert(result == helpText)
 
 @pytest.mark.skip(reason="Fails on the headless Travis-ci")
@@ -67,7 +52,11 @@ def test_CalibrationInsepctor_Run():
 
 def test_History_Help_Text():
     result = subprocess.check_output(['MJOLNIRHistory', '-h'])
-    helpText = b"""usage: MJOLNIRHistory [-h] [-s SAVE] [-r] [DataFile [DataFile ...]]
+    if sys.platform == 'win32':
+        print(result)
+        helpText = b'usage: MJOLNIRHistory [-h] [-s SAVE] [-r] [DataFile [DataFile ...]]\r\n\r\nHistory tool for displaying files and command for selected data files.\r\n\r\npositional arguments:\r\n  DataFile              Data file(s) to be used. If none provided file\r\n                        dialogue will appear. Using string format, directory\r\n                        and year is also possible. See documentation.\r\n\r\noptional arguments:\r\n  -h, --help            show this help message and exit\r\n  -s SAVE, --save SAVE  Location to which the generated history will be saved.\r\n  -r, --reuse           Set flag to reuse files from previous usage. Default\r\n                        false.\r\n'
+    else:
+        helpText = b"""usage: MJOLNIRHistory [-h] [-s SAVE] [-r] [DataFile [DataFile ...]]
 
 History tool for displaying files and command for selected data files.
 
@@ -113,7 +102,11 @@ def test_History_MultipleFiles_repeat():
 
 def test_Convert_Help_Text():
     result = subprocess.check_output(['MJOLNIRConvert', '-h'])
-    helpText = b"""usage: MJOLNIRConvert [-h] [-s SAVE] [-b BINNING] [-r]
+    if sys.platform == 'win32':
+        print(result)
+        helpText = b"usage: MJOLNIRConvert [-h] [-s SAVE] [-b BINNING] [-r]\r\n                      [DataFile [DataFile ...]]\r\n\r\nConversion tool for converting output h5 files to nxs files.\r\n\r\npositional arguments:\r\n  DataFile              Data file(s) to be used. If none provided file\r\n                        dialogue will appear. Using string format, directory\r\n                        and year is also possible. See documentation.\r\n\r\noptional arguments:\r\n  -h, --help            show this help message and exit\r\n  -s SAVE, --save SAVE  Location to which the generated file will be saved.\r\n  -b BINNING, --binning BINNING\r\n                        Binning performed. Default '8'\r\n  -r, --reuse           Set flag to reuse files from previous usage. Default\r\n                        false.\r\n"
+    else:
+        helpText = b"""usage: MJOLNIRConvert [-h] [-s SAVE] [-b BINNING] [-r]
                       [DataFile [DataFile ...]]
 
 Conversion tool for converting output h5 files to nxs files.
@@ -140,15 +133,15 @@ def test_Convert_binning():
     assert(f.binning == 8)
     subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-b 1'])
     f = DataFile.DataFile(dataFiles[0].replace('hdf','nxs'))
-    assert(f.name == dataFiles[0].split('/')[1].replace('hdf','nxs'))
+    assert(f.name == dataFiles[0].split(os.path.sep)[1].replace('hdf','nxs'))
     assert(f.binning == 1)
     
 def test_Convert_SaveLocation():
-    if not os.path.isdir('Data/Data'):
-          os.makedirs('Data/Data')
-    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-s Data/'])
-    fileName = dataFiles[0].split('/')[1].replace('hdf','nxs')
-    f = DataFile.DataFile('Data/'+fileName)
+    if not os.path.isdir(os.path.join('Data','Data')):
+          os.makedirs(os.path.join('Data','Data'))
+    subprocess.check_output(['MJOLNIRConvert',dataFiles[0],'-s Data'+os.path.sep])
+    fileName = dataFiles[0].split(os.path.sep)[1].replace('hdf','nxs')
+    f = DataFile.DataFile('Data'+os.path.sep+fileName)
     
     assert(f.binning == 8)
     print(fileName)
@@ -171,7 +164,11 @@ def test_Convert_Reuse():
 ### 3DView
 def test_3DView_Help_Text():
     result = subprocess.check_output(['MJOLNIR3DView','-h'])
-    helpText = b"""usage: MJOLNIR3DView [-h] [-r] [-b BINNING] [-d DQXDQYDE DQXDQYDE DQXDQYDE]
+    print(result)
+    if sys.platform == 'win32':
+        helpText = b"usage: MJOLNIR3DView [-h] [-r] [-b BINNING] [-d DQXDQYDE DQXDQYDE DQXDQYDE]\r\n                     [-M VMAX] [-m VMIN]\r\n                     [DataFile [DataFile ...]]\r\n\r\nConversion tool for quick visualization using the viewer3D.\r\n\r\npositional arguments:\r\n  DataFile              Data file(s) to be used. If none provided file\r\n                        dialogue will appear. Using string format, directory\r\n                        and year is also possible. See documentation.\r\n\r\noptional arguments:\r\n  -h, --help            show this help message and exit\r\n  -r, --reuse           Set flag to reuse files from previous usage. Default\r\n                        false.\r\n  -b BINNING, --binning BINNING\r\n                        Binning performed. Default '8'\r\n  -d DQXDQYDE DQXDQYDE DQXDQYDE, --dQxdQydE DQXDQYDE DQXDQYDE DQXDQYDE\r\n                        Binning used to plot in 3D, Default [0.03,0.03,0.08]\r\n  -M VMAX, --VMax VMAX  Maximal value for plotting, default max of data\r\n  -m VMIN, --VMin VMIN  Minimal value for plotting, default min of data\r\n"
+    else:
+        helpText = b"""usage: MJOLNIR3DView [-h] [-r] [-b BINNING] [-d DQXDQYDE DQXDQYDE DQXDQYDE]
                      [-M VMAX] [-m VMIN]
                      [DataFile [DataFile ...]]
 

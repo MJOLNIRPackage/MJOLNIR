@@ -14,8 +14,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib._pylab_helpers
 
-plt.ion()
-
 from MJOLNIR.CommandLineScripts import _tools
 import sys,os
 settingsName = 'CalibrationInspectorDir'
@@ -47,9 +45,20 @@ parser.add_argument("-b", "--binning", type=int, default= '8',help="Binning to b
 
 args = parser.parse_args()
 
-file = _tools.extractDataFiles(args,settingsName,oneFile=True)
+if not args.save is '':
+    saveFile = True
+    saveLocation = os.path.realpath(args.save.strip())
+    if not os.path.exists(saveLocation):
+        os.mkdir(saveLocation)
+    else:
+        if not os.path.isdir(saveLocation):
+            raise FileNotFoundError("[Errno 2] No such file or directory: '{}'".format(saveLocation))
+else:
+    saveFile = False
 
-directory = os.path.split(file)[0]
+file = _tools.extractDataFiles(args,settingsName,oneFile=True)[0]
+
+directory = os.path.split(file)
 
 _tools.updateSetting(settingsName,directory)
 
@@ -67,12 +76,6 @@ argsIdx = np.unique([x for x in argsIdx if x is not None])
 booleanList[np.array(argsIdx)]=True
 
 
-
-if not args.save is '':
-    saveFile = True
-    saveLocation = os.path.realpath(args.save.strip())
-else:
-    saveFile = False
 
 File = DataFile.DataFile(file)
 
@@ -115,7 +118,7 @@ if saveFile==True:
             f.savefig(os.path.join(saveLocation,title+'.png'))
             
 
-plt.show()
+
 
 def main():
-    pass
+    plt.show()

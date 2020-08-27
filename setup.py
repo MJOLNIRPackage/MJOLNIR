@@ -17,7 +17,7 @@ pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'sit
 setup(
     name='MJOLNIR',
 
-    version='1.1.12',
+    version='1.1.13',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
@@ -36,8 +36,8 @@ setup(
                             'MJOLNIR3DView = MJOLNIR.CommandLineScripts.MJOLNIR3DView:main']
         },
     python_requires='>=3.5',
-    install_requires=['matplotlib>=2.0.2','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
-                    'pip>=20','sip>=5.3','PyQt5-sip','PyQt5','ufit'], # ,'ufit'
+    install_requires=['matplotlib>=3,<3.3','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
+                    'pip>=20','sip>=5.3','PyQt5-sip','PyQt5','ufit>=1.4.0','pyqtgraph'], # ,'ufit'
     
     classifiers=[
         'Development Status :: 3 - Alpha',
