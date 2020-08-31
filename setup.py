@@ -3,6 +3,7 @@ import os
 import sys
 
 _here = os.path.abspath(os.path.dirname(__file__))
+operatingSystem = sys.platform
 
 if sys.version_info[0] < 3:
     with open(os.path.join(_here, 'README.md')) as f:
@@ -35,7 +36,7 @@ setup(
                             'MJOLNIRCalibrationInspector = MJOLNIR.CommandLineScripts.MJOLNIRCalibrationInspector:main',
                             'MJOLNIR3DView = MJOLNIR.CommandLineScripts.MJOLNIR3DView:main']
         },
-    python_requires='>=3.5',
+    python_requires='>=3.5' if not operatingSystem == 'darwin' else '>=3.6',
     install_requires=['matplotlib>=3,<3.3','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
                     'pip>=20','sip>=5.3','PyQt5-sip','PyQt5','ufit>=1.4.0','pyqtgraph'], # ,'ufit'
     
