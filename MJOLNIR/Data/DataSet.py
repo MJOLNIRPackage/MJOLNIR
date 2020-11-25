@@ -371,6 +371,8 @@ class DataSet(object):
         self._convertedFiles = []
         self.convertedFiles = convertedFiles    
         self._getData()
+
+        # check if any masking is needed due to defect detectors (If from CAMEA)
             
     def _getData(self): # Internal method to populate I,qx,qy,energy,Norm and Monitor
         

@@ -15,6 +15,7 @@ from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
 from MJOLNIR.Data import Mask
+
 import MJOLNIR.Data.Sample
 import re
 import copy
@@ -780,6 +781,17 @@ class DataFile(object):
         if convFile.type == 'nxs' and convFile.binning == 8:
             convFile.mask = np.zeros_like(convFile.I,dtype=bool)
             convFile.mask[:,:,:2] = True
+
+
+        if convFile.instrument == 'CAMEA':
+            defectTubes = np.arange(104)[np.any(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1)),axis=1)] 
+
+            if len(defectTubes)>0: # if any tubes are defect
+                    if len(defectTubes)>1:
+                        warnings.warn('Detector tubes {} masked'.format(', '.join([str(x) for x in defectTubes])))
+                    else:
+                        warnings.warn('Detector tube {} masked'.format(defectTubes[0]))
+                    convFile.mask = np.logical_or(convFile.mask,np.repeat(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1))[np.newaxis],len(convFile.I),axis=0))
 
         return convFile
 
