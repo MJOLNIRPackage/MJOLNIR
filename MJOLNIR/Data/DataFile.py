@@ -791,7 +791,11 @@ class DataFile(object):
                         warnings.warn('Detector tubes {} masked'.format(', '.join([str(x) for x in defectTubes])))
                     else:
                         warnings.warn('Detector tube {} masked'.format(defectTubes[0]))
-                    convFile.mask = np.logical_or(convFile.mask,np.repeat(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1))[np.newaxis],len(convFile.I),axis=0))
+
+                    newMask = np.repeat(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1))[np.newaxis],len(convFile.I),axis=0)
+                    if np.all(convFile.mask.shape==newMask.shape):
+                        newMask = np.logical_or(convFile.mask,newMask)
+                    convFile.mask = newMask
 
         return convFile
 
