@@ -55,7 +55,7 @@ only apply to data sets that are converted with binning = 8. To counter this, ap
 the bottom 2 prismatic pixels as:
 
 .. code-block:: python
-   :linenos:
+
 
     from MJOLNIR.Data import DataSet
     fileName = ['/Path/To/Data/camea2018n000136.hdf']
@@ -63,13 +63,14 @@ the bottom 2 prismatic pixels as:
     ds.convertDataFile(binning=8,saveFile=False)
 
     # Create a masks that can be used 
-	mask = []
-	for d in ds: # loop through data files and create a mask for individual files
-    	m = np.zeros_like(DS.I.data,dtype=bool) # Make it boolean as well (not explicitly necessary)
-    	m[:,:,:2] = True # Remember the shape of I being (#ScanSteps,#Detectors,#Binning*#Analysers)
-		mask.append(m)
+    mask = []
+    for d in ds: # loop through data files and create a mask for individual files
+        m = np.zeros_like(d.I.data,dtype=bool) # Make it boolean as well (not explicitly necessary). As default nothing will be masked
+        m[:,:,:2] = True # Remember the shape of I being (#ScanSteps,#Detectors,#Binning*#Analysers)
+                         # All maskings set to True will be removed
+        mask.append(m)
 
-    # The #Detectors is 104 and there are #Analysers = 8 analysers
+    # There are 104 detectors (0-103) covering from around -30 to 30 degrees relative to 2Theta and 8 analyzers (0-7) covering from around 3.2 to 5 meV
 
     # Apply the mask to the DataSet object.
     ds.mask = mask
@@ -81,18 +82,18 @@ This is definitely possible through the code below, where 10 degrees is added to
 
 .. code-block:: python
 
-	files = '276-279'
+    files = '276-279'
 
-	# Generate file locations as normal
-	dataFiles = _tools.fileListGenerator(files,'/path/to/data/')
-	
-	ds = DataSet.DataSet(dataFiles) # load the data files
+    # Generate file locations as normal
+    dataFiles = _tools.fileListGenerator(files,'/path/to/data/')
+    
+    ds = DataSet.DataSet(dataFiles) # load the data files
 
-	for d in ds: # Loop through all files 
-    	d.A3Off += 10
+    for d in ds: # Loop through all files 
+        d.A3Off += 10
 
-	ds.convertDataFile()
-	# Continue as normal
+    ds.convertDataFile()
+    # Continue as normal
 
 Because my crystal has a 120 degrees symmetry, we only scanned 120 degrees in our scans. How do I symmetrize it?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -102,20 +103,20 @@ one can, in a script, load in the measured data twice where the second set of da
 
 .. code-block:: python
 
-	files = '276-279'
+    files = '276-279'
 
-	# Generate file locations as normal
-	dataFiles = _tools.fileListGenerator(files,'/path/to/data/')
-	numFiles = len(dataFiles) # The number of data files actually measured 
-	dataFiles = dataFiles+dataFiles+dataFiles # Repeat the file list to contain 3 copies
+    # Generate file locations as normal
+    dataFiles = _tools.fileListGenerator(files,'/path/to/data/')
+    numFiles = len(dataFiles) # The number of data files actually measured 
+    dataFiles = dataFiles+dataFiles+dataFiles # Repeat the file list to contain 3 copies
 
-	ds = DataSet.DataSet(dataFiles) # load the 12 data files
+    ds = DataSet.DataSet(dataFiles) # load the 12 data files
 
-	for i,d in enumerate(ds): # Loop through all files and keep a counter 
-    	if i>=numFiles: # If the file number is bigger than 4 add 120 degrees offset to A3
-    	    d.A3Off += 120.0
-		if i>=2*numFiles: # If the file number is bigger than 8 add another 120 degrees offset to A3
-    	    d.A3Off += 120.0	
+    for i,d in enumerate(ds): # Loop through all files and keep a counter 
+        if i>=numFiles: # If the file number is bigger than 4 add 120 degrees offset to A3
+            d.A3Off += 120.0
+        if i>=2*numFiles: # If the file number is bigger than 8 add another 120 degrees offset to A3
+            d.A3Off += 120.0    
 
 One then has a DataSet object with 12 data files covering the full scattering plane, the so-called donut plot. If a crystal has a symmetry smaller than what is measured (e.g. 110 degrees are measured but symmetry is 90 degrees), there is no problem with this procedure. It merely results in double data coverage at the positions in Q where there is an overlap. 
 
@@ -154,14 +155,14 @@ When dealing with multiple data files at once in a DataSet object, one needs to 
 
 .. code-block:: python
 
-	ds = DataSet(dataFiles)
-	
-	mask = []
-	# Loop through all data files in the DataSet
-	for d in ds:
-		mask.append(d.h>0.0)
+    ds = DataSet(dataFiles)
+    
+    mask = []
+    # Loop through all data files in the DataSet
+    for d in ds:
+        mask.append(d.h>0.0)
 
-	ds.mask = mask
+    ds.mask = mask
 
 The above code ensures that all points with a value of H larger than 0.0 are masked out. Usually multiple conditions are required for the mask to be corretly created. As an example below is code that creates masks removing all data points within a radius of 0.1 1/A from the provided QPoints.
 
@@ -169,31 +170,31 @@ The above code ensures that all points with a value of H larger than 0.0 are mas
 .. code-block:: python
 
     QPoints = [[1,1,0],[-1,1,0],[1,0,0],[0,1,0]]
-	
-	for d in ds:
-	# calculate position in qx,qy for QPoints (may differ from file to file)
-		localMask = []
+    
+    for d in ds:
+    # calculate position in qx,qy for QPoints (may differ from file to file)
+        localMask = []
 
-		for h,k,l in QPoints:
-		    qx,qy = d.sample.calculateHKLToQxQy(h,k,l)
-		    m = np.sqrt((d.qx-qx)**2+(d.qy-qy)**2)<radius
-		    localMask.append(m)
-		trueMask = localMask[0]
-		for m in localMask[1:]:
-		    trueMask = np.logical_or(trueMask,m)
-		
-		mask.append(trueMask)
-	
+        for h,k,l in QPoints:
+            qx,qy = d.sample.calculateHKLToQxQy(h,k,l)
+            m = np.sqrt((d.qx-qx)**2+(d.qy-qy)**2)<radius
+            localMask.append(m)
+        trueMask = localMask[0]
+        for m in localMask[1:]:
+            trueMask = np.logical_or(trueMask,m)
+        
+        mask.append(trueMask)
+    
 
 or in one line
 
 .. code-block:: python
 
-	QPoints = [[1,1,0],[-1,1,0],[1,0,0],[0,1,0]]
-	radius = 0.1
-	mask = [reduce(np.logical_or,[np.sqrt((d.qx-qx)**2+(d.qy-qy)**2)<radius for qx,qy in [d.sample.calculateHKLToQxQy(*HKL) for HKL in QPoints]]) for d in ds]
+    QPoints = [[1,1,0],[-1,1,0],[1,0,0],[0,1,0]]
+    radius = 0.1
+    mask = [reduce(np.logical_or,[np.sqrt((d.qx-qx)**2+(d.qy-qy)**2)<radius for qx,qy in [d.sample.calculateHKLToQxQy(*HKL) for HKL in QPoints]]) for d in ds]
 
-	ds.mask = mask
+    ds.mask = mask
 
 
 
@@ -205,12 +206,12 @@ when wanting to perform numeric calculations, on can format the DataFrame to be 
 
 .. code-block:: python
 
-	...
-	>>> Data = ds.cut1D(...)
-	>>> Data['Intensity'].dtypes
-	Name: Intensity, Length: 4244, dtype: object
+    ...
+    >>> Data = ds.cut1D(...)
+    >>> Data['Intensity'].dtypes
+    Name: Intensity, Length: 4244, dtype: object
 
-	>>> Intensity = pd.to_numeric(Data['Intensity'])
-	>>> Intensity.dtypes
-	dtype('int64')
+    >>> Intensity = pd.to_numeric(Data['Intensity'])
+    >>> Intensity.dtypes
+    dtype('int64')
 
