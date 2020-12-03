@@ -270,7 +270,7 @@ class Instrument(GeometryConcept.GeometryConcept):
         det_cen = 1.2
         wedges=8
 
-        offset =0.0# -4.835960288880082# offset such that last pixel of detector 0 is at 0
+        offset = 28.0# -4.835960288880082# offset such that last pixel of detector 0 is at 0
 
 
         string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>\n"
@@ -309,7 +309,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
     @_tools.KwargChecker()
     def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/', 
-    tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False):
+    tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False, ignoreTubes=None):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
         Generates 4 different tables:
@@ -340,11 +340,16 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - adaptiveBinning (boolean): If true pixel bins are asigned to give same Gaussian area of intensity for all pixels (default False)
 
+            - ignoreTubes (list of ints): List containing tubes to be ignored in fitting (default [])
+
         .. warning::
             At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Gaussian width of Vanadium peaks.
 
         """
         self.initialize()
+
+        if ignoreTubes is None:
+            ignoreTubes = []
         
         with hdf.File(Vanadiumdatafile,'r') as VanFile:
             if not A4datafile == False: # pragma: no cover
@@ -421,6 +426,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                 for j in range(analysers):
                     peakPos[:,j],peakVal[:,j] = findPeak(dataSubtracted) # Find a peak in data
                     for i in range(detectors):
+                        if i in ignoreTubes:
+                            peakPos[i,j] = -1
+                            peakVal[i,j] = -1
+                            peakWidth[i,j]= 0
+                            continue
+
                         guess = [peakVal[i,j],float(peakPos[i,j]),20,np.min(ESummedData[i])]
                         try:
                             res = scipy.optimize.curve_fit(Gaussian,np.arange(ESummedData.shape[1]),dataSubtracted[i,:],p0=[guess])
@@ -540,67 +551,73 @@ class Instrument(GeometryConcept.GeometryConcept):
                     activePixelDetector=[]
                     for i in range(detectors):
                         activePixelAnalyser = []
-                        if plot: # pragma: no cover
-                            plt.clf()
-                            plt.title('Detector {}, {} pixels'.format(i,detpixels))
-                            x =np.linspace(0,detpixels,len(Ei))
-                        for j in range(analysers):
-                            center = int(round(sortedPeakPos[i,j]))
-                            width = activePixels[i,j].sum()
-                            
-                            if adaptiveBinning: # Adaptive binning with equal Gaussian area for each pixel piece
-
-                                binStart,binEnd = [center-width/2.0,center+width/2.0]
-                                binMid = center#(binStart+binEnd)/2.0
-
-                                binWidth = (binEnd-binStart)/(2.0*NumberOfSigmas)
-                                totalArea = norm.cdf(NumberOfSigmas)-norm.cdf(-NumberOfSigmas)
-                                areaOutside = norm.cdf(-NumberOfSigmas)
-
-                                areaPerBin = totalArea/detpixels
-
-                                areaLeftOfBin = [areaOutside+n*areaPerBin for n in range(detpixels+1)]
-
-                                pixelAreas = np.round(norm.ppf(areaLeftOfBin)*binWidth+binMid).astype(int)
-                            else:
-                                pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
-
-                            for k in range(detpixels):
-                                binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
-                                ECenter = Ei[np.argmax(binPixelData)]
-                                ECutLow = ECenter-0.4
-                                ECutHigh= ECenter+0.4
-                                TopId = np.argmin(np.abs(Ei-ECutHigh))
-                                BotId = np.argmin(np.abs(ECutLow-Ei))
-                                if TopId<BotId:
-                                    _ = TopId
-                                    TopId = BotId
-                                    BotId = _
-                                binPixelData = binPixelData[BotId:TopId]
-                                EiLocal = Ei[BotId:TopId]
-                                Bg = np.min(binPixelData[[0,-1]])
-                                guess = np.array([np.max(binPixelData), ECenter,0.005,Bg],dtype=float)
-                                try:
-                                    res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
-                                    
-                                except: # pragma: no cover
-                                    if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
-                                        os.makedirs(savelocation+'/{}_pixels'.format(detpixels))
-                                    if not plot:
-                                        plt.ioff
-                                    plt.figure()
-                                    plt.scatter(EiLocal,binPixelData)
-                                    plt.plot(Ei,Gaussian(Ei,*guess))
+                        if i in ignoreTubes:
+                            for j in range(analysers):
+                                for k in range(detpixels):
+                                    fittedParameters[i,j,k,0]
+                                activePixelAnalyser.append(np.linspace(-0/2.0,0/2.0,detpixels+1,dtype=int)+0+1)
+                        else:
+                            if plot: # pragma: no cover
+                                plt.clf()
+                                plt.title('Detector {}, {} pixels'.format(i,detpixels))
+                                x =np.linspace(0,detpixels,len(Ei))
+                            for j in range(analysers):
+                                center = int(round(sortedPeakPos[i,j]))
+                                width = activePixels[i,j].sum()
                                 
-                                    plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
-                                    plt.close()
+                                if adaptiveBinning: # Adaptive binning with equal Gaussian area for each pixel piece
 
-                                fittedParameters[i,j,k]=res[0]
-                                fittedParameters[i,j,k,0] *= np.sqrt(2*np.pi)*fittedParameters[i,j,k,2] #np.sum(binPixelData) # Use integrated intensity as amplitude 29-07-2020 JL
-                                if plot: # pragma: no cover
-                                    plt.plot(EiX,GaussianNormalized(EiX,*fittedParameters[i,j,k]),color='black')
-                                    plt.scatter(EiLocal,binPixelData,color=colors[:,k])
-                            activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
+                                    binStart,binEnd = [center-width/2.0,center+width/2.0]
+                                    binMid = center#(binStart+binEnd)/2.0
+
+                                    binWidth = (binEnd-binStart)/(2.0*NumberOfSigmas)
+                                    totalArea = norm.cdf(NumberOfSigmas)-norm.cdf(-NumberOfSigmas)
+                                    areaOutside = norm.cdf(-NumberOfSigmas)
+
+                                    areaPerBin = totalArea/detpixels
+
+                                    areaLeftOfBin = [areaOutside+n*areaPerBin for n in range(detpixels+1)]
+
+                                    pixelAreas = np.round(norm.ppf(areaLeftOfBin)*binWidth+binMid).astype(int)
+                                else:
+                                    pixelAreas = np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1 #Add 1 such that the first pixel is included 20/10-17
+
+                                for k in range(detpixels):
+                                    binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
+                                    ECenter = Ei[np.argmax(binPixelData)]
+                                    ECutLow = ECenter-0.4
+                                    ECutHigh= ECenter+0.4
+                                    TopId = np.argmin(np.abs(Ei-ECutHigh))
+                                    BotId = np.argmin(np.abs(ECutLow-Ei))
+                                    if TopId<BotId:
+                                        _ = TopId
+                                        TopId = BotId
+                                        BotId = _
+                                    binPixelData = binPixelData[BotId:TopId]
+                                    EiLocal = Ei[BotId:TopId]
+                                    Bg = np.min(binPixelData[[0,-1]])
+                                    guess = np.array([np.max(binPixelData), ECenter,0.005,Bg],dtype=float)
+                                    try:
+                                        res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
+                                        
+                                    except: # pragma: no cover
+                                        if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
+                                            os.makedirs(savelocation+'/{}_pixels'.format(detpixels))
+                                        if not plot:
+                                            plt.ioff
+                                        plt.figure()
+                                        plt.scatter(EiLocal,binPixelData)
+                                        plt.plot(Ei,Gaussian(Ei,*guess))
+                                    
+                                        plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
+                                        plt.close()
+
+                                    fittedParameters[i,j,k]=res[0]
+                                    fittedParameters[i,j,k,0] *= np.sqrt(2*np.pi)*fittedParameters[i,j,k,2] #np.sum(binPixelData) # Use integrated intensity as amplitude 29-07-2020 JL
+                                    if plot: # pragma: no cover
+                                        plt.plot(EiX,GaussianNormalized(EiX,*fittedParameters[i,j,k]),color='black')
+                                        plt.scatter(EiLocal,binPixelData,color=colors[:,k])
+                                activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
                         activePixelDetector.append(activePixelAnalyser)
                         if plot: # pragma: no cover
                             plt.grid('on')

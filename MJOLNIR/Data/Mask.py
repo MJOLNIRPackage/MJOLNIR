@@ -58,7 +58,7 @@ class MaskingObjectMeta(ABCMeta):
             
 class MaskingObject(with_metaclass(MaskingObjectMeta)):
     """Base class for all masking objects"""
-    dimensionality = '2D'
+    #dimensionality = '2D'
     def __init__(self,coordinates=None,maskInside=True):
 
         self.maskInside = maskInside
