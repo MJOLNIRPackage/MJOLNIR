@@ -26,11 +26,17 @@ fulltest:
 wheel:
 	python setup.py sdist
 
-version = $(shell python cut.py $(shell ls -t dist/* | head -1))
+version ?= $(shell python cut.py $(shell ls -t dist/* | head -1))
 
 upload:
 	twine upload $(shell ls -t dist/* | head -1) -r testpypi
 	twine upload $(shell ls -t dist/* | head -1) -r pypi
+
+testVersion:
+	echo 'Creating test version $(version)'
+	python Update.py $(version)
+	python setup.py sdist
+	twine upload $(shell ls -t dist/* | head -1) -r testpypi
 
 
 version: 
