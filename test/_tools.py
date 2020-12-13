@@ -1,5 +1,5 @@
 import numpy as np
-from MJOLNIR._tools import rotate2X, minMax, unitVector, vectorAngle, rotationMatrix, binEdges, fileListGenerator, RoundBinning, generateLabel
+from MJOLNIR._tools import rotate2X, minMax, unitVector, vectorAngle, rotationMatrix, binEdges, fileListGenerator, RoundBinning, generateLabel, generateLabelDirection
 
 import os
 
@@ -138,3 +138,16 @@ def test_generateLabel():
     label = generateLabel(v)
     assert(label=='(-0.5H, 22K, -3L)')
 
+
+def test_generateLabelDirection():
+    v = [1,-1,2]
+    label = generateLabelDirection(v)
+    assert(label=='(H, -H, 2H)')
+
+    v = np.array([0.0,22.0000,-3.0])
+    label = generateLabelDirection(v)
+    assert(label=='(0, 22K, -3K)')
+
+    v = np.array([0.0,0.0000,-3.333])
+    label = generateLabelDirection(v)
+    assert(label=='(0, 0, -3.333L)')
