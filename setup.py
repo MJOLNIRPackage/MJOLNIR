@@ -18,14 +18,14 @@ pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'sit
 setup(
     name='MJOLNIR',
 
-    version='1.1.14',
+    version='1.1.14-4',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
     author_email='lass.jakob@gmail.com',
     url='https://github.com/jakob-lass/MJOLNIR',
     license='MPL-2.0',
-    data_files = [(pythonPath, ["LICENSE.txt"]),((os.path.join(pythonPath),['MJOLNIR/CalibrationFlatCone.csv'])),((os.path.join(pythonPath),['MJOLNIR/CalibrationMultiFLEXX.csv'])),
+    data_files = [(pythonPath, ["LICENSE.txt"]),((os.path.join(pythonPath),['MJOLNIR/Normalization_1.calib'])),((os.path.join(pythonPath),['MJOLNIR/CalibrationFlatCone.csv'])),((os.path.join(pythonPath),['MJOLNIR/CalibrationMultiFLEXX.csv'])),
                 ((os.path.join(pythonPath,'Geometry'),['MJOLNIR/Geometry/detsequence.dat']))],#,(pythonPath+'/CommandLineScripts/',['MJOLNIR/CommandLineScripts/.settings'])],
     packages=['MJOLNIR','MJOLNIR/Data','MJOLNIR/Geometry','MJOLNIR/Statistics','MJOLNIR/CommandLineScripts'],
     #scripts=['MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector','MJOLNIR/CommandLineScripts/MJOLNIRHistory','MJOLNIR/CommandLineScripts/MJOLNIRConvert',
