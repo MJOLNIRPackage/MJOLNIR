@@ -1,5 +1,5 @@
 import numpy as np
-import _tools
+from MJOLNIR import _tools
 
 def cosd(x):
     return np.cos(np.deg2rad(x))
