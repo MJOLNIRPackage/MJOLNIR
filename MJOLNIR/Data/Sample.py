@@ -71,37 +71,29 @@ class Sample(object):
         elif np.all([a is not None,b is not None, c is not None]):
             self.unitCell = np.array([a,b,c,alpha,beta,gamma])
            
-            self.polarAngle = np.array(0)
+            self.polarAngle = np.array(None)
             self.rotationAngle = np.array(0)
             self.name=name
             if projectionVector1 is None or projectionVector2 is None:
-                vector1,vector2 = [np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0])]
+                vector1,vector2 = [np.array([1.0,0.0,0.0,0.0,0.0,5.0,5.0]),np.array([0.0,1.0,0.0,0.0,0.0,5.0,5.0])]
             else:
                 vector1 = np.array(projectionVector1)
                 vector2 = -np.array(projectionVector2)
 
-            self.planeNormal = np.cross(vector1,vector2)
-            
-            self.planeNormal=self.planeNormal/np.linalg.norm(self.planeNormal)
-            
-            self.initialize()
-            
-            # Calculate angles for plane vectors
-            Ei = 5.0 
-            k = np.sqrt(Ei)*factorsqrtEK
-            H1,K1,L1 = vector1
-
-            STT1 = TasUBlib.calTwoTheta(self.B,[H1,K1,L1,Ei,Ei],1.0)
-            
-            theta1 = TasUBlib.calcTheta(k,k,STT1)
-
-            self.plane_vector1 = np.array([H1,K1,L1, theta1, STT1, 0.0,0.0, Ei,Ei])
-
-            r2 = TasUBlib.addAuxReflection(self.cell,self.plane_vector1,vector2)
-
+            r1 = projectionVector1
+            r2 = projectionVector2
+            self.plane_vector1 = r1
             self.plane_vector2 = r2
-            self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell,self.plane_vector1,self.plane_vector2)
+
+            self.planeNormal = np.cross(self.plane_vector1[:3],self.plane_vector2[:3])
+            
+            
+            cell = TasUBlib.calcCell(self.unitCell)
+
+            self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(cell, r1, r2)
+            #self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell,self.plane_vector1,self.plane_vector2)
             self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))#,self.planeNormal.astype(float))
+            self.initialize()
             self.calculateProjections()
         else:
             print(sample)
