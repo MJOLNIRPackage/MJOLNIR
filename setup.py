@@ -38,7 +38,7 @@ setup(
         },
     python_requires='>=3.5' if not operatingSystem == 'darwin' else '>=3.6',
     install_requires=['matplotlib>=3','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
-                    'pip>=20','sip>=5.3','PyQt5-sip','PyQt5','ufit>=1.4.0','pyqtgraph'], # ,'ufit'
+                    'pip>=20','sip','PyQt5-sip','PyQt5','ufit>=1.4.0','pyqtgraph'], # ,'ufit'
     
     classifiers=[
         'Development Status :: 3 - Alpha',
