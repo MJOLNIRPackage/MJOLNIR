@@ -19,6 +19,7 @@ from MJOLNIR.Data import Mask
 import MJOLNIR.Data.Sample
 import re
 import copy
+import platform
 
 multiFLEXXDetectors = 31*5
 reFloat = r'-?\d*\.\d*'
@@ -522,10 +523,39 @@ class DataFile(object):
                 sample[newName] = getattr(obj,oldName)
                 delattr(obj,oldName)
                 
-            planeVector1 = [getattr(obj,x) for x in ['AX','AY','AZ']]
-            planeVector2 = [getattr(obj,x) for x in ['BX','BY','BZ']]
-            sample['projectionVector1']=planeVector1
-            sample['projectionVector2']=planeVector2
+            Ei = 10.0 # TODO: What is the good solution here? Dummy incoming energy needed to calcualte UB
+            k = np.sqrt(Ei)*factorsqrtEK
+            q1 = [getattr(obj,x) for x in ['AX','AY','AZ']]
+            q2 = [getattr(obj,x) for x in ['BX','BY','BZ']]
+            cell = TasUBlib.calcCell([sample[x] for x in ['a','b','c','alpha','beta','gamma']])
+            B = TasUBlib.calculateBMatrix(cell)
+            A41 = TasUBlib.calTwoTheta(B,[*q1,Ei,Ei],-1)
+            A31 = TasUBlib.calcTheta(k,k,A41)
+            A42 = TasUBlib.calTwoTheta(B,[*q2,Ei,Ei],-1)
+            A32 = TasUBlib.calcTheta(k,k,A42)
+
+            planeVector1 = q1
+            planeVector1.append(A31) # A3 
+            planeVector1.append(A41) # A4
+            [planeVector1.append(0.0) for _ in range(2)]# append values for gonios set to zero
+            planeVector1.append(Ei)
+            planeVector1.append(Ei)
+
+            planeVector2 = q2
+            planeVector2.append(A32) # A3 
+            planeVector2.append(A42) # A4 
+            [planeVector2.append(0.0) for _ in range(2)]# append values for gonios set to zero
+            planeVector2.append(Ei)
+            planeVector2.append(Ei)
+
+            # add correct angle in theta between the two reflections
+            between = TasUBlib.tasAngleBetweenReflections(B,np.array(planeVector1),np.array(planeVector2))
+
+            planeVector2[3]+=between
+
+            sample['projectionVector1']=np.array(planeVector1)
+            sample['projectionVector2']=np.array(planeVector2)
+
             return sample
 
 
@@ -621,10 +651,18 @@ class DataFile(object):
             this_dir, _ = os.path.split(__file__)
             if self.type in ['MultiFLEXX','FlatCone']:
                 if self.type =='MultiFLEXX':
-                    calibrationFile = os.path.join(this_dir,'..','CalibrationMultiFLEXX.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
+                    calibrationFile = os.path.join(this_dir,'..','CalibrationMultiFLEXX.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))
+                    if not os.path.isfile(calibrationFile): # If the file does not exist, try to look in the windows default location
+                        python_version = '.'.join(platform.python_version().split('.')[:-1])
+                        calibrationFile = os.path.abspath(os.path.join(this_dir,'..','..','..','python'+python_version,'site-packages','MJOLNIR','CalibrationMultiFLEXX.csv')).replace('\\', '/')
                     detectors = 155
+                    mask = np.zeros_like(self.I,dtype=bool)
+                    self._mask = mask
                 else:
                     calibrationFile = os.path.join(this_dir,'..','CalibrationFlatCone.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
+                    if not os.path.isfile(calibrationFile): # If the file does not exist, try to look in the windows default location
+                        python_version = '.'.join(platform.python_version().split('.')[:-1])
+                        calibrationFile = os.path.abspath(os.path.join(this_dir,'..','..','..','python'+python_version,'site-packages','MJOLNIR','CalibrationFlatCone.csv'))
                     detectors = 31
                     self.mask = False
                 calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
@@ -645,8 +683,9 @@ class DataFile(object):
                 
                 self.instrumentCalibrations = calibrations
                 if self.type == 'MultiFLEXX':
-                    self.mask = np.zeros_like(self.I,dtype=bool)
-                    self.mask[:,np.isnan(self.instrumentCalibrationEf[:,0])] = True
+                    mask = np.zeros_like(self.I.data,dtype=bool)
+                    mask[:,np.isnan(self.instrumentCalibrationEf[:,0])] = True
+                    self.mask=mask
             elif self.type == '1D':
                 pass
             else:
