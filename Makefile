@@ -32,6 +32,12 @@ upload:
 	twine upload $(shell ls -t dist/* | head -1) -r testpypi
 	twine upload $(shell ls -t dist/* | head -1) -r pypi
 
+testVersion:
+	echo 'Creating test version $(version)'
+	python Update.py $(version)
+	python setup.py sdist
+	twine upload $(shell ls -t dist/* | head -1) -r testpypi
+
 
 version: 
 	echo 'Creating version $(version)'
