@@ -4,6 +4,9 @@ import sys
 sys.path.append('.')
 #import Viewer3D
 #import Viewer1D
-import numpy.random.common
-import numpy.random.bounded_integers
-import numpy.random.entropy
+try: # Imports needed for Windows generation of installers of MJOLNIRGui
+    import numpy.random.common
+    import numpy.random.bounded_integers
+    import numpy.random.entropy
+except ModuleNotFoundError:
+    pass
