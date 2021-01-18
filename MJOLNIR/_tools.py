@@ -774,3 +774,46 @@ def generateLabel(vec,labels=['H','K','L']):
                 
     returnLabel = ''.join(['(',', '.join([x for x in label]),')'])
     return returnLabel
+
+
+def generateLabelDirection(vec,labels=['H','K','L']):
+    """Format a scattering vector with letters according to the first non-zero direction.
+    
+    Args:
+    
+        - vec (array): Vector to be formated.
+
+    Kwargs:
+        
+        - lables (list): Letters to use for formating (default ['H','K','L']) 
+        
+    """
+    # Individual letters
+    integers = np.isclose(np.abs(vec)-np.floor(np.abs(vec)),0.0,atol=1e-4)
+    signs = np.sign(vec)
+    vec = np.abs(vec)
+    zeros = np.isclose(vec,0.0,atol=1e-4)
+    ones = np.isclose(vec,1.0,atol=1e-4)
+    
+    label = []
+    L = ''
+    for l,i,s,z,o,v in zip(labels,integers,signs,zeros,ones,vec):
+        sign= '-' if s==-1 else ''
+        if not i: # not an integer
+            if L == '':
+                L= l
+            label.append(''.join([sign,str(v),L]))
+        else: # It is an integer
+            if z: # if zero
+                label.append('0')
+            elif o: # if one
+                if L == '':
+                    L = l
+                label.append(''.join([sign,L]))
+            else: # if integer different from 0 or +- 1
+                if L == '':
+                    L = l
+                label.append(''.join([sign,str(int(v)),L]))
+                
+    returnLabel = ''.join(['(',', '.join([x for x in label]),')'])
+    return returnLabel

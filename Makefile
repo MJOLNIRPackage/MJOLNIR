@@ -26,7 +26,7 @@ fulltest:
 wheel:
 	python setup.py sdist
 
-version = $(shell python cut.py $(shell ls -t dist/* | head -1))
+version ?= $(shell python cut.py $(shell ls -t dist/* | head -1))
 
 upload:
 	twine upload $(shell ls -t dist/* | head -1) -r testpypi
