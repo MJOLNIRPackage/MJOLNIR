@@ -487,6 +487,8 @@ def test_DataSet_1DcutE():
     assert(ufitData.meta['instrument'] == 'CAMEA')
     assert(ufitData.meta['datafilename'] == files)
 
+    ax,Data3,[bins3] = Datset.plotCut1DE(E1=Emin,E2=Emax,q=Q,width=0.1,minPixel=0.01,constantBins=True,ticks=5,tickRound=3)
+
 
 
 def test_DataSet_2Dcut():
@@ -1027,6 +1029,25 @@ def test_DataSet_extractDetectorData():
         assert(DatAllRaw[0][i].shape==DatAllRaw[1][i].shape and DatAllRaw[0][i].shape==DatAllRaw[2][i].shape) # Check that 3 list have same shape
         assert(DatAllRaw[0][i].shape==DatAll[i].shape) 
         
+
+def test_DataSet_subract():
+    #Simple test of subtracting the same data file from it-self
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
+    dataset = DataSet(DataFile)
+
+    dataset2 = DataSet(DataFile)
+
+    try:
+        subtracted = dataset-dataset2
+    except AttributeError: # Data set need to be converted
+        assert True
+    
+    dataset.convertDataFile()
+    dataset2.convertDataFile()
+    subtracted = dataset-dataset2
+    assert(np.sum(subtracted.I.data)==0)
+    assert(np.all(np.isclose(subtracted.Norm.data,dataset.Norm.data)))
+    assert(np.all(np.isclose(subtracted.Monitor.data,dataset.Monitor.data)))
 
 def test_DataSet_OxfordList():
     l = ['Apples','Pears']
