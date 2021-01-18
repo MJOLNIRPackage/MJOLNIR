@@ -8,5 +8,5 @@ try: # Imports needed for Windows generation of installers of MJOLNIRGui
     import numpy.random.common
     import numpy.random.bounded_integers
     import numpy.random.entropy
-except ModuleNotFoundError:
+except ImportError:
     pass
