@@ -2828,7 +2828,7 @@ class DataSet(object):
         """
 
         
-        def intrextrapolate(oldPosition,oldValues,newValues,outputFunction=print):
+        def intrextrapolate(oldPosition,oldValues,newValues,outputFunction=print):# pragma: no cover
             """interpolates between old and new through linear regression and returns best estimate at old positions
             
             arg:
@@ -2859,7 +2859,7 @@ class DataSet(object):
         
         
         
-        def format_coord(x,y,X,labels):
+        def format_coord(x,y,X,labels):# pragma: no cover
             """format coordinates according to x and y. When X is multidimensional an approximation for its value at x is estimated"""
             fmtOrder = np.ceil(-np.log(np.mean(np.abs(np.diff(X,axis=1)),axis=1)))
             fmtOrder = [o if o>0 else 0 for o in (fmtOrder).astype(int)]
@@ -3088,6 +3088,29 @@ class DataSet(object):
             d.sample.updateSampleParameters(unitCell=unitCell)
 
 
+    def __sub__(self,other):
+
+        filesSelf = [d for d in self]
+        filesOther = [d for d in other]
+        if not np.all([x.type == 'nxs' for x in np.concatenate([filesSelf,filesOther])]):
+            raise AttributeError('Data files have to be converted!')
+        monoSelf = [x.MonitorPreset for x in self]
+        monoOther = [x.MonitorPreset for x in other]
+
+        data = []
+        for s,o in zip(filesSelf,filesOther):
+            sMono = s.MonitorPreset
+            oMono = o.MonitorPreset
+            if sMono>oMono:
+                s.I = s.I-o.I*(oMono/sMono)
+            elif sMono<oMono:
+                s.I = s.I*(sMono/oMono)-o.I
+            else:
+                s.I = s.I-o.I
+            data.append(s)
+
+        newFile = DataSet(data)
+        return newFile
 
 
 
@@ -3581,7 +3604,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
             raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,len(planes)))
             
     
-    if not hasattr(files,'len'):
+    if not isinstance(files,(list,np.ndarray)):
         files = [files]
     numFiles = len(files)
 
