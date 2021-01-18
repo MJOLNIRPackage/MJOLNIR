@@ -75,10 +75,7 @@ class Sample(object):
             self.rotationAngle = np.array(0)
             self.name=name
             if projectionVector1 is None or projectionVector2 is None:
-                vector1,vector2 = [np.array([1.0,0.0,0.0,0.0,0.0,5.0,5.0]),np.array([0.0,1.0,0.0,0.0,0.0,5.0,5.0])]
-            else:
-                vector1 = np.array(projectionVector1)
-                vector2 = -np.array(projectionVector2)
+                projectionVector1,projectionVector2 = [np.array([1.0,0.0,0.0,0.0,0.0,0.0,0.0,5.0,5.0]),np.array([0.0,1.0,0.0,0.0,0.0,0.0,0.0,5.0,5.0])]
 
             r1 = projectionVector1
             r2 = projectionVector2
