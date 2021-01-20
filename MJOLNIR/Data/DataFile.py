@@ -8,6 +8,7 @@ import numpy as np
 import h5py as hdf
 import warnings
 from MJOLNIR import _tools
+import MJOLNIR
 import datetime
 import math
 import shapely
@@ -593,6 +594,10 @@ class DataFile(object):
             self.multiData = np.array([np.array(x.split()[1:],dtype=int) for x in dataPart[2::3]])
             self.multiData = self.multiData[:,:155] # Remove additional 5 zeros in data file
             self.type = 'MultiFLEXX'
+            if 'Finished' in dataPart[-1]:
+                self.endTime = dataPart[-1].replace('Finished at ','')
+            else:
+                self.endTime = 'N/A'
         else: # Assume flatcone, data is split in steps and then flatcone data
             # Split is marked with 'MULTI:'
             splitMarker = np.array([x=='MULTI:' for x in dataPart])
@@ -633,7 +638,8 @@ class DataFile(object):
                     ['user','userName'],
                     ['DA','analyzerDSpacing'],
                     ['expno','experimentIdentifier'],
-                    ['localContact','localContactName']
+                    ['localContact','localContactName'],
+                    ['date','startTime']
                     ]
 
         for pair in nameSwaps:
@@ -644,25 +650,19 @@ class DataFile(object):
 
         ## Create sample from sample dictionary
         self.sample = MJOLNIR.Data.Sample.Sample(**sampleDict)
-
+        self.sample.name = self.title
+        self.comment = 'N/A'
 
         ## Create calibration data from file
         if calibrationFile is None: # Use shipped calibration
-            this_dir, _ = os.path.split(__file__)
             if self.type in ['MultiFLEXX','FlatCone']:
                 if self.type =='MultiFLEXX':
-                    calibrationFile = os.path.join(this_dir,'..','CalibrationMultiFLEXX.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))
-                    if not os.path.isfile(calibrationFile): # If the file does not exist, try to look in the windows default location
-                        python_version = '.'.join(platform.python_version().split('.')[:-1])
-                        calibrationFile = os.path.abspath(os.path.join(this_dir,'..','..','..','python'+python_version,'site-packages','MJOLNIR','CalibrationMultiFLEXX.csv')).replace('\\', '/')
+                    calibrationFile = MJOLNIR.__multiFLEXXNormalization__
                     detectors = 155
                     mask = np.zeros_like(self.I,dtype=bool)
                     self._mask = mask
                 else:
-                    calibrationFile = os.path.join(this_dir,'..','CalibrationFlatCone.csv')#os.path.realpath(os.path.join(this_dir,"..", "Calibration.csv"))  
-                    if not os.path.isfile(calibrationFile): # If the file does not exist, try to look in the windows default location
-                        python_version = '.'.join(platform.python_version().split('.')[:-1])
-                        calibrationFile = os.path.abspath(os.path.join(this_dir,'..','..','..','python'+python_version,'site-packages','MJOLNIR','CalibrationFlatCone.csv'))
+                    calibrationFile = MJOLNIR.__flatConeNormalization__
                     detectors = 31
                     self.mask = False
                 calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
@@ -697,9 +697,7 @@ class DataFile(object):
 
         self.analyzerSelection = 0
         self.detectorSelection = 0
-        self.comment = ''
         ### Weird additional changes:
-
         if self.type == 'MultiFLEXX':
             self.A3Off = np.array([90.0])
             self.A4Off = np.array([0.0])

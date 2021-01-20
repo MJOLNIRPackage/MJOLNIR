@@ -13,7 +13,10 @@ else:
         long_description = f.read()
 
 
-pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'site-packages','MJOLNIR')
+if os.path.isdir(os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]))):
+    pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'site-packages','MJOLNIR')
+else:
+    pythonPath = os.path.join('lib','site-packages','MJOLNIR')
 
 setup(
     name='MJOLNIR',
