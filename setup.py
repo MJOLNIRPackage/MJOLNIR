@@ -1,4 +1,5 @@
 from setuptools import setup
+import setuptools
 import os
 import sys
 
@@ -13,10 +14,8 @@ else:
         long_description = f.read()
 
 
-if os.path.isdir(os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]))):
-    pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'site-packages','MJOLNIR')
-else:
-    pythonPath = os.path.join('lib','site-packages','MJOLNIR')
+installFolder = os.path.abspath(os.path.join(os.path.split(setuptools.__file__)[0],'..'))
+pythonPath =  os.path.relpath(os.path.join(installFolder,'MJOLNIR'),sys.base_prefix)
 
 setup(
     name='MJOLNIR',
