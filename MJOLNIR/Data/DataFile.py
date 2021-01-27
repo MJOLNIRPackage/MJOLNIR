@@ -1586,6 +1586,8 @@ def getScanParameter(f):
 
     
     for item in f.get('/entry/data/'):
+        if item in ['scanvar']: # only present in some files, but has to be ignored
+            continue
         if not item in ['counts','summed_counts','en','h','intensity','k','l','monitor',
         'normalization','qx','qy'] and item[-4:]!='zero':
             scanParameters.append(item)
