@@ -5,6 +5,8 @@ sys.path.append('../..')
 import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 from MJOLNIR import _tools
+from MJOLNIR import TasUBlibDEG as TasUBlib
+from MJOLNIR.TasUBlibDEG import cosd,sind
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -1277,3 +1279,86 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=rotation_angle_zero,polar_angle_offset=polar_angle_offset)
         
 
+def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
+    
+    cell = TasUBlib.calcCell(Cell)
+
+    UB = TasUBlib.calcTasUBFromTwoReflections(cell, r1, r2)
+
+    pV1 = _tools.LengthOrder(np.array(r2[:3],dtype=float))
+    pV2 = _tools.LengthOrder(np.array(r1[:3],dtype=float))
+
+    convertionMatrix = np.dot(np.dot([[1,0,0],[0,1,0]],UB),np.array([pV1,pV2]).T)
+
+    
+    factorsqrtEK = 0.694692
+    
+    def converterToP1P2(A3,A4,Ei,Ef, convertionMatrix = convertionMatrix):
+    
+        ki = np.sqrt(Ei)*factorsqrtEK
+        kf = np.sqrt(Ef)*factorsqrtEK
+      
+        r = [0,0,0,A3,A4,0.0,0.0,Ei,Ef]
+        QV = TasUBlib.calcTasUVectorFromAngles(r)
+        q = np.sqrt(ki**2 +kf**2-
+               2. *ki *kf * np.cos(np.deg2rad(A4)))
+    
+        
+        Qx,Qy = (QV*q.reshape(-1,1))[:,:2].T
+        convertionMatrixINV = np.linalg.inv(convertionMatrix)
+        proj1,proj2 = np.einsum('ij,j...->i...',convertionMatrixINV,[Qx,Qy])
+        return (proj1,proj2)
+    
+    fig,Ax = plt.subplots(3,3,figsize=(26,13))
+    Ax = Ax.flatten()
+    
+    MJOLNIRDir = os.path.dirname(_tools.__file__)
+    calibPath = os.path.join(MJOLNIRDir,'Normalization_1.calib')
+    
+    calib = np.loadtxt(calibPath,delimiter=',',skiprows=3)
+    
+    A4Instrument = calib[:,-1].reshape(104,8)
+    EfInstrument = calib[:,4].reshape(104,8)
+    EfInstrument[np.isclose(EfInstrument,0.0)]=np.nan
+    A3PointValues = np.linspace(A3Start,A3Stop,A3Steps)
+    steps = A3Steps
+    if steps>30:
+        steps = 30
+    A3Values = np.linspace(A3Start,A3Stop,steps)
+    
+    
+    startColor = np.array([0.12156863, 0.46666667, 0.70588235, 0.5])
+    endColor = np.array([0.83921569, 0.15294118, 0.15686275, 0.5])
+    diff = (endColor-startColor)/7.0
+    
+
+    def format_axes(x,y,pV1,pV2):
+        return '['+', '.join(['{:.3f}'.format(x) for x in np.asarray(x)*pV1+np.asarray(y)*pV2])+'] RLU'
+
+    for i,(ax,Ef,A4) in enumerate(zip(Ax,EfInstrument.reshape(104,8).T,A4Instrument.reshape(104,8).T)):
+        for A4Position in A4Positions:
+            if points:
+                for A3 in A3PointValues:
+                    H,L = converterToP1P2(A3=A3, A4=A4+A4Position,Ei = Ei, Ef = Ef)
+                    ax.scatter(H,L,color=startColor[:-1]+diff[:-1]*i)
+            A4Edge = np.array([np.concatenate([a4,[a4[-1]]*steps,a4[::-1],[a4[0]]*steps]) for a4 in A4.reshape(8,13)])
+            EfEdge = np.array([np.concatenate([ef,[ef[-1]]*steps,ef[::-1],[ef[0]]*steps]) for ef in Ef.reshape(8,13)])
+            A3Edge = np.array(list(np.concatenate([[A3Values[0]]*13,A3Values,[A3Values[-1]]*13,A3Values[::-1]]))*8).reshape(8,-1)
+            Hedge,Ledge = np.array([converterToP1P2(A3=a3, A4=a4+A4Position,Ei = Ei, Ef = ef) for a3,a4,ef in zip(A3Edge,A4Edge,EfEdge)]).transpose([1,0,2])
+            [a.plot(hedge,ledge,color=startColor+diff*i) for hedge,ledge in zip(Hedge,Ledge) for a in [Ax[-1],ax]]
+    
+            
+        ax.set_xlabel(_tools.generateLabelDirection(pV1) + ' RLU')
+        ax.set_ylabel(_tools.generateLabelDirection(pV2) + ' RLU')
+        ax.set_title(r'$\Delta $E {:.2f}'.format(Ei-np.nanmean(Ef))+' meV')
+        ax.invert_yaxis()
+        ax.format_coord = lambda x,y: format_axes(x, y, pV1,  pV2)
+    
+    Ax[-1].set_xlabel(_tools.generateLabelDirection(pV1) + ' RLU')
+    Ax[-1].set_ylabel(_tools.generateLabelDirection(pV2) + ' RLU')
+    Ax[-1].set_title('All Planes')
+    Ax[-1].invert_yaxis()
+    Ax[-1].format_coord = lambda x,y: format_axes(x, y, pV1,  pV2)
+    
+    fig.tight_layout()
+    return Ax
