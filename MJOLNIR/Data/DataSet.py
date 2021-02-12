@@ -2290,7 +2290,7 @@ class DataSet(object):
         data['Energy'] = 0.5*(bins[0][1:]+bins[0][:-1])
         data['Intensity'] = intensity.astype(int)
         data['Monitor'] = MonitorCount.astype(int)
-        data['Normalization'] = Normalization.astype(int)
+        data['Normalization'] = Normalization.astype(float)
         data['BinCount'] = normcounts.astype(int)
         data['binDistance'] = np.linalg.norm(data[variables]-np.array(data[variables].iloc[1]),axis=1)
         
@@ -3325,8 +3325,8 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#
     
     normcounts = np.histogram(Energies,bins=bins,weights=np.ones_like(Energies).flatten())[0]
     intensity = np.histogram(Energies,bins=bins,weights=I[allInside].flatten())[0]
-    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=np.int64))[0] # Need to change to int64 to avoid overflow
-    Normalization= np.histogram(Energies,bins=bins,weights=Norm[allInside].flatten())[0]
+    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=np.float))[0] # Need to change to int64 to avoid overflow
+    Normalization= np.histogram(Energies,bins=bins,weights=np.array(Norm[allInside].flatten(),dtype=np.float))[0]
     
 
     return [intensity,MonitorCount,Normalization,normcounts],[bins]
