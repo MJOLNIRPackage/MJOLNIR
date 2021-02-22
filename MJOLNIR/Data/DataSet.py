@@ -828,8 +828,6 @@ class DataSet(object):
         elif len(dataFrame) == 1:
             dataFrame = dataFrame[0]
         
-        for col in ['Intensity','Monitor','Normalization','BinCount']:
-            dataFrame[col] = dataFrame[col].astype(int)
 
         return dataFrame,returnpositions,centerPos,binDistance
 
