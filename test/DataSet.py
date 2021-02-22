@@ -1226,3 +1226,24 @@ def testupdateSampleParameters():
     for d in ds:
         assert(np.all(np.isclose(d.sample.cell,newCell)))
         assert(np.all(np.isclose(d.sample.UB,newUB)))
+
+def test_absolutNormalziation():
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf')]
+    ds = DataSet(DataFile)
+
+    try:
+        ds.absolutNormalize(10.0,'MnF2')
+        assert False
+    except  AttributeError: # Must be converted first!
+        assert True
+
+    ds.convertDataFile()
+    norm = np.mean(ds.Norm.extractData())
+    
+    # Use value for MnF2 to check 
+    ds.absolutNormalize(6.2,'MnF2',formulaUnitsPerUnitCell=2,sampleDebyeWaller = 1.0,
+                                      correctVanadium=False)
+    
+    factor = 0.06088201383247563 # Factor calculated for MnF2
+
+    assert(np.isclose(norm*factor,np.mean(ds.Norm.extractData())))

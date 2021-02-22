@@ -68,6 +68,7 @@ class DataSet(object):
         self._calibrationfiles = []
         self._mask = False
         self.index = 0
+        self.absolutNormalized = False # Flag to keep track of normalization has taken place
 
 
         if dataFiles is not None:
@@ -3109,6 +3110,47 @@ class DataSet(object):
 
         newFile = DataSet(data)
         return newFile
+
+    def absolutNormalize(self,sampleMass,sampleChemicalFormula,formulaUnitsPerUnitCell=1.0,sampleDebyeWaller=1.0, sampleFormFactor=1.0, sampleGFactor=2.0, correctVanadium=False):
+        """Normaliza dataset to absolut units () by 
+
+        Args:
+
+            - sampleMass (float): Mass of sample in gram
+
+            - sampleChemicalFormula (string): Chemical formula of sample
+
+        Kwargs:
+
+            - formulaUnitsPerUnitCell (float): Number of formula units per unit cell (default 1.0)
+
+            - sampleDebyeWaller (float): Debye Waller factor (default 1.0)
+
+            - sampleGFactor (float): Magnetic G factor for sample (defalt 2.0)
+        
+            - sampleFormFactor (float): Formfactor of sample (default 1.0)
+
+            - correctVanadium (bool): If normalization files have not been updated set this to True (default False)
+
+        """
+
+        if len(self.convertedFiles) == 0:
+            raise AttributeError("Data set needs to be converted before absolut normalization can be applied.")
+        
+        if self.absolutNormalized:
+            warnings.warn("\nAlready Normalized\nDataSet seems to already have beeen normalized absolutly...")
+
+        normFactor = \
+        _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMass=sampleMass,
+                                             formulaUnitsPerUnitCell=formulaUnitsPerUnitCell,sampleGFactor=sampleGFactor,
+                                             sampleFormFactor=sampleFormFactor,sampleDebyeWaller=sampleDebyeWaller,
+                                             correctVanadium=correctVanadium)
+            
+
+        for d in self:
+            d.Norm *= normFactor
+
+        self.absolutNormalized = True
 
 
 

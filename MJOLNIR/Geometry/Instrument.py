@@ -311,7 +311,8 @@ class Instrument(GeometryConcept.GeometryConcept):
 
     @_tools.KwargChecker()
     def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/', 
-    tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False, ignoreTubes=None):
+    tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False, ignoreTubes=None,
+    sample='V',sampleMass=None,sampleDebyeWallerFactor=1.0,formulaUnitsPerUnitCell=1.0,sampleIncoherent=5.08):
         """Method to generate look-up tables for normalization. Saves calibration file(s) as 'Calibration_Np.calib', where Np is the number of pixels.
         
         Generates 4 different tables:
@@ -344,8 +345,20 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - ignoreTubes (list of ints): List containing tubes to be ignored in fitting (default [])
 
+            - sample (string): Chemical composition of sample used for normalization (default 'V')
+
+            - sampleMass (float): Mass of normalization sample (default None)
+
+            - sampleDebyeWallerFactor (float): Correction of normalization data with Debye-Waller factor (default 1.0)
+
+            - formulaUnitsPerUnitCell (float): Numer of formalunits in normalization sample per unit cell (default 1.0) 
+            
+            - sampleIncoherent (float): Incoherent strength of sample (default 5.08)
+
         .. warning::
             At the moment, the active detector area is defined by NumberOfSigmas (currently 3) times the Gaussian width of Vanadium peaks.
+
+        When a sample mass is provided, the normalization tables are per default rescaled with Vanadium unless default parameters are overwritten.
 
         """
         self.initialize()
@@ -377,6 +390,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     savelocation+='/'
                 
                 Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)
+                monitor = np.mean(np.array(VanFile.get('entry/control/data'))) # Extract monitor count
                 
                 if False: #Mask pixels where spurion is present
                     Data[:,:,:100]=0
@@ -530,6 +544,15 @@ class Instrument(GeometryConcept.GeometryConcept):
                     for j in range(analysers):
                         Eguess[i,j]=np.argmax(Data[i,:,int(pixelpos[i,j])])
                 
+                if sampleMass != None: # A sample mass has been proivided
+
+                    sampleMolarMass = _tools.calculateMolarMass(sample,formulaUnitsPerUnitCell)
+                    
+                    # TODO: Check placement of sampleDebyeWallerFactor!
+                    vanadiumFactor = sampleDebyeWallerFactor*sampleMolarMass/(sampleMass*sampleIncoherent*monitor)
+                else:
+                    vanadiumFactor = 1.0
+
                 fitParameters = []
                 activePixelRanges = []
                 for detpixels in bins:
@@ -616,6 +639,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
                                     fittedParameters[i,j,k]=res[0]
                                     fittedParameters[i,j,k,0] *= np.sqrt(2*np.pi)*fittedParameters[i,j,k,2] #np.sum(binPixelData) # Use integrated intensity as amplitude 29-07-2020 JL
+                                    fittedParameters[i,j,k,0] *= vanadiumFactor # Multiply vanadium factor to perform absolut normalization 22-02-2021 JL
                                     if plot: # pragma: no cover
                                         plt.plot(EiX,GaussianNormalized(EiX,*fittedParameters[i,j,k]),color='black')
                                         plt.scatter(EiLocal,binPixelData,color=colors[:,k])
