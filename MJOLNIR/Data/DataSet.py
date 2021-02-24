@@ -3111,7 +3111,9 @@ class DataSet(object):
         newFile = DataSet(data)
         return newFile
 
-    def absolutNormalize(self,sampleMass,sampleChemicalFormula,formulaUnitsPerUnitCell=1.0,sampleDebyeWaller=1.0, sampleFormFactor=1.0, sampleGFactor=2.0, correctVanadium=False):
+    def absolutNormalize(self,sampleMass,sampleChemicalFormula,formulaUnitsPerUnitCell=1.0,
+                         sampleGFactor=2.0, correctVanadium=False,vanadiumMass=15.25,
+                         vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08):
         """Normaliza dataset to absolut units () by 
 
         Args:
@@ -3132,6 +3134,12 @@ class DataSet(object):
 
             - correctVanadium (bool): If normalization files have not been updated set this to True (default False)
 
+            - vanadiumMass (float): Mass of vanadium used in normalization in gram (default 15.25)
+
+            - vanadiumMonitor (int): Monitor count used in normalization scan (default 100000)
+
+            - vanadiumSigmaIncoherent (float): Incoherent scattering strength of Vanadium (default 5.08)
+
         """
 
         if len(self.convertedFiles) == 0:
@@ -3143,12 +3151,17 @@ class DataSet(object):
         normFactor = \
         _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMass=sampleMass,
                                              formulaUnitsPerUnitCell=formulaUnitsPerUnitCell,sampleGFactor=sampleGFactor,
-                                             sampleFormFactor=sampleFormFactor,sampleDebyeWaller=sampleDebyeWaller,
-                                             correctVanadium=correctVanadium)
+                                             correctVanadium=correctVanadium,vanadiumMass=vanadiumMass,
+                                             vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent)
             
 
         for d in self:
             d.Norm *= normFactor
+            if hasattr(d,'absolutNormalizationFactor'):
+                d.absolutNormalizationFactor*= normFactor
+            else:
+                d.absolutNormalizationFactor= normFactor
+            d.absolutNormalized
 
         self.absolutNormalized = True
 
