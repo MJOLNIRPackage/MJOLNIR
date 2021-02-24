@@ -68,7 +68,7 @@ class DataSet(object):
         self._calibrationfiles = []
         self._mask = False
         self.index = 0
-        self.absolutNormalized = False # Flag to keep track of normalization has taken place
+        self.absolutNormalized = 0 # Float to keep track of normalization has taken place (0 means false)
 
 
         if dataFiles is not None:
@@ -3145,8 +3145,7 @@ class DataSet(object):
         if len(self.convertedFiles) == 0:
             raise AttributeError("Data set needs to be converted before absolut normalization can be applied.")
         
-        if self.absolutNormalized:
-            warnings.warn("\nAlready Normalized\nDataSet seems to already have beeen normalized absolutly...")
+        
 
         normFactor = \
         _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMass=sampleMass,
@@ -3154,6 +3153,9 @@ class DataSet(object):
                                              correctVanadium=correctVanadium,vanadiumMass=vanadiumMass,
                                              vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent)
             
+        if self.absolutNormalized != 0:
+            warnings.warn("\nAlready Normalized\nDataSet seems to already have beeen normalized absolutly. Reverting previous normalization...")
+            normFactor /= self.absolutNormalized
 
         for d in self:
             d.Norm *= normFactor
@@ -3161,9 +3163,12 @@ class DataSet(object):
                 d.absolutNormalizationFactor*= normFactor
             else:
                 d.absolutNormalizationFactor= normFactor
-            d.absolutNormalized
+            d.absolutNormalized = True
 
-        self.absolutNormalized = True
+        if self.absolutNormalized != 0:
+            self.absolutNormalized *= normFactor
+        else:
+            self.absolutNormalized = normFactor
 
 
 

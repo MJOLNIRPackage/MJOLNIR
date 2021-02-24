@@ -56,6 +56,7 @@ class DataFile(object):
             self.fileLocation = os.path.abspath(fileLocation)		
             self._binning = 1
             self._mask = False
+            self.absolutNormalized = False
 
             if not self.type == 'MultiFLEXX':
                 with hdf.File(fileLocation,mode='r') as f:
