@@ -935,7 +935,7 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
     splitted = recursiveFinder(sampleChemicalFormula)
     
     # Find elements in all strings and create dictionary to hold total number
-    elementPattern = "([A-Z][a-z]?)([-+]?\d*\.\d+|\d+)?"
+    elementPattern = r"([A-Z][a-z]*)([-+]?\d*\.\d+|\d+)?"
     element = re.compile(elementPattern)
     elements = {} # Dictionary to hold sample composition
     
@@ -980,7 +980,8 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
     return sampleMolarMass
 
 def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsPerUnitCell=1,
-                                  sampleGFactor=2,sampleFormFactor=1,sampleDebyeWaller=1, correctVanadium=True):
+                                  sampleGFactor=2,correctVanadium=True,vanadiumMass=15.25,
+                                  vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08):
     """Calculate absolut normalization relative to Vanadium
     
     Args: 
@@ -995,11 +996,15 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
         
         - sampleGFactor (float): Magnetic G factor for sample (defalt 2.0)
         
-        - sampleFormFactor (float): Formfactor of sample (default 1.0)
-        
         - sampleDebyeWaller (float): DebyeWaller factor of sample (default 1)
 
         - correctVanadium (bool): Whether to scale normalization with Vanadium or if this has been performed in normalziation tables (default True)
+
+        - vanadiumMass (float): Mass of vanadium used in normalization in gram (default 15.25)
+
+        - vanadiumMonitor (int): Monitor count used in normalization scan (default 100000)
+
+        - vanadiumSigmaIncoherent (float): Incoherent scattering strength of Vanadium (default 5.08)
         
     Returns:
         
@@ -1009,20 +1014,9 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
     sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
                                          formulaUnitsPerUnitCell=formulaUnitsPerUnitCell)
     
-    
-    # TODO: DebyeWaller factors need to go where exactly?
-    # TODO: Incorporate normalization to vanadium into generation of normalization tables
    
     if correctVanadium:
-        ##########################
-        #Our input parameters
-        ##########################
-        vanadiumMass=4.76 #in g, this value is a pure guess
-        vanadiumDebyeWaller=1 #might need to be updated
-        vanadiumMonitor=100000
         vanadiumMolarMass = calculateMolarMass('V')
-        vanadiumSigmaIncoherent=5.08 #barns
-        
         vanadiumFactor = vanadiumMolarMass/(vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
 
     else:
@@ -1033,6 +1027,6 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
     ##########################
     
     
-    normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*sampleFormFactor*vanadiumFactor/(sampleMolarMass*13.77)
+    normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*vanadiumFactor/(sampleMolarMass*13.77)
     
     return normalizationFactor

@@ -181,9 +181,9 @@ def test_absolutNormalization():
     sampleMass = 6.2
     normFactor = calculateAbsolutNormalization('MnF2',formulaUnitsPerUnitCell=2,sampleMass=sampleMass)
     # Known value for MnF2
-    assert(np.isclose(normFactor,1.2825965673786876e-06))
+    assert(np.isclose(normFactor,4.003383384080363e-07))
 
-    vanadiumMass=4.76
+    vanadiumMass=15.25
     vanadiumMonitor=1e5
     vanadiumSigmaIncoherent = 5.08
     contstants = 4*np.pi*2.0/13.77
