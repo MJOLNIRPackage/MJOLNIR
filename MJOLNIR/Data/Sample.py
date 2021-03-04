@@ -10,8 +10,6 @@ import warnings
 from MJOLNIR import _tools
 import datetime
 import math
-import shapely
-from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
 import MJOLNIR.Data.DataFile

@@ -12,7 +12,7 @@ import MJOLNIR
 import datetime
 import math
 import shapely
-from shapely.geometry import Polygon as PolygonS, Point as PointS
+# from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
 from MJOLNIR.Data import Mask
@@ -969,146 +969,146 @@ class DataFile(object):
         self.instrumentCalibrationEdges.shape = (-1,2)
         
 
-    @_tools.KwargChecker()
-    def calculateEdgePolygons(self,addEdge=True): # pragma: no cover
-        """Method to calculate bounding polygon for all energies. The energies are split using the bin-edges method of DataSet. Hereafter,
-        the outer most points are found in polar coordinates and a possible addition is made creating the padded bounding polygon.
+    # @_tools.KwargChecker()
+    # def calculateEdgePolygons(self,addEdge=True): # pragma: no cover
+    #     """Method to calculate bounding polygon for all energies. The energies are split using the bin-edges method of DataSet. Hereafter,
+    #     the outer most points are found in polar coordinates and a possible addition is made creating the padded bounding polygon.
         
-        Kwargs:
+    #     Kwargs:
             
-            - addEdge (bool/float): If true, padding is found as difference between outer and next outer point. If addEdge is a number, generate padding a padding of this value (default True)
+    #         - addEdge (bool/float): If true, padding is found as difference between outer and next outer point. If addEdge is a number, generate padding a padding of this value (default True)
             
-        Returns:
+    #     Returns:
             
-            - edgePolygon (list): List of shapely polygons of the boundary
+    #         - edgePolygon (list): List of shapely polygons of the boundary
             
-            - EBins (list): Binning edges in energy
+    #         - EBins (list): Binning edges in energy
             
-        """
-        if addEdge:
-            if np.isclose(float(addEdge),1.0):
-                addEdgeAmount = None
-            else:
-                addEdgeAmount = addEdge
+    #     """
+    #     if addEdge:
+    #         if np.isclose(float(addEdge),1.0):
+    #             addEdgeAmount = None
+    #         else:
+    #             addEdgeAmount = addEdge
         
-        Energy = self.energy
+    #     Energy = self.energy
         
-        E = np.sort(np.mean(self.energy,axis=(0,1)))
-        dif = np.diff(E)*0.5
-        EBins = np.concatenate([[E[0]-dif[0]],E[:-1]+dif,[E[-1]+dif[-1]]])
-        steps = Energy.shape[0]
+    #     E = np.sort(np.mean(self.energy,axis=(0,1)))
+    #     dif = np.diff(E)*0.5
+    #     EBins = np.concatenate([[E[0]-dif[0]],E[:-1]+dif,[E[-1]+dif[-1]]])
+    #     steps = Energy.shape[0]
         
         
-        edgePolygon = []
-        for ELow,EHigh in zip(EBins,EBins[1:]):#range(len(EBins)-1):
+    #     edgePolygon = []
+    #     for ELow,EHigh in zip(EBins,EBins[1:]):#range(len(EBins)-1):
             
-            EBool = np.logical_and(Energy>ELow,Energy<EHigh)
+    #         EBool = np.logical_and(Energy>ELow,Energy<EHigh)
             
-            x = self.qx[EBool]
-            y = self.qy[EBool]
+    #         x = self.qx[EBool]
+    #         y = self.qy[EBool]
             
             
-            r = np.linalg.norm([x,y],axis=0)
-            theta = np.arctan2(y,x)
+    #         r = np.linalg.norm([x,y],axis=0)
+    #         theta = np.arctan2(y,x)
             
-            rBins = _tools.binEdges(r,0.00001)
+    #         rBins = _tools.binEdges(r,0.00001)
             
-            out = -1
-            while np.sum(r>rBins[out])<steps:
-                out-=1
-            rOuter = r>rBins[out]
-            inner = 0
-            while np.sum(r<rBins[inner])<steps:
-                inner+=1
-            rInner = r<rBins[inner]
+    #         out = -1
+    #         while np.sum(r>rBins[out])<steps:
+    #             out-=1
+    #         rOuter = r>rBins[out]
+    #         inner = 0
+    #         while np.sum(r<rBins[inner])<steps:
+    #             inner+=1
+    #         rInner = r<rBins[inner]
             
-            minEdge = []
-            maxEdge = []
-            _minEdge= []
-            _maxEdge= []
-            include = 0
-            for j in range(len(rBins)-1):
-                Bool = np.logical_and(r>rBins[j-include],r<rBins[j+1])
-                if np.sum(Bool)<steps-1:
-                    include+=1
-                    continue
-                else:
-                    include = 0
-                TT = theta[Bool]
-                dif = np.diff(TT)
-                if np.max(abs(dif))>np.pi*1.9:
-                    idx = np.argmax(abs(dif))
-                    TT[idx+1:]+=-np.sign(dif[idx])*2*np.pi
-                minT,maxT = _tools.minMax(TT)
-                _minT,_maxT = _tools.minMax(TT)
+    #         minEdge = []
+    #         maxEdge = []
+    #         _minEdge= []
+    #         _maxEdge= []
+    #         include = 0
+    #         for j in range(len(rBins)-1):
+    #             Bool = np.logical_and(r>rBins[j-include],r<rBins[j+1])
+    #             if np.sum(Bool)<steps-1:
+    #                 include+=1
+    #                 continue
+    #             else:
+    #                 include = 0
+    #             TT = theta[Bool]
+    #             dif = np.diff(TT)
+    #             if np.max(abs(dif))>np.pi*1.9:
+    #                 idx = np.argmax(abs(dif))
+    #                 TT[idx+1:]+=-np.sign(dif[idx])*2*np.pi
+    #             minT,maxT = _tools.minMax(TT)
+    #             _minT,_maxT = _tools.minMax(TT)
                 
-                if addEdge:
-                    mint, maxt = _tools.minMax(TT[np.logical_not(np.logical_or(np.isclose(TT,minT),np.isclose(TT,maxT)))])
-                    if addEdgeAmount is None:
-                        minT = minT-0.5*(mint-minT)
-                        maxT = maxT-0.5*(maxt-maxT)
-                    else:
-                        minT = minT+np.sign(minT-mint)*addEdgeAmount
-                        maxT = maxT+np.sign(maxT-maxt)*addEdgeAmount
+    #             if addEdge:
+    #                 mint, maxt = _tools.minMax(TT[np.logical_not(np.logical_or(np.isclose(TT,minT),np.isclose(TT,maxT)))])
+    #                 if addEdgeAmount is None:
+    #                     minT = minT-0.5*(mint-minT)
+    #                     maxT = maxT-0.5*(maxt-maxT)
+    #                 else:
+    #                     minT = minT+np.sign(minT-mint)*addEdgeAmount
+    #                     maxT = maxT+np.sign(maxT-maxt)*addEdgeAmount
                     
-                R = np.mean(r[Bool])
-                minEdge.append([R*np.cos(minT),R*np.sin(minT)])
-                maxEdge.append([R*np.cos(maxT),R*np.sin(maxT)])
+    #             R = np.mean(r[Bool])
+    #             minEdge.append([R*np.cos(minT),R*np.sin(minT)])
+    #             maxEdge.append([R*np.cos(maxT),R*np.sin(maxT)])
                 
-                _minEdge.append([R*np.cos(_minT),R*np.sin(_minT)])
-                _maxEdge.append([R*np.cos(_maxT),R*np.sin(_maxT)])
+    #             _minEdge.append([R*np.cos(_minT),R*np.sin(_minT)])
+    #             _maxEdge.append([R*np.cos(_maxT),R*np.sin(_maxT)])
             
-            minEdge = np.array(minEdge).T
-            maxEdge = np.array(maxEdge).T
+    #         minEdge = np.array(minEdge).T
+    #         maxEdge = np.array(maxEdge).T
             
-            innerPoints = np.array([x[rInner],y[rInner]])
-            _innerPoints= np.array([x[rInner],y[rInner]])
-            if addEdge:
-                if addEdgeAmount is None:
-                    RR = rBins[inner]-(rBins[inner+1]-rBins[inner])
-                else:
-                    RR = rBins[inner]-addEdgeAmount
-                Theta = np.arctan2(innerPoints[1],innerPoints[0])
-                innerPoints = np.array([np.cos(Theta),np.sin(Theta)])*RR
+    #         innerPoints = np.array([x[rInner],y[rInner]])
+    #         _innerPoints= np.array([x[rInner],y[rInner]])
+    #         if addEdge:
+    #             if addEdgeAmount is None:
+    #                 RR = rBins[inner]-(rBins[inner+1]-rBins[inner])
+    #             else:
+    #                 RR = rBins[inner]-addEdgeAmount
+    #             Theta = np.arctan2(innerPoints[1],innerPoints[0])
+    #             innerPoints = np.array([np.cos(Theta),np.sin(Theta)])*RR
                     
                 
-            outerPoints = np.array([x[rOuter],y[rOuter]])
-            _outerPoints= np.array([x[rOuter],y[rOuter]])
-            if addEdge:
-                if addEdgeAmount is None:
-                    RR = rBins[out]-(rBins[out-1]-rBins[out])
-                else:
-                    RR = rBins[out]+addEdgeAmount
-                Theta = np.arctan2(outerPoints[1],outerPoints[0])
-                outerPoints = np.array([np.cos(Theta),np.sin(Theta)])*RR
+    #         outerPoints = np.array([x[rOuter],y[rOuter]])
+    #         _outerPoints= np.array([x[rOuter],y[rOuter]])
+    #         if addEdge:
+    #             if addEdgeAmount is None:
+    #                 RR = rBins[out]-(rBins[out-1]-rBins[out])
+    #             else:
+    #                 RR = rBins[out]+addEdgeAmount
+    #             Theta = np.arctan2(outerPoints[1],outerPoints[0])
+    #             outerPoints = np.array([np.cos(Theta),np.sin(Theta)])*RR
             
                 
-            refvec1,center1 = _tools.calRefVector(innerPoints)
-            refvec2,center2 = _tools.calRefVector(outerPoints)
-            sInnerEdge = np.array(sorted(innerPoints.T,key=lambda x: _tools.clockwiseangle_and_distance(x,origin=center1,refvec=refvec1))).T
-            sOuterEdge = np.array(sorted(outerPoints.T,key=lambda x: _tools.clockwiseangle_and_distance(x,origin=center2,refvec=refvec2))).T
+    #         refvec1,center1 = _tools.calRefVector(innerPoints)
+    #         refvec2,center2 = _tools.calRefVector(outerPoints)
+    #         sInnerEdge = np.array(sorted(innerPoints.T,key=lambda x: _tools.clockwiseangle_and_distance(x,origin=center1,refvec=refvec1))).T
+    #         sOuterEdge = np.array(sorted(outerPoints.T,key=lambda x: _tools.clockwiseangle_and_distance(x,origin=center2,refvec=refvec2))).T
             
-            sMinEdge = np.array(sorted(minEdge.T,key=np.linalg.norm)).T
-            sMaxEdge = np.array(sorted(maxEdge.T,key=np.linalg.norm)).T
+    #         sMinEdge = np.array(sorted(minEdge.T,key=np.linalg.norm)).T
+    #         sMaxEdge = np.array(sorted(maxEdge.T,key=np.linalg.norm)).T
             
-            XY = np.concatenate([sInnerEdge,sMinEdge,np.fliplr(sOuterEdge),np.fliplr(sMaxEdge)],axis=1)#np.concatenate([minEdge,rmaxEdge,np.fliplr(maxEdge),rminEdge],axis=1)
+    #         XY = np.concatenate([sInnerEdge,sMinEdge,np.fliplr(sOuterEdge),np.fliplr(sMaxEdge)],axis=1)#np.concatenate([minEdge,rmaxEdge,np.fliplr(maxEdge),rminEdge],axis=1)
             
-            edgePolygon.append(shapely.geometry.polygon.Polygon(XY.T))
+    #         edgePolygon.append(shapely.geometry.polygon.Polygon(XY.T))
             
-            originalPoints = np.concatenate([_innerPoints.T,_outerPoints.T,_minEdge,_maxEdge],axis=0)
+    #         originalPoints = np.concatenate([_innerPoints.T,_outerPoints.T,_minEdge,_maxEdge],axis=0)
             
-            pointsContained = np.sum([edgePolygon[-1].contains(PointS(originalPoints[I][0],originalPoints[I][1])) for I in range(originalPoints.shape[0])])
-            if pointsContained!=originalPoints.shape[0]:
-                inside = np.array([edgePolygon[-1].contains(PointS(originalPoints[I][0],originalPoints[I][1])) for I in range(originalPoints.shape[0])])
-                outside = np.logical_not(inside)
-                plt.figure()
-                plt.scatter(x,y,c='k')
-                plt.scatter(originalPoints[inside][:,0],originalPoints[inside][:,1],c='g')
-                plt.scatter(originalPoints[outside][:,0],originalPoints[outside][:,1],c='r',zorder=100)
-                plt.plot(np.array(edgePolygon[-1].boundary.coords)[:,0],np.array(edgePolygon[-1].boundary.coords)[:,1],c='r')
-                plt.title(i)
-                raise AttributeError('Error! {} points are outside the found shape with energy !'.format(np.sum(outside),0.5*(EBins[i]+EBins[i+1])))
-        return edgePolygon,EBins
+    #         pointsContained = np.sum([edgePolygon[-1].contains(PointS(originalPoints[I][0],originalPoints[I][1])) for I in range(originalPoints.shape[0])])
+    #         if pointsContained!=originalPoints.shape[0]:
+    #             inside = np.array([edgePolygon[-1].contains(PointS(originalPoints[I][0],originalPoints[I][1])) for I in range(originalPoints.shape[0])])
+    #             outside = np.logical_not(inside)
+    #             plt.figure()
+    #             plt.scatter(x,y,c='k')
+    #             plt.scatter(originalPoints[inside][:,0],originalPoints[inside][:,1],c='g')
+    #             plt.scatter(originalPoints[outside][:,0],originalPoints[outside][:,1],c='r',zorder=100)
+    #             plt.plot(np.array(edgePolygon[-1].boundary.coords)[:,0],np.array(edgePolygon[-1].boundary.coords)[:,1],c='r')
+    #             plt.title(i)
+    #             raise AttributeError('Error! {} points are outside the found shape with energy !'.format(np.sum(outside),0.5*(EBins[i]+EBins[i+1])))
+    #     return edgePolygon,EBins
 
 
     def saveNXsqom(self,saveFileName):
