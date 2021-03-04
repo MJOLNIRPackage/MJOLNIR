@@ -980,8 +980,8 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
     return sampleMolarMass
 
 def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsPerUnitCell=1,
-                                  sampleGFactor=2,correctVanadium=True,vanadiumMass=15.25,
-                                  vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08):
+                                  sampleGFactor=2,correctVanadium=True,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,
+                                  vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumGFactor=2.0,vanadiumUnitsPerUnitCell=1.0):
     """Calculate absolut normalization relative to Vanadium
     
     Args: 
@@ -1014,10 +1014,9 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
     sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
                                          formulaUnitsPerUnitCell=formulaUnitsPerUnitCell)
     
-   
     if correctVanadium:
-        vanadiumMolarMass = calculateMolarMass('V')
-        vanadiumFactor = vanadiumMolarMass/(vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
+        vanadiumMolarMass = calculateMolarMass(vanadiumChemicalFormula)
+        vanadiumFactor = vanadiumUnitsPerUnitCell*vanadiumMolarMass*vanadiumGFactor/(vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
 
     else:
         vanadiumFactor = 1.0
