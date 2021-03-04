@@ -25,9 +25,9 @@ import pytest
 from scipy.ndimage import filters
 import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
-from shapely.geometry import Polygon as PolygonS
-from shapely.geometry import Point as PointS
-from shapely.vectorized import contains
+# from shapely.geometry import Polygon as PolygonS
+# from shapely.geometry import Point as PointS
+# from shapely.vectorized import contains
 import time
 from . import Viewer3DPyQtGraph
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
@@ -3111,9 +3111,27 @@ class DataSet(object):
         newFile = DataSet(data)
         return newFile
 
+    def undoAbsolutNormalize(self):
+        """Undo normalization previously performed"""
+        if self.absolutNormalized!=0:
+            normFactor = self.absolutNormalized
+            for d in self:
+                d.Norm *= normFactor
+                if hasattr(d,'absolutNormalizationFactor'):
+                    d.absolutNormalizationFactor*= 1.0/normFactor
+                else:
+                    d.absolutNormalizationFactor= 1
+                d.absolutNormalized = False
+
+            self.absolutNormalized = False
+
+
+
+
     def absolutNormalize(self,sampleMass,sampleChemicalFormula,formulaUnitsPerUnitCell=1.0,
                          sampleGFactor=2.0, correctVanadium=False,vanadiumMass=15.25,
-                         vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08):
+                         vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumChemicalFormula='V',vanadiumGFactor=2.0,
+                         vanadiumUnitsPerUnitCell=1.0):
         """Normaliza dataset to absolut units () by 
 
         Args:
@@ -3151,7 +3169,8 @@ class DataSet(object):
         _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMass=sampleMass,
                                              formulaUnitsPerUnitCell=formulaUnitsPerUnitCell,sampleGFactor=sampleGFactor,
                                              correctVanadium=correctVanadium,vanadiumMass=vanadiumMass,
-                                             vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent)
+                                             vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent,
+                                             vanadiumGFactor=vanadiumGFactor,vanadiumUnitsPerUnitCell=vanadiumUnitsPerUnitCell)
             
         if self.absolutNormalized != 0:
             warnings.warn("\nAlready Normalized\nDataSet seems to already have beeen normalized absolutly. Reverting previous normalization...")
@@ -4270,100 +4289,100 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 #
 #@_tools.my_timer_N()
 
-@_tools.KwargChecker()
-def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
-    """Generate individual pixels around the given datapoints.
+# @_tools.KwargChecker()
+# def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
+#     """Generate individual pixels around the given datapoints.
 
-    Args:
+#     Args:
 
-        - points (list of list of points): Data points to generate pixels in shape [files,XY,N] i.e. [1,2,N] for one file with N points
+#         - points (list of list of points): Data points to generate pixels in shape [files,XY,N] i.e. [1,2,N] for one file with N points
 
-    Kwargs:
+#     Kwargs:
 
-        - plot (bool): If True, method plots pixels created with green as edge bins and red as internal (default False)
+#         - plot (bool): If True, method plots pixels created with green as edge bins and red as internal (default False)
 
-        - Boundary (list of Polygons): List of Shapely polygons constituting the boundaries (Default False)
+#         - Boundary (list of Polygons): List of Shapely polygons constituting the boundaries (Default False)
 
 
-    """
+#     """
 
-    if numGroups == False:
-        numGroups = len(points)
+#     if numGroups == False:
+#         numGroups = len(points)
 
-    if Boundary==False:
-        BoundPoly= [convexHullPoints(np.array(points[i][0]).flatten(),np.array(points[i][1]).flatten()) for i in range(numGroups)]
-    else:
-        BoundPoly = Boundary#[PolygonS(x.T) for x in Boundary]
+#     if Boundary==False:
+#         BoundPoly= [convexHullPoints(np.array(points[i][0]).flatten(),np.array(points[i][1]).flatten()) for i in range(numGroups)]
+#     else:
+#         BoundPoly = Boundary#[PolygonS(x.T) for x in Boundary]
 
-    if numGroups == 1:
+#     if numGroups == 1:
 
-        combiPoly = BoundPoly[0]
-        pointsX = np.array([points[0][0].flatten()])[0]
-        pointsY = np.array([points[0][1].flatten()])[0]
-    else: # Combine all files
-        combiPoly = BoundPoly[0].union(BoundPoly[1])
-        for i in range(len(BoundPoly)-2):
-            combiPoly = combiPoly.union(BoundPoly[i+2])
-        if Boundary==False:
-            pointsX = np.concatenate([points[i][0].flatten() for i in range(numGroups)])
-            pointsY = np.concatenate([points[i][1].flatten() for i in range(numGroups)])
-        else:
-            pointsX = points[0]
-            pointsY = points[1]
+#         combiPoly = BoundPoly[0]
+#         pointsX = np.array([points[0][0].flatten()])[0]
+#         pointsY = np.array([points[0][1].flatten()])[0]
+#     else: # Combine all files
+#         combiPoly = BoundPoly[0].union(BoundPoly[1])
+#         for i in range(len(BoundPoly)-2):
+#             combiPoly = combiPoly.union(BoundPoly[i+2])
+#         if Boundary==False:
+#             pointsX = np.concatenate([points[i][0].flatten() for i in range(numGroups)])
+#             pointsY = np.concatenate([points[i][1].flatten() for i in range(numGroups)])
+#         else:
+#             pointsX = points[0]
+#             pointsY = points[1]
         
-    containsAllPoints=np.all([combiPoly.contains(PointS(pointsX[i],pointsY[i])) for i in range(len(pointsX))])
-    if not containsAllPoints:
-        plt.figure()
-        plt.scatter(pointsX,pointsY,c='b')
-        boundaryXY = np.array(combiPoly.boundary.coords)
-        plt.plot(boundaryXY[:,0],boundaryXY[:,1],c='r')
-        raise AttributeError('The provided boundary does not contain all points')
-    # Add extra points to ensure that area is finite
-    extraPoints = np.array([[np.mean(pointsX),np.max(pointsY)+50],[np.mean(pointsX),np.min(pointsY)-50],\
-                             [np.min(pointsX)-50,np.mean(pointsY)],[np.max(pointsX)+50,np.mean(pointsY)],\
-                             [np.min(pointsX)-50,np.max(pointsY)+50],[np.min(pointsX)-50,np.min(pointsY)-50],\
-                             [np.max(pointsX)+50,np.max(pointsY)+50],[np.max(pointsX)+50,np.min(pointsY)-50]])
+#     containsAllPoints=np.all([combiPoly.contains(PointS(pointsX[i],pointsY[i])) for i in range(len(pointsX))])
+#     if not containsAllPoints:
+#         plt.figure()
+#         plt.scatter(pointsX,pointsY,c='b')
+#         boundaryXY = np.array(combiPoly.boundary.coords)
+#         plt.plot(boundaryXY[:,0],boundaryXY[:,1],c='r')
+#         raise AttributeError('The provided boundary does not contain all points')
+#     # Add extra points to ensure that area is finite
+#     extraPoints = np.array([[np.mean(pointsX),np.max(pointsY)+50],[np.mean(pointsX),np.min(pointsY)-50],\
+#                              [np.min(pointsX)-50,np.mean(pointsY)],[np.max(pointsX)+50,np.mean(pointsY)],\
+#                              [np.min(pointsX)-50,np.max(pointsY)+50],[np.min(pointsX)-50,np.min(pointsY)-50],\
+#                              [np.max(pointsX)+50,np.max(pointsY)+50],[np.max(pointsX)+50,np.min(pointsY)-50]])
 
-    AllPoints = np.array([np.concatenate([pointsX,extraPoints[:,0]]),np.concatenate([pointsY,extraPoints[:,1]])])
+#     AllPoints = np.array([np.concatenate([pointsX,extraPoints[:,0]]),np.concatenate([pointsY,extraPoints[:,1]])])
     
 
-    vor = Voronoi(AllPoints.T)
-    regions = np.array([reg for reg in vor.regions])
-    boolval = np.array([len(x)>2 and not -1 in x for x in regions]) # Check if region has at least 3 points and is not connected to infinity (-1))
+#     vor = Voronoi(AllPoints.T)
+#     regions = np.array([reg for reg in vor.regions])
+#     boolval = np.array([len(x)>2 and not -1 in x for x in regions]) # Check if region has at least 3 points and is not connected to infinity (-1))
         
-    PolyPoints = np.array([vor.vertices[reg,:] for reg in regions[boolval]])
-    polygons = np.array([PolygonS(X) for X in PolyPoints])
+#     PolyPoints = np.array([vor.vertices[reg,:] for reg in regions[boolval]])
+#     polygons = np.array([PolygonS(X) for X in PolyPoints])
 
-    insidePolygonsBool = np.array([combiPoly.contains(P) for P in polygons])
+#     insidePolygonsBool = np.array([combiPoly.contains(P) for P in polygons])
 
-    edgePolygonsBool = np.logical_not(insidePolygonsBool)
+#     edgePolygonsBool = np.logical_not(insidePolygonsBool)
     
-    intersectionPolygon = []
-    for poly in polygons[edgePolygonsBool]:
-        inter = poly.intersection(combiPoly)
-        if not isinstance(inter,PolygonS): # Not a simple polygon
-            inter = inter[np.argmax([x.area for x in inter])] # Return the polygon with biggest area inside boundary
-        intersectionPolygon.append(inter)
+#     intersectionPolygon = []
+#     for poly in polygons[edgePolygonsBool]:
+#         inter = poly.intersection(combiPoly)
+#         if not isinstance(inter,PolygonS): # Not a simple polygon
+#             inter = inter[np.argmax([x.area for x in inter])] # Return the polygon with biggest area inside boundary
+#         intersectionPolygon.append(inter)
     
-    Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
+#     Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
     
     
-    if plot or len(pointsX)!=len(Polygons): # pragma: no cover
-        plt.figure()
-        insiders = np.logical_not(edgePolygonsBool)
+#     if plot or len(pointsX)!=len(Polygons): # pragma: no cover
+#         plt.figure()
+#         insiders = np.logical_not(edgePolygonsBool)
         
-        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='r') for inter in polygons[insiders]]
-        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='g') for inter in intersectionPolygon]
-        [plt.plot(np.array(bound.boundary.coords)[:,0],np.array(bound.boundary.coords)[:,1],'-.',c='r') for bound in BoundPoly]
-        plt.scatter(extraPoints[:,0],extraPoints[:,1])
+#         [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='r') for inter in polygons[insiders]]
+#         [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='g') for inter in intersectionPolygon]
+#         [plt.plot(np.array(bound.boundary.coords)[:,0],np.array(bound.boundary.coords)[:,1],'-.',c='r') for bound in BoundPoly]
+#         plt.scatter(extraPoints[:,0],extraPoints[:,1])
 
-        from scipy.spatial import voronoi_plot_2d
-        voronoi_plot_2d(vor)
-    if not len(pointsX)==len(Polygons):
-        raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calculated edge\n - ??'.format(len(pointsX),len(Polygons)))
+#         from scipy.spatial import voronoi_plot_2d
+#         voronoi_plot_2d(vor)
+#     if not len(pointsX)==len(Polygons):
+#         raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calculated edge\n - ??'.format(len(pointsX),len(Polygons)))
 
 
-    return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
+#     return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
 #
 #
 #
