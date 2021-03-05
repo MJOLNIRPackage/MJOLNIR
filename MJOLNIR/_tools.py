@@ -774,3 +774,258 @@ def generateLabel(vec,labels=['H','K','L']):
                 
     returnLabel = ''.join(['(',', '.join([x for x in label]),')'])
     return returnLabel
+
+
+def generateLabelDirection(vec,labels=['H','K','L']):
+    """Format a scattering vector with letters according to the first non-zero direction.
+    
+    Args:
+    
+        - vec (array): Vector to be formated.
+
+    Kwargs:
+        
+        - lables (list): Letters to use for formating (default ['H','K','L']) 
+        
+    """
+    # Individual letters
+    integers = np.isclose(np.abs(vec)-np.floor(np.abs(vec)),0.0,atol=1e-4)
+    signs = np.sign(vec)
+    vec = np.abs(vec)
+    zeros = np.isclose(vec,0.0,atol=1e-4)
+    ones = np.isclose(vec,1.0,atol=1e-4)
+    
+    label = []
+    L = ''
+    for l,i,s,z,o,v in zip(labels,integers,signs,zeros,ones,vec):
+        sign= '-' if s==-1 else ''
+        if not i: # not an integer
+            if L == '':
+                L= l
+            label.append(''.join([sign,str(v),L]))
+        else: # It is an integer
+            if z: # if zero
+                label.append('0')
+            elif o: # if one
+                if L == '':
+                    L = l
+                label.append(''.join([sign,L]))
+            else: # if integer different from 0 or +- 1
+                if L == '':
+                    L = l
+                label.append(''.join([sign,str(int(v)),L]))
+                
+    returnLabel = ''.join(['(',', '.join([x for x in label]),')'])
+    return returnLabel
+
+def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnElements=False):
+    """Calculate Molar mass given chemical formula and number of formula units per cell
+    
+    Args:
+        
+        - sampleChemicalFormula (string): Chemical formula
+        
+    Kwargs:    
+        
+        - formulaUnitsPerUnitCell (int): Number of units per unitcell (default 1)
+        
+        - returnElements (bool): If true return also list of elements
+        
+    Returns:
+        
+        - MolarMass (float)
+    
+    Raises:
+        
+        - AttributeError
+    
+    Based on https://stackoverflow.com/questions/18517779/make-outer-tokens-change-inner-tokens-in-a-chemical-formula-using-pyparsing/18555142#18555142
+    with the added feature of floats being allowed
+    """
+    
+    # Check if number of starting and ending parentheses match
+    start = sampleChemicalFormula.count('(')
+    stop = sampleChemicalFormula.count(')')
+    if not start==stop:
+        raise AttributeError('The number of starting and closing parenthesis do not match. Got {} "(" and {} ")"'.format(start,stop))
+    
+    # Definition of chemical symbols
+    symbols = (
+        'H', 'D', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al',
+        'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe',
+        'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr', 'Rb', 'Sr',
+        'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn',
+        'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm',
+        'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W',
+        'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn',
+        'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf',
+        'Es', 'Fm', 'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds',
+        'Rg', 'Cn', 'Uut', 'Fl', 'Uup', 'Lv', 'Uus', 'Uuo'
+    )
+    
+    
+    
+    # Molar mass of natural compund
+    _relative_atomic_masses = (
+        "1.008 2.0(1) 4.002602(2) 6.94 9.0121831(5) 10.81 12.011 14.007 15.999"
+        " 18.998403163(6) 20.1797(6) 22.98976928(2) 24.305 26.9815385(7) 28.085"
+        " 30.973761998(5) 32.06 35.45 39.948(1) 39.0983(1) 40.078(4)"
+        " 44.955908(5) 47.867(1) 50.9415(1) 51.9961(6) 54.938044(3) 55.845(2)"
+        " 58.933194(4) 58.6934(4) 63.546(3) 65.38(2) 69.723(1) 72.630(8)"
+        " 74.921595(6) 78.971(8) 79.904 83.798(2) 85.4678(3) 87.62(1)"
+        " 88.90584(2) 91.224(2) 92.90637(2) 95.95(1) [98] 101.07(2) 102.90550(2)"
+        " 106.42(1) 107.8682(2) 112.414(4) 114.818(1) 118.710(7) 121.760(1)"
+        " 127.60(3) 126.90447(3) 131.293(6) 132.90545196(6) 137.327(7)"
+        " 138.90547(7) 140.116(1) 140.90766(2) 144.242(3) [145] 150.36(2)"
+        " 151.964(1) 157.25(3) 158.92535(2) 162.500(1) 164.93033(2) 167.259(3)"
+        " 168.93422(2) 173.045(10) 174.9668(1) 178.49(2) 180.94788(2) 183.84(1)"
+        " 186.207(1) 190.23(3) 192.217(3) 195.084(9) 196.966569(5) 200.592(3)"
+        " 204.38 207.2(1) 208.98040(1) [209] [210] [222] [223] [226] [227]"
+        " 232.0377(4) 231.03588(2) 238.02891(3) [237] [244] [243] [247] [247]"
+        " [251] [252] [257] [258] [259] [266] [267] [268] [269] [270] [269]"
+        " [278] [281] [282] [285] [286] [289] [289] [293] [294] [294]"
+    )
+    
+    
+    import regex as re
+
+    
+    # Combination of https://stackoverflow.com/questions/26385984/recursive-pattern-in-regex
+    # and (\d*\.\d+|\d+) made to find integers or floats.
+    # Finds outer most parentheses 
+    recursiveParenthesis = re.compile('\(((?>[^\(\)]+|(?R))*)\)(\d*\.\d+|\d+)?')
+    
+    
+    
+    def splitParentheses(string,multiplyer):
+        results = [(x[0],float(x[1])*multiplyer) if x[1]!='' else (x[0],multiplyer) for x in recursiveParenthesis.findall(string)]
+        if len(results) == 0:
+            return string
+        results = [(r[0],int(r[1])) if np.isclose(math.modf(r[1])[0],0.0) else r for r in results]
+        return results
+    
+    # Remove a result from chemical string
+    def replace(string,value,multi):
+        if np.isclose(multi,1.0):
+            replacing = "("+value+")"
+        else:
+            replacing = "("+value+")"+str(multi)
+        
+        string = string.replace(replacing,'')
+        return string
+    
+    
+    def recursiveFinder(string,m=1.0):
+        returnValues = []
+        split = splitParentheses(string,m)
+        if isinstance(split,str):
+            return [(split,m)]
+        for inner in splitParentheses(string,m):
+            string = replace(string,*inner)
+            if '(' in inner[0]:
+                # print('inner = ',inner)
+                [returnValues.append((x[0],x[1]*inner[1])) for x in recursiveFinder(inner[0],1)]
+            else:
+                returnValues.append(inner)
+                
+        returnValues.append((string,m))
+        return returnValues
+        
+    # Split chemical formula at perentheses and update multiplyer 
+    splitted = recursiveFinder(sampleChemicalFormula)
+    
+    # Find elements in all strings and create dictionary to hold total number
+    elementPattern = r"([A-Z][a-z]*)([-+]?\d*\.\d+|\d+)?"
+    element = re.compile(elementPattern)
+    elements = {} # Dictionary to hold sample composition
+    
+    for part,mult in splitted:
+        for elem in element.findall(part):
+            m = float(mult)*(float(elem[1]) if elem[1]!='' else 1)
+            if not elem[0] in elements:
+                elements[elem[0]]=m
+            else:
+                elements[elem[0]]+=m
+    
+    # Convert chemical symbol into mass
+    def _get_relative_atomic_masses():
+        for mass in _relative_atomic_masses.split():
+            if mass.startswith('[') and mass.endswith(']'):
+                yield float(mass[1:-1])
+            elif '(' in mass:
+                yield float(mass.split('(')[0])
+            else:
+                yield(float(mass))
+    
+    relative_atomic_masses = tuple(_get_relative_atomic_masses())
+    sampleMolarMass = 0.0
+    error = False
+    for element in elements.items():
+        try:
+            idx = symbols.index(element[0])
+        except ValueError:
+            error = True
+            break
+            
+        sampleMolarMass += relative_atomic_masses[idx]*element[1]
+    if error:
+        raise AttributeError('Element "{}" not recognized...'.format(element[0]))
+    sampleMolarMass*=formulaUnitsPerUnitCell
+
+    for key in elements.keys():
+        elements[key] *= formulaUnitsPerUnitCell
+
+    if returnElements:
+        return sampleMolarMass,elements
+    return sampleMolarMass
+
+def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsPerUnitCell=1,
+                                  sampleGFactor=2,correctVanadium=True,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,
+                                  vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumGFactor=2.0,vanadiumUnitsPerUnitCell=1.0):
+    """Calculate absolut normalization relative to Vanadium
+    
+    Args: 
+        
+        - sampleChemicalFormula (string): Chemical formula
+
+        - sampleMass (float): Mass of sample in grams
+        
+    Kwargs:
+        
+        - formulaUnitsPerUnitCell (float): Number of units per unit cell (default 1)
+        
+        - sampleGFactor (float): Magnetic G factor for sample (defalt 2.0)
+        
+        - sampleDebyeWaller (float): DebyeWaller factor of sample (default 1)
+
+        - correctVanadium (bool): Whether to scale normalization with Vanadium or if this has been performed in normalziation tables (default True)
+
+        - vanadiumMass (float): Mass of vanadium used in normalization in gram (default 15.25)
+
+        - vanadiumMonitor (int): Monitor count used in normalization scan (default 100000)
+
+        - vanadiumSigmaIncoherent (float): Incoherent scattering strength of Vanadium (default 5.08)
+        
+    Returns:
+        
+        - normalizationFactor (float): Relative normalization of sample to Vanadium scan
+    
+    """
+    sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
+                                         formulaUnitsPerUnitCell=formulaUnitsPerUnitCell)
+    
+    if correctVanadium:
+        vanadiumMolarMass = calculateMolarMass(vanadiumChemicalFormula)
+        vanadiumFactor = vanadiumUnitsPerUnitCell*vanadiumMolarMass*vanadiumGFactor/(vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
+
+    else:
+        vanadiumFactor = 1.0
+    
+    ##########################
+    #Calculations
+    ##########################
+    
+    
+    normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*vanadiumFactor/(sampleMolarMass*13.77)
+    
+    return normalizationFactor

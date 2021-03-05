@@ -1,4 +1,5 @@
 from setuptools import setup
+import setuptools
 import os
 import sys
 
@@ -13,19 +14,20 @@ else:
         long_description = f.read()
 
 
-pythonPath = os.path.join('lib','python{}.{}'.format(*sys.version_info[:2]),'site-packages','MJOLNIR')
+installFolder = os.path.abspath(os.path.join(os.path.split(setuptools.__file__)[0],'..'))
+pythonPath =  os.path.relpath(os.path.join(installFolder,'MJOLNIR'),sys.base_prefix)
 
 setup(
     name='MJOLNIR',
 
-    version='1.1.14',
+    version='1.1.16',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
     author_email='lass.jakob@gmail.com',
     url='https://github.com/jakob-lass/MJOLNIR',
     license='MPL-2.0',
-    data_files = [(pythonPath, ["LICENSE.txt"]),((os.path.join(pythonPath),['MJOLNIR/CalibrationFlatCone.csv'])),((os.path.join(pythonPath),['MJOLNIR/CalibrationMultiFLEXX.csv'])),
+    data_files = [(pythonPath, ["LICENSE.txt"]),((os.path.join(pythonPath),['MJOLNIR/Normalization_1.calib'])),((os.path.join(pythonPath),['MJOLNIR/CalibrationFlatCone.csv'])),((os.path.join(pythonPath),['MJOLNIR/CalibrationMultiFLEXX.csv'])),
                 ((os.path.join(pythonPath,'Geometry'),['MJOLNIR/Geometry/detsequence.dat']))],#,(pythonPath+'/CommandLineScripts/',['MJOLNIR/CommandLineScripts/.settings'])],
     packages=['MJOLNIR','MJOLNIR/Data','MJOLNIR/Geometry','MJOLNIR/Statistics','MJOLNIR/CommandLineScripts'],
     #scripts=['MJOLNIR/CommandLineScripts/MJOLNIRCalibrationInspector','MJOLNIR/CommandLineScripts/MJOLNIRHistory','MJOLNIR/CommandLineScripts/MJOLNIRConvert',
@@ -37,8 +39,8 @@ setup(
                             'MJOLNIR3DView = MJOLNIR.CommandLineScripts.MJOLNIR3DView:main']
         },
     python_requires='>=3.5' if not operatingSystem == 'darwin' else '>=3.6',
-    install_requires=['matplotlib>=3,<3.3','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
-                    'pip>=20','sip>=5.3','PyQt5-sip','PyQt5','ufit>=1.4.0','pyqtgraph'], # ,'ufit'
+    install_requires=['matplotlib>=3','numpy>=1.14','h5py>=2.5','scipy','datetime','shapely','pytest>=4.6','pyperclip','shapely','decorator','pandas','future',
+                    'pip>=20','sip','PyQt5-sip','PyQt5','ufit>=1.4.0','pyqtgraph','regex'], # ,'ufit'
     
     classifiers=[
         'Development Status :: 3 - Alpha',

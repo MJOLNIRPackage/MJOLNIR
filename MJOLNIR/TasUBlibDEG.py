@@ -1,4 +1,5 @@
 import numpy as np
+from MJOLNIR import _tools
 
 def cosd(x):
     return np.cos(np.deg2rad(x))
@@ -230,3 +231,29 @@ def tasAngleBetweenReflections(B,r1,r2):
   chi2 = np.dot(B,H2)
   angle = np.rad2deg(np.arccos(np.dot(chi1,chi2)/(np.linalg.norm(chi1)*np.linalg.norm(chi2))))
   return angle
+
+
+def calcCell(cell):
+    """Calculate reciprocal lattice vectors from real space cell parameters"""
+
+    a1,a2,a3,alpha1,alpha2,alpha3 = cell
+    realVectorA = np.array([a1,0,0])
+    realVectorB = a2*np.array([cosd(alpha3),sind(alpha3),0.0])#np.dot(np.array([b,0,0]),rotationMatrix(0,0,gamma))
+    realVectorC = a3*np.array([cosd(alpha2),(cosd(alpha1)-cosd(alpha2)*cosd(alpha3))/sind(alpha3),
+    np.sqrt(1-cosd(alpha2)**2-((cosd(alpha1)-cosd(alpha2)*cosd(alpha3))/sind(alpha3))**2)])#np.dot(np.array([c,0,0]),rotationMatrix(0,beta,0))
+
+    volume = np.abs(np.dot(realVectorA,np.cross(realVectorB,realVectorC)))
+    reciprocalVectorA = 2*np.pi*np.cross(realVectorB,realVectorC)/volume
+    reciprocalVectorB = 2*np.pi*np.cross(realVectorC,realVectorA)/volume
+    reciprocalVectorC = 2*np.pi*np.cross(realVectorA,realVectorB)/volume
+
+
+    bv1,bv2,bv3 = reciprocalVectorA,reciprocalVectorB,reciprocalVectorC
+    
+
+    b1,b2,b3 = [np.linalg.norm(x) for x in [bv1,bv2,bv3]]
+    beta1 = np.rad2deg(_tools.vectorAngle(bv2,bv3))
+    beta2 = np.rad2deg(_tools.vectorAngle(bv3,bv1))
+    beta3 = np.rad2deg(_tools.vectorAngle(bv1,bv2))
+    cell = [a1,a2,a3,b1,b2,b3,alpha1,alpha2,alpha3,beta1,beta2,beta3]
+    return cell

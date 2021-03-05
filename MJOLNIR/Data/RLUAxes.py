@@ -426,8 +426,9 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
 
     sample = copy.deepcopy(DataSet.sample)
     
-    v1,v2 = sample[0].projectionVector1,sample[0].projectionVector2
-    angle = np.sign(np.dot(np.cross(v1,v2),sample[0].planeNormal))*sample[0].projectionAngle
+    
+    #v1,v2 = sample[0].projectionVector1,sample[0].projectionVector2
+    #angle = np.sign(np.dot(np.cross(v1,v2),sample[0].planeNormal))*sample[0].projectionAngle
     
     v2Length = np.linalg.norm(v2)/np.linalg.norm(v1)
     projectionMatrix = np.linalg.inv(np.array([[1,0],[np.cos(angle)*v2Length,np.sin(angle)*v2Length]]).T)

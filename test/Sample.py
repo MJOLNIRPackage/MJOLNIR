@@ -72,7 +72,11 @@ def test_Sample_conversions():
     assert(np.all(np.isclose(QxQyFromSample,[Qx,Qy],atol=1e-3)))
 
 
+def test_parameters():
+    s1 = Sample(1,2,3,90,90,120)
+    pars = np.array([getattr(s1,x) for x in ['a','b','c','alpha','beta','gamma']])
 
+    assert(np.all(np.isclose(pars,np.array([1,2,3,90,90,120]))))
 
 def test_equality():
     s1 = Sample(1,2,3,90,90,120)

@@ -250,10 +250,13 @@ def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
     os.path.join('Data','Normalization_3.calib'),os.path.join('Data','Normalization_8.calib')])
 
     A3 = np.linspace(0,180,181)
+    A3Position = 30.0
     A4 = -16
     Ei = 5.5
     Monitor = 1e5
-    sample = MJOLNIR.Data.Sample.Sample(a=6.0,b=6.0,c=12.2,projectionVector2=[1,0,0],projectionVector1=[0,2,1],gamma=120.,beta=80.,alpha=90.)
+    projectionVector1 = np.array([0,2,1,A3Position+30,A4,0.0,0.0,Ei,Ei])
+    projectionVector2 = np.array([1,0,0,A3Position,A4,0.0,0.0,Ei,Ei])
+    sample = MJOLNIR.Data.Sample.Sample(a=6.0,b=6.0,c=12.2,projectionVector2=projectionVector2,projectionVector1=projectionVector1,gamma=120.,beta=80.,alpha=90.)
 
     try:
         _ = createEmptyDataFile(A3=10,A4=10,Ei=10,sample=sample) # No change in any parameter

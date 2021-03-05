@@ -328,8 +328,8 @@ def test_Normalization_tables(quick):
         assert True
 
     if not quick==True:
-        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation=os.path.join(dataPath,''),plot=False,tables=[1,3,8]) 
+        Instr.generateCalibration(Vanadiumdatafile=NF,  savelocation=os.path.join(dataPath,''),plot=False,tables=[1,3,8],sampleMass=4.7) 
     else:
-        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation=os.path.join(dataPath,''),plot=False,tables=[1]) 
+        Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation=os.path.join(dataPath,''),plot=False,tables=[1],sampleMass=4.7) 
 
 

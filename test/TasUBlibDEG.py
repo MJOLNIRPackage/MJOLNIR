@@ -1,4 +1,4 @@
-from MJOLNIR.TasUBlibDEG import calcTasUBFromTwoReflections, calcTasQH, calculateBMatrix, calcUBFromAngles, calcTasQAngles
+from MJOLNIR.TasUBlibDEG import calcTasUBFromTwoReflections, calcTasQH, calculateBMatrix, calcUBFromAngles, calcTasQAngles, calcCell
 import numpy as np
 
 def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating the UB matrices
@@ -90,3 +90,16 @@ def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one need
         assert(np.all(np.isclose([sgu,sgl],0.0))) # Sgu and sgl are 0 by definition
         assert(np.all(np.isclose(hkl,qe[:3])))
     
+
+def test_TasUBDeg_calculateCell():
+    cellParams = np.array([5.103,5.103,13.755,90.0,90.0,120.0])
+
+    cell = calcCell(cellParams)
+    result = np.array([5.103, 5.103, 13.755, 1.4217514122941153, 1.4217514122941153, 0.4567928249494428, 90.0, 90.0, 120.0, 90., 90., 60.])
+    assert(np.all(np.isclose(cell,result)))
+
+    cellParams = np.array([5.103,6.103,13.755,80.0,93.0,120.0])
+
+    cell = calcCell(cellParams)
+    result = np.array([5.103, 6.103, 13.755, 1.4229152753265009, 1.2064634997894217, 0.4642192953135897, 80.0, 93.0, 120.0, 99.81858754108276, 92.31754754830274, 60.05495280628465])
+    assert(np.all(np.isclose(cell,result)))

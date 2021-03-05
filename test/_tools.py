@@ -1,5 +1,5 @@
 import numpy as np
-from MJOLNIR._tools import rotate2X, minMax, unitVector, vectorAngle, rotationMatrix, binEdges, fileListGenerator, RoundBinning, generateLabel
+from MJOLNIR._tools import *
 
 import os
 
@@ -138,3 +138,56 @@ def test_generateLabel():
     label = generateLabel(v)
     assert(label=='(-0.5H, 22K, -3L)')
 
+
+def test_generateLabelDirection():
+    v = [1,-1,2]
+    label = generateLabelDirection(v)
+    assert(label=='(H, -H, 2H)')
+
+    v = np.array([0.0,22.0000,-3.0])
+    label = generateLabelDirection(v)
+    assert(label=='(0, 22K, -3K)')
+
+    v = np.array([0.0,0.0000,-3.333])
+    label = generateLabelDirection(v)
+    assert(label=='(0, 0, -3.333L)')
+
+def test_molarMassCalculation():
+    water = 18.01528 # g/mol
+    value,elements = calculateMolarMass('H2O',returnElements=True)
+    assert(np.isclose(value,water,atol=1e-4))
+    assert(elements=={'H':2,'O':1})
+
+    glucose = 180.156 # g/mol
+    assert(np.isclose(calculateMolarMass('C6H12O6'),glucose,atol=1e-4))
+
+    YMnO3 = 191.84 # g/mol
+    assert(np.isclose(calculateMolarMass('YMnO3'),YMnO3,atol=1e-4))
+
+    YBCO = 666.19 # g/mol
+    value = calculateMolarMass('YBa2Cu3O7')
+    assert(np.isclose(value,YBCO,atol=1e-4))
+    
+    
+    Crazy = 'U2.3(H3O2.2)2.2Be((He2.2Ge)2Fe)3.3'
+    weight = 2724.6618342799998
+    elem = {'H': 13.2,  'O': 9.68,  'He': 29.04,  'Ge': 13.2,  'Fe': 6.6,  'U': 4.6,  'Be': 2.0}
+    value,elements = calculateMolarMass(Crazy,formulaUnitsPerUnitCell=2,returnElements=True)
+    assert(np.isclose(value,weight,atol=1e-4))
+    assert(np.all([np.isclose(elem[key],elements[key],atol=1e-8) for key in elem.keys()]))
+
+    
+def test_absolutNormalization():
+    sampleMass = 6.2
+    normFactor = calculateAbsolutNormalization('MnF2',formulaUnitsPerUnitCell=2,sampleMass=sampleMass)
+    # Known value for MnF2
+    assert(np.isclose(normFactor,8.006766768160726e-07))
+
+    vanadiumMass=15.25
+    vanadiumMonitor=1e5
+    vanadiumSigmaIncoherent = 5.08
+    constants = 16*np.pi/13.77
+    Van = calculateAbsolutNormalization('V',sampleMass=vanadiumMass,correctVanadium=True)
+
+    Van*=vanadiumMonitor*vanadiumSigmaIncoherent/constants
+    assert(np.isclose(Van,1.0))

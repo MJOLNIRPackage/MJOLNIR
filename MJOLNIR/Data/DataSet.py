@@ -25,9 +25,9 @@ import pytest
 from scipy.ndimage import filters
 import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
-from shapely.geometry import Polygon as PolygonS
-from shapely.geometry import Point as PointS
-from shapely.vectorized import contains
+# from shapely.geometry import Polygon as PolygonS
+# from shapely.geometry import Point as PointS
+# from shapely.vectorized import contains
 import time
 from . import Viewer3DPyQtGraph
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
@@ -68,6 +68,7 @@ class DataSet(object):
         self._calibrationfiles = []
         self._mask = False
         self.index = 0
+        self.absolutNormalized = 0 # Float to keep track of normalization has taken place (0 means false)
 
 
         if dataFiles is not None:
@@ -828,8 +829,6 @@ class DataSet(object):
         elif len(dataFrame) == 1:
             dataFrame = dataFrame[0]
         
-        for col in ['Intensity','Monitor','Normalization','BinCount']:
-            dataFrame[col] = dataFrame[col].astype(int)
 
         return dataFrame,returnpositions,centerPos,binDistance
 
@@ -2290,7 +2289,7 @@ class DataSet(object):
         data['Energy'] = 0.5*(bins[0][1:]+bins[0][:-1])
         data['Intensity'] = intensity.astype(int)
         data['Monitor'] = MonitorCount.astype(int)
-        data['Normalization'] = Normalization.astype(int)
+        data['Normalization'] = Normalization.astype(float)
         data['BinCount'] = normcounts.astype(int)
         data['binDistance'] = np.linalg.norm(data[variables]-np.array(data[variables].iloc[1]),axis=1)
         
@@ -2828,7 +2827,7 @@ class DataSet(object):
         """
 
         
-        def intrextrapolate(oldPosition,oldValues,newValues,outputFunction=print):
+        def intrextrapolate(oldPosition,oldValues,newValues,outputFunction=print):# pragma: no cover
             """interpolates between old and new through linear regression and returns best estimate at old positions
             
             arg:
@@ -2859,7 +2858,7 @@ class DataSet(object):
         
         
         
-        def format_coord(x,y,X,labels):
+        def format_coord(x,y,X,labels):# pragma: no cover
             """format coordinates according to x and y. When X is multidimensional an approximation for its value at x is estimated"""
             fmtOrder = np.ceil(-np.log(np.mean(np.abs(np.diff(X,axis=1)),axis=1)))
             fmtOrder = [o if o>0 else 0 for o in (fmtOrder).astype(int)]
@@ -3088,6 +3087,107 @@ class DataSet(object):
             d.sample.updateSampleParameters(unitCell=unitCell)
 
 
+    def __sub__(self,other):
+
+        filesSelf = [d for d in self]
+        filesOther = [d for d in other]
+        if not np.all([x.type == 'nxs' for x in np.concatenate([filesSelf,filesOther])]):
+            raise AttributeError('Data files have to be converted!')
+        monoSelf = [x.MonitorPreset for x in self]
+        monoOther = [x.MonitorPreset for x in other]
+
+        data = []
+        for s,o in zip(filesSelf,filesOther):
+            sMono = s.MonitorPreset
+            oMono = o.MonitorPreset
+            if sMono>oMono:
+                s.I = s.I-o.I*(oMono/sMono)
+            elif sMono<oMono:
+                s.I = s.I*(sMono/oMono)-o.I
+            else:
+                s.I = s.I-o.I
+            data.append(s)
+
+        newFile = DataSet(data)
+        return newFile
+
+    def undoAbsolutNormalize(self):
+        """Undo normalization previously performed"""
+        if self.absolutNormalized!=0:
+            normFactor = self.absolutNormalized
+            for d in self:
+                d.Norm *= normFactor
+                if hasattr(d,'absolutNormalizationFactor'):
+                    d.absolutNormalizationFactor*= 1.0/normFactor
+                else:
+                    d.absolutNormalizationFactor= 1
+                d.absolutNormalized = False
+
+            self.absolutNormalized = False
+
+
+
+
+    def absolutNormalize(self,sampleMass,sampleChemicalFormula,formulaUnitsPerUnitCell=1.0,
+                         sampleGFactor=2.0, correctVanadium=False,vanadiumMass=15.25,
+                         vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumChemicalFormula='V',vanadiumGFactor=2.0,
+                         vanadiumUnitsPerUnitCell=1.0):
+        """Normaliza dataset to absolut units () by 
+
+        Args:
+
+            - sampleMass (float): Mass of sample in gram
+
+            - sampleChemicalFormula (string): Chemical formula of sample
+
+        Kwargs:
+
+            - formulaUnitsPerUnitCell (float): Number of formula units per unit cell (default 1.0)
+
+            - sampleDebyeWaller (float): Debye Waller factor (default 1.0)
+
+            - sampleGFactor (float): Magnetic G factor for sample (defalt 2.0)
+        
+            - sampleFormFactor (float): Formfactor of sample (default 1.0)
+
+            - correctVanadium (bool): If normalization files have not been updated set this to True (default False)
+
+            - vanadiumMass (float): Mass of vanadium used in normalization in gram (default 15.25)
+
+            - vanadiumMonitor (int): Monitor count used in normalization scan (default 100000)
+
+            - vanadiumSigmaIncoherent (float): Incoherent scattering strength of Vanadium (default 5.08)
+
+        """
+
+        if len(self.convertedFiles) == 0:
+            raise AttributeError("Data set needs to be converted before absolut normalization can be applied.")
+        
+        
+
+        normFactor = \
+        _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMass=sampleMass,
+                                             formulaUnitsPerUnitCell=formulaUnitsPerUnitCell,sampleGFactor=sampleGFactor,
+                                             correctVanadium=correctVanadium,vanadiumMass=vanadiumMass,
+                                             vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent,
+                                             vanadiumGFactor=vanadiumGFactor,vanadiumUnitsPerUnitCell=vanadiumUnitsPerUnitCell)
+            
+        if self.absolutNormalized != 0:
+            warnings.warn("\nAlready Normalized\nDataSet seems to already have beeen normalized absolutly. Reverting previous normalization...")
+            normFactor /= self.absolutNormalized
+
+        for d in self:
+            d.Norm *= normFactor
+            if hasattr(d,'absolutNormalizationFactor'):
+                d.absolutNormalizationFactor*= normFactor
+            else:
+                d.absolutNormalizationFactor= normFactor
+            d.absolutNormalized = True
+
+        if self.absolutNormalized != 0:
+            self.absolutNormalized *= normFactor
+        else:
+            self.absolutNormalized = normFactor
 
 
 
@@ -3302,8 +3402,8 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#
     
     normcounts = np.histogram(Energies,bins=bins,weights=np.ones_like(Energies).flatten())[0]
     intensity = np.histogram(Energies,bins=bins,weights=I[allInside].flatten())[0]
-    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=np.int64))[0] # Need to change to int64 to avoid overflow
-    Normalization= np.histogram(Energies,bins=bins,weights=Norm[allInside].flatten())[0]
+    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=np.float))[0] # Need to change to int64 to avoid overflow
+    Normalization= np.histogram(Energies,bins=bins,weights=np.array(Norm[allInside].flatten(),dtype=np.float))[0]
     
 
     return [intensity,MonitorCount,Normalization,normcounts],[bins]
@@ -3581,7 +3681,7 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
             raise AttributeError('Number of axes ({}) provided does not match number of planes ({}).'.format(np.array([ax]).size,len(planes)))
             
     
-    if not hasattr(files,'len'):
+    if not isinstance(files,(list,np.ndarray)):
         files = [files]
     numFiles = len(files)
 
@@ -4189,100 +4289,100 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 #
 #@_tools.my_timer_N()
 
-@_tools.KwargChecker()
-def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
-    """Generate individual pixels around the given datapoints.
+# @_tools.KwargChecker()
+# def voronoiTessellation(points,plot=False,Boundary=False,numGroups=False):
+#     """Generate individual pixels around the given datapoints.
 
-    Args:
+#     Args:
 
-        - points (list of list of points): Data points to generate pixels in shape [files,XY,N] i.e. [1,2,N] for one file with N points
+#         - points (list of list of points): Data points to generate pixels in shape [files,XY,N] i.e. [1,2,N] for one file with N points
 
-    Kwargs:
+#     Kwargs:
 
-        - plot (bool): If True, method plots pixels created with green as edge bins and red as internal (default False)
+#         - plot (bool): If True, method plots pixels created with green as edge bins and red as internal (default False)
 
-        - Boundary (list of Polygons): List of Shapely polygons constituting the boundaries (Default False)
+#         - Boundary (list of Polygons): List of Shapely polygons constituting the boundaries (Default False)
 
 
-    """
+#     """
 
-    if numGroups == False:
-        numGroups = len(points)
+#     if numGroups == False:
+#         numGroups = len(points)
 
-    if Boundary==False:
-        BoundPoly= [convexHullPoints(np.array(points[i][0]).flatten(),np.array(points[i][1]).flatten()) for i in range(numGroups)]
-    else:
-        BoundPoly = Boundary#[PolygonS(x.T) for x in Boundary]
+#     if Boundary==False:
+#         BoundPoly= [convexHullPoints(np.array(points[i][0]).flatten(),np.array(points[i][1]).flatten()) for i in range(numGroups)]
+#     else:
+#         BoundPoly = Boundary#[PolygonS(x.T) for x in Boundary]
 
-    if numGroups == 1:
+#     if numGroups == 1:
 
-        combiPoly = BoundPoly[0]
-        pointsX = np.array([points[0][0].flatten()])[0]
-        pointsY = np.array([points[0][1].flatten()])[0]
-    else: # Combine all files
-        combiPoly = BoundPoly[0].union(BoundPoly[1])
-        for i in range(len(BoundPoly)-2):
-            combiPoly = combiPoly.union(BoundPoly[i+2])
-        if Boundary==False:
-            pointsX = np.concatenate([points[i][0].flatten() for i in range(numGroups)])
-            pointsY = np.concatenate([points[i][1].flatten() for i in range(numGroups)])
-        else:
-            pointsX = points[0]
-            pointsY = points[1]
+#         combiPoly = BoundPoly[0]
+#         pointsX = np.array([points[0][0].flatten()])[0]
+#         pointsY = np.array([points[0][1].flatten()])[0]
+#     else: # Combine all files
+#         combiPoly = BoundPoly[0].union(BoundPoly[1])
+#         for i in range(len(BoundPoly)-2):
+#             combiPoly = combiPoly.union(BoundPoly[i+2])
+#         if Boundary==False:
+#             pointsX = np.concatenate([points[i][0].flatten() for i in range(numGroups)])
+#             pointsY = np.concatenate([points[i][1].flatten() for i in range(numGroups)])
+#         else:
+#             pointsX = points[0]
+#             pointsY = points[1]
         
-    containsAllPoints=np.all([combiPoly.contains(PointS(pointsX[i],pointsY[i])) for i in range(len(pointsX))])
-    if not containsAllPoints:
-        plt.figure()
-        plt.scatter(pointsX,pointsY,c='b')
-        boundaryXY = np.array(combiPoly.boundary.coords)
-        plt.plot(boundaryXY[:,0],boundaryXY[:,1],c='r')
-        raise AttributeError('The provided boundary does not contain all points')
-    # Add extra points to ensure that area is finite
-    extraPoints = np.array([[np.mean(pointsX),np.max(pointsY)+50],[np.mean(pointsX),np.min(pointsY)-50],\
-                             [np.min(pointsX)-50,np.mean(pointsY)],[np.max(pointsX)+50,np.mean(pointsY)],\
-                             [np.min(pointsX)-50,np.max(pointsY)+50],[np.min(pointsX)-50,np.min(pointsY)-50],\
-                             [np.max(pointsX)+50,np.max(pointsY)+50],[np.max(pointsX)+50,np.min(pointsY)-50]])
+#     containsAllPoints=np.all([combiPoly.contains(PointS(pointsX[i],pointsY[i])) for i in range(len(pointsX))])
+#     if not containsAllPoints:
+#         plt.figure()
+#         plt.scatter(pointsX,pointsY,c='b')
+#         boundaryXY = np.array(combiPoly.boundary.coords)
+#         plt.plot(boundaryXY[:,0],boundaryXY[:,1],c='r')
+#         raise AttributeError('The provided boundary does not contain all points')
+#     # Add extra points to ensure that area is finite
+#     extraPoints = np.array([[np.mean(pointsX),np.max(pointsY)+50],[np.mean(pointsX),np.min(pointsY)-50],\
+#                              [np.min(pointsX)-50,np.mean(pointsY)],[np.max(pointsX)+50,np.mean(pointsY)],\
+#                              [np.min(pointsX)-50,np.max(pointsY)+50],[np.min(pointsX)-50,np.min(pointsY)-50],\
+#                              [np.max(pointsX)+50,np.max(pointsY)+50],[np.max(pointsX)+50,np.min(pointsY)-50]])
 
-    AllPoints = np.array([np.concatenate([pointsX,extraPoints[:,0]]),np.concatenate([pointsY,extraPoints[:,1]])])
+#     AllPoints = np.array([np.concatenate([pointsX,extraPoints[:,0]]),np.concatenate([pointsY,extraPoints[:,1]])])
     
 
-    vor = Voronoi(AllPoints.T)
-    regions = np.array([reg for reg in vor.regions])
-    boolval = np.array([len(x)>2 and not -1 in x for x in regions]) # Check if region has at least 3 points and is not connected to infinity (-1))
+#     vor = Voronoi(AllPoints.T)
+#     regions = np.array([reg for reg in vor.regions])
+#     boolval = np.array([len(x)>2 and not -1 in x for x in regions]) # Check if region has at least 3 points and is not connected to infinity (-1))
         
-    PolyPoints = np.array([vor.vertices[reg,:] for reg in regions[boolval]])
-    polygons = np.array([PolygonS(X) for X in PolyPoints])
+#     PolyPoints = np.array([vor.vertices[reg,:] for reg in regions[boolval]])
+#     polygons = np.array([PolygonS(X) for X in PolyPoints])
 
-    insidePolygonsBool = np.array([combiPoly.contains(P) for P in polygons])
+#     insidePolygonsBool = np.array([combiPoly.contains(P) for P in polygons])
 
-    edgePolygonsBool = np.logical_not(insidePolygonsBool)
+#     edgePolygonsBool = np.logical_not(insidePolygonsBool)
     
-    intersectionPolygon = []
-    for poly in polygons[edgePolygonsBool]:
-        inter = poly.intersection(combiPoly)
-        if not isinstance(inter,PolygonS): # Not a simple polygon
-            inter = inter[np.argmax([x.area for x in inter])] # Return the polygon with biggest area inside boundary
-        intersectionPolygon.append(inter)
+#     intersectionPolygon = []
+#     for poly in polygons[edgePolygonsBool]:
+#         inter = poly.intersection(combiPoly)
+#         if not isinstance(inter,PolygonS): # Not a simple polygon
+#             inter = inter[np.argmax([x.area for x in inter])] # Return the polygon with biggest area inside boundary
+#         intersectionPolygon.append(inter)
     
-    Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
+#     Polygons = np.concatenate([polygons[np.logical_not(edgePolygonsBool)],intersectionPolygon])
     
     
-    if plot or len(pointsX)!=len(Polygons): # pragma: no cover
-        plt.figure()
-        insiders = np.logical_not(edgePolygonsBool)
+#     if plot or len(pointsX)!=len(Polygons): # pragma: no cover
+#         plt.figure()
+#         insiders = np.logical_not(edgePolygonsBool)
         
-        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='r') for inter in polygons[insiders]]
-        [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='g') for inter in intersectionPolygon]
-        [plt.plot(np.array(bound.boundary.coords)[:,0],np.array(bound.boundary.coords)[:,1],'-.',c='r') for bound in BoundPoly]
-        plt.scatter(extraPoints[:,0],extraPoints[:,1])
+#         [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='r') for inter in polygons[insiders]]
+#         [plt.plot(np.array(inter.boundary.coords)[:,0],np.array(inter.boundary.coords)[:,1],c='g') for inter in intersectionPolygon]
+#         [plt.plot(np.array(bound.boundary.coords)[:,0],np.array(bound.boundary.coords)[:,1],'-.',c='r') for bound in BoundPoly]
+#         plt.scatter(extraPoints[:,0],extraPoints[:,1])
 
-        from scipy.spatial import voronoi_plot_2d
-        voronoi_plot_2d(vor)
-    if not len(pointsX)==len(Polygons):
-        raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calculated edge\n - ??'.format(len(pointsX),len(Polygons)))
+#         from scipy.spatial import voronoi_plot_2d
+#         voronoi_plot_2d(vor)
+#     if not len(pointsX)==len(Polygons):
+#         raise AttributeError('The number of points given({}) is not the same as the number of polygons created({}). This can be due to many reasons, mainly:\n - Points overlap exactly\n - Points coinsides with the calculated edge\n - ??'.format(len(pointsX),len(Polygons)))
 
 
-    return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
+#     return Polygons,np.array([np.array(P.boundary.coords[:-1]) for P in Polygons])
 #
 #
 #

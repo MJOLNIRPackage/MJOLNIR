@@ -59,7 +59,7 @@ class MaskingObjectMeta(ABCMeta):
 class MaskingObject(with_metaclass(MaskingObjectMeta)):
     """Base class for all masking objects"""
     #dimensionality = '2D'
-    def __init__(self,coordinates=None,maskInside=True):
+    def __init__(self,coordinates=None,maskInside=True,name=None):
 
         self.maskInside = maskInside
         self._coordinates = []
@@ -70,7 +70,7 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
                 coordinates = [coordinates]
             self.coordinates = coordinates
         self.bar = self.negate
-
+        self.name = name
 
     def plot(self,ax): # pragma: no cover
         """plotting function to put the masked object onto the figure"""
@@ -221,7 +221,7 @@ def RotationMatrix3D(theta,n=None,deg=True):
 
 class lineMask(MaskingObject):
     dimensionality = '1D'
-    def __init__(self,start,end,maskInside=True,coordinates=None):
+    def __init__(self,start,end,maskInside=True,coordinates=None,name=None):
         """Generate a rectangle mask with side corner1 to corner 2 and use corner 3 to define height.
         
         args:
@@ -243,7 +243,7 @@ class lineMask(MaskingObject):
             >>> inside = points[mask].T
             
         """
-        super(lineMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
+        super(lineMask,self).__init__(coordinates=coordinates,maskInside=maskInside,name=name)
         
         self.start = start
         self.end = end
@@ -275,7 +275,7 @@ class lineMask(MaskingObject):
 
 class rectangleMask(MaskingObject):
     dimensionality = '2D'
-    def __init__(self,corner1,corner2,corner3=None,maskInside=True,coordinates=None):
+    def __init__(self,corner1,corner2,corner3=None,maskInside=True,coordinates=None,name=None):
         """Generate a rectangle mask with side corner1 to corner 2 and use corner 3 to define height.
         
         args:
@@ -306,7 +306,7 @@ class rectangleMask(MaskingObject):
             >>> plt.scatter(*np.array([b.corners]).T,color='g')
             
         """
-        super(rectangleMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
+        super(rectangleMask,self).__init__(coordinates=coordinates,maskInside=maskInside,name=name)
         
         self.corner1 = np.array(corner1,dtype=float)
         self.corner2 = np.array(corner2,dtype=float)
@@ -391,7 +391,7 @@ class rectangleMask(MaskingObject):
 
 class boxMask(MaskingObject):
     dimensionality = '3D'
-    def __init__(self,corner1,corner2,corner3,corner4=None,maskInside=True,coordinates=None):
+    def __init__(self,corner1,corner2,corner3,corner4=None,maskInside=True,coordinates=None,name=None):
         """Generate a box mask with side corner1, corner 2, corner 3 and use corner 4 to define height.
         
         args:
@@ -410,7 +410,7 @@ class boxMask(MaskingObject):
             
         
         """
-        super(boxMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
+        super(boxMask,self).__init__(coordinates=coordinates,maskInside=maskInside,name=name)
         self.corner1 = np.array(corner1,dtype=float)
         self.corner2 = np.array(corner2,dtype=float)
         self.corner3 = np.array(corner3,dtype=float)
@@ -570,7 +570,7 @@ class circleMask(MaskingObject):
     
     dimensionality = '2D'
     
-    def __init__(self,center,radiusPoint=None,radius=None,maskInside=True,coordinates=None):
+    def __init__(self,center,radiusPoint=None,radius=None,maskInside=True,coordinates=None,name=None):
         """Generate a circular mask with center at center and edge at radiusPoint.
         
         args:
@@ -601,7 +601,7 @@ class circleMask(MaskingObject):
             >>> plt.scatter(*np.array([b.corners]).T,color='g')
             
         """
-        super(circleMask,self).__init__(coordinates=coordinates,maskInside=maskInside)
+        super(circleMask,self).__init__(coordinates=coordinates,maskInside=maskInside,name=name)
         
         self.center = np.array(center,dtype=float).reshape(-1,1)
         if self.center.shape[0] == 3: # 3D sphere
@@ -672,7 +672,7 @@ class circleMask(MaskingObject):
 class indexMask(MaskingObject):
     dimensionality = '1D'
     
-    def __init__(self,start,end,axis=0,maskInside=True):
+    def __init__(self,start,end,axis=0,maskInside=True,name=None):
         """Mask indices along a given axis.
         
         args:
@@ -686,7 +686,7 @@ class indexMask(MaskingObject):
             maskInside (bool): If true, points inside is masked otherwise outside (default True)
         
         """
-        super(indexMask,self).__init__(coordinates=None,maskInside=maskInside)
+        super(indexMask,self).__init__(coordinates=None,maskInside=maskInside,name=name)
         self.axis = axis
         self.start = start
         self.end = end
