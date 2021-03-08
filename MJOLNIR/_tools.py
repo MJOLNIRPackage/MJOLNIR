@@ -10,6 +10,15 @@ import os
 import inspect
 import matplotlib
 
+# E = hbar^2k^2/(2m)
+m = 1.67492749804e-27 # kg
+hbar = 1.0545718e-34 # m^2kg/s
+eV = 1.60218e-19
+
+# sqrt(meV) to 1/Å
+factorsqrtEK = 1/np.sqrt(hbar**2*(1e20)/(2*m*eV/1000)) #
+
+
 MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
 #Unused
@@ -1029,3 +1038,94 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
     normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*vanadiumFactor/(sampleMolarMass*13.77)
     
     return normalizationFactor
+
+
+def KWavelength(wavelength):
+    """Calculate wave vector k vactor [1/AA] from wavelength [AA]"""
+    return np.reciprocal(wavelength)*2.0*np.pi
+
+def WavelengthK(k):
+    """Calcualte wavelength [AA] from wave vector k vactor [1/AA]"""
+    return np.reciprocal(k)*2.0*np.pi
+
+
+# Calculate energy to k and reverse
+def EnergyK(energy):
+    """Calculate energy [meV] from length of k [1/AA]"""
+    return np.sqrt(energy)*factorsqrtEK
+
+def KEnergy(k):
+    """Calculate length of k [1/AA] from energy [meV]"""
+    return np.power(np.divide(k,factorsqrtEK),2.0)
+
+
+# Calculate energy to wavelength and reverse
+def EnergyWavelength(energy):
+    """Calculate energy [meV] from wavelength [AA]"""
+    return KWavelength(EnergyK(energy))
+
+
+def WavelengthEnergy(wavelength):
+    """Calculate wavelength [AA] from energy [meV]"""
+    return KEnergy(WavelengthK(wavelength))
+
+
+
+# Calculate scattering angle from d
+
+def ScatteringAngle(d,Energy=None,Wavelength=None,K=None,degrees = True):
+    """Calculate scattering angle [deg or rad] from d [AA] and one of the following [Energy [meV], Wavelength [AA], K[1/AA]]."""
+    pars = np.array([not x is None for x in [Energy,Wavelength,K]],dtype=bool)
+    parsNames = np.array(['Energy','Wavelength','K'])
+    if np.all(pars==False): # No provided
+        raise AttributeError('None of the energy, wavelenght, or k were provided...')
+    elif np.sum(pars)>1: # more than one was provided..
+        raise AttributeError('More than one parameter was provided. Got {}'.format(', '.join(parsNames[pars])))
+    
+    available = parsNames[pars][0]
+    
+    if available == 'Energy':
+        Wavelength = EnergyWavelength(Energy)
+        K = EnergyK(Energy)
+    elif available == 'Wavelength':
+        Energy = WavelengthEnergy(Wavelength)
+        K = WavelengthK(Wavelength)
+    elif available == 'K':
+        Energy = KEnergy(K)
+        Wavelength = KWavelength(K)
+    
+    scatAngle = 2.0*np.arcsin(Wavelength/(2.0*d))
+    if degrees == True:
+        scatAngle = np.rad2deg(scatAngle)
+    return scatAngle
+
+
+
+
+def DSpacing(TwoTheta,Energy=None,Wavelength=None,K=None,degrees = True):
+    """Calculate d spacing [AA] from scattering angle [deg or rad] and one of the following [Energy [meV], Wavelength [AA], K[1/AA]]."""
+    
+    pars = np.array([not x is None for x in [Energy,Wavelength,K]],dtype=bool)
+    parsNames = np.array(['Energy','Wavelength','K'])
+    if np.all(pars==False): # No provided
+        raise AttributeError('None of the energy, wavelenght, or k were provided...')
+    elif np.sum(pars)>1: # more than one was provided..
+        raise AttributeError('More than one parameter was provided. Got {}'.format(', '.join(parsNames[pars])))
+    
+    available = parsNames[pars][0]
+    
+    if available == 'Energy':
+        Wavelength = EnergyWavelength(Energy)
+        K = EnergyK(Energy)
+    elif available == 'Wavelength':
+        Energy = WavelengthEnergy(Wavelength)
+        K = WavelengthK(Wavelength)
+    elif available == 'K':
+        Energy = KEnergy(K)
+        Wavelength = KWavelength(K)
+    
+    if degrees is True:
+        TwoTheta = np.deg2rad(TwoTheta)
+    
+    d = Wavelength/(2.0*np.sin(TwoTheta/2.0))
+    return d

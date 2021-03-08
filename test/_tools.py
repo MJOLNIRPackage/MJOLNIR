@@ -191,3 +191,131 @@ def test_absolutNormalization():
 
     Van*=vanadiumMonitor*vanadiumSigmaIncoherent/constants
     assert(np.isclose(Van,1.0))
+
+
+def test_KWavelength():
+    k = np.pi
+    wavelength = WavelengthK(k)
+    assert(np.isclose(wavelength,2.0))
+    
+    k_prime = KWavelength(wavelength)
+    assert(np.isclose(k,k_prime))
+    
+def test_KWavelength_multidim():
+    k = np.random.rand(10,20)*2*np.pi
+    wavelength = WavelengthK(k)
+    
+    k_prime = KWavelength(wavelength)
+    assert(np.all(np.isclose(k,k_prime)))
+    
+    
+def test_EnergyK():
+    E = 5.0
+    k = EnergyK(E)
+    l = EnergyWavelength(E)
+    assert(np.isclose(l,4.044851376460777))
+    
+    E_prime = KEnergy(k)
+    assert(np.isclose(E,E_prime))
+    
+def test_WnergyK_multidim():
+    E = np.random.rand(10,20)*2*np.pi
+    wavelength = EnergyWavelength(E)
+    
+    E_prime = WavelengthEnergy(wavelength)
+    assert(np.all(np.isclose(E,E_prime)))
+    
+    
+def test_ScatteringAngle():
+    d = 3.355 # AA
+    E = 5.00 # meV
+    K = EnergyK(E)
+    W = EnergyWavelength(E)
+    
+    A4E = ScatteringAngle(d,Energy=E)
+    A4K = ScatteringAngle(d,K=K)
+    A4W = ScatteringAngle(d,Wavelength=W)
+    A4ERad = ScatteringAngle(d,Energy=E,degrees=False)
+    A4ERad = np.rad2deg(A4ERad)
+    
+    A4True = 74.14275085067898
+    
+    assert(np.all(np.isclose([A4E,A4K,A4W,A4ERad],A4True)))
+    
+def test_DSpacing():
+    twoTheta = 74.14275085067898#
+    E = 5.00 # meV
+    K = EnergyK(E)
+    W = EnergyWavelength(E)
+    
+    dE = DSpacing(twoTheta,Energy=E)
+    dK = DSpacing(twoTheta,K=K)
+    dW = DSpacing(twoTheta,Wavelength=W)
+    dERad = DSpacing(np.deg2rad(twoTheta),Energy=E,degrees=False)
+    
+    
+    dTrue = 3.355 # AA
+    
+    assert(np.all(np.isclose([dE,dK,dW,dERad],dTrue)))
+    
+def test_ScatteringAngle_Errors():
+    d = 3.355 # AA
+    E = 5.00 # meV
+    K = EnergyK(E)
+    W = EnergyWavelength(E)
+    
+    try: 
+        _ = ScatteringAngle(d,Energy=E,K=K)
+        assert False
+    except AttributeError:
+        assert True
+    
+    try: 
+        _ = ScatteringAngle(d,Energy=E,Wavelength=W)
+        assert False
+    except AttributeError:
+        assert True
+    
+    try: 
+        _ = ScatteringAngle(d,Energy=E,Wavelength=W,K=K)
+        assert False
+    except AttributeError:
+        assert True
+    
+    try: 
+        _ = ScatteringAngle(d)
+        assert False
+    except AttributeError:
+        assert True
+        
+        
+def test_DSpacing_Errors():
+    twoTheta = 3.355 # AA
+    E = 5.00 # meV
+    K = EnergyK(E)
+    W = EnergyWavelength(E)
+    
+    try: 
+        _ = DSpacing(twoTheta,Energy=E,K=K)
+        assert False
+    except AttributeError:
+        assert True
+    
+    try: 
+        _ = DSpacing(twoTheta,Energy=E,Wavelength=W)
+        assert False
+    except AttributeError:
+        assert True
+    
+    try: 
+        _ = DSpacing(twoTheta,Energy=E,Wavelength=W,K=K)
+        assert False
+    except AttributeError:
+        assert True
+    
+    try: 
+        _ = DSpacing(twoTheta)
+        assert False
+    except AttributeError:
+        assert True
+    
