@@ -114,7 +114,7 @@ matrix:
       os: windows           # Windows 10.0.17134 N/A Build 17134
       language: shell       # 'language: python' is an error on Travis CI Windows
       before_install:
-        - choco install python --version 3.8.5
+        - choco install python --version 3.9.0
         - python --version
         - sleep 3 # give xvfb some time to start
         - python -m pip install --upgrade pip
