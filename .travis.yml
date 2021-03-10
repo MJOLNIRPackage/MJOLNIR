@@ -27,9 +27,22 @@ matrix:
         - wget -UseBasicParsing 'https://www.psi.ch/en/media/60041/download'
         - unzip download
       script: py.test test/ -vv
-    - name: "Python 3.8.0 on macOS 10.14"
+    - name: "Python 3.8 on macOS 10.15.5"
       os: osx
-      osx_image: xcode11.3  # Python 3.8.0 running on macOS 10.14.6
+      osx_image: xcode11.6  # Python 3.8 running on macOS 10.15.5
+      language: shell       # 'language: python' is an error on Travis CI macOS
+      before_install:
+        - python3 --version
+        - sleep 3 # give xvfb some time to start
+        - pip3 install -U pip
+        - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - pip install .
+        - wget -UseBasicParsing 'https://www.psi.ch/en/media/60041/download'
+        - unzip download
+      script: py.test test/ -vv
+    - name: "Python 3.9 on macOS 10.15.7"
+      os: osx
+      osx_image: xcode12.2  # Python 3.9 running on macOS 10.15.7
       language: shell       # 'language: python' is an error on Travis CI macOS
       before_install:
         - python3 --version
@@ -97,6 +110,20 @@ matrix:
         - curl -o download.zip https://www.psi.ch/en/media/60041/download
         - 7z e download.zip "-osamlpedata"
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
+    - name: "Python 3.9.0 on Windows"
+      os: windows           # Windows 10.0.17134 N/A Build 17134
+      language: shell       # 'language: python' is an error on Travis CI Windows
+      before_install:
+        - choco install python --version 3.8.5
+        - python --version
+        - sleep 3 # give xvfb some time to start
+        - python -m pip install --upgrade pip
+        - pip3 install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
+        - python setup.py sdist
+        - pip3 install .
+        - curl -o download.zip https://www.psi.ch/en/media/60041/download
+        - 7z e download.zip "-osamlpedata"
+      env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
 before_install:
   - pip install pytest>=3.6 pycodestyle python-coveralls pytest-cov>=2.5 coveralls
   - pip install --upgrade pip
