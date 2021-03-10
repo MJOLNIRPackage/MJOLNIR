@@ -988,28 +988,32 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
         return sampleMolarMass,elements
     return sampleMolarMass
 
-def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsPerUnitCell=1,
-                                  sampleGFactor=2,correctVanadium=True,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,
+def calculateAbsolutNormalization(sampleMass=None,sampleChemicalFormula=None,sampleMolarMass=None,formulaUnitsPerUnitCell=1,
+                                  sampleGFactor=2,correctVanadium=False,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,vanadiumMolarMass=None,
                                   vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumGFactor=2.0,vanadiumUnitsPerUnitCell=1.0):
     """Calculate absolut normalization relative to Vanadium
     
     Args: 
         
-        - sampleChemicalFormula (string): Chemical formula
-
         - sampleMass (float): Mass of sample in grams
         
     Kwargs:
-        
+
+        - sampleChemicalFormula (string): Chemical formula
+
+        - sampleMolarMass (float): Molar mass of sample in g/mol
+
         - formulaUnitsPerUnitCell (float): Number of units per unit cell (default 1)
         
         - sampleGFactor (float): Magnetic G factor for sample (defalt 2.0)
         
         - sampleDebyeWaller (float): DebyeWaller factor of sample (default 1)
 
-        - correctVanadium (bool): Whether to scale normalization with Vanadium or if this has been performed in normalziation tables (default True)
+        - correctVanadium (bool): Whether to scale normalization with Vanadium or if this has been performed in normalziation tables (default False)
 
         - vanadiumMass (float): Mass of vanadium used in normalization in gram (default 15.25)
+
+        - vanadiumMolarMass (float): Molar mass of vanadium (default None)
 
         - vanadiumMonitor (int): Monitor count used in normalization scan (default 100000)
 
@@ -1020,21 +1024,30 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
         - normalizationFactor (float): Relative normalization of sample to Vanadium scan
     
     """
-    sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
-                                         formulaUnitsPerUnitCell=formulaUnitsPerUnitCell)
+    if not sampleMass is None: # No normalization to sample!
+        if sampleMolarMass is None:
+            sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
+                                                formulaUnitsPerUnitCell=formulaUnitsPerUnitCell)
+        
+    else:
+        sampleMass = 1.0
+        sampleMolarMass = 1.0
+        sampleGFactor = 2.0
+
     
     if correctVanadium:
-        vanadiumMolarMass = calculateMolarMass(vanadiumChemicalFormula)
-        vanadiumFactor = vanadiumUnitsPerUnitCell*vanadiumMolarMass*vanadiumGFactor/(vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
+        if vanadiumMolarMass is None:
+            vanadiumMolarMass = calculateMolarMass(sampleChemicalFormula=vanadiumChemicalFormula,
+                                                   formulaUnitsPerUnitCell=vanadiumUnitsPerUnitCell)
 
+        vanadiumFactor = vanadiumMolarMass/(vanadiumGFactor*vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
     else:
         vanadiumFactor = 1.0
     
     ##########################
     #Calculations
     ##########################
-    
-    
+
     normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*vanadiumFactor/(sampleMolarMass*13.77)
     
     return normalizationFactor
