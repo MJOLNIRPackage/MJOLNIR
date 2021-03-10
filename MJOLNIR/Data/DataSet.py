@@ -3128,10 +3128,10 @@ class DataSet(object):
 
 
 
-    def absolutNormalize(self,sampleMass=None,sampleChemicalFormula=None,formulaUnitsPerUnitCell=1.0,
+    def absolutNormalize(self,sampleMass=None,sampleMolarMass=None,sampleChemicalFormula=None,formulaUnitsPerUnitCell=1.0,
                          sampleGFactor=2.0, correctVanadium=False,vanadiumMass=15.25,
                          vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumChemicalFormula='V',vanadiumGFactor=2.0,
-                         vanadiumUnitsPerUnitCell=1.0):
+                         vanadiumUnitsPerUnitCell=1.0,vanadiumMolarMass=None):
         """Normaliza dataset to absolut units () by 
 
         Kwargs:
