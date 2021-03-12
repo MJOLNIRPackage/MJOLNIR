@@ -219,26 +219,26 @@ def test_KWavelength_multidim():
     
 def test_EnergyK():
     E = 5.0
-    k = EnergyK(E)
-    l = EnergyWavelength(E)
+    k = KEnergy(E)
+    l = WavelengthEnergy(E)
     assert(np.isclose(l,4.044851376460777))
     
-    E_prime = KEnergy(k)
+    E_prime = EnergyK(k)
     assert(np.isclose(E,E_prime))
     
 def test_WnergyK_multidim():
     E = np.random.rand(10,20)*2*np.pi
-    wavelength = EnergyWavelength(E)
+    wavelength = WavelengthEnergy(E)
     
-    E_prime = WavelengthEnergy(wavelength)
+    E_prime = EnergyWavelength(wavelength)
     assert(np.all(np.isclose(E,E_prime)))
     
     
 def test_ScatteringAngle():
     d = 3.355 # AA
     E = 5.00 # meV
-    K = EnergyK(E)
-    W = EnergyWavelength(E)
+    K = KEnergy(E)
+    W = WavelengthEnergy(E)
     
     A4E = ScatteringAngle(d,Energy=E)
     A4K = ScatteringAngle(d,K=K)
@@ -253,8 +253,8 @@ def test_ScatteringAngle():
 def test_DSpacing():
     twoTheta = 74.14275085067898#
     E = 5.00 # meV
-    K = EnergyK(E)
-    W = EnergyWavelength(E)
+    K = KEnergy(E)
+    W = WavelengthEnergy(E)
     
     dE = DSpacing(twoTheta,Energy=E)
     dK = DSpacing(twoTheta,K=K)
@@ -269,8 +269,8 @@ def test_DSpacing():
 def test_ScatteringAngle_Errors():
     d = 3.355 # AA
     E = 5.00 # meV
-    K = EnergyK(E)
-    W = EnergyWavelength(E)
+    K = KEnergy(E)
+    W = WavelengthEnergy(E)
     
     try: 
         _ = ScatteringAngle(d,Energy=E,K=K)
@@ -300,8 +300,8 @@ def test_ScatteringAngle_Errors():
 def test_DSpacing_Errors():
     twoTheta = 3.355 # AA
     E = 5.00 # meV
-    K = EnergyK(E)
-    W = EnergyWavelength(E)
+    K = KEnergy(E)
+    W = WavelengthEnergy(E)
     
     try: 
         _ = DSpacing(twoTheta,Energy=E,K=K)

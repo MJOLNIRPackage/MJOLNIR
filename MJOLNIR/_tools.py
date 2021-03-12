@@ -1063,25 +1063,24 @@ def WavelengthK(k):
 
 
 # Calculate energy to k and reverse
-def EnergyK(energy):
+def KEnergy(energy):
     """Calculate energy [meV] from length of k [1/AA]"""
     return np.sqrt(energy)*factorsqrtEK
 
-def KEnergy(k):
+def EnergyK(k):
     """Calculate length of k [1/AA] from energy [meV]"""
     return np.power(np.divide(k,factorsqrtEK),2.0)
 
 
 # Calculate energy to wavelength and reverse
-def EnergyWavelength(energy):
+def WavelengthEnergy(energy):
     """Calculate energy [meV] from wavelength [AA]"""
-    return KWavelength(EnergyK(energy))
+    return WavelengthK(KEnergy(energy))
 
 
-def WavelengthEnergy(wavelength):
+def EnergyWavelength(wavelength):
     """Calculate wavelength [AA] from energy [meV]"""
-    return KEnergy(WavelengthK(wavelength))
-
+    return EnergyK(KWavelength(wavelength))
 
 
 # Calculate scattering angle from d
@@ -1098,14 +1097,14 @@ def ScatteringAngle(d,Energy=None,Wavelength=None,K=None,degrees = True):
     available = parsNames[pars][0]
     
     if available == 'Energy':
-        Wavelength = EnergyWavelength(Energy)
-        K = EnergyK(Energy)
+        Wavelength = WavelengthEnergy(Energy)
+        K = KEnergy(Energy)
     elif available == 'Wavelength':
-        Energy = WavelengthEnergy(Wavelength)
-        K = WavelengthK(Wavelength)
+        Energy = EnergyWavelength(Wavelength)
+        K = KWavelength(Wavelength)
     elif available == 'K':
-        Energy = KEnergy(K)
-        Wavelength = KWavelength(K)
+        Energy = EnergyK(K)
+        Wavelength = WavelengthK(K)
     
     scatAngle = 2.0*np.arcsin(Wavelength/(2.0*d))
     if degrees == True:
@@ -1128,14 +1127,14 @@ def DSpacing(TwoTheta,Energy=None,Wavelength=None,K=None,degrees = True):
     available = parsNames[pars][0]
     
     if available == 'Energy':
-        Wavelength = EnergyWavelength(Energy)
-        K = EnergyK(Energy)
+        Wavelength = WavelengthEnergy(Energy)
+        K = KEnergy(Energy)
     elif available == 'Wavelength':
-        Energy = WavelengthEnergy(Wavelength)
-        K = WavelengthK(Wavelength)
+        Energy = EnergyWavelength(Wavelength)
+        K = KWavelength(Wavelength)
     elif available == 'K':
-        Energy = KEnergy(K)
-        Wavelength = KWavelength(K)
+        Energy = EnergyK(K)
+        Wavelength = WavelengthK(K)
     
     if degrees is True:
         TwoTheta = np.deg2rad(TwoTheta)
