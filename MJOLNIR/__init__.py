@@ -13,3 +13,4 @@ __author__ = 'Jakob Lass'
 
 __multiFLEXXNormalization__ = os.path.join(os.path.dirname(__file__),'CalibrationMultiFLEXX.csv') 
 __flatConeNormalization__ = os.path.join(os.path.dirname(__file__),'CalibrationFlatCone.csv')
+__CAMEANormalization__ = os.path.join(os.path.dirname(__file__),'Normalization_1.calib')
