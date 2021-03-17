@@ -10,6 +10,15 @@ import os
 import inspect
 import matplotlib
 
+# E = hbar^2k^2/(2m)
+m = 1.67492749804e-27 # kg
+hbar = 1.0545718e-34 # m^2kg/s
+eV = 1.60218e-19
+
+# sqrt(meV) to 1/Å
+factorsqrtEK = 1/np.sqrt(hbar**2*(1e20)/(2*m*eV/1000)) #
+
+
 MPLKwargs = ['agg_filter','alpha','animated','antialiased or aa','clip_box','clip_on','clip_path','color or c','contains','dash_capstyle','dash_joinstyle','dashes','drawstyle','figure','fillstyle','gid','label','linestyle or ls','linewidth or lw','marker','markeredgecolor or mec','markeredgewidth or mew','markerfacecolor or mfc','markerfacecoloralt or mfcalt','markersize or ms','markevery','path_effects','picker','pickradius','rasterized','sketch_params','snap','solid_capstyle','solid_joinstyle','transform','url','visible','xdata','ydata','zorder']
 
 #Unused
@@ -979,28 +988,34 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
         return sampleMolarMass,elements
     return sampleMolarMass
 
-def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsPerUnitCell=1,
-                                  sampleGFactor=2,correctVanadium=True,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,
+
+def calculateAbsolutNormalization(sampleMass=None,sampleChemicalFormula=None,sampleMolarMass=None,formulaUnitsPerUnitCell=1,
+                                  sampleGFactor=2,correctVanadium=False,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,vanadiumMolarMass=None,
                                   vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumGFactor=2.0,vanadiumUnitsPerUnitCell=1.0):
     """Calculate absolut normalization relative to Vanadium
     
     Args: 
         
-        - sampleChemicalFormula (string): Chemical formula
 
         - sampleMass (float): Mass of sample in grams
         
     Kwargs:
-        
+
+        - sampleChemicalFormula (string): Chemical formula
+
+        - sampleMolarMass (float): Molar mass of sample in g/mol
+
         - formulaUnitsPerUnitCell (float): Number of units per unit cell (default 1)
         
         - sampleGFactor (float): Magnetic G factor for sample (defalt 2.0)
         
         - sampleDebyeWaller (float): DebyeWaller factor of sample (default 1)
 
-        - correctVanadium (bool): Whether to scale normalization with Vanadium or if this has been performed in normalziation tables (default True)
+        - correctVanadium (bool): Whether to scale normalization with Vanadium or if this has been performed in normalziation tables (default False)
 
         - vanadiumMass (float): Mass of vanadium used in normalization in gram (default 15.25)
+
+        - vanadiumMolarMass (float): Molar mass of vanadium (default None)
 
         - vanadiumMonitor (int): Monitor count used in normalization scan (default 100000)
 
@@ -1011,12 +1026,23 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
         - normalizationFactor (float): Relative normalization of sample to Vanadium scan
     
     """
-    sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
-                                         formulaUnitsPerUnitCell=formulaUnitsPerUnitCell)
+
+    if not sampleMass is None: # No normalization to sample!
+        if sampleMolarMass is None:
+            sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
+                                                formulaUnitsPerUnitCell=formulaUnitsPerUnitCell)
+        
+    else:
+        sampleMass = 1.0
+        sampleMolarMass = 1.0
+        sampleGFactor = 2.0
+
     
     if correctVanadium:
-        vanadiumMolarMass = calculateMolarMass(vanadiumChemicalFormula)
-        vanadiumFactor = vanadiumUnitsPerUnitCell*vanadiumMolarMass*vanadiumGFactor/(vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
+        if vanadiumMolarMass is None:
+            vanadiumMolarMass = calculateMolarMass(sampleChemicalFormula=vanadiumChemicalFormula,
+                                                   formulaUnitsPerUnitCell=vanadiumUnitsPerUnitCell)
+        vanadiumFactor = vanadiumMolarMass/(vanadiumGFactor*vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
 
     else:
         vanadiumFactor = 1.0
@@ -1024,8 +1050,96 @@ def calculateAbsolutNormalization(sampleChemicalFormula,sampleMass,formulaUnitsP
     ##########################
     #Calculations
     ##########################
-    
-    
     normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*vanadiumFactor/(sampleMolarMass*13.77)
     
     return normalizationFactor
+
+
+def KWavelength(wavelength):
+    """Calculate wave vector k vactor [1/AA] from wavelength [AA]"""
+    return np.reciprocal(wavelength)*2.0*np.pi
+
+def WavelengthK(k):
+    """Calcualte wavelength [AA] from wave vector k vactor [1/AA]"""
+    return np.reciprocal(k)*2.0*np.pi
+
+
+# Calculate energy to k and reverse
+def KEnergy(energy):
+    """Calculate energy [meV] from length of k [1/AA]"""
+    return np.sqrt(energy)*factorsqrtEK
+
+def EnergyK(k):
+    """Calculate length of k [1/AA] from energy [meV]"""
+    return np.power(np.divide(k,factorsqrtEK),2.0)
+
+
+# Calculate energy to wavelength and reverse
+def WavelengthEnergy(energy):
+    """Calculate energy [meV] from wavelength [AA]"""
+    return WavelengthK(KEnergy(energy))
+
+
+def EnergyWavelength(wavelength):
+    """Calculate wavelength [AA] from energy [meV]"""
+    return EnergyK(KWavelength(wavelength))
+
+
+# Calculate scattering angle from d
+
+def ScatteringAngle(d,Energy=None,Wavelength=None,K=None,degrees = True):
+    """Calculate scattering angle [deg or rad] from d [AA] and one of the following [Energy [meV], Wavelength [AA], K[1/AA]]."""
+    pars = np.array([not x is None for x in [Energy,Wavelength,K]],dtype=bool)
+    parsNames = np.array(['Energy','Wavelength','K'])
+    if np.all(pars==False): # No provided
+        raise AttributeError('None of the energy, wavelenght, or k were provided...')
+    elif np.sum(pars)>1: # more than one was provided..
+        raise AttributeError('More than one parameter was provided. Got {}'.format(', '.join(parsNames[pars])))
+    
+    available = parsNames[pars][0]
+    
+    if available == 'Energy':
+        Wavelength = WavelengthEnergy(Energy)
+        K = KEnergy(Energy)
+    elif available == 'Wavelength':
+        Energy = EnergyWavelength(Wavelength)
+        K = KWavelength(Wavelength)
+    elif available == 'K':
+        Energy = EnergyK(K)
+        Wavelength = WavelengthK(K)
+    
+    scatAngle = 2.0*np.arcsin(Wavelength/(2.0*d))
+    if degrees == True:
+        scatAngle = np.rad2deg(scatAngle)
+    return scatAngle
+
+
+
+
+def DSpacing(TwoTheta,Energy=None,Wavelength=None,K=None,degrees = True):
+    """Calculate d spacing [AA] from scattering angle [deg or rad] and one of the following [Energy [meV], Wavelength [AA], K[1/AA]]."""
+    
+    pars = np.array([not x is None for x in [Energy,Wavelength,K]],dtype=bool)
+    parsNames = np.array(['Energy','Wavelength','K'])
+    if np.all(pars==False): # No provided
+        raise AttributeError('None of the energy, wavelenght, or k were provided...')
+    elif np.sum(pars)>1: # more than one was provided..
+        raise AttributeError('More than one parameter was provided. Got {}'.format(', '.join(parsNames[pars])))
+    
+    available = parsNames[pars][0]
+    
+    if available == 'Energy':
+        Wavelength = WavelengthEnergy(Energy)
+        K = KEnergy(Energy)
+    elif available == 'Wavelength':
+        Energy = EnergyWavelength(Wavelength)
+        K = KWavelength(Wavelength)
+    elif available == 'K':
+        Energy = EnergyK(K)
+        Wavelength = WavelengthK(K)
+    
+    if degrees is True:
+        TwoTheta = np.deg2rad(TwoTheta)
+    
+    d = Wavelength/(2.0*np.sin(TwoTheta/2.0))
+    return d

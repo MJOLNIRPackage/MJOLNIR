@@ -14,7 +14,6 @@ from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
 import MJOLNIR.Data.DataFile
 
-factorsqrtEK = 0.694692
 
 def cosd(x):
     return np.cos(np.deg2rad(x))

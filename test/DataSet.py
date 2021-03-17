@@ -1241,7 +1241,7 @@ def test_absolutNormalziation():
     norm = np.mean(ds.Norm.extractData())
     
     # Use value for MnF2 to check 
-    ds.absolutNormalize(6.2,'MnF2',formulaUnitsPerUnitCell=2,
+    ds.absolutNormalize(sampleMass=6.2,sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,
                                       correctVanadium=False)
     
     factor = 0.06088201383247563 # Factor calculated for MnF2
@@ -1249,7 +1249,7 @@ def test_absolutNormalziation():
     assert(np.isclose(factor,ds.absolutNormalized))
 
     # Redo normalization to retrive the same factor
-    ds.absolutNormalize(6.2,'MnF2',formulaUnitsPerUnitCell=2,
+    ds.absolutNormalize(sampleMass=6.2,sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,
                                       correctVanadium=False)
 
     assert(np.isclose(factor,ds.absolutNormalized))

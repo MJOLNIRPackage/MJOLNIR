@@ -3128,19 +3128,17 @@ class DataSet(object):
 
 
 
-    def absolutNormalize(self,sampleMass,sampleChemicalFormula,formulaUnitsPerUnitCell=1.0,
+    def absolutNormalize(self,sampleMass=None,sampleMolarMass=None,sampleChemicalFormula=None,formulaUnitsPerUnitCell=1.0,
                          sampleGFactor=2.0, correctVanadium=False,vanadiumMass=15.25,
                          vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumChemicalFormula='V',vanadiumGFactor=2.0,
-                         vanadiumUnitsPerUnitCell=1.0):
+                         vanadiumUnitsPerUnitCell=1.0,vanadiumMolarMass=None):
         """Normaliza dataset to absolut units () by 
 
-        Args:
+        Kwargs:
 
             - sampleMass (float): Mass of sample in gram
 
             - sampleChemicalFormula (string): Chemical formula of sample
-
-        Kwargs:
 
             - formulaUnitsPerUnitCell (float): Number of formula units per unit cell (default 1.0)
 
@@ -3166,10 +3164,10 @@ class DataSet(object):
         
 
         normFactor = \
-        _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMass=sampleMass,
+        _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMolarMass=sampleMolarMass,sampleMass=sampleMass,
                                              formulaUnitsPerUnitCell=formulaUnitsPerUnitCell,sampleGFactor=sampleGFactor,
-                                             correctVanadium=correctVanadium,vanadiumMass=vanadiumMass,
-                                             vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent,
+                                             correctVanadium=correctVanadium,vanadiumMass=vanadiumMass,vanadiumChemicalFormula=vanadiumChemicalFormula,
+                                             vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent,vanadiumMolarMass=vanadiumMolarMass,
                                              vanadiumGFactor=vanadiumGFactor,vanadiumUnitsPerUnitCell=vanadiumUnitsPerUnitCell)
             
         if self.absolutNormalized != 0:
