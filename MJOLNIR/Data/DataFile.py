@@ -11,7 +11,7 @@ from MJOLNIR import _tools
 import MJOLNIR
 import datetime
 import math
-import shapely
+#import shapely
 # from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import Marray
