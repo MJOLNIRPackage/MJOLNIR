@@ -988,6 +988,7 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
         return sampleMolarMass,elements
     return sampleMolarMass
 
+
 def calculateAbsolutNormalization(sampleMass=None,sampleChemicalFormula=None,sampleMolarMass=None,formulaUnitsPerUnitCell=1,
                                   sampleGFactor=2,correctVanadium=False,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,vanadiumMolarMass=None,
                                   vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumGFactor=2.0,vanadiumUnitsPerUnitCell=1.0):
@@ -995,6 +996,7 @@ def calculateAbsolutNormalization(sampleMass=None,sampleChemicalFormula=None,sam
     
     Args: 
         
+
         - sampleMass (float): Mass of sample in grams
         
     Kwargs:
@@ -1024,6 +1026,7 @@ def calculateAbsolutNormalization(sampleMass=None,sampleChemicalFormula=None,sam
         - normalizationFactor (float): Relative normalization of sample to Vanadium scan
     
     """
+
     if not sampleMass is None: # No normalization to sample!
         if sampleMolarMass is None:
             sampleMolarMass = calculateMolarMass(sampleChemicalFormula=sampleChemicalFormula,
@@ -1039,15 +1042,14 @@ def calculateAbsolutNormalization(sampleMass=None,sampleChemicalFormula=None,sam
         if vanadiumMolarMass is None:
             vanadiumMolarMass = calculateMolarMass(sampleChemicalFormula=vanadiumChemicalFormula,
                                                    formulaUnitsPerUnitCell=vanadiumUnitsPerUnitCell)
-
         vanadiumFactor = vanadiumMolarMass/(vanadiumGFactor*vanadiumMass*vanadiumSigmaIncoherent*vanadiumMonitor)
+
     else:
         vanadiumFactor = 1.0
     
     ##########################
     #Calculations
     ##########################
-
     normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*vanadiumFactor/(sampleMolarMass*13.77)
     
     return normalizationFactor
