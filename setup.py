@@ -20,7 +20,7 @@ pythonPath =  os.path.relpath(os.path.join(installFolder,'MJOLNIR'),sys.base_pre
 setup(
     name='MJOLNIR',
 
-    version='1.1.17',
+    version='1.1.18',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
@@ -39,7 +39,7 @@ setup(
                             'MJOLNIR3DView = MJOLNIR.CommandLineScripts.MJOLNIR3DView:main']
         },
     python_requires='>=3.5' if not operatingSystem == 'darwin' else '>=3.6',
-    install_requires=['matplotlib>=3','numpy>=1.14','h5py>=2.5','scipy','datetime','pytest>=4.6','pyperclip','decorator','pandas','future',
+    install_requires=['matplotlib>=3,<3.4','numpy>=1.14','h5py>=2.5','scipy','datetime','pytest>=4.6','pyperclip','decorator','pandas','future',
                     'pip>=20','ufit>=1.4.0','pyqtgraph','regex'], # ,'ufit','sip','PyQt5-sip','PyQt5<=5.12'
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -52,5 +52,6 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8'],
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9'],
     )
