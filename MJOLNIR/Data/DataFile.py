@@ -1787,11 +1787,11 @@ def extractData(files):
         scanParamUnit.append(datafile.scanUnits)
             
         Monitor.append(datafile.Monitor)
-        if np.array(datafile.A3Off).shape is ():
+        if np.array(datafile.A3Off).shape == ():
             datafile.A3Off = 0.0
         a3.append(datafile.A3-datafile.A3Off)
         a3Off.append(datafile.A3Off)
-        if np.array(datafile.A4Off).shape is ():
+        if np.array(datafile.A4Off).shape == ():
             datafile.A4Off = [0.0]
         a4.append(datafile.A4-datafile.A4Off)
         a4Off.append(datafile.A4Off)

@@ -103,7 +103,7 @@ class Marray(object):
         if self.multidimensional:
             return len(self._data)
         else:
-            if not self._data.shape is ():
+            if self._data.shape != ():
                 return len(self._data)
             else:
                 return 0
