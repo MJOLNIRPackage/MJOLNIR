@@ -636,7 +636,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                                             plt.ioff
                                         plt.figure()
                                         plt.scatter(EiLocal,binPixelData)
-                                        plt.plot(Ei,Gaussian(Ei,*guess))
+                                        plt.plot(Ei,Gaussian(Ei,*guess,0.0))
                                     
                                         plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
                                         plt.close()
