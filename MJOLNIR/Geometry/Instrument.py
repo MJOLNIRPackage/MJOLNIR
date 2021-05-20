@@ -367,14 +367,14 @@ class Instrument(GeometryConcept.GeometryConcept):
         if ignoreTubes is None:
             ignoreTubes = []
         
-        with hdf.File(Vanadiumdatafile,'r') as VanFile:
+        with hdf.File(Vanadiumdatafile,'r') as VanFile: # Open normalziation file
             if not A4datafile == False: # pragma: no cover
                 A4File = hdf.File(A4datafile,'r')
                 A4FileInstrument = getInstrument(A4File)
                 A4FileInstrumentType = A4FileInstrument.name.split('/')[-1]
 
 
-            VanFileInstrument = getInstrument(VanFile)
+            VanFileInstrument = getInstrument(VanFile) # Get the HDF object of the instrument (CAMEA)
             
 
             VanFileInstrumentType = VanFileInstrument.name.split('/')[-1]
@@ -390,8 +390,19 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if savelocation[-1]!='/':
                     savelocation+='/'
                 
-                Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)
-                monitor = np.mean(np.array(VanFile.get('entry/control/data'))) # Extract monitor count
+                monitor = np.array(VanFile.get('entry/control/data')) # Extract monitor count
+                # Divide data with corresponding monitor by reshaping it correctly
+                Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)/monitor[np.newaxis,:,np.newaxis]
+                if sampleMass != None: # A sample mass has been proivided
+
+                    sampleMolarMass = _tools.calculateMolarMass(sample,formulaUnitsPerUnitCell)
+                    
+                    # TODO: Check placement of sampleDebyeWallerFactor!
+                    vanadiumFactor = sampleDebyeWallerFactor*sampleMolarMass/(sampleMass*sampleIncoherent)
+                    Data*=vanadiumFactor # Multiply vanadium factor to perform absolut normalization 22-02-2021 JL
+                else:
+                    vanadiumFactor = 1.0
+                
                 
                 if False: #Mask pixels where spurion is present
                     Data[:,:,:100]=0
@@ -435,7 +446,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                         plt.scatter(np.arange(pixels),np.sum(Data[:][i],axis=0),s=5)
                         plt.ylim(0,np.max(np.sum(Data[i],axis=0))*1.1)
                         plt.xlabel('Pixel')
-                        plt.ylabel('Intensity [arg]')
+                        plt.ylabel('Intensity [arb]')
                         plt.title('Vanadium normalization detector '+str(i))
                         plt.tight_layout()
                         plt.savefig(savelocation+'Raw/detector'+str(i)+'.png',format='png', dpi=150)
@@ -479,7 +490,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                                 plt.plot([peakPos[i+13*k,j],peakPos[i+13*k,j]],[0,np.max(ESummedData[i+13*k])*1.1])
                             plt.plot(x,y,'k')
                             plt.xlabel('Pixel')
-                            plt.ylabel('Intensity [arg]')
+                            plt.ylabel('Intensity [arb]')
                             plt.title('Detector {}'.format(i+13*k))
                             plt.ylim(0,np.max(ESummedData[i+13*k])*1.1)
 
@@ -537,7 +548,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                     if plot: # pragma: no cover
                         plt.ylim(0,np.max(ESummedData[i])*1.1)
                         plt.xlabel('Pixel')
-                        plt.ylabel('Intensity [arg]')
+                        plt.ylabel('Intensity [arb]')
                         plt.savefig(savelocation+'/Raw/Active_'+str(i)+'.png',format='png', dpi=150)
 
                 Eguess = np.zeros_like(peakPos,dtype=int)
@@ -545,14 +556,6 @@ class Instrument(GeometryConcept.GeometryConcept):
                     for j in range(analysers):
                         Eguess[i,j]=np.argmax(Data[i,:,int(pixelpos[i,j])])
                 
-                if sampleMass != None: # A sample mass has been proivided
-
-                    sampleMolarMass = _tools.calculateMolarMass(sample,formulaUnitsPerUnitCell)
-                    
-                    # TODO: Check placement of sampleDebyeWallerFactor!
-                    vanadiumFactor = sampleDebyeWallerFactor*sampleMolarMass/(sampleMass*sampleIncoherent*monitor)
-                else:
-                    vanadiumFactor = 1.0
 
                 fitParameters = []
                 activePixelRanges = []
@@ -611,8 +614,8 @@ class Instrument(GeometryConcept.GeometryConcept):
                                 for k in range(detpixels):
                                     binPixelData = Data[i,:,pixelAreas[k]:pixelAreas[k+1]].sum(axis=1)
                                     ECenter = Ei[np.argmax(binPixelData)]
-                                    ECutLow = ECenter-0.4
-                                    ECutHigh= ECenter+0.4
+                                    ECutLow = ECenter-3.0
+                                    ECutHigh= ECenter+3.0
                                     TopId = np.argmin(np.abs(Ei-ECutHigh))
                                     BotId = np.argmin(np.abs(ECutLow-Ei))
                                     if TopId<BotId:
@@ -622,9 +625,9 @@ class Instrument(GeometryConcept.GeometryConcept):
                                     binPixelData = binPixelData[BotId:TopId]
                                     EiLocal = Ei[BotId:TopId]
                                     Bg = np.min(binPixelData[[0,-1]])
-                                    guess = np.array([np.max(binPixelData), ECenter,0.005,Bg],dtype=float)
+                                    guess = np.array([np.max(binPixelData), ECenter,0.08],dtype=float)
                                     try:
-                                        res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
+                                        res = scipy.optimize.curve_fit(lambda x,A,mu,sigma:Gaussian(x,A,mu,sigma,0.0),EiLocal,binPixelData.astype(float),p0=guess)
                                         
                                     except: # pragma: no cover
                                         if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
@@ -638,11 +641,11 @@ class Instrument(GeometryConcept.GeometryConcept):
                                         plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
                                         plt.close()
 
-                                    fittedParameters[i,j,k]=res[0]
+                                    fittedParameters[i,j,k]=np.concatenate([res[0],[0.0]])
                                     fittedParameters[i,j,k,0] *= np.sqrt(2*np.pi)*fittedParameters[i,j,k,2] #np.sum(binPixelData) # Use integrated intensity as amplitude 29-07-2020 JL
-                                    fittedParameters[i,j,k,0] *= vanadiumFactor # Multiply vanadium factor to perform absolut normalization 22-02-2021 JL
+                                     
                                     if plot: # pragma: no cover
-                                        plt.plot(EiX,GaussianNormalized(EiX,*fittedParameters[i,j,k]),color='black')
+                                        plt.plot(EiX,Gaussian(EiX,*fittedParameters[i,j,k])/(np.sqrt(2*np.pi)*fittedParameters[i,j,k,2]),color='black')
                                         plt.scatter(EiLocal,binPixelData,color=colors[:,k])
                                 activePixelAnalyser.append(np.linspace(-width/2.0,width/2.0,detpixels+1,dtype=int)+center+1)
                         activePixelDetector.append(activePixelAnalyser)
@@ -1326,7 +1329,7 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
         Qx,Qy = (QV*q.reshape(-1,1))[:,:2].T
         return (Qx,Qy)
 
-    def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0):
+    def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1):
         Qx = np.asarray(Qx)
         Qy = np.asarray(Qy)
 
@@ -1354,12 +1357,12 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
         
         A4 = ss*TasUBlib.arccosd(cos2t)
         theta = TasUBlib.calcTheta(ki, kf, A4)
-        A3 = -om + -ss*theta + A3Off
-        return A3,-A4
+        A3 = -om + np.sign(A4Sign)*ss*theta + A3Off
+        return A3,np.sign(A4Sign)*A4
         
 
     t = simpleDataSet(s)
-    fig = plt.figure(figsize=(26,13))
+    fig = plt.figure(figsize=(16,11))
     Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(3,3,i+1)) for i in range(9)]
     
     MJOLNIRDir = os.path.dirname(_tools.__file__)
@@ -1381,8 +1384,8 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
     startColor = np.array([0.83921569, 0.15294118, 0.15686275, 0.5])
     diff = (endColor-startColor)/7.0
 
-    def format_axes_func(self,x,y,Ei,Ef,A3Off=s.theta):
-        A3,A4 = converterToA3A4(x,y,Ei,Ef,-A3Off)
+    def format_axes_func(self,x,y,Ei,Ef,A3Off=s.theta,A4Sign=-1.0):
+        A3,A4 = converterToA3A4(x,y,Ei,Ef,-A3Off,A4Sign=A4Sign)
         return ax.sample.format_coord(x,y)+', A3 = {:.2f} deg, A4 = {:.2f} deg, Ef = {:.2f}'.format(A3,A4,Ef)
 
     for i,(ax,Ef,A4) in enumerate(zip(Ax,EfInstrument.reshape(104,8).T,A4Instrument.reshape(104,8).T)):
@@ -1410,14 +1413,14 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
     Ax[-1].set_title('All Planes')
 
     fig.tight_layout()
-    Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-s.theta)
-    Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-s.theta)
-    Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-s.theta)
-    Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-s.theta)
-    Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta)
-    Ax[5].format_coord = lambda x,y: format_axes_func(Ax[5],x,y,Ei,np.nanmean(EfInstrument,axis=0)[5],-s.theta)
-    Ax[6].format_coord = lambda x,y: format_axes_func(Ax[6],x,y,Ei,np.nanmean(EfInstrument,axis=0)[6],-s.theta)
-    Ax[7].format_coord = lambda x,y: format_axes_func(Ax[7],x,y,Ei,np.nanmean(EfInstrument,axis=0)[7],-s.theta)
+    Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-s.theta,A4Sign=A4Positions[0])
+    Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-s.theta,A4Sign=A4Positions[0])
+    Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-s.theta,A4Sign=A4Positions[0])
+    Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-s.theta,A4Sign=A4Positions[0])
+    Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta,A4Sign=A4Positions[0])
+    Ax[5].format_coord = lambda x,y: format_axes_func(Ax[5],x,y,Ei,np.nanmean(EfInstrument,axis=0)[5],-s.theta,A4Sign=A4Positions[0])
+    Ax[6].format_coord = lambda x,y: format_axes_func(Ax[6],x,y,Ei,np.nanmean(EfInstrument,axis=0)[6],-s.theta,A4Sign=A4Positions[0])
+    Ax[7].format_coord = lambda x,y: format_axes_func(Ax[7],x,y,Ei,np.nanmean(EfInstrument,axis=0)[7],-s.theta,A4Sign=A4Positions[0])
     fig.tight_layout()
 
     return Ax
