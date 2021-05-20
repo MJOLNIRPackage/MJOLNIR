@@ -20,7 +20,7 @@ pythonPath =  os.path.relpath(os.path.join(installFolder,'MJOLNIR'),sys.base_pre
 setup(
     name='MJOLNIR',
 
-    version='1.1.18',
+    version='1.1.19',
     description=('Neutron Scattering software suite.'),
     long_description=long_description,
     author='Jakob Lass',
