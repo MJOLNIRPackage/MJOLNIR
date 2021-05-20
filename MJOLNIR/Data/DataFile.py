@@ -165,7 +165,9 @@ class DataFile(object):
                         calibrations.append([EfTable,A4,bound])
                     self.instrumentCalibrations = np.array(calibrations,dtype=object)
                     self.loadBinning(self.binning)
-                        
+
+                    self.twotheta = self.A4-self.A4Off
+
                     self.temperature = np.array(sample.get('temperature'))
                     self.magneticField = np.array(sample.get('magnetic_field'))
                     self.electricField = np.array(sample.get('electric_field'))
