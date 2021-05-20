@@ -280,7 +280,7 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
         ax.basey = basey
 
     def set_axis(ax,v1,v2,*args):
-        if not args is ():
+        if args != ():
             points = np.concatenate([[v1,v2],[x for x in args]],axis=0)
         else:
             points = np.array([v1,v2])

@@ -79,15 +79,15 @@ class DataFile(object):
                         self.Norm=np.array(f.get('entry/data/normalization'))
                     self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
                     self.MonitorPreset=np.array(f.get('entry/control/preset'))                
+                    self.startTime = np.array(f.get('entry/start_time'))[0]
                     if self.type == 'hdf':
                         self.Monitor = np.array(f.get('entry/control/data'))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
-                            if self.Monitor.flatten()[0]!=self.MonitorPreset: # For all data in 2018 with wrong monitor saved
+                            if self.Monitor.flatten()[0]!=self.MonitorPreset and self.startTime[:4]=='2018': # For all data in 2018 with wrong monitor saved
                                 self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
                     else:
                         self.Monitor=np.array(f.get('entry/data/monitor'))
                     self.Time = np.array(f.get('entry/control/time'))
-                    self.startTime = np.array(f.get('entry/start_time'))[0]
                     self.endTime = np.array(f.get('entry/end_time'))[0]
                     self.experimentIdentifier = np.array(f.get('entry/experiment_identifier'))[0]
                     self.comment = np.array(f.get('entry/comment'))[0]
@@ -165,7 +165,9 @@ class DataFile(object):
                         calibrations.append([EfTable,A4,bound])
                     self.instrumentCalibrations = np.array(calibrations,dtype=object)
                     self.loadBinning(self.binning)
-                        
+
+                    self.twotheta = self.A4-self.A4Off
+
                     self.temperature = np.array(sample.get('temperature'))
                     self.magneticField = np.array(sample.get('magnetic_field'))
                     self.electricField = np.array(sample.get('electric_field'))
@@ -1787,11 +1789,11 @@ def extractData(files):
         scanParamUnit.append(datafile.scanUnits)
             
         Monitor.append(datafile.Monitor)
-        if np.array(datafile.A3Off).shape is ():
+        if np.array(datafile.A3Off).shape == ():
             datafile.A3Off = 0.0
         a3.append(datafile.A3-datafile.A3Off)
         a3Off.append(datafile.A3Off)
-        if np.array(datafile.A4Off).shape is ():
+        if np.array(datafile.A4Off).shape == ():
             datafile.A4Off = [0.0]
         a4.append(datafile.A4-datafile.A4Off)
         a4Off.append(datafile.A4Off)
