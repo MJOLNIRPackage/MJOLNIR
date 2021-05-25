@@ -154,8 +154,9 @@ class DataFile(object):
                         # and because of this, six saves 2t and not a4. Solution: set A4Offset to 0 and
                         # use only the first value for A4 when an A3 (=rotation_angle) scan is made and 
                         self.A4 = np.array([self.A4[0]])
+                        self.analyzerPolarAngle = self.A4
                         self.A4Off = np.array([0.0])
-                        
+                        self.analyzerPolarAngleOffset = self.A4Off
                     else:
                         self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                         
