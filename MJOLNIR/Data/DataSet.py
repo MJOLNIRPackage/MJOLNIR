@@ -2681,7 +2681,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,outputFunction=print,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2706,7 +2706,9 @@ class DataSet(object):
 
             - adjustable (bool): If set true, 2 sliders will be present allowing to fine tune the c-axis (Default True)
 
-            - customSlicer (bool): If true, utilize the interactive viewer based on PyQtGraph
+            - customSlicer (bool): If true, utilize the interactive viewer based on PyQtGraph (Default False)
+
+            - instrumenAngles (bool): If true show also A3 and A4 calculations for HKL axis when hovering (Default False)
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -2727,7 +2729,52 @@ class DataSet(object):
             figure.delaxes(qxEax)
             qyEax = self.createQEAxes(axis=0,figure=figure)
             figure.delaxes(qyEax)
+            if instrumentAngles:
+                from MJOLNIR import TasUBlibDEG as TasUBlib
             
+                def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1):
+                    Qx = np.asarray(Qx)
+                    Qy = np.asarray(Qy)
+
+                    QC = np.array([Qx,Qy])
+                    q = np.linalg.norm(QC)  
+
+                    U1V = np.array([Qx.flatten(),Qy.flatten(),0.0],dtype=float)
+
+                    U1V/=np.linalg.norm(U1V)
+                    U2V = np.array([0.0,0.0,1.0],dtype=float)
+                    
+                    
+                    TV = TasUBlib.buildTVMatrix(U1V, U2V)
+                    R = np.linalg.inv(TV)
+                    
+                    ss = 1.0
+                    
+                    cossgl = np.sqrt(R[0,0]*R[0,0]+R[1,0]*R[1,0])
+                    om = TasUBlib.arctan2d(R[1,0]/cossgl, R[0,0]/cossgl)
+                
+                    ki = np.sqrt(Ei)*_tools.factorsqrtEK
+                    kf = np.sqrt(Ef)*_tools.factorsqrtEK
+                    
+                    cos2t =(ki**2 + kf**2 - q**2) / (2. * np.abs(ki) * np.abs(kf))
+                    
+                    A4 = ss*TasUBlib.arccosd(cos2t)
+                    theta = TasUBlib.calcTheta(ki, kf, A4)
+                    A3 = -om + np.sign(A4Sign)*ss*theta + A3Off
+                    return A3,np.sign(A4Sign)*A4
+
+
+                rluax._oldformat_coord = rluax.format_coord
+
+                def newFormat_coord(self,x,y,offset=None):
+                    if offset is None:
+                        offset = self.sample.theta
+                    a3,a4 = converterToA3A4(x,y,4.95,4.95)
+                    return self._oldformat_coord(x,y)+' A3: {:4.2f} Deg  A4: {:4.2f} Deg'.format(a3+offset,a4)
+
+
+                rluax.format_coord = lambda x,y: newFormat_coord(rluax,x,y,offset=self.sample[0].theta)
+
             axes = [qxEax,qyEax,rluax]
 
         else:
