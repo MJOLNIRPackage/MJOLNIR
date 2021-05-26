@@ -2732,7 +2732,7 @@ class DataSet(object):
             if instrumentAngles:
                 from MJOLNIR import TasUBlibDEG as TasUBlib
             
-                def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1):
+                def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=np.sign(self[0].A4)):
                     Qx = np.asarray(Qx)
                     Qy = np.asarray(Qy)
 
