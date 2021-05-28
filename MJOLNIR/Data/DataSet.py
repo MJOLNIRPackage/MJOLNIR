@@ -556,7 +556,7 @@ class DataSet(object):
         I,Mon,Norm,BinC = Data
         DataValues = [Qx,Qy,H,K,L,Energy,I,Mon,Norm,BinC]
         columns = ['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount']
-        dtypes = [np.float]*6+[np.int]*2+[np.float]+[np.int]
+        dtypes = [float]*6+[int]*2+[float]+[int]
 
         pdData = pd.DataFrame()
         if not len(I) == 0:
@@ -3447,8 +3447,8 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#
     
     normcounts = np.histogram(Energies,bins=bins,weights=np.ones_like(Energies).flatten())[0]
     intensity = np.histogram(Energies,bins=bins,weights=I[allInside].flatten())[0]
-    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=np.float))[0] # Need to change to int64 to avoid overflow
-    Normalization= np.histogram(Energies,bins=bins,weights=np.array(Norm[allInside].flatten(),dtype=np.float))[0]
+    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=float))[0] # Need to change to int64 to avoid overflow
+    Normalization= np.histogram(Energies,bins=bins,weights=np.array(Norm[allInside].flatten(),dtype=float))[0]
     
 
     return [intensity,MonitorCount,Normalization,normcounts],[bins]
@@ -3506,11 +3506,11 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False
         Normalization = np.histogram(q_inside,bins=qbins[-1],weights=Norm[e_inside].flatten())[0].astype(Norm.dtype)
         NormCount = np.histogram(q_inside,bins=qbins[-1],weights=np.ones_like(I[e_inside]).flatten())[0].astype(I.dtype)
 
-        _data = pd.DataFrame(np.array([intensity,monitorCount,Normalization,NormCount],dtype=np.int).T,
-                        columns=['Intensity','Monitor','Normalization','BinCount'],dtype=np.int)
+        _data = pd.DataFrame(np.array([intensity,monitorCount,Normalization,NormCount],dtype=int).T,
+                        columns=['Intensity','Monitor','Normalization','BinCount'],dtype=int)
         _data['q'] = 0.5*(bins[:-1]+bins[1:])
         _data['Energy'] = np.ones_like(_data['q'])*0.5*(binStart+binEnd)
-        _data['EnergyCut'] = np.ones_like(_data['q'],dtype=np.int)*energyBin
+        _data['EnergyCut'] = np.ones_like(_data['q'],dtype=int)*energyBin
         data.append(_data)
     data = pd.concat(data)
     data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
