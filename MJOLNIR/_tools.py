@@ -361,7 +361,10 @@ def fileListGenerator(numberString,folder,year=2018, format = None, instrument =
                 raise AttributeError('Sequence "{}" not understood - too many dashes.'.format(sp))
             startNumber = int(spSplits[0])
             endNumber = int(spSplits[1])
-            numbers = np.arange(startNumber,endNumber+1)    
+            if startNumber>endNumber:
+                numbers = np.arange(startNumber,endNumber-1,-1)    
+            else:
+                numbers = np.arange(startNumber,endNumber+1)    
         else:
             numbers = [int(sp)]
 
