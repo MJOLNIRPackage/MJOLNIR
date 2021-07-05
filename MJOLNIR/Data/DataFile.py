@@ -726,7 +726,7 @@ class DataFile(object):
 
         
     @_tools.KwargChecker()
-    def convert(self,binning=None):
+    def convert(self,binning=None,printFunction=None):
         if self.instrument == 'CAMEA':
             EPrDetector = 8 
             if binning is None:
@@ -738,6 +738,9 @@ class DataFile(object):
         else:
             raise AttributeError('Instrument type of data file not understood. {} was given.'.format(self.instrument))
         self.loadBinning(binning)
+
+        if printFunction is None:
+            printFunction = warnings.warn
         
         EfNormalization = self.instrumentCalibrationEf.copy()
         A4Normalization = self.instrumentCalibrationA4.copy()#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
@@ -839,9 +842,9 @@ class DataFile(object):
 
             if len(defectTubes)>0: # if any tubes are defect
                     if len(defectTubes)>1:
-                        warnings.warn('Detector tubes {} masked'.format(', '.join([str(x) for x in defectTubes])))
+                        printFunction('Detector tubes {} masked'.format(', '.join([str(x) for x in defectTubes])))
                     else:
-                        warnings.warn('Detector tube {} masked'.format(defectTubes[0]))
+                        printFunction('Detector tube {} masked'.format(defectTubes[0]))
 
                     newMask = np.repeat(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1))[np.newaxis],len(convFile.I),axis=0)
                     if np.all(convFile.mask.shape==newMask.shape):
