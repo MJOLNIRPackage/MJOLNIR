@@ -394,6 +394,27 @@ def test_DataSet_1Dcut():
     
     assert(np.all(np.array([np.all(np.isclose(b1[i],b2[i])) for i in range(len(b1))]).flatten()))
 
+    # Check that generating a plot from previous data is equivalent to directly plotting
+
+    
+    ax1,cut,bins = ds.plotCut1D(Q1,Q2,width=0.1,minPixel=0.04,Emin=2.0,Emax=2.5,ufit=False)
+
+    ax2,*_ = ds.plotCut1D(Q1,Q2,Emin=2.0,Emax=2.5,width=0.1,minPixel=0.04,data=[cut,bins])
+
+
+
+    for key in ['legend','title','xlabel','ylabel']:
+        val1 = ax1.properties()[key]
+        val2 = ax2.properties()[key]
+        assert(val2==val1)
+
+    # check plotted data in line plot 
+    # ax1, find index of line2D
+    id1 = np.arange(len(ax1.properties()['children']))[np.array([isinstance(child,mpl.lines.Line2D) for child in ax1.properties()['children']])][0]
+    id2 = np.arange(len(ax2.properties()['children']))[np.array([isinstance(child,mpl.lines.Line2D) for child in ax2.properties()['children']])][0]
+
+    np.testing.assert_array_equal(ax2.properties()['children'][id1]._xy,ax1.properties()['children'][id2]._xy)
+
 
 def test_DataSet_1Dcut_ufit():
     q1 =  np.array([1.23,-1.51])

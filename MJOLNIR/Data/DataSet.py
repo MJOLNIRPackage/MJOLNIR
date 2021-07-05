@@ -318,7 +318,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -331,6 +331,8 @@ class DataSet(object):
             - saveLocation (string): File path to save location of data file(s) (defaults to same as raw file).
 
             - saveFile (bool): If true, the file(s) will be saved as nxs-files. Otherwise they will only persis in memory.
+
+            - printFunction (function): Function called if a message is to be printed (default None, uses warning)
 
         Raises:
 
@@ -352,7 +354,7 @@ class DataSet(object):
         dataFiles = self.dataFiles
         convertedFiles = []
         for rawfile in dataFiles:
-            convFile = rawfile.convert(binning)
+            convFile = rawfile.convert(binning,printFunction=printFunction)
 
             if saveFile: # TODO:
                 if not saveLocation is None:
@@ -578,7 +580,7 @@ class DataSet(object):
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,Data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
         Args:
@@ -597,7 +599,7 @@ class DataSet(object):
                 
             Kwargs:
                 
-                - Data (pandas Dataframe): Data, if previously made cut is to be plotted (default None)
+                - data ([pandas Dataframe,bins]): Data, if previously made cut is to be plotted (default None)
                 
                 - rlu (bool): If True, coordinates given are interpreted as (h,k,l) otherwise as (qx,qy)
         
@@ -612,9 +614,10 @@ class DataSet(object):
                 - outputFunction (function): Function called on output string (default print)
         
         """
-        if Data is None:
+        if data is None:
             Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,rlu=rlu,plotCoverage=plotCoverage,constantBins=constantBins)
-
+        else:
+            Data,bins = data
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
@@ -836,7 +839,7 @@ class DataSet(object):
  
     
     @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
-    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,pixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,vmin=None,vmax=None,colorbar=False,outputFunction=print,dataFiles=None, **kwargs):
+    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,pixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,vmin=None,vmax=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, **kwargs):
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
@@ -854,6 +857,12 @@ class DataSet(object):
             - dE (float): Energy step of cut (default None, see note below)
             
             - EnergyBins (list): List of energy bin edges (default None, see note below)
+
+            - scaledEnergy (bool/float): If true or float, rescale energy axis by E*f (default False)
+
+            - scaleFunction (function): Function used to scale energy bins (default _tools.scale)
+            
+            - rescaleFunction (function): Function used to reverse energy bins (default _tools.rescale)
             
             - pixel (float): Step size in 1/A along cut (default 0.05)
             
@@ -969,6 +978,16 @@ class DataSet(object):
         
         if EnergyBins is None: # If no EnergyBins are given, EMin,EMax, and dE are known to be given
             EnergyBins = np.arange(EMin,EMax+dE,dE)
+
+        if scaledEnergy:
+            if scaleFunction == _tools.scale:
+                scale = lambda x:scaleFunction(x,float(scaledEnergy))
+                rescale = lambda x:rescaleFunction(x,float(scaledEnergy))
+            else:
+                scale = scaleFunction
+                rescale = rescaleFunction
+            EnergyBins = np.linspace(scale(EnergyBins[0]),scale(EnergyBins[-1]),len(EnergyBins))
+            propos[2] = scale(propos[2])
         
         # Perform 2D histogram
         normcounts = np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=np.ones((propos.shape[1])).flatten())[0]
@@ -980,6 +999,8 @@ class DataSet(object):
             warnings.simplefilter("ignore")
             Int = np.divide(intensity*normcounts,MonitorCount*Normalization)
         
+        if scaledEnergy:
+            EnergyBins = rescale(EnergyBins)
         # Prepare plotting positions (corners of bins)
         Qx,E = np.meshgrid(QBins,EnergyBins,indexing='ij')
         
@@ -2501,7 +2522,7 @@ class DataSet(object):
         return ufitData
 
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ax=None,ufit=False,**kwargs):
+    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,**kwargs):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
@@ -2530,6 +2551,8 @@ class DataSet(object):
 
             - ax (matplotlib.axes): If None, new axis is created in which to plot (default None)
 
+            - data ([data Pandas Dataframe, bins]): Data and bins from previously created cut (default None)
+
             - **kwargs: Pass on to the ax.errorbar method used to plot
             
         Returns:
@@ -2539,7 +2562,11 @@ class DataSet(object):
             - Bin list (1 array): Bin edge positions in energy
 
         """
-        Data,bins = self.cut1DE(E1=E1,E2=E2,q=q,rlu=rlu,width=width, minPixel =  minPixel,dataFiles = dataFiles,constantBins=constantBins)
+        if data is None:
+            Data,bins = self.cut1DE(E1=E1,E2=E2,q=q,rlu=rlu,width=width, minPixel =  minPixel,dataFiles = dataFiles,constantBins=constantBins)
+        else:
+            Data,bins = data
+            
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
