@@ -337,3 +337,9 @@ def test_DSpacing_Errors():
     except AttributeError:
         assert True
     
+
+def test_scaling():# Test standard scaling functions used for rescaling of energy bins
+
+    x = np.random.rand(20)*20-10 # points between -10 and 10
+    assert(np.all(np.isclose(x,rescale(scale(x)))))
+    assert(np.all(np.isclose(x,rescale(scale(x,f=0.1),f=0.1))))
