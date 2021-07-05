@@ -1147,3 +1147,10 @@ def DSpacing(TwoTheta,Energy=None,Wavelength=None,K=None,degrees = True):
     
     d = Wavelength/(2.0*np.sin(TwoTheta/2.0))
     return d
+
+
+# Scaling functions needed for adaptive binning of energies
+def rescale(x,f=0.5):
+    return f*x*x*np.sign(x)
+def scale(x,f=0.5):
+    return np.sqrt(np.abs(x)/f)*np.sign(x)
