@@ -2099,9 +2099,9 @@ class DataSet(object):
                 # plot intensity with provied kwargs
                 for [_ ,intensity],binEdge,binEnergy in zip(localDataList[['Int','energyCut']].groupby('energyCut'),binedges,binenergies):
                     if log==True:
-                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,np.log10(intensity.T+1e-20),**kwargs))
+                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,np.log10(intensity.T+1e-20),shading='auto',**kwargs))
                     else:
-                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,intensity.T,**kwargs))   
+                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,intensity.T,shading='auto',**kwargs))   
                 if plotSeperator == True:
                     plt.plot([offset[-1],offset[-1]],[np.min(EnergyBins[segID]),np.max(EnergyBins[segID])],'k',linewidth=seperatorWidth)
 
