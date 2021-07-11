@@ -723,6 +723,7 @@ class DataFile(object):
         if not hasattr(self,'magneticField'):
             self.magneticField = None
             
+        self.twotheta = self.A4
 
         
     @_tools.KwargChecker()
