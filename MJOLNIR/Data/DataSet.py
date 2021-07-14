@@ -30,7 +30,7 @@ from scipy.ndimage import gaussian_filter
 # from shapely.geometry import Point as PointS
 # from shapely.vectorized import contains
 import time
-from . import Viewer3DPyQtGraph
+from MJOLNIR.Data import Viewer3DPyQtGraph
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import warnings
 from ufit import Dataset
@@ -2526,7 +2526,7 @@ class DataSet(object):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
-        
+
         Args:
             
             - E1 (float): Start energy.
