@@ -8,10 +8,9 @@ Created on Wed Jan 23 08:09:38 2019
 #import pytest
 
 import inspect
-import pytest
+import pytest,types
 
-import sys 
-sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
+import os,sys,numpy as np
 
 def formatCode(text,indentChar = '   ', skipHeader=1):
     """Formater for raw code strings to doc string formation"""
@@ -60,30 +59,50 @@ class Tutorial(object):
         self.code = code
         self.dependentFiles = dependentFiles
         if not fileLocation is None:
-            if fileLocation[-1] != '/':
-                fileLocation += '/'
+            if fileLocation[-1] != os.path.sep:
+                fileLocation += os.path.sep
             self.fileLocation = fileLocation + self.name.replace(' ','_')+'.rst'
         else:
             self.fileLocation = fileLocation
         
     def test(self):
-        self.code()
+        if sys.platform == 'win32':
+            Tester = self.code
+
+            consts = Tester.__code__.co_consts
+            tempList = np.array(list(consts),dtype=object)
+            returnList = []
+            for item in tempList:
+                try:
+                    if '/home/' in item:
+                        if 'Software' in item:
+                            item = item.replace('/home/lass/Dropbox/PhD/Software',r'C:/Users/lass_j/Documents/Software').replace('/','\\')
+                        elif 'CAMEAData' in item:
+                            item = item.replace('/home/lass/Dropbox/PhD/CAMEAData',r'C:/Users/lass_j/Documents/CAMEA2018').replace('/','\\')
+                except:
+                    pass
+                returnList.append(item)
+
+            Tester.__code__ = Tester.__code__.replace(co_consts=tuple(returnList))
+            Tester()
+        else:
+            self.code()
         
     def generateTutorial(self):
 
         if not self.dependentFiles is None:
             
-            folder = '/'.join(self.fileLocation.split('/')[:-1])+'/'
+            folder = os.path.sep.join(self.fileLocation.split(os.path.sep)[:-1])+os.path.sep
             print("Copying files to {}".format(folder))
             from shutil import copyfile
             for f in list(self.dependentFiles):
-                copyfile(f, folder+f.split('/')[-1])
+                copyfile(f, folder+f.split(os.path.sep)[-1])
         
         # Test if code is running
         codeLocation = inspect.getsourcefile(self.code)
         codeFunctionName = 'test_'+self.name.replace(' ','_')
         #print('pytest '+'{}::{}'.format(codeLocation,codeFunctionName))
-        print('Running tests for "{}" in file "{}"'.format(codeFunctionName,codeLocation.split('/')[-1]))
+        print('Running tests for "{}" in file "{}"'.format(codeFunctionName,codeLocation.split(os.path.sep)[-1]))
         result = pytest.main(args=['-q','{}::{}'.format(codeLocation,codeFunctionName)])
         
         if result != 0:
@@ -91,7 +110,11 @@ class Tutorial(object):
             #raise RuntimeError('An error occurred while running pytest for "{}" defined in function "{}"'.format(codeFunctionName,codeLocation))    
         else:
             print('Test successful!')
-        fileLocation = self.fileLocation
+
+        if sys.platform == 'win32':
+            fileLocation = self.fileLocation.replace('/home/lass/Dropbox/PhD/Software',r'C:/Users/lass_j/Documents/Software').replace('/','\\')
+        else:
+            fileLocation = self.fileLocation
         
         introText = self.introText
         outroText = self.outroText
