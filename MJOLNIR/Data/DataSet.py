@@ -2553,7 +2553,7 @@ class DataSet(object):
 
             - data ([data Pandas Dataframe, bins]): Data and bins from previously created cut (default None)
 
-            - **kwargs: Pass on to the ax.errorbar method used to plot
+            - kwargs: Pass on to the ax.errorbar method used to plot
             
         Returns:
             
