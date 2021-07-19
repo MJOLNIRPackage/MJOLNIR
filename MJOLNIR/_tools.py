@@ -361,7 +361,10 @@ def fileListGenerator(numberString,folder,year=2018, format = None, instrument =
                 raise AttributeError('Sequence "{}" not understood - too many dashes.'.format(sp))
             startNumber = int(spSplits[0])
             endNumber = int(spSplits[1])
-            numbers = np.arange(startNumber,endNumber+1)    
+            if startNumber>endNumber:
+                numbers = np.arange(startNumber,endNumber-1,-1)    
+            else:
+                numbers = np.arange(startNumber,endNumber+1)    
         else:
             numbers = [int(sp)]
 
@@ -1144,3 +1147,10 @@ def DSpacing(TwoTheta,Energy=None,Wavelength=None,K=None,degrees = True):
     
     d = Wavelength/(2.0*np.sin(TwoTheta/2.0))
     return d
+
+
+# Scaling functions needed for adaptive binning of energies
+def rescale(x,f=0.5):
+    return f*x*x*np.sign(x)
+def scale(x,f=0.5):
+    return np.sqrt(np.abs(x)/f)*np.sign(x)

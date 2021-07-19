@@ -25,11 +25,12 @@ import pytest
 from scipy.ndimage import filters
 import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
+from scipy.ndimage import gaussian_filter
 # from shapely.geometry import Polygon as PolygonS
 # from shapely.geometry import Point as PointS
 # from shapely.vectorized import contains
 import time
-from . import Viewer3DPyQtGraph
+from MJOLNIR.Data import Viewer3DPyQtGraph
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import warnings
 from ufit import Dataset
@@ -317,7 +318,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -330,6 +331,8 @@ class DataSet(object):
             - saveLocation (string): File path to save location of data file(s) (defaults to same as raw file).
 
             - saveFile (bool): If true, the file(s) will be saved as nxs-files. Otherwise they will only persis in memory.
+
+            - printFunction (function): Function called if a message is to be printed (default None, uses warning)
 
         Raises:
 
@@ -351,7 +354,7 @@ class DataSet(object):
         dataFiles = self.dataFiles
         convertedFiles = []
         for rawfile in dataFiles:
-            convFile = rawfile.convert(binning)
+            convFile = rawfile.convert(binning,printFunction=printFunction)
 
             if saveFile: # TODO:
                 if not saveLocation is None:
@@ -556,7 +559,7 @@ class DataSet(object):
         I,Mon,Norm,BinC = Data
         DataValues = [Qx,Qy,H,K,L,Energy,I,Mon,Norm,BinC]
         columns = ['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount']
-        dtypes = [np.float]*6+[np.int]*2+[np.float]+[np.int]
+        dtypes = [float]*6+[int]*2+[float]+[int]
 
         pdData = pd.DataFrame()
         if not len(I) == 0:
@@ -577,7 +580,7 @@ class DataSet(object):
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,Data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
         Args:
@@ -596,7 +599,7 @@ class DataSet(object):
                 
             Kwargs:
                 
-                - Data (pandas Dataframe): Data, if previously made cut is to be plotted (default None)
+                - data ([pandas Dataframe,bins]): Data, if previously made cut is to be plotted (default None)
                 
                 - rlu (bool): If True, coordinates given are interpreted as (h,k,l) otherwise as (qx,qy)
         
@@ -611,9 +614,10 @@ class DataSet(object):
                 - outputFunction (function): Function called on output string (default print)
         
         """
-        if Data is None:
+        if data is None:
             Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,rlu=rlu,plotCoverage=plotCoverage,constantBins=constantBins)
-
+        else:
+            Data,bins = data
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
@@ -835,83 +839,299 @@ class DataSet(object):
  
     
     @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
-    def plotCutQE(self,q1,q2,width,minPixel,EnergyBins,rlu=True,ax=None,dataFiles=None,constantBins=False,**kwargs): 
-        """Plotting wrapper for the cutQE method. Generates a 2D intensity map with the data cut by cutQE. 
-    
-        .. warning::
-           Deprecated! Instead use the plotCutQELine tool with only two q points
-
-        .. note::
-            Positions shown in tool tip reflect the closes bin center and are thus limited to the area where data is present.
+    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,pixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,vmin=None,vmax=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, **kwargs):
+        """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
-
-            - q1 (3D or 2D array): Start position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
             
-            - q2 (3D or 2D array): End position of cut in format (h,k,l) or (qx,qy) depending on rlu flag.
+            - q1 (list): List of HKL or QxQy position of start of cut
             
-            - width (float): Full width of cut in q-plane.
+            - q2 (list): List of HKL or QxQy position of end of cut
             
-            - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
-
-            - EnergyBins (list): Bin edges between which the 1D constant energy cuts are performed.
-
         Kwargs:
-
-            - rlu (bool): If True, coordinates given are interpreted as (h,k,l) otherwise as (qx,qy)
             
-            - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
+            - EMin (float): Minimal energy of cut (default None, see note below)
+            
+            - EMax (float): Maximal energy of cut (default None, see note below)
+            
+            - dE (float): Energy step of cut (default None, see note below)
+            
+            - EnergyBins (list): List of energy bin edges (default None, see note below)
 
+            - scaledEnergy (bool/float): If true or float, rescale energy axis by E*f (default False)
+
+            - scaleFunction (function): Function used to scale energy bins (default _tools.scale)
+            
+            - rescaleFunction (function): Function used to reverse energy bins (default _tools.rescale)
+            
+            - pixel (float): Step size in 1/A along cut (default 0.05)
+            
+            - width (float): Integration width in 1/A perpendicular to cut (default 0.1)
+            
+            - rlu (bool): If True, plot as function of HKL otherwise QxQy (default True)
+            
+            - smoothing (float): Gaussian smoothing applied to data after cut (default None, see scipy.ndimage.gaussian_filter)
+            
+            - ax (plt axes): Axis into which data is plotted (default None, creates new, if False no plotting)
+            
+            - grid (float): If True, plot grid. If number provided plot grid with this z value (default False)
+            
+            - cmap (str): Color map used for plotting (default viridis)
+            
+            - vmin (float): Lower value of color scale (default None, minimum of intensity)
+            
+            - vmax (float): Upper value of color scale (default None, maxmimum of intensity)
+            
+            - colorbar (bool): If True, plot colorbar (default False)
+            
+            - outputFunction (function): Function called when onclick on axis is triggered (default print)
+            
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
-
-            - constantBins (bool): If True only bins of size minPixel is used (default False)
+            
+        Return:
+            
+            - ax (plt axes): Matplotlib axis in which data is plotted
+            
+            - Int (array): Normalized scattering intensity in 2D array of size (m-1,n-1)
+            
+            - Qx (array): HKL or QxQu array of bin edges of size (3 or 2,m,n)
+            
+            - E (array): Energy bin edges of size (m,n)
+            
+        Raises:
+            
+            - AttributeError
         
-            - kwargs: All other keywords will be passed on to the ax.errorbar method.
+        .. note::
+            When EnergyBins is provided, this overwrites EMin, EMax, and dE. Otherwise bins are created linearly between
+            EMin and EMax in steps of dE, np.arange(EMin,EMax+dE,dE) with length n.
         
-        Returns:
-            
-            - ax (matplotlib axis): Matplotlib axis into which the plot was put.
-            
-            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for 1D cut.
-            
-            - Bin list (n * 3 arrays): n instances of bin edge positions in plane of size (m+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
-            
-            - center position (n * 3D arrays): n instances of center positions for the bins.
-
-            - binDistance (n arrays): n instances of arrays holding the distance in q to q1.
         """
-        
-        
-        #if dataFiles is None:
-        #    if len(self.convertedFiles)==0:
-        #        raise AttributeError('No data file to be binned provided in either input or DataSet object.')
-        #    else:
-        #        I = self.I.extractData()
-        #        qx = self.qx.extractData()
-        #        qy = self.qy.extractData()
-        #        energy = self.energy.extractData()
-        #        Norm = self.Norm.extractData()
-        #        Monitor = self.Monitor.extractData()
-        #        samples = self.sample
-        #        maskIndices = self.maskIndices
+        # Rename q1 and q2 to Q1 and Q2 for backwards combability
+        Q1,Q2 = q1,q2
 
-        #else: 
-        #    DS = DataSet(convertedFiles = dataFiles)
-        #    I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
+        if EnergyBins is None: # No bins given, then all Emin,EMax and dE must be given
+            test = [X is None for X in [EMin,EMax,dE]]
+            if np.any(test):
+                raise AttributeError('When no EnergyBins are given EMin, EMax, and dE must be given. Recieved: EMin={},EMax={}, and dE={}'.format(EMin,EMax,dE))
+        else:
+            EMin,EMax = EnergyBins[[0,-1]]
+
+        if dataFiles is None:
+            if len(self.convertedFiles)==0:
+                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+            else:
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
+                samples = self.sample
+                maskIndices = self.maskIndices
+        
+        else: 
+            #dataFiles = isListOfDataFiles(dataFiles)
+            DS = DataSet(convertedFiles = dataFiles)
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
+        
+        
+        if rlu==True: # Recalculate H,K,L to qx
+            q1,q2 = self.convertToQxQy([Q1,Q2])
+            # Rotate all data files to fit with first data file
+            #thetaDifference = [s.theta-samples[0].theta for s in samples]
+            rotationMatrices = [np.dot(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
+            Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
+            qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
+            positions = np.array([qx,qy,energy])
+                
+        else:
+            positions = np.array([qx,qy,energy])
+        
+        # Calcualte cut direction in QxQy space
+        dirvec = (np.array(q2) - np.array(q1)).astype(float)
+        dirLength = np.linalg.norm(dirvec)
+        dirvec /= dirLength
+        
+        orthovec=np.array([dirvec[1],-dirvec[0]])
             
-        #if rlu==True: # Recalculate H,K,L to qx
-        #    q1,q2 = self.convertToQxQy([q1,q2])
-        #    # Rotate all data files to fit with first data file
-        #    thetaDifference = [s.theta-samples[0].theta for s in samples]
-        #    rotationMatrices = [np.dot(samples[0].RotMat.T,s.RotMat) for s in samples]#[_tools.Rot(theta,deg=False) for theta in thetaDifference]
-        #    Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
-        #    qx,qy = np.concatenate([np.einsum('ij,j...->i...',rot,q) for rot,q in zip(rotationMatrices,Q)],axis=1)
+        ProjectMatrix = np.array([dirvec,orthovec])
+        
+        orthobins = [-width/2.0,width/2.0]
+        
+        
+        positions2D = positions[:2]
+        propos = np.concatenate([np.dot(ProjectMatrix,positions2D-q1.reshape(2,1)),[positions[2]]])
+        
+        
+        insideEnergy = np.logical_and(positions[2]<=EMax,positions[2]>=EMin)
+        insideQ = np.logical_and(propos[0]>0.0,propos[0]<dirLength)
+        insideWidth = np.logical_and(propos[1]<orthobins[1],propos[1]>orthobins[0])
+        
+        inside = np.logical_and(np.logical_and(insideQ,insideWidth),insideEnergy)
+        
+        propos = propos[:,inside]
+        
+        # Create bins from 0 to length of cuts and add a pixel length to ensure
+        # that the full range is binned
+        QBins = np.arange(0,dirLength+pixel,pixel)
+        
+        if EnergyBins is None: # If no EnergyBins are given, EMin,EMax, and dE are known to be given
+            EnergyBins = np.arange(EMin,EMax+dE,dE)
+
+        if scaledEnergy:
+            if scaleFunction == _tools.scale:
+                scale = lambda x:scaleFunction(x,float(scaledEnergy))
+                rescale = lambda x:rescaleFunction(x,float(scaledEnergy))
+            else:
+                scale = scaleFunction
+                rescale = rescaleFunction
+            EnergyBins = np.linspace(scale(EnergyBins[0]),scale(EnergyBins[-1]),len(EnergyBins))
+            propos[2] = scale(propos[2])
+        
+        # Perform 2D histogram
+        normcounts = np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=np.ones((propos.shape[1])).flatten())[0]
+        intensity = np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=I[inside].flatten())[0]
+        MonitorCount=  np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=Monitor[inside].flatten())[0]
+        Normalization= np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=Norm[inside].flatten())[0]
+        
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            Int = np.divide(intensity*normcounts,MonitorCount*Normalization)
+        
+        if scaledEnergy:
+            EnergyBins = rescale(EnergyBins)
+        # Prepare plotting positions (corners of bins)
+        Qx,E = np.meshgrid(QBins,EnergyBins,indexing='ij')
+        
+        
+        if not smoothing is None:
+            Int = gaussian_filter(Int,smoothing)
+            
+        plot = True
+        if ax is None:
+            _,ax = plt.subplots()
+            overplot = False # New plot, so set up all formating
+        elif ax is False:
+            plot = False
+            overplot = False
+        else:
+            overplot = True
+        
+        # If a new axis has been made, apply all formating of axis and hover
+        if not overplot :
+            
+            def calculateIndex(x,y,QBins,EnergyBins):
+                return np.argmin(np.abs(0.5*(QBins[1:]+QBins[:-1])-x)),np.argmin(np.abs(0.5*(EnergyBins[1:]+EnergyBins[:-1])-y))
+            
+            if plot:
+                ax.calculateIndex = lambda x,y: calculateIndex(x,y,QBins,EnergyBins)
+            
+            if rlu:
+                def convertPlotAxisReal(x):
+                    QPos = np.asarray(x).reshape(1,-1)*dirvec.reshape(2,1)
+                    return self.sample[0].calculateQxQyToHKL(*QPos)+Q1.reshape(3,1)
+                
+                def format_func(value, tick_number):
+                    x = convertPlotAxisReal(value).flatten()
+                    return '\n'.join(['{:.4f}'.format(v) for v in x])
+                
+                def format_coord(x,y):
+                    x = convertPlotAxisReal(x).flatten()
+                    xformated = ', '.join(['{} = {}'.format(Y[0],Y[1]) for Y in zip(['h','k','l'],['{:.4f}'.format(X) for X in x])])
+                    return '{}, E={:.4f}'.format(xformated,y)
+                
+                if plot:
+                    ax.set_xlabel('HKL [RLU]')
+                
+            
+            else:
+                def convertPlotAxisReal(x):
+                    return np.asarray(x).reshape(1,-1)*dirvec.reshape(2,1)+q1.reshape(2,1)
+                
+                def format_func(value, tick_number):
+                    x = convertPlotAxisReal(value).flatten()
+                    return '\n'.join(['{:.4f}'.format(v) for v in x])
+                
+                def format_coord(x,y):
+                    x = convertPlotAxisReal(x).flatten()
+                    xformated = ', '.join(['{} = {}'.format(Y[0],Y[1]) for Y in zip(['qx','qy'],['{:.4f}'.format(X) for X in x])])
+                    return '{}, E={:.4f}'.format(xformated,y)
+                
+                if plot:
+                    ax.set_xlabel('QxQy [1/A]')
+            
+            if ax:
+                ax.set_ylabel('E [meV]')
+                ax.format_coord = lambda x,y: format_coord(x,y)
+                ax.xaxis.set_major_formatter(plt.FuncFormatter(format_func))
+        
+        if ax:
+            if not hasattr(ax,'pmesh'):
+                ax.pmesh = []
+            pmesh = ax.pcolor(Qx,E,Int,cmap=cmap,**kwargs)
+            ax.pmesh.append(pmesh)
+            
+            def set_clim(vmin,vmax,pmesh):
+                for pm in pmesh:
+                    pm.set_clim(vmin,vmax)
+
+            ax.set_clim = lambda vmin,vmax: set_clim(vmin,vmax,ax.pmesh)
+            
+            if vmin is None: vmin = np.nanmin(Int)
+            if vmax is None: vmax = np.nanmax(Int)
+            ax.set_clim(vmin,vmax)
+            
+            
+            if not grid is False:
+                if grid is True:
+                    ax.grid(True, zorder=0)
+                else:
+                    ax.grid(True, zorder=grid)
+                    
+                    
+                    
+            def onclick(event,ax,Int,normcounts,intensity,MonitorCount,Normalization,outputFunction):# pragma: no cover
+                if ax.in_axes(event):
+                    try: 
+                        c = ax.get_figure().canvas.cursor().shape()
+                    except:
+                        pass
+                    else:
+                        if c!=0:
+                            return
+                    x = event.xdata
+                    y = event.ydata
+                    printString = ax.format_coord(x,y)
+                    index = ax.calculateIndex(x,y)
+
+                    
+                    I = Int[index[0],index[1]]
+                    cts = intensity[index[0],index[1]]
+                    Mon = MonitorCount[index[0],index[1]]
+                    Norm = Normalization[index[0],index[1]]
+                    NC = normcounts[index[0],index[1]]
+                    
+                    
+                    printString+=', Int = {:f}, Cts = {:f}, Norm = {:.3f}, Mon = {:f}, NormCount = {:f}'.format(I,cts,Norm,Mon,NC)
+                    outputFunction(printString)
+                    
+            ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Int,normcounts,intensity,MonitorCount,Normalization,outputFunction=outputFunction))
+            if colorbar:
+                ax.colorbar = ax.get_figure().colorbar(ax.pmesh[0],pad=0.1)
+                ax.colorbar.set_label('Int [arb]')
 
 
-        #positions = np.array([qx,qy,energy])
-        #return plotCutQELine(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
-        #                minPixel=minPixel,EnergyBins=EnergyBins,rlu=rlu,ax = ax,constantBins=constantBins,**kwargs)
-        return self.plotCutQELine(QPoints=[q1,q2],width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=rlu,ax=ax,dataFiles=dataFiles,constantBins=constantBins,**kwargs)
+        if rlu:
+            QPos = np.asarray(Qx).reshape(1,*Qx.shape)*dirvec.reshape(2,1,1)
+            Qx = self.sample[0].calculateQxQyToHKL(*QPos)+Q1.reshape(3,1,1)
+        else:
+            Qx = np.asarray(Qx).reshape(1,*Qx.shape)*dirvec.reshape(2,1,1)+q1.reshape(2,1,1)
+
+        if plot:
+            return ax,Int,Qx,E
+        else:
+            return Int,Qx,E
     
     @_tools.KwargChecker()
     def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,constantBins=False):
@@ -1879,9 +2099,9 @@ class DataSet(object):
                 # plot intensity with provied kwargs
                 for [_ ,intensity],binEdge,binEnergy in zip(localDataList[['Int','energyCut']].groupby('energyCut'),binedges,binenergies):
                     if log==True:
-                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,np.log10(intensity.T+1e-20),**kwargs))
+                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,np.log10(intensity.T+1e-20),shading='auto',**kwargs))
                     else:
-                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,intensity.T,**kwargs))   
+                        pmeshs.append(ax.pcolormesh(binEdge+offset[-1],binEnergy,intensity.T,shading='auto',**kwargs))   
                 if plotSeperator == True:
                     plt.plot([offset[-1],offset[-1]],[np.min(EnergyBins[segID]),np.max(EnergyBins[segID])],'k',linewidth=seperatorWidth)
 
@@ -2302,11 +2522,11 @@ class DataSet(object):
         return ufitData
 
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ax=None,ufit=False,**kwargs):
+    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,**kwargs):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
-        
+
         Args:
             
             - E1 (float): Start energy.
@@ -2331,7 +2551,9 @@ class DataSet(object):
 
             - ax (matplotlib.axes): If None, new axis is created in which to plot (default None)
 
-            - **kwargs: Pass on to the ax.errorbar method used to plot
+            - data ([data Pandas Dataframe, bins]): Data and bins from previously created cut (default None)
+
+            - kwargs: Pass on to the ax.errorbar method used to plot
             
         Returns:
             
@@ -2340,7 +2562,11 @@ class DataSet(object):
             - Bin list (1 array): Bin edge positions in energy
 
         """
-        Data,bins = self.cut1DE(E1=E1,E2=E2,q=q,rlu=rlu,width=width, minPixel =  minPixel,dataFiles = dataFiles,constantBins=constantBins)
+        if data is None:
+            Data,bins = self.cut1DE(E1=E1,E2=E2,q=q,rlu=rlu,width=width, minPixel =  minPixel,dataFiles = dataFiles,constantBins=constantBins)
+        else:
+            Data,bins = data
+            
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
@@ -2681,7 +2907,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,outputFunction=print,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2706,7 +2932,9 @@ class DataSet(object):
 
             - adjustable (bool): If set true, 2 sliders will be present allowing to fine tune the c-axis (Default True)
 
-            - customSlicer (bool): If true, utilize the interactive viewer based on PyQtGraph
+            - customSlicer (bool): If true, utilize the interactive viewer based on PyQtGraph (Default False)
+
+            - instrumenAngles (bool): If true show also A3 and A4 calculations for HKL axis when hovering (Default False)
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -2727,7 +2955,52 @@ class DataSet(object):
             figure.delaxes(qxEax)
             qyEax = self.createQEAxes(axis=0,figure=figure)
             figure.delaxes(qyEax)
+            if instrumentAngles:
+                from MJOLNIR import TasUBlibDEG as TasUBlib
             
+                def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=np.sign(self[0].A4)):
+                    Qx = np.asarray(Qx)
+                    Qy = np.asarray(Qy)
+
+                    QC = np.array([Qx,Qy])
+                    q = np.linalg.norm(QC)  
+
+                    U1V = np.array([Qx.flatten(),Qy.flatten(),0.0],dtype=float)
+
+                    U1V/=np.linalg.norm(U1V)
+                    U2V = np.array([0.0,0.0,1.0],dtype=float)
+                    
+                    
+                    TV = TasUBlib.buildTVMatrix(U1V, U2V)
+                    R = np.linalg.inv(TV)
+                    
+                    ss = 1.0
+                    
+                    cossgl = np.sqrt(R[0,0]*R[0,0]+R[1,0]*R[1,0])
+                    om = TasUBlib.arctan2d(R[1,0]/cossgl, R[0,0]/cossgl)
+                
+                    ki = np.sqrt(Ei)*_tools.factorsqrtEK
+                    kf = np.sqrt(Ef)*_tools.factorsqrtEK
+                    
+                    cos2t =(ki**2 + kf**2 - q**2) / (2. * np.abs(ki) * np.abs(kf))
+                    
+                    A4 = ss*TasUBlib.arccosd(cos2t)
+                    theta = TasUBlib.calcTheta(ki, kf, A4)
+                    A3 = -om + np.sign(A4Sign)*ss*theta + A3Off
+                    return A3,np.sign(A4Sign)*A4
+
+
+                rluax._oldformat_coord = rluax.format_coord
+
+                def newFormat_coord(self,x,y,offset=None):
+                    if offset is None:
+                        offset = self.sample.theta
+                    a3,a4 = converterToA3A4(x,y,4.95,4.95)
+                    return self._oldformat_coord(x,y)+' A3: {:4.2f} Deg  A4: {:4.2f} Deg'.format(a3+offset,a4)
+
+
+                rluax.format_coord = lambda x,y: newFormat_coord(rluax,x,y,offset=self.sample[0].theta)
+
             axes = [qxEax,qyEax,rluax]
 
         else:
@@ -3091,8 +3364,8 @@ class DataSet(object):
 
         filesSelf = [d for d in self]
         filesOther = [d for d in other]
-        if not np.all([x.type == 'nxs' for x in np.concatenate([filesSelf,filesOther])]):
-            raise AttributeError('Data files have to be converted!')
+        #if not np.all([x.type == 'nxs' for x in np.concatenate([filesSelf,filesOther])]):
+        #    raise AttributeError('Data files have to be converted!')
         monoSelf = [x.MonitorPreset for x in self]
         monoOther = [x.MonitorPreset for x in other]
 
@@ -3100,13 +3373,14 @@ class DataSet(object):
         for s,o in zip(filesSelf,filesOther):
             sMono = s.MonitorPreset
             oMono = o.MonitorPreset
+            temp = MJOLNIR.Data.DataFile.DataFile(s)
             if sMono>oMono:
-                s.I = s.I-o.I*(oMono/sMono)
+                temp.I = s.I-o.I*(oMono/sMono)
             elif sMono<oMono:
-                s.I = s.I*(sMono/oMono)-o.I
+                temp.I = s.I*(sMono/oMono)-o.I
             else:
-                s.I = s.I-o.I
-            data.append(s)
+                temp.I = s.I-o.I
+            data.append(temp)
 
         newFile = DataSet(data)
         return newFile
@@ -3400,8 +3674,8 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#
     
     normcounts = np.histogram(Energies,bins=bins,weights=np.ones_like(Energies).flatten())[0]
     intensity = np.histogram(Energies,bins=bins,weights=I[allInside].flatten())[0]
-    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=np.float))[0] # Need to change to int64 to avoid overflow
-    Normalization= np.histogram(Energies,bins=bins,weights=np.array(Norm[allInside].flatten(),dtype=np.float))[0]
+    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=float))[0] # Need to change to int64 to avoid overflow
+    Normalization= np.histogram(Energies,bins=bins,weights=np.array(Norm[allInside].flatten(),dtype=float))[0]
     
 
     return [intensity,MonitorCount,Normalization,normcounts],[bins]
@@ -3459,11 +3733,11 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False
         Normalization = np.histogram(q_inside,bins=qbins[-1],weights=Norm[e_inside].flatten())[0].astype(Norm.dtype)
         NormCount = np.histogram(q_inside,bins=qbins[-1],weights=np.ones_like(I[e_inside]).flatten())[0].astype(I.dtype)
 
-        _data = pd.DataFrame(np.array([intensity,monitorCount,Normalization,NormCount],dtype=np.int).T,
-                        columns=['Intensity','Monitor','Normalization','BinCount'],dtype=np.int)
+        _data = pd.DataFrame(np.array([intensity,monitorCount,Normalization,NormCount],dtype=int).T,
+                        columns=['Intensity','Monitor','Normalization','BinCount'],dtype=int)
         _data['q'] = 0.5*(bins[:-1]+bins[1:])
         _data['Energy'] = np.ones_like(_data['q'])*0.5*(binStart+binEnd)
-        _data['EnergyCut'] = np.ones_like(_data['q'],dtype=np.int)*energyBin
+        _data['EnergyCut'] = np.ones_like(_data['q'],dtype=int)*energyBin
         data.append(_data)
     data = pd.concat(data)
     data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])

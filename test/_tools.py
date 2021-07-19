@@ -88,6 +88,8 @@ def test_binEdges():
 
     binsCut = binEdges(values-np.max(values)+1.0,0.01,startPoint=0.0,endPoint=1.01)
     assert(binsCut[-1]<=1.01)
+
+    
 def test_fileListGenerator():
     numberStr = '0,20-23-24,4000'
     year = 2018
@@ -107,6 +109,14 @@ def test_fileListGenerator():
         os.path.join('','home','camea','camea2018n000023.hdf'), os.path.join('','home','camea','camea2018n004000.hdf')])
     assert(np.all(filesCorrect == np.array(files)))
 
+    # opposite direction
+    numberStr = '23-20'
+    filesCorrect = np.array([
+        os.path.join('','home','camea','camea2018n000023.hdf'),os.path.join('','home','camea','camea2018n000022.hdf'), 
+        os.path.join('','home','camea','camea2018n000021.hdf'),os.path.join('','home','camea','camea2018n000020.hdf')])
+
+    files = fileListGenerator(numberStr,folder,year)
+    assert(np.all(filesCorrect == np.array(files)))
 
 def test_RoundBinning():
     
@@ -327,3 +337,9 @@ def test_DSpacing_Errors():
     except AttributeError:
         assert True
     
+
+def test_scaling():# Test standard scaling functions used for rescaling of energy bins
+
+    x = np.random.rand(20)*20-10 # points between -10 and 10
+    assert(np.all(np.isclose(x,rescale(scale(x)))))
+    assert(np.all(np.isclose(x,rescale(scale(x,f=0.1),f=0.1))))

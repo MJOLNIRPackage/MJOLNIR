@@ -239,7 +239,7 @@ class Viewer3D(object):
             fig.s_cmin.set_val(cmin)
             fig.s_cmax.set_val(cmax)
 
-        self.colorbar.update_bruteforce(self.im)
+        self.colorbar.update_normal(self.im)
 
     def set_clim(self,cmin,cmax=None):
         if cmax is None:

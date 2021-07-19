@@ -138,17 +138,33 @@ class DataFile(object):
                     self.analyzerSelection = int(np.array(f.get('entry/CAMEA/analyzer/analyzer_selection'))[0])
                     self.detectorSelection = int(np.array(f.get('entry/CAMEA/detector/detector_selection'))[0])
 
+                    try:
+                        self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(f)
+                    except:
+                        pass
+
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
                     self.Ei = np.array(instr.get('monochromator/energy'))
                     self.A3 = np.array(f.get('entry/sample/rotation_angle'))
                     self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
+                    if len(self.scanParameters) == 1 and self.scanParameters[0] == 'rotation_angle' and len(self.A4)>1 and np.all(np.isclose(self.A4,self.A4[0],atol=0.01)): 
+                        # If all A4 values are the same, out 2t has been written on instrument computer
+                        # and because of this, six saves 2t and not a4. Solution: set A4Offset to 0 and
+                        # use only the first value for A4 when an A3 (=rotation_angle) scan is made and 
+                        self.A4 = np.array([self.A4[0]])
+                        self.analyzerPolarAngle = self.A4
+                        self.A4Off = np.array([0.0])
+                        self.analyzerPolarAngleOffset = self.A4Off
+                    else:
+                        self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
+                        
+
                     try:
                         self.A3Off = self.sample.A3Off#np.array(f.get('entry/sample/rotation_angle_zero'))  
                     except:
                         self.A3Off = [0.0]
-                    self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
                     if self.type == 'hdf':
                         self.binning=np.max(self.possibleBinnings).astype(int) # Choose standard binning max
                     else:
@@ -179,11 +195,6 @@ class DataFile(object):
 
                     self.absoluteTime = np.array(f.get('entry/control/absolute_time'))
                     self.protonBeam = np.array(f.get('entry/proton_beam/data'))
-
-                    try:
-                        self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(f)
-                    except:
-                        pass
 
                     if self.type == 'hdf':
                         ###################
@@ -712,10 +723,11 @@ class DataFile(object):
         if not hasattr(self,'magneticField'):
             self.magneticField = None
             
+        self.twotheta = self.A4
 
         
     @_tools.KwargChecker()
-    def convert(self,binning=None):
+    def convert(self,binning=None,printFunction=None):
         if self.instrument == 'CAMEA':
             EPrDetector = 8 
             if binning is None:
@@ -727,6 +739,9 @@ class DataFile(object):
         else:
             raise AttributeError('Instrument type of data file not understood. {} was given.'.format(self.instrument))
         self.loadBinning(binning)
+
+        if printFunction is None:
+            printFunction = warnings.warn
         
         EfNormalization = self.instrumentCalibrationEf.copy()
         A4Normalization = self.instrumentCalibrationA4.copy()#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
@@ -828,9 +843,9 @@ class DataFile(object):
 
             if len(defectTubes)>0: # if any tubes are defect
                     if len(defectTubes)>1:
-                        warnings.warn('Detector tubes {} masked'.format(', '.join([str(x) for x in defectTubes])))
+                        printFunction('Detector tubes {} masked'.format(', '.join([str(x) for x in defectTubes])))
                     else:
-                        warnings.warn('Detector tube {} masked'.format(defectTubes[0]))
+                        printFunction('Detector tube {} masked'.format(defectTubes[0]))
 
                     newMask = np.repeat(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1))[np.newaxis],len(convFile.I),axis=0)
                     if np.all(convFile.mask.shape==newMask.shape):

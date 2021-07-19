@@ -1307,59 +1307,59 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=rotation_angle_zero,polar_angle_offset=polar_angle_offset)
         
 
+def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1):
+    Qx = np.asarray(Qx)
+    Qy = np.asarray(Qy)
+
+    QC = np.array([Qx,Qy])
+    q = np.linalg.norm(QC)
+
+    U1V = np.array([Qx.flatten(),Qy.flatten(),0.0],dtype=float)
+
+    U1V/=np.linalg.norm(U1V)
+    U2V = np.array([0.0,0.0,1.0],dtype=float)
+    
+    
+    TV = TasUBlib.buildTVMatrix(U1V, U2V)
+    R = np.linalg.inv(TV)
+    
+    ss = 1.0
+    
+    cossgl = np.sqrt(R[0,0]*R[0,0]+R[1,0]*R[1,0])
+    om = TasUBlib.arctan2d(R[1,0]/cossgl, R[0,0]/cossgl)
+    
+    ki = np.sqrt(Ei)*_tools.factorsqrtEK
+    kf = np.sqrt(Ef)*_tools.factorsqrtEK
+    
+    cos2t =(ki**2 + kf**2 - q**2) / (2. * np.abs(ki) * np.abs(kf))
+    
+    A4 = ss*TasUBlib.arccosd(cos2t)
+    theta = TasUBlib.calcTheta(ki, kf, A4)
+    A3 = -om + np.sign(A4Sign)*ss*theta + A3Off
+    return A3,np.sign(A4Sign)*A4
+
+def converterToQxQy(A3,A4,Ei,Ef):
+
+
+    ki = np.sqrt(Ei)*_tools.factorsqrtEK
+    kf = np.sqrt(Ef)*_tools.factorsqrtEK
+
+    r = [0,0,0,A3,A4,0.0,0.0,Ei,Ef]
+    QV = TasUBlib.calcTasUVectorFromAngles(r)
+    q = np.sqrt(ki**2 +kf**2-
+        2. *ki *kf * np.cos(np.deg2rad(A4)))
+
+    
+    Qx,Qy = (QV*q.reshape(-1,1))[:,:2].T
+    return (Qx,Qy)
+
 def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
     s = Sample.Sample(*Cell,projectionVector1=r1,projectionVector2=r2)
  
     class simpleDataSet():
         def __init__(self,sample):
             self.sample = [sample]
-
-   
-    def converterToQxQy(A3,A4,Ei,Ef):
-
-        ki = np.sqrt(Ei)*_tools.factorsqrtEK
-        kf = np.sqrt(Ef)*_tools.factorsqrtEK
-
-        r = [0,0,0,A3,A4,0.0,0.0,Ei,Ef]
-        QV = TasUBlib.calcTasUVectorFromAngles(r)
-        q = np.sqrt(ki**2 +kf**2-
-            2. *ki *kf * np.cos(np.deg2rad(A4)))
-
-        
-        Qx,Qy = (QV*q.reshape(-1,1))[:,:2].T
-        return (Qx,Qy)
-
-    def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1):
-        Qx = np.asarray(Qx)
-        Qy = np.asarray(Qy)
-
-        QC = np.array([Qx,Qy])
-        q = np.linalg.norm(QC)
-
-        U1V = np.array([Qx.flatten(),Qy.flatten(),0.0],dtype=float)
-
-        U1V/=np.linalg.norm(U1V)
-        U2V = np.array([0.0,0.0,1.0],dtype=float)
-        
-        
-        TV = TasUBlib.buildTVMatrix(U1V, U2V)
-        R = np.linalg.inv(TV)
-        
-        ss = 1.0
-        
-        cossgl = np.sqrt(R[0,0]*R[0,0]+R[1,0]*R[1,0])
-        om = TasUBlib.arctan2d(R[1,0]/cossgl, R[0,0]/cossgl)
      
-        ki = np.sqrt(Ei)*_tools.factorsqrtEK
-        kf = np.sqrt(Ef)*_tools.factorsqrtEK
-        
-        cos2t =(ki**2 + kf**2 - q**2) / (2. * np.abs(ki) * np.abs(kf))
-        
-        A4 = ss*TasUBlib.arccosd(cos2t)
-        theta = TasUBlib.calcTheta(ki, kf, A4)
-        A3 = -om + np.sign(A4Sign)*ss*theta + A3Off
-        return A3,np.sign(A4Sign)*A4
-        
 
     t = simpleDataSet(s)
     fig = plt.figure(figsize=(16,11))
