@@ -45,18 +45,29 @@ def makeWheel():
     os.system("python setup.py sdist")
 
 def getLatestBuild():
-    list_of_files = glob.glob('/path/to/folder/*') # * means all if need specific format then *.csv
+    list_of_files = glob.glob(os.path.join('dist','*')) # * means all if need specific format then *.csv
     return max(list_of_files, key=os.path.getctime)
 
 def getCurrentVersion():
     string  = getLatestBuild()
-    version = [int(x) for x in string.split('-')[1].split('.')[:-2]]
-    version[-1]+=1
+    versionList = string.split('-')[1].split('.')[:-2]
+    if 'post' in versionList[-1]:
+        versionList[-1] = versionList[-1].replace('post','')
+        adder = 'post'
+    else:
+        adder = ''
+    version = [int(x) for x in versionList]
+    
+    if adder != '':
+        version[-1]=adder+str(version[-1]+1)
+    else:
+        version[-1]+=1
     return '.'.join([str(x) for x in version])
 
 def uploadPyPi(server='testpypi'):
-    print('Uploading to '+server)
-    os.system('twine upload {} -r {}'.format(getLatestBuild,server))
+    build = getLatestBuild()
+    print('Uploading ' + str(build) + ' to '+server)
+    os.system('twine upload {} -r {}'.format(build,server))
 
 
 def upload():
