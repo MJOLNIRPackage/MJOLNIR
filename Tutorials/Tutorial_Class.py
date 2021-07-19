@@ -67,6 +67,8 @@ class Tutorial(object):
         
     def test(self):
         if sys.platform == 'win32':
+            if sys.version_info.major == 3 and sys.version_info.minor <8: # replace on code objects is not supported
+                raise NotImplementedError('Cannot run this on your current version of python. You have {} but python 3.8 or later is needed.'.format(sys.version))
             Tester = self.code
 
             consts = Tester.__code__.co_consts

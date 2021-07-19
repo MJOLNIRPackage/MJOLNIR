@@ -118,6 +118,7 @@ elif args.task.lower() == 'version':
     else:
         version = args.version
     print('Creating version '+version)
+    update(version=version)
     makeTutorials()
     addFiles = ['setup.py',
                 os.path.join('docs','conf.py'),
