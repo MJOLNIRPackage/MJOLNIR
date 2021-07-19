@@ -1340,6 +1340,7 @@ def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1):
 
 def converterToQxQy(A3,A4,Ei,Ef):
 
+
     ki = np.sqrt(Ei)*_tools.factorsqrtEK
     kf = np.sqrt(Ef)*_tools.factorsqrtEK
 
