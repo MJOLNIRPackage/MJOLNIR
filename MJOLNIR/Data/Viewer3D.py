@@ -6,7 +6,7 @@ sys.path.append('..')
 sys.path.append('../..')
 
 import warnings
-
+import copy
 import matplotlib.cm as cm
 import matplotlib.gridspec
 import matplotlib.pyplot as plt
@@ -47,11 +47,15 @@ class Viewer3D(object):
 
         """
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
-            warnings.simplefilter("ignore")
-            self.Data = np.divide(Data[0]*Data[3],Data[1]*Data[2])
-            warnings.simplefilter("once")
+            with warnings.catch_warnings() as w:
+                self.Data = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+            
             self.Counts,self.Monitor,self.Normalization,self.NormCounts = Data
             self.allData = True
+        elif len(Data) == 2: # From bin3D with no normalization or monitor
+            with warnings.catch_warnings() as w:
+                self.Data = np.divide(Data[0],Data[1])
+            self.allData = False
         else:
             self.Data = Data
             self.allData = False
@@ -81,6 +85,7 @@ class Viewer3D(object):
             self.ylabel = r'Qy [$A^{-1}$]'
             self.zlabel = r'E [meV]'
             self.rlu = False
+            self._axes = [self.ax]
         else:
             if isinstance(ax,plt.Axes): # Assuming only RLU - energy plot is provided
                 self.axRLU = ax
@@ -127,11 +132,12 @@ class Viewer3D(object):
             else:
                 raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
 
-            self.figure.set_size_inches(11,7)
-       
+        self.figure.set_size_inches(11,7)
+        for ax in self._axes:
+            ax.set_navigate(True)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
-        self.cmap = cm.jet
+        self.cmap = copy.copy(cm.get_cmap("jet")) # Update to accomedate deprication warning
         self.cmap.set_bad('white',1.)
         self.value = 0
         
@@ -152,6 +158,10 @@ class Viewer3D(object):
         
         self.Energy_slider.on_changed(lambda val: sliders_on_changed(self,val))
             
+        if self.rlu:
+            self.units = ['','',' meV']
+        else:
+            self.units = [' 1/AA',' 1/AA',' meV']
             
         textposition = [self.Energy_slider_ax.get_position().p1[0]+0.005,self.Energy_slider_ax.get_position().p0[1]+0.005]
         self.text = self.figure.text(textposition[0], textposition[1],s=self.stringValue())
@@ -309,13 +319,7 @@ class Viewer3D(object):
         return val
         
     def stringValue(self):
-        if self.axis==2:
-            unit = ' meV'
-        else:
-            if self.rlu:
-                unit = ''
-            else:
-                unit = ' 1/AA'
+        unit = self.units[self.axis]
         val = self.calculateValue()
         return str(np.round(val,2))+unit
     
@@ -459,8 +463,7 @@ def onkeypress(event,self): # pragma: no cover
             self.plot()
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
-    self.ax.set_navigate(True)
-    
+
 
 def reloadslider(self,axis): # pragma: no cover
     self.Energy_slider.set_val(0)
@@ -584,7 +587,7 @@ def addColorbarSliders(self,c_min,c_max,c_minval,c_maxval,ax_cmin,ax_cmax,log=Tr
             self.im.set_clim([_cmin,_cmax])
             self._caxis = (_cmin,_cmax)
         plt.draw()
-        self.colorbar.update_bruteforce(self.im)
+        self.colorbar.update_normal(self.im)
     
     
     fig.s_cmin.on_changed(lambda val,*arg,**kwargs: update(fig,val,*arg,bar='min',**kwargs))
