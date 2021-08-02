@@ -324,3 +324,19 @@ def test_updateCalibration():
 #        assert(len(EBins)==B*8+1)
         
 
+def test_shallowRead():
+    # read out all possible things
+    parameters = DataFile.possibleAttributes
+    files = [os.path.join(dataPath,'camea2018n000136.hdf'),
+             os.path.join(dataPath,'camea2018n000137.hdf')]
+    result = DataFile.shallowRead(files,parameters)
+
+    assert(len(result) == len(files))
+    assert(len(result[0]) == len(parameters))
+    assert(len(result[0]) == len(result[1]))
+
+    try:
+        DataFile.shallowRead(files,['NotExisting!'])
+        assert False
+    except AttributeError:
+        assert True

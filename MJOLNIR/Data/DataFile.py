@@ -1,4 +1,5 @@
 import sys, os
+from typing import DefaultDict
 sys.path.append('.')
 sys.path.append('..')
 sys.path.append('../..')
@@ -21,6 +22,7 @@ import MJOLNIR.Data.Sample
 import re
 import copy
 import platform
+from collections import defaultdict
 
 multiFLEXXDetectors = 31*5
 reFloat = r'-?\d*\.\d*'
@@ -33,6 +35,85 @@ def cosd(x):
 
 def sind(x):
     return np.sin(np.deg2rad(x))
+
+
+## Dictionary for holding hdf position of attributes. HDFTranslation['a3'] gives hdf position of 'a3'
+HDFTranslation = {'sample':'/entry/sample',
+                  'sampleName':'/entry/sample/name',
+                  'unitCell':'/entry/sample/unit_cell',
+                  'intensity':'entry/data/intensity',
+                  'qx':'entry/data/qx',
+                  'qy':'entry/data/qy',
+                  'QH':'entry/data/h',
+                  'QK':'entry/data/k',
+                  'QL':'entry/data/l',
+                  'energy':'entry/data/en',
+                  'normalization':'entry/data/normalization',
+                  'mode':'entry/control/mode',
+                  'preset':'entry/control/preset',
+                  'startTime':'entry/start_time',
+                  'hdfMonitor':'entry/control/data',
+                  'monitor':'entry/data/monitor',
+                  'time':'entry/control/time',
+                  'endTime':'entry/end_time',
+                  'experimentalIdentifier':'entry/experiment_identifier',
+                  'comment':'entry/comment',
+                  'proposal':'entry/proposal_id',
+                  'proposalTitle':'entry/proposal_title',
+                  'localContact':'entry/local_contact/name',
+                  'proposalUser':'entry/proposal_user/name',
+                  'proposalEmail':'entry/proposal_user/email',
+                  'user':'entry/user/name',
+                  'email':'entry/user/email',
+                  'address':'entry/user/address',
+                  'affiliation':'entry/user/affiliation',
+                  'A3':'entry/sample/rotation_angle',
+                  'temperature':'entry/sample/temperature',
+                  'magneticField':'entry/sample/magnetic_field',
+                  'electricField':'entry/sample/electric_field',
+                  'scanCommand':'entry/scancommand',
+                  'title':'entry/title',
+                  'absoluteTime':'entry/control/absolute_time',
+                  'protonBeam':'entry/proton_beam/data'
+}
+## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
+
+HDFTranslationFunctions = defaultdict(lambda : [])
+HDFTranslationFunctions['mode'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['sampleName'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['startTime'] = [['__getitem__',[0]]]
+HDFTranslationFunctions['endTime'] = [['__getitem__',[0]]]
+HDFTranslationFunctions['experimentalIdentifier'] = [['__getitem__',[0]]]
+HDFTranslationFunctions['comment'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['proposal'] = [['__getitem__',[0]]]
+HDFTranslationFunctions['proposalTitle'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['localContact'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['proposalUser'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['proposalEmail'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['user'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['email'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['address'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['affiliation'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['scanCommand'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctions['title'] = [['__getitem__',[0]],['decode',['utf8']]]
+
+
+
+HDFInstrumentTranslation = {
+                   'A4':'analyzer/polar_angle',
+                   'ei':'monochromator/energy',
+                   'A4Offset':'analyzer/polar_angle_offset',
+                   'counts':'detector/counts'
+}
+
+HDFInstrumentTranslationFunctions = DefaultDict(lambda : [])
+HDFInstrumentTranslationFunctions['counts'] = [['swapaxes',[1,2]]]
+HDFInstrumentTranslationFunctions['A4'] = [['reshape',[-1]]]
+
+extraAttributes = ['name','fileLocation','twoTheta']
+
+possibleAttributes = list(HDFTranslation.keys())+list(HDFInstrumentTranslation.keys())+extraAttributes
+possibleAttributes.sort(key=lambda v: v.lower())
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
@@ -60,49 +141,48 @@ class DataFile(object):
 
             if not self.type == 'MultiFLEXX':
                 with hdf.File(fileLocation,mode='r') as f:
-                    sample=f.get('/entry/sample')
-                    self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get('/entry/sample'))
+                    self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get(HDFTranslation['sample']))
                     instr = getInstrument(f)
                     if self.type == 'hdf':
-                        if np.shape(np.array(instr.get('detector/counts'))) == ():
+                        if np.shape(np.array(instr.get(HDFInstrumentTranslation['counts']))) == ():
                             raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
-                        self.I = np.array(instr.get('detector/counts')).swapaxes(1,2)
+                        self.I = np.array(instr.get(HDFInstrumentTranslation['counts'])).swapaxes(1,2)
                     else:
-                        self.I=np.array(f.get('entry/data/intensity'))
-                        self.counts = np.array(instr.get('detector/counts')).swapaxes(1,2)
-                        self.qx=np.array(f.get('entry/data/qx'))
-                        self.qy=np.array(f.get('entry/data/qy'))
-                        self.h=np.array(f.get('entry/data/h'))
-                        self.k=np.array(f.get('entry/data/k'))
-                        self.l=np.array(f.get('entry/data/l'))
-                        self.energy=np.array(f.get('entry/data/en'))
-                        self.Norm=np.array(f.get('entry/data/normalization'))
-                    self.MonitorMode = np.array(f.get('entry/control/mode'))[0].decode()
-                    self.MonitorPreset=np.array(f.get('entry/control/preset'))                
-                    self.startTime = np.array(f.get('entry/start_time'))[0]
+                        self.I=np.array(f.get(HDFTranslation['intensity']))
+                        self.counts = np.array(instr.get(HDFInstrumentTranslation['counts'])).swapaxes(1,2)
+                        self.qx=np.array(f.get(HDFTranslation['qx']))
+                        self.qy=np.array(f.get(HDFTranslation['qy']))
+                        self.h=np.array(f.get(HDFTranslation['QH']))
+                        self.k=np.array(f.get(HDFTranslation['QK']))
+                        self.l=np.array(f.get(HDFTranslation['QL']))
+                        self.energy=np.array(f.get(HDFTranslation['energy']))
+                        self.Norm=np.array(f.get(HDFTranslation['normalization']))
+                    self.MonitorMode = np.array(f.get(HDFTranslation['mode']))[0].decode()
+                    self.MonitorPreset=np.array(f.get(HDFTranslation['preset']))                
+                    self.startTime = np.array(f.get(HDFTranslation['startTime']))[0]
                     if self.type == 'hdf':
-                        self.Monitor = np.array(f.get('entry/control/data'))
+                        self.Monitor = np.array(f.get(HDFTranslation['hdfMonitor']))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
                             if self.Monitor.flatten()[0]!=self.MonitorPreset and self.startTime[:4]=='2018': # For all data in 2018 with wrong monitor saved
                                 self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
                     else:
-                        self.Monitor=np.array(f.get('entry/data/monitor'))
-                    self.Time = np.array(f.get('entry/control/time'))
-                    self.endTime = np.array(f.get('entry/end_time'))[0]
-                    self.experimentIdentifier = np.array(f.get('entry/experiment_identifier'))[0]
-                    self.comment = np.array(f.get('entry/comment'))[0]
-                    self.proposalId = np.array(f.get('entry/proposal_id'))[0]
-                    self.proposalTitle = np.array(f.get('entry/proposal_title'))[0]
+                        self.Monitor=np.array(f.get(HDFTranslation['monitor']))
+                    self.Time = np.array(f.get(HDFTranslation['time']))
+                    self.endTime = np.array(f.get(HDFTranslation['endTime']))[0]
+                    self.experimentIdentifier = np.array(f.get(HDFTranslation['experimentalIdentifier']))[0]
+                    self.comment = np.array(f.get(HDFTranslation['comment']))[0]
+                    self.proposalId = np.array(f.get(HDFTranslation['proposal']))[0]
+                    self.proposalTitle = np.array(f.get(HDFTranslation['proposalTitle']))[0]
 
-                    self.localContactName = np.array(f.get('entry/local_contact/name'))[0]
+                    self.localContactName = np.array(f.get(HDFTranslation['localContact']))[0]
                     
-                    self.proposalUserName = np.array(f.get('entry/proposal_user/name'))[0]
-                    self.proposalUserEmail = np.array(f.get('entry/proposal_user/email'))[0]
+                    self.proposalUserName = np.array(f.get(HDFTranslation['proposalUser']))[0]
+                    self.proposalUserEmail = np.array(f.get(HDFTranslation['proposalEmail']))[0]
 
-                    self.userName = np.array(f.get('entry/user/name'))[0]
-                    self.userEmail = np.array(f.get('entry/user/email'))[0]
-                    self.userAddress = np.array(f.get('entry/user/address'))[0]
-                    self.userAffiliation = np.array(f.get('entry/user/affiliation'))[0]
+                    self.userName = np.array(f.get(HDFTranslation['user']))[0]
+                    self.userEmail = np.array(f.get(HDFTranslation['email']))[0]
+                    self.userAddress = np.array(f.get(HDFTranslation['address']))[0]
+                    self.userAffiliation = np.array(f.get(HDFTranslation['affiliation']))[0]
 
                     # Monochromator
 
@@ -146,9 +226,9 @@ class DataFile(object):
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                    self.Ei = np.array(instr.get('monochromator/energy'))
-                    self.A3 = np.array(f.get('entry/sample/rotation_angle'))
-                    self.A4 = np.array(instr.get('analyzer/polar_angle')).reshape(-1)
+                    self.Ei = np.array(instr.get(HDFInstrumentTranslation['ei']))
+                    self.A3 = np.array(f.get(HDFTranslation['A3']))
+                    self.A4 = np.array(instr.get(HDFInstrumentTranslation['A4'])).reshape(-1)
                     if len(self.scanParameters) == 1 and self.scanParameters[0] == 'rotation_angle' and len(self.A4)>1 and np.all(np.isclose(self.A4,self.A4[0],atol=0.01)): 
                         # If all A4 values are the same, out 2t has been written on instrument computer
                         # and because of this, six saves 2t and not a4. Solution: set A4Offset to 0 and
@@ -158,7 +238,7 @@ class DataFile(object):
                         self.A4Off = np.array([0.0])
                         self.analyzerPolarAngleOffset = self.A4Off
                     else:
-                        self.A4Off = np.array(instr.get('analyzer/polar_angle_offset'))
+                        self.A4Off = np.array(instr.get(HDFInstrumentTranslation['A4Offset']))
                         
 
                     try:
@@ -184,17 +264,17 @@ class DataFile(object):
 
                     self.twotheta = self.A4-self.A4Off
 
-                    self.temperature = np.array(sample.get('temperature'))
-                    self.magneticField = np.array(sample.get('magnetic_field'))
-                    self.electricField = np.array(sample.get('electric_field'))
+                    self.temperature = np.array(f.get(HDFTranslation['temperature']))
+                    self.magneticField = np.array(f.get(HDFTranslation['magneticField']))
+                    self.electricField = np.array(f.get(HDFTranslation['electricField']))
                     self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(f)
-                    self.scanCommand = np.array(f.get('entry/scancommand'))[0]
+                    self.scanCommand = np.array(f.get(HDFTranslation['scanCommand']))[0]
                     if self.type == 'nxs':
                         self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
-                    self.title = np.array(f.get('entry/title'))[0]
+                    self.title = np.array(f.get(HDFTranslation['title']))[0]
 
-                    self.absoluteTime = np.array(f.get('entry/control/absolute_time'))
-                    self.protonBeam = np.array(f.get('entry/proton_beam/data'))
+                    self.absoluteTime = np.array(f.get(HDFTranslation['absoluteTime']))
+                    self.protonBeam = np.array(f.get(HDFTranslation['protonBeam']))
 
                     if self.type == 'hdf':
                         ###################
@@ -1743,7 +1823,69 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
 
 
 
+def shallowRead(files,parameters):
+    """Read a list of paramters from hdf file with minimal overhead
     
+    Args:
+        
+        - files (list): List of files
+        
+        - parameters (list): List of parameters
+        
+    Returns:
+        
+        - list: Parameters in list after file, with asked properties in a sublist for each file
+        
+    """
+    parameters = np.array(parameters)
+    values = []
+    possibleAttributes.sort(key=lambda v: v.lower())
+    possible = []
+    for p in parameters:
+        possible.append(p in possibleAttributes)
+    
+    if not np.all(possible):
+        if np.sum(np.logical_not(possible))>1:
+            raise AttributeError('Parameters {} not found'.format(parameters[np.logical_not(possible)]))
+        else:
+            raise AttributeError('Parameter {} not found'.format(parameters[np.logical_not(possible)]))
+    
+    for file in files:
+        vals = []
+        with hdf.File(file,mode='r') as f:
+            instr = getInstrument(f)
+            for p in parameters:
+                if p == 'name':
+                    v = os.path.basename(file)
+                    vals.append(v)
+                    continue
+                elif p == 'fileLocation':
+                    v = os.path.dirname(file)
+                    vals.append(v)
+                    continue
+                elif p == 'twoTheta':
+                    A4 = np.array(instr.get(HDFInstrumentTranslation['A4']))
+                    for func,args in HDFInstrumentTranslationFunctions['A4']:
+                        A4 = getattr(A4,func)(*args)
+                    A4Offset = np.array(instr.get(HDFInstrumentTranslation['A4Offset']))
+                    for func,args in HDFInstrumentTranslationFunctions['A4Offset']:
+                        A4Offset = getattr(A4Offset,func)(*args)
+                    vals.append(A4-A4Offset)
+                    continue
+                elif p in HDFTranslation:
+                    v = np.array(f.get(HDFTranslation[p]))
+                    TrF= HDFTranslationFunctions
+                elif p in HDFInstrumentTranslation:
+                    v = np.array(instr.get(HDFInstrumentTranslation[p]))
+                    TrF= HDFInstrumentTranslationFunctions
+                else:
+                    raise AttributeError('Parameter "{}" not found'.format(p))
+                for func,args in TrF[p]:
+                    v = getattr(v,func)(*args)
+                
+                vals.append(v)
+            values.append(vals)
+    return values    
 
 
 
