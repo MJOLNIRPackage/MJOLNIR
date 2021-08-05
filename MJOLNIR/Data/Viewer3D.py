@@ -20,7 +20,7 @@ pythonSubVersion = sys.version_info[1]
 
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
-    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, **kwargs):#pragma: no cover
+    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, cmap=None,**kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -46,6 +46,8 @@ class Viewer3D(object):
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
         """
+        if cmap is None:
+            cmap = 'viridis'
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
             with warnings.catch_warnings() as w:
                 self.Data = np.divide(Data[0]*Data[3],Data[1]*Data[2])
@@ -69,7 +71,7 @@ class Viewer3D(object):
         if not grid == False:
             gridArg = grid
             if isinstance(gridArg,(bool)):
-                self.grid = gridArg
+                self.grid = True
                 self.gridZOrder=-10
             elif isinstance(gridArg,(int,float)):
                 self.grid = True
@@ -137,8 +139,7 @@ class Viewer3D(object):
             ax.set_navigate(True)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
-        self.cmap = copy.copy(cm.get_cmap("jet")) # Update to accomedate deprication warning
-        self.cmap.set_bad('white',1.)
+        self.cmap = cmap # Update to accomedate deprication warning
         self.value = 0
         
 
@@ -169,11 +170,11 @@ class Viewer3D(object):
         #self.imcbaxes = self.figure.add_axes([0.0, 0.2, 0.2, 0.7])
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
         if self.shading=='flat':
-            self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+            self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap)
         elif self.shading=='gouraud':  # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap) # ,vmin=1e-6,vmax=6e-6
         else:
             raise AttributeError('Did not understand shading {}.'.format(self.shading))
         self._caxis = self.im.get_clim()
@@ -336,11 +337,11 @@ class Viewer3D(object):
         self.text.set_text(self.stringValue())
         self.im.remove()
         if self.shading=='flat':
-            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face')
+            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face',cmap=self.cmap)
         elif self.shading=='gouraud': # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face') # ,vmin=1e-6,vmax=6e-6
+            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face',cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
         self.im.set_clim(self.caxis)
         self.ax.set_position(self.figpos)
         xlim = self.ax.get_xlim()
@@ -407,9 +408,9 @@ def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
         outputFunction(printString)
         
 def onkeypress(event,self): # pragma: no cover
-    if event.key in ['+','up']:
+    if event.key in ['+','up','right']:
         increaseAxis(event,self)
-    elif event.key in ['-','down']:
+    elif event.key in ['-','down','left']:
         decreaseAxis(event,self)
     elif event.key in ['home']:
         self.Energy_slider.set_val(self.Energy_slider.valmin)
@@ -421,9 +422,9 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,0)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
-                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)
@@ -436,9 +437,9 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,1)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
-                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)
@@ -451,11 +452,11 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,2)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
                 XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
                 YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-                self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+                self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)

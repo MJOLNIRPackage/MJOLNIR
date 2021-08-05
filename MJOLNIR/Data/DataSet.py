@@ -2907,7 +2907,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -3030,7 +3030,7 @@ class DataSet(object):
             
 
         else:
-            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable,outputFunction=outputFunction)
+            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable,outputFunction=outputFunction,cmap=cmap)
         return Viewer
 
     def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):
