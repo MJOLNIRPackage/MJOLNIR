@@ -213,10 +213,11 @@ class Viewer3D(object):
         self.dQE = [dQx,dQy,ddE]
 
         self.resolution = [0.05,0.05]
-        self.Ef = np.arange(*self.EfLimits,self.dQE[2])
-        
-        self.CurratAxeBraggList = CurratAxeBraggList
+        if not self.EfLimits is None:
+            self.Ef = np.arange(*self.EfLimits,self.dQE[2])
             
+            self.CurratAxeBraggList = CurratAxeBraggList
+                
 
         self.Energy_slider.set_val(self.value)
 

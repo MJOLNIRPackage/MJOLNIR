@@ -1352,7 +1352,7 @@ class DataFile(object):
             bound = data[:,[7,8]]
             calibrations[pixel] = [EfTable,A4,bound]
 
-        self.instrumentCalibrations = np.array([c for c in calibrations.values()])
+        self.instrumentCalibrations = np.array([c for c in calibrations.values()],dtype=object)
         self.possibleBinnings = np.array(list(calibrations.keys()))
 
     def updateSampleParameters(self,unitCell):

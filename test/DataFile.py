@@ -1,5 +1,5 @@
 import numpy as np
-from MJOLNIR.Data.DataFile import DataFile,decodeStr,createEmptyDataFile,assertFile
+from MJOLNIR.Data.DataFile import DataFile,decodeStr,createEmptyDataFile,assertFile, possibleAttributes, shallowRead
 from MJOLNIR import _tools
 import MJOLNIR.Data.Sample
 import matplotlib as mpl
@@ -326,17 +326,17 @@ def test_updateCalibration():
 
 def test_shallowRead():
     # read out all possible things
-    parameters = DataFile.possibleAttributes
+    parameters = possibleAttributes
     files = [os.path.join(dataPath,'camea2018n000136.hdf'),
              os.path.join(dataPath,'camea2018n000137.hdf')]
-    result = DataFile.shallowRead(files,parameters)
+    result = shallowRead(files,parameters)
 
     assert(len(result) == len(files))
     assert(len(result[0]) == len(parameters))
     assert(len(result[0]) == len(result[1]))
 
     try:
-        DataFile.shallowRead(files,['NotExisting!'])
+        shallowRead(files,['NotExisting!'])
         assert False
     except AttributeError:
         assert True
