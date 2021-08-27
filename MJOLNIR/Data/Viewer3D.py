@@ -6,7 +6,7 @@ sys.path.append('..')
 sys.path.append('../..')
 
 import warnings
-
+import copy
 import matplotlib.cm as cm
 import matplotlib.gridspec
 import matplotlib.pyplot as plt
@@ -20,7 +20,8 @@ pythonSubVersion = sys.version_info[1]
 
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
-    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, **kwargs):#pragma: no cover
+    def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
+                 cmap=None, CurratAxeBraggList=None,Ei=None,EfLimits=None,**kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -43,15 +44,33 @@ class Viewer3D(object):
 
             - outputFunction (function): Function called on output string (default print)
 
+            - CurratAxeBraggList (list): List of Bragg peaks for which Currat-Axe spurions are to be calculated, [[H1,K1,L1],[H2,K2,L2],..] (default None)
+            
+            - Ei (list): List of incoming energies (default None)
+            
+            - EfLimits (float,float): Minimal and maximal Ef for current instrument (default None)
+
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
         """
+        if cmap is None:
+            cmap = 'viridis'
+        
+        self.Ei = Ei
+        self.EfLimits = EfLimits
+
+        self.plotCurratAxe = False # Set to false but will change to True when correct list is created
+        self._CurratAxeBraggList = None
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
-            warnings.simplefilter("ignore")
-            self.Data = np.divide(Data[0]*Data[3],Data[1]*Data[2])
-            warnings.simplefilter("once")
+            with warnings.catch_warnings() as w:
+                self.Data = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+            
             self.Counts,self.Monitor,self.Normalization,self.NormCounts = Data
             self.allData = True
+        elif len(Data) == 2: # From bin3D with no normalization or monitor
+            with warnings.catch_warnings() as w:
+                self.Data = np.divide(Data[0],Data[1])
+            self.allData = False
         else:
             self.Data = Data
             self.allData = False
@@ -65,7 +84,7 @@ class Viewer3D(object):
         if not grid == False:
             gridArg = grid
             if isinstance(gridArg,(bool)):
-                self.grid = gridArg
+                self.grid = True
                 self.gridZOrder=-10
             elif isinstance(gridArg,(int,float)):
                 self.grid = True
@@ -81,6 +100,7 @@ class Viewer3D(object):
             self.ylabel = r'Qy [$A^{-1}$]'
             self.zlabel = r'E [meV]'
             self.rlu = False
+            self._axes = [self.ax]
         else:
             if isinstance(ax,plt.Axes): # Assuming only RLU - energy plot is provided
                 self.axRLU = ax
@@ -127,12 +147,12 @@ class Viewer3D(object):
             else:
                 raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
 
-            self.figure.set_size_inches(11,7)
-       
+        self.figure.set_size_inches(11,7)
+        for ax in self._axes:
+            ax.set_navigate(True)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
-        self.cmap = cm.jet
-        self.cmap.set_bad('white',1.)
+        self.cmap = cmap # Update to accomedate deprication warning
         self.value = 0
         
 
@@ -147,11 +167,16 @@ class Viewer3D(object):
     
         self.Energy_slider_ax = self.figure.add_axes([0.15, 0.1, 0.65, 0.03])
         
+
         self.Energy_slider = Slider(self.Energy_slider_ax, label=self.label, valmin=self.lowerLim, valmax=self.upperLim, valinit=zeroPoint)
         self.Energy_slider.valtext.set_visible(False)
         
         self.Energy_slider.on_changed(lambda val: sliders_on_changed(self,val))
             
+        if self.rlu:
+            self.units = ['','',' meV']
+        else:
+            self.units = [' 1/AA',' 1/AA',' meV']
             
         textposition = [self.Energy_slider_ax.get_position().p1[0]+0.005,self.Energy_slider_ax.get_position().p0[1]+0.005]
         self.text = self.figure.text(textposition[0], textposition[1],s=self.stringValue())
@@ -159,11 +184,11 @@ class Viewer3D(object):
         #self.imcbaxes = self.figure.add_axes([0.0, 0.2, 0.2, 0.7])
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
         if self.shading=='flat':
-            self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+            self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap)
         elif self.shading=='gouraud':  # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap) # ,vmin=1e-6,vmax=6e-6
         else:
             raise AttributeError('Did not understand shading {}.'.format(self.shading))
         self._caxis = self.im.get_clim()
@@ -180,6 +205,20 @@ class Viewer3D(object):
         ylim = self.ax.get_ylim()
         #if self.axis == 2:
         #    self.ax.set_xlim(np.min([xlim[0],ylim[0]]),np.max([xlim[1],ylim[1]]))
+
+
+        dQx = np.diff(self.bins[0][:2,0,0])[0]
+        dQy = np.diff(self.bins[1][0,:2,0])[0]
+        ddE = np.diff(self.bins[2][0,0,:2])[0]
+        self.dQE = [dQx,dQy,ddE]
+
+        self.resolution = [0.05,0.05]
+        if not self.EfLimits is None:
+            self.Ef = np.arange(*self.EfLimits,self.dQE[2])
+            
+            self.CurratAxeBraggList = CurratAxeBraggList
+                
+
         self.Energy_slider.set_val(self.value)
 
         self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
@@ -309,13 +348,7 @@ class Viewer3D(object):
         return val
         
     def stringValue(self):
-        if self.axis==2:
-            unit = ' meV'
-        else:
-            if self.rlu:
-                unit = ''
-            else:
-                unit = ' 1/AA'
+        unit = self.units[self.axis]
         val = self.calculateValue()
         return str(np.round(val,2))+unit
     
@@ -327,16 +360,117 @@ class Viewer3D(object):
         """Change plotting plane to new along same axis"""
         self.Energy_slider.set_val(value)
         
+    @property
+    def CurratAxeBraggList(self):
+        return self._CurratAxeBraggList
+    
+    @CurratAxeBraggList.setter
+    def CurratAxeBraggList(self,peaks):
+        self._CurratAxeBraggList = peaks
+
+        if peaks is None:
+            self.plotCurratAxe = False
+        elif np.array(self.plotCurratAxe).size ==0:
+            self.plotCurratAxe = False
+        elif self.rlu :
+            self.monoPoints = self.axRLU.sample.CurratAxe(Ei=self.Ei,Ef=self.Ef,Bragg=self.CurratAxeBraggList,spurionType='Monochromator',HKL=False)[:,:,:,:2]
+            self.anaPoints = self.axRLU.sample.CurratAxe(Ei=self.Ei,Ef=self.Ef,Bragg=self.CurratAxeBraggList,spurionType='Analyser',HKL=False)[:,:,:,:2]
+
+            self.dE = np.repeat((self.Ei[:,np.newaxis]-self.Ef[np.newaxis])[np.newaxis],len(self.CurratAxeBraggList),axis=0)
+            dEIndex = np.round((self.dE-self.bins[2][0,0,0])/self.dQE[2])
+            dQxIndexMono = np.round((self.monoPoints[:,:,:,0]-self.bins[0][0,0,0])/self.dQE[0])
+            dQyIndexMono = np.round((self.monoPoints[:,:,:,1]-self.bins[1][0,0,0])/self.dQE[1])
+            dQxIndexAna = np.round((self.anaPoints[:,:,:,0]-self.bins[0][0,0,0])/self.dQE[0])
+            dQyIndexAna = np.round((self.anaPoints[:,:,:,1]-self.bins[1][0,0,0])/self.dQE[1])
+
+            self.CurratAxeIndicesMono = np.array([dQxIndexMono,dQyIndexMono,dEIndex])
+            self.CurratAxeIndicesAna = np.array([dQxIndexAna,dQyIndexAna,dEIndex])
+            try:
+                self.plot()
+                self.plotCurratAxe = True
+            except:
+                pass
+            
+        else:
+            self.plotCurratAxe = False
+
+    @CurratAxeBraggList.getter
+    def CurratAxeBraggList(self):
+        return self._CurratAxeBraggList
+
+    @property
+    def plotCurratAxe(self):
+        return self._plotCurratAxe
+    
+    @plotCurratAxe.setter
+    def plotCurratAxe(self,value):
+        self._plotCurratAxe = value
+        if hasattr(self,'_axes'):
+            for ax in self._axes:
+                for plotter in ['BraggScatterMono','BraggScatterAna']:
+                    if hasattr(ax,plotter):
+                        try:
+                            getattr(ax,plotter).remove()
+                        except ValueError:
+                            pass
+            if self._plotCurratAxe:
+                self.plot()
     
     def plot(self):
         self.text.set_text(self.stringValue())
         self.im.remove()
         if self.shading=='flat':
-            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face')
+            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face',cmap=self.cmap)
         elif self.shading=='gouraud': # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face') # ,vmin=1e-6,vmax=6e-6
+            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face',cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
+            
+        if not self.CurratAxeBraggList is None and not self.Ei is None and self.plotCurratAxe is True and self.rlu is True:
+            #if self.axis==2: ### QxQy plane
+            
+            #self.ax.scatter(*insidePointsMono,zorder=21,s=100, facecolors='none', edgecolors='r',label='Mono - test')
+            #self.ax.scatter(*insidePointsAna,zorder=21,s=100, facecolors='none', edgecolors='k',label='Ana - test')
+
+            insidePointsMono = self.monoPoints[np.isclose(self.CurratAxeIndicesMono[self.axis],self.Energy_slider.val)]
+            insidePointsAna = self.anaPoints[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
+            
+            if hasattr(self.ax,'BraggScatterMono'):
+                try: # If points have already been plotted, remove these
+                    self.ax.BraggScatterMono.remove()
+                except ValueError:
+                    pass
+            if hasattr(self.ax,'BraggScatterAna'):
+                try: # If points have already been plotted, remove these
+                    self.ax.BraggScatterAna.remove()
+                except ValueError:
+                    pass
+
+            if len(insidePointsMono) > 0: # Only if there are any points to plot, do it
+                insidePointsMono = insidePointsMono.T
+                
+                
+                if self.axis == 2:
+                    insidePointsAna = insidePointsAna.T
+                    self.ax.BraggScatterMono = self.axRLU.scatter(*insidePointsMono,zorder=20,s=100, facecolors='none', edgecolors='r',label='Currat-Axe Monochromator')
+                    self.ax.BraggScatterAna = self.axRLU.scatter(*insidePointsAna,zorder=20,s=100, facecolors='none', edgecolors='k',label='Currat-Axe Analyzer')
+                else:
+                    energy = self.dE[np.isclose(self.CurratAxeIndicesMono[self.axis],self.Energy_slider.val)]
+                    
+                    plotPointsMoni = np.array([insidePointsMono[1-self.axis],energy])
+                    
+                    self.ax.BraggScatterMono = self.ax.scatter(*plotPointsMoni,zorder=20,s=100, facecolors='none', edgecolors='r',label='Currat-Axe Monochromator')
+            
+            if len(insidePointsAna) > 0 and self.axis != 2: # Only if there are any points to plot, do it
+                insidePointsAna = insidePointsAna.T
+                if self.axis != 2:
+                    energy = self.dE[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
+
+                    plotPointsAna = np.array([insidePointsAna[1-self.axis],energy])
+                    
+                    self.ax.BraggScatterAna = self.ax.scatter(*plotPointsAna,zorder=20,s=100, facecolors='none', edgecolors='k',label='Currat-Axe Monochromator')
+
+
         self.im.set_clim(self.caxis)
         self.ax.set_position(self.figpos)
         xlim = self.ax.get_xlim()
@@ -403,9 +537,9 @@ def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
         outputFunction(printString)
         
 def onkeypress(event,self): # pragma: no cover
-    if event.key in ['+','up']:
+    if event.key in ['+','up','right']:
         increaseAxis(event,self)
-    elif event.key in ['-','down']:
+    elif event.key in ['-','down','left']:
         decreaseAxis(event,self)
     elif event.key in ['home']:
         self.Energy_slider.set_val(self.Energy_slider.valmin)
@@ -417,9 +551,9 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,0)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
-                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)
@@ -432,9 +566,9 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,1)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
-                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+                self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)
@@ -447,11 +581,11 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,2)
             #del self.im
             if self.shading=='flat':
-                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading)
+                self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
                 XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
                 YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-                self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading) # ,vmin=1e-6,vmax=6e-6
+                self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
             self.im.set_clim(self.caxis)
@@ -459,12 +593,11 @@ def onkeypress(event,self): # pragma: no cover
             self.plot()
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
-    self.ax.set_navigate(True)
-    
+
 
 def reloadslider(self,axis): # pragma: no cover
-    self.Energy_slider.set_val(0)
     self.setAxis(axis)
+    self.Energy_slider.set_val(0)
     self.Energy_slider.label.remove()
     self.Energy_slider.disconnect(self.Energy_slider.cids[0])
     self.Energy_slider.vline.set_visible(False)
@@ -505,10 +638,12 @@ def sliders_on_changed(self,val): # pragma: no cover
     
     if value<=self.Energy_slider.valmax and value>=self.Energy_slider.valmin:
         if value!=val:
+            self.value = val
             self.Energy_slider.set_val(value)
-            
+            self.plot()
         else:
             self.value = val
+            #self.Energy_slider.set_val(value)
             self.plot()
     if hasattr(self.ax,'_step'):
         self.ax._step=self.calculateValue()
@@ -584,7 +719,7 @@ def addColorbarSliders(self,c_min,c_max,c_minval,c_maxval,ax_cmin,ax_cmax,log=Tr
             self.im.set_clim([_cmin,_cmax])
             self._caxis = (_cmin,_cmax)
         plt.draw()
-        self.colorbar.update_bruteforce(self.im)
+        self.colorbar.update_normal(self.im)
     
     
     fig.s_cmin.on_changed(lambda val,*arg,**kwargs: update(fig,val,*arg,bar='min',**kwargs))

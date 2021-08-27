@@ -8,7 +8,9 @@ import matplotlib.pyplot as plt
 
 class Interactive3DViewer(QtGui.QWidget):
     def __init__(self,data,bins,sample,log=False,*args,**kwargs):
-        plt.close(plt.gca().get_figure()) # Mega hack to save the day (close annoying mpl figure....... not a fan). MDT = magic don't touch
+        annoyingFigure = plt.gca().get_figure()
+        if not len(annoyingFigure.get_children()) <= 1: # If less than or equal to 1 child figure is empty
+            plt.close(annoyingFigure) # Mega hack to save the day (close annoying mpl figure....... not a fan). MDT = magic don't touch
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         super().__init__(*args,**kwargs)

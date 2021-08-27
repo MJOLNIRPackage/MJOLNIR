@@ -2907,7 +2907,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2935,6 +2935,10 @@ class DataSet(object):
             - customSlicer (bool): If true, utilize the interactive viewer based on PyQtGraph (Default False)
 
             - instrumenAngles (bool): If true show also A3 and A4 calculations for HKL axis when hovering (Default False)
+
+            - outputFunction (func): Function to print the format_coord when the user clicks the axis (default print)
+
+            - CurratAxeBraggList (list): List of Bragg reflections used to calulcate Currat-Axe spurions (default None)
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -3030,7 +3034,11 @@ class DataSet(object):
             
 
         else:
-            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable,outputFunction=outputFunction)
+            Ei = np.array(list(set(self.Ei.extractData()))) # Use a set to remove duplicates
+            Ef = self[0].instrumentCalibrationEf[:,1]
+            Ef = Ef[np.logical_not(np.isclose(Ef,0.0))]
+            EfLimits = [f(Ef) for f in [np.min,np.max]]
+            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits)
         return Viewer
 
     def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):

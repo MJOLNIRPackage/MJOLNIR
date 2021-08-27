@@ -1353,13 +1353,42 @@ def converterToQxQy(A3,A4,Ei,Ef):
     Qx,Qy = (QV*q.reshape(-1,1))[:,:2].T
     return (Qx,Qy)
 
-def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
+def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,outputFunction=None):
+    """Generate an overview of coverage for points between A3Start and Stop for given A4, Ei, and cell
+
+    Args:
+
+        - A3Start (float): Start of A3Scan (deg)
+
+        - A3Stop (float): Stop of A3Scan (deg)
+
+        - A3Steps (int): Number of steps (deg)
+
+        - A4Positions (list): List of A4positions (deg)
+
+        - Ei (float): Incoming energy (meV)
+
+        - Cell (list): Cell parameters [a,b,c,a*,b*,c*,alpha,beta,gamma,alha*,beta*,gamma*]
+
+        - r1 (alingment point): First alignment point
+
+        - r2 (alingment point): Second alignment point
+
+    Kwargs:
+
+        - points (bool): If true, overplot actual points measured (default False)
+
+        - outputFunction (function): Function called when a point is clicked (default print)
+
+    """
     s = Sample.Sample(*Cell,projectionVector1=r1,projectionVector2=r2)
  
     class simpleDataSet():
         def __init__(self,sample):
             self.sample = [sample]
      
+    if outputFunction is None:
+        outputFunction = print
 
     t = simpleDataSet(s)
     fig = plt.figure(figsize=(16,11))
@@ -1422,5 +1451,25 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False):
     Ax[6].format_coord = lambda x,y: format_axes_func(Ax[6],x,y,Ei,np.nanmean(EfInstrument,axis=0)[6],-s.theta,A4Sign=A4Positions[0])
     Ax[7].format_coord = lambda x,y: format_axes_func(Ax[7],x,y,Ei,np.nanmean(EfInstrument,axis=0)[7],-s.theta,A4Sign=A4Positions[0])
     fig.tight_layout()
+
+    def onclick(event,axes,outputFunction):
+        for ax in axes:
+            if ax.in_axes(event):
+                try:
+                    C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
+                except:
+                    pass
+                else:
+                    if C != 0: # Cursor corresponds to arrow
+                        return
+        
+                x = event.xdata
+                y = event.ydata
+                if hasattr(ax,'__format_coord__'):
+                    outputFunction(ax.__format_coord__(x,y))
+                else:
+                    outputFunction(ax.format_coord(x,y))
+                break
+    fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event,Ax,outputFunction=outputFunction))
 
     return Ax
