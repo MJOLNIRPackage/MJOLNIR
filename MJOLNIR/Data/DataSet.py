@@ -3469,6 +3469,36 @@ class DataSet(object):
         else:
             self.absolutNormalized = normFactor
 
+    def autoSort(self,sortFunction = None):
+        """Sort datafiles according to lowest energy, then abs(2Theta), then scan direction in A3, then A3 start position.
+        
+        Kwargs:
+        
+            - sortFunction (function): Takes enumerate and data file (Default as described above)
+            
+        Sorting function takes in (index, dataFile) and should return a tuple of sorting values in descending priority.
+
+        Default sorting function is:
+        
+        >>> def sortFunction(IdxDf): 
+        >>>     df = IdxDf[1]
+        >>>     return (np.round(df.Ei[0],1), np.abs(np.round(df.twotheta[0],1)), -np.sign(np.diff(df.A3[:2]))[0], np.round(df.A3[0],2))
+            """
+        if sortFunction is None:
+            def sortFunction(IdxDf): 
+                df = IdxDf[1]
+                return (np.round(df.Ei[0],1), np.abs(np.round(df.twotheta[0],1)), -np.sign(np.diff(df.A3[:2]))[0], np.round(df.A3[0],2))
+        
+    
+        idx,dfs = np.array(sorted(enumerate(self.dataFiles), key=sortFunction)).T # sorted into [[idx0,idx1,...],[df0,df1,...]] after trasposing
+        self._dataFiles = list(dfs)
+        idx = idx.astype(np.int)
+
+        if not len(self.convertedFiles) == 0:
+            self._convertedFiles = list(np.array(self.convertedFiles)[idx])
+        
+        self._getData()
+
 
 
 
