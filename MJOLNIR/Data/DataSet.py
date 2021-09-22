@@ -26,6 +26,9 @@ from scipy.ndimage import filters
 import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
 from scipy.ndimage import gaussian_filter
+from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
+from MJOLNIR.Data.DraggableRectangle import States, extractCut1DProperties, on_key_press, on_press, clearBoxes
+
 # from shapely.geometry import Polygon as PolygonS
 # from shapely.geometry import Point as PointS
 # from shapely.vectorized import contains
@@ -1312,7 +1315,8 @@ class DataSet(object):
         raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQEAxes))
     
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
-    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,xScale=1.0,yScale=1.0,outputFunction=print,**kwargs):
+    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,
+    dataFiles=None,xScale=1.0,yScale=1.0,outputFunction=print,cut1DFunction=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
             
         Kwargs:
@@ -1348,6 +1352,8 @@ class DataSet(object):
             - zorder (int): If provided decides the z ordering of plot (default 10)
 
             - outputFunction (function): Function called on output string (default print)
+
+            - cut1DFunction (function): Function to be called when a 1D cut is created (default None)
             
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
@@ -1397,6 +1403,7 @@ class DataSet(object):
         else: 
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor,DS.sample,DS.maskIndices
+            self = DS
         if ax is None:
             if rlu is True:
                 ax = self.createRLUAxes()
@@ -1409,15 +1416,6 @@ class DataSet(object):
                 _3D = True
             else:
                 _3D = False
-        
-        #if len(qx.shape)==1 or len(qx.shape)==4:
-        #    
-        #    qx = np.concatenate(qx,axis=0)
-        #    qy = np.concatenate(qy,axis=0)
-        #    energy = np.concatenate(energy,axis=0)
-        #    I = np.concatenate(I,axis=0)
-        #    Norm = np.concatenate(Norm,axis=0)
-        #    Monitor = np.concatenate(Monitor,axis=0)
         
         
         if rlu == True: # Rotate positions with taslib.misalignment to line up with RLU
@@ -1578,6 +1576,36 @@ class DataSet(object):
             else:
                 ax.set_zlim(minEBins-0.1,maxEBins+0.1)
         else:
+            ## Setup interactive 1D Cutting only when 3D is false
+            ax.new=False
+            ax.line = None
+            ax.cidmove = None
+            ax.drawState = States.INACTIVE
+            ax.ds = self
+            ax.rects = []
+            ax.drs = []
+            ax.EMin = EMin
+            ax.EMax = EMax
+            def cut1DFunctionDefault(self,dr):
+                global cut1DHolder
+                parameters = extractCut1DProperties(dr.rect,self.sample)
+                
+                EMin = self.EMin
+                EMax = self.EMax
+                cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
+
+            if cut1DFunction is None:
+                ax.cut1DFunction = cut1DFunctionDefault
+            else:
+                ax.cut1DFunction = cut1DFunction
+
+            ax.get_figure().canvas.mpl_connect(
+                'key_press_event', lambda event:on_key_press(ax,event))
+
+            ax.get_figure().canvas.mpl_connect(
+                        'button_press_event', lambda event:on_press(ax,event))
+            
+
             def onclick(ax, event,Qx,Qy,data,outputFunction): # pragma: no cover
                 if event.xdata is not None and ax.in_axes(event):
                     try:
@@ -1585,7 +1613,7 @@ class DataSet(object):
                     except:
                         pass
                     else:
-                        if C != 0:
+                        if C != 0 or ax.drawState != States.INACTIVE:
                             return
                 if not ax.in_axes(event):
                     return
@@ -2907,7 +2935,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,cut1DFunction=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2939,6 +2967,8 @@ class DataSet(object):
             - outputFunction (func): Function to print the format_coord when the user clicks the axis (default print)
 
             - CurratAxeBraggList (list): List of Bragg reflections used to calulcate Currat-Axe spurions (default None)
+
+            - cut1DFunction (function): Function to be called when generating interactive 1DCuts (default None)
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -3038,7 +3068,10 @@ class DataSet(object):
             Ef = self[0].instrumentCalibrationEf[:,1]
             Ef = Ef[np.logical_not(np.isclose(Ef,0.0))]
             EfLimits = [f(Ef) for f in [np.min,np.max]]
-            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits)
+            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,
+            adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,
+            CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits,
+            dataset=self,cut1DFunction=cut1DFunction)
         return Viewer
 
     def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):
