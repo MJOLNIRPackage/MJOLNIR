@@ -26,8 +26,10 @@ from scipy.ndimage import filters
 import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
 from scipy.ndimage import gaussian_filter
-from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
-from MJOLNIR.Data.DraggableRectangle import States, extractCut1DProperties, on_key_press, on_press, clearBoxes
+from MJOLNIR._interactiveSettings import States, cut1DHolder
+from MJOLNIR.Data.DraggableShapes import prepareInteractiveCutting, DraggableCircle, DraggableRectangle, \
+    extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle
+#from MJOLNIR.Data.DraggableShapes import extractCut1DProperties, clearBoxes
 
 # from shapely.geometry import Polygon as PolygonS
 # from shapely.geometry import Point as PointS
@@ -1316,7 +1318,7 @@ class DataSet(object):
     
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
     def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,
-    dataFiles=None,xScale=1.0,yScale=1.0,outputFunction=print,cut1DFunction=None,**kwargs):
+    dataFiles=None,xScale=1.0,yScale=1.0,outputFunction=print,cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
             
         Kwargs:
@@ -1353,7 +1355,9 @@ class DataSet(object):
 
             - outputFunction (function): Function called on output string (default print)
 
-            - cut1DFunction (function): Function to be called when a 1D cut is created (default None)
+            - cut1DFunctionRectangle (function): Function to be called when a 1D rectangular cut is created (default None)
+
+            - cut1DFunctionCircle (function): Function to be called when a circuar cut is created (default None)
             
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
@@ -1586,24 +1590,43 @@ class DataSet(object):
             ax.drs = []
             ax.EMin = EMin
             ax.EMax = EMax
-            def cut1DFunctionDefault(self,dr):
+
+            # The two possible draggables:
+            Draggables = [DraggableCircle,DraggableRectangle]
+
+            ## Define the cut functions to be called
+            def cut1DFunctionRectangleDefault(self,dr):
                 global cut1DHolder
-                parameters = extractCut1DProperties(dr.rect,self.sample)
+                parameters = extractCut1DPropertiesRectangle(dr.rect,self.sample)
                 
                 EMin = self.EMin
                 EMax = self.EMax
                 cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
 
-            if cut1DFunction is None:
-                ax.cut1DFunction = cut1DFunctionDefault
+
+            def cut1DFunctionCircleDefault(self,dr):
+                global cut1DHolder
+                parameters = extractCut1DPropertiesCircle(dr.circ,self.sample)
+                parameters['E1'] = self.ds.energy.min()
+                parameters['E2'] = self.ds.energy.max()
+                parameters['minPixel'] = self.EMax-self.EMin
+                
+                cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
+
+            if cut1DFunctionRectangle is None:
+                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangleDefault(ax,dr)
             else:
-                ax.cut1DFunction = cut1DFunction
+                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(ax,dr)
+            
+            if cut1DFunctionCircle is None:
+                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircleDefault(ax,dr)
+            else:
+                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(ax,dr)
+            
 
-            ax.get_figure().canvas.mpl_connect(
-                'key_press_event', lambda event:on_key_press(ax,event))
+            DraggableFunctions = [ax.cut1DFunctionCircle,ax.cut1DFunctionRectangle]
 
-            ax.get_figure().canvas.mpl_connect(
-                        'button_press_event', lambda event:on_press(ax,event))
+            prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
             
 
             def onclick(ax, event,Qx,Qy,data,outputFunction): # pragma: no cover
@@ -1642,8 +1665,8 @@ class DataSet(object):
                 else:
                     printString+='I = {:.4E}'.format(Intensity)
                     printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-
-                outputFunction(printString)
+                if not ax.suppressPrint:
+                    outputFunction(printString)
             ax.cid = ax.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(ax,x,Qx,Qy,[intensity,monitorCount,Normalization,NormCount],outputFunction=outputFunction))
             
         if len(Qx)!=0:
@@ -2935,7 +2958,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,cut1DFunction=None,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2968,7 +2991,9 @@ class DataSet(object):
 
             - CurratAxeBraggList (list): List of Bragg reflections used to calulcate Currat-Axe spurions (default None)
 
-            - cut1DFunction (function): Function to be called when generating interactive 1DCuts (default None)
+            - cut1DFunctionRectangle (function): Function to be called when generating interactive rectangle cut (default None)
+
+            - cut1DFunctionCircle (function): Function to be called when generating interactive circle cut (default None)
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -3071,7 +3096,8 @@ class DataSet(object):
             Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,
             adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,
             CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits,
-            dataset=self,cut1DFunction=cut1DFunction)
+            dataset=self,cut1DFunctionRectangle=cut1DFunctionRectangle, 
+            cut1DFunctionCircle=cut1DFunctionCircle)
         return Viewer
 
     def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):
