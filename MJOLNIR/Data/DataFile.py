@@ -74,7 +74,9 @@ HDFTranslation = {'sample':'/entry/sample',
                   'scanCommand':'entry/scancommand',
                   'title':'entry/title',
                   'absoluteTime':'entry/control/absolute_time',
-                  'protonBeam':'entry/proton_beam/data'
+                  'protonBeam':'entry/proton_beam/data',
+                  'singleDetector1':'entry/CAMEA/segment_1/data',
+                  'singleDetector8':'entry/CAMEA/segment_8/data'
 }
 ## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
 
@@ -183,6 +185,8 @@ class DataFile(object):
                     self.userEmail = np.array(f.get(HDFTranslation['email']))[0]
                     self.userAddress = np.array(f.get(HDFTranslation['address']))[0]
                     self.userAffiliation = np.array(f.get(HDFTranslation['affiliation']))[0]
+                    self.singleDetector1 = np.array(f.get(HDFTranslation['singleDetector1']))
+                    self.singleDetector8 = np.array(f.get(HDFTranslation['singleDetector8']))
 
                     # Monochromator
 
