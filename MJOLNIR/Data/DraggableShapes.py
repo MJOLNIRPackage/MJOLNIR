@@ -163,11 +163,11 @@ class DraggableRectangle(DraggableShape):
     def shapeSelected(figure,axes):
         '''Called when figure has chosen this shape but not yet drawn it'''
         if hasattr(axes,'format_coord_old'):
-            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rectangle]'
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rect]'
             
         else:
             axes.format_coord_old = axes.format_coord
-            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rectangle]'
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rect]'
 
     def inactive(figure,axes,event):
         # TODO: check for 3DViewer#print('here')
@@ -347,6 +347,69 @@ def extractCut1DPropertiesRectangle(rect,sample=None, rounding = 4):
               'ufit':ufit}
     return params
 
+
+def extractCut1DPropertiesRectanglePerpendicular(rect,sample=None, rounding = 4):
+    # Extract parameters from a rectangle
+    xy = rect.get_xy()
+    width = rect.get_width()
+    height = rect.get_height()
+    center = np.asarray(xy)+0.5*np.array([width,height])
+    
+    rlu = not sample is None # RLU only when a sample is provided
+    constantBins = False
+    ufit = False
+    params = {'center':np.array([np.round(x,rounding) for x in center]),
+              'Emin':np.round(xy[1],rounding),
+              'Emax':np.round(xy[1]+height,rounding),
+              'width':np.round(width,rounding),
+              'rlu':rlu,
+              'constantBins':constantBins,
+              'ufit':ufit}
+    return params
+
+def extractCut1DPropertiesRectangleHorizontal(rect,sample=None, rounding = 4):
+    # Extract parameters from a rectangle
+    xy = rect.get_xy()
+    width = rect.get_width()
+    height = rect.get_height()
+    q1 = np.asarray(xy)+np.array([0.0,0.5*height])
+    q2 = np.asarray(xy)+np.array([width,height])
+    
+    
+    rlu = not sample is None # RLU only when a sample is provided
+    constantBins = False
+    ufit = False
+    params = {'q1':np.array([np.round(x,rounding) for x in q1]),
+              'q2':np.array([np.round(x,rounding) for x in q2]),
+              'Emin':np.round(xy[1],rounding),
+              'Emax':np.round(xy[1]+height,rounding),
+              'rlu':rlu,
+              'constantBins':constantBins,
+              'ufit':ufit}
+    return params
+
+def extractCut1DPropertiesRectangleVertical(rect,sample=None, rounding = 4):
+    # Extract parameters from a rectangle
+    xy = rect.get_xy()
+    width = rect.get_width()
+    height = rect.get_height()
+    q1 = np.asarray(xy)+np.array([0.5*width,0.0])
+    
+    Energies = [xy[1],xy[1]+height]
+    EMin,EMax = np.min(Energies),np.max(Energies)
+    
+    rlu = not sample is None # RLU only when a sample is provided
+    constantBins = False
+    ufit = False
+    params = {'q':np.round(q1[0],rounding),
+              
+              'E1':np.round(EMin,rounding),
+              'E2':np.round(EMax,rounding),
+              'rlu':rlu,
+              'constantBins':constantBins,
+              'ufit':ufit}
+    return params
+
 def extractCut1DPropertiesCircle(circ,sample=None, rounding = 4):
     # Extract parameters from a rectangle
     center = circ.center
@@ -514,10 +577,10 @@ class DraggableCircle(DraggableShape):
     def shapeSelected(figure,axes):
         '''Called when figure has chosen this shape but not yet drawn it'''
         if hasattr(axes,'format_coord_old'):
-            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) +' [circle]'
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) +' [circle ⊥]'
         else:
             axes.format_coord_old = axes.format_coord
-            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [circle]'
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [circle ⊥]'
         
     
     def inactive(figure,axes,event):
@@ -567,6 +630,714 @@ class DraggableCircle(DraggableShape):
         
         axes.add_patch(circ)
         dr = DraggableCircle(circ,figure,Cut1DFunction,figure)
+        figure.new = False
+        figure.newShape.remove()
+        figure.newShape = None
+
+        dr.selected = True
+        dr.connect()
+        figure.shapes.append(dr)
+        
+        return None
+
+class DraggableRectanglePerpendicular(DraggableShape):
+    ### To be used in a QE plane only allowing a perpendicular cut, i.e. Q_perp (integrating over E and Q_para)
+    def __init__(self, rect,plottingObject,Cut1DFunction,figure):
+        self.rect = rect
+        self.press = None
+        self.background = None
+        self._selected = False
+        self.plottingObject = plottingObject
+        self.Cut1DFunction = Cut1DFunction
+        self.figure = figure
+        
+    def remove(self):
+        fig = self.rect.figure
+        self.disconnect()
+        self.rect.remove()
+        if self.selected:
+            self.figure.selectedDr = None
+        fig.canvas.draw()        
+
+    @property
+    def selected(self):
+        return self._selected
+    
+    @selected.getter
+    def selected(self):
+        return self._selected
+    
+    @selected.setter
+    def selected(self,value):
+        if self._selected == bool(value):
+            return
+        if value:
+            if not self.figure.selectedDr is None:
+                self.figure.selectedDr.selected = False
+            self.figure.selectedDr = self
+            color = selectedColor
+        else:
+            color = deselectedColor
+            
+        self.rect.set_edgecolor(color)
+
+        self.rect.figure.canvas.draw()
+        self._selected = bool(value)
+
+    def connect(self):
+        'connect to all the events we need'
+        self.cidpress = self.rect.figure.canvas.mpl_connect(
+            'button_press_event', self.on_press)
+        self.cidrelease = self.rect.figure.canvas.mpl_connect(
+            'button_release_event', self.on_release)
+        self.cidmotion = self.rect.figure.canvas.mpl_connect(
+            'motion_notify_event', self.on_motion)
+
+
+    def on_press(self, event):
+        'on button press we will see if the mouse is over us and store some data'
+        if event.inaxes != self.rect.axes: return
+        if self.figure.lock is not None: return
+        contains, attrd = self.rect.contains(event)
+        if not contains: return
+        
+        figure = self.plottingObject
+        if event.button == MouseButton.RIGHT and figure.drawState == States.INACTIVE:
+            self.remove()
+            return 
+
+        self.selected = True
+        x0, y0 = self.rect.xy
+        self.press = x0, y0, event.xdata, event.ydata
+        self.figure.lock = self
+
+        # draw everything but the selected rectangle and store the pixel buffer
+        canvas = self.rect.figure.canvas
+        axes = self.rect.axes
+        self.rect.set_animated(True)
+        canvas.draw()
+        self.background = canvas.copy_from_bbox(self.rect.axes.bbox)
+
+        # now redraw just the rectangle
+        axes.draw_artist(self.rect)
+
+        # and blit just the redrawn area
+        canvas.blit(axes.bbox)
+
+    def on_motion(self, event):
+        'on motion we will move the rect if the mouse is over us'
+        if self.figure.lock is not self:
+            return
+        if event.inaxes != self.rect.axes: return
+        x0, y0, xpress, ypress = self.press
+        dx = event.xdata - xpress
+        dy = event.ydata - ypress
+        self.rect.set_xy([x0+dx,y0+dy])
+
+        canvas = self.rect.figure.canvas
+        axes = self.rect.axes
+        # restore the background region
+        canvas.restore_region(self.background)
+
+
+        # redraw line and rect with the current rectangle
+        axes.draw_artist(self.rect)
+        # blit just the redrawn area
+        canvas.blit(axes.bbox)
+
+    def on_release(self, event):
+        'on release we reset the press data'
+        if self.figure.lock is not self:
+            return
+
+        self.press = None
+        self.figure.lock = None
+
+        # turn off the rect animation property and reset the background
+        self.rect.set_animated(False)
+        self.background = None
+
+        # redraw the full figure
+        self.rect.figure.canvas.draw()
+
+    def disconnect(self):
+        'disconnect all the stored connection ids'
+        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
+        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
+        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+
+            
+            
+    ### Class methods
+    def shapeSelected(figure,axes):
+        '''Called when figure has chosen this shape but not yet drawn it'''
+        if hasattr(axes,'format_coord_old'):
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) +' [rect ⊥]'
+        else:
+            axes.format_coord_old = axes.format_coord
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rect ⊥]'
+        
+    
+    def inactive(figure,axes,event):
+        width = height = 0.01
+
+        center = [event.xdata,event.ydata]
+        lowerLeft = [center[0]-0.5*width, center[1]-0.5*height]
+        figure.newShape = Rectangle(lowerLeft,width=width,height=height,**cut1DKkwargs) # 
+        
+        axes.add_patch(figure.newShape)
+        
+        figure.background = axes.get_figure().canvas.copy_from_bbox(axes.bbox)
+
+        
+        figure.cidmove = None
+        figure.drawState = States.WIDTH
+        
+        def on_move(self,event):
+            if event.inaxes:
+                
+                width = self.newShape.get_width()
+                height = self.newShape.get_height()
+                center = np.asarray(self.newShape.xy)+np.array([0.5*width,0.5*height])
+                
+                mousePoint = np.array([event.xdata-center[0],event.ydata-center[1]])
+                
+                
+                newWidth, newHeight = np.abs(mousePoint)*2.0
+                lowerLeft = [center[0]-0.5*newWidth, center[1]-0.5*newHeight]
+
+                self.newShape.set_width(newWidth)
+                self.newShape.set_height(newHeight)
+                self.newShape.set_xy(lowerLeft)
+                
+                canvas = axes.get_figure().canvas
+                # restore the background region
+                canvas.restore_region(self.background)
+        
+                # redraw both line and rectangle
+                axes.draw_artist(self.newShape)
+        
+                # blit just the redrawn area
+                canvas.blit(axes.bbox)
+                
+        return on_move
+    
+    def width(figure,axes,_):
+        figure.drawState = States.INACTIVE
+        xy,width,height = figure.newShape.xy,figure.newShape.get_width(),figure.newShape.get_height()
+        
+        rect = Rectangle(xy,width = width, height=height,
+                        **cut1DKkwargs)
+        
+        # Find corresponding function to generated DR
+        func = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectanglePerpendicular)]
+        Cut1DFunction = func
+        
+        axes.add_patch(rect)
+        dr = DraggableRectanglePerpendicular(rect,figure,Cut1DFunction,figure)
+        figure.new = False
+        figure.newShape.remove()
+        figure.newShape = None
+
+        dr.selected = True
+        dr.connect()
+        figure.shapes.append(dr)
+        
+        return None
+
+
+class DraggableRectangleHorizontal(DraggableShape):
+    ### To be used in a QE plane only allowing a QCut for constant energy
+    def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
+        self.rect = rect
+        self.press = None
+        self.background = None
+        self.line = line
+        self._selected = False
+        self.plottingObject = plottingObject
+        self.Cut1DFunction = Cut1DFunction
+        self.figure = figure
+        
+    def remove(self):
+        fig = self.rect.figure
+        self.disconnect()
+        self.rect.remove()
+        self.line.remove()
+        if self.selected:
+            self.figure.selectedDr = None
+        fig.canvas.draw()        
+
+    @property
+    def selected(self):
+        return self._selected
+    
+    @selected.getter
+    def selected(self):
+        return self._selected
+    
+    @selected.setter
+    def selected(self,value):
+        if self._selected == bool(value):
+            return
+        if value:
+            if not self.figure.selectedDr is None:
+                self.figure.selectedDr.selected = False
+            self.figure.selectedDr = self
+            color = selectedColor
+        else:
+            color = deselectedColor
+            
+        self.rect.set_edgecolor(color)
+        self.line.set_color(color)
+
+        self.rect.figure.canvas.draw()
+        self._selected = bool(value)
+
+    def connect(self):
+        'connect to all the events we need'
+        self.cidpress = self.rect.figure.canvas.mpl_connect(
+            'button_press_event', self.on_press)
+        self.cidrelease = self.rect.figure.canvas.mpl_connect(
+            'button_release_event', self.on_release)
+        self.cidmotion = self.rect.figure.canvas.mpl_connect(
+            'motion_notify_event', self.on_motion)
+
+
+    def on_press(self, event):
+        'on button press we will see if the mouse is over us and store some data'
+        if event.inaxes != self.rect.axes: return
+        if self.figure.lock is not None: return
+        contains, attrd = self.rect.contains(event)
+        if not contains: return
+        
+        figure = self.plottingObject
+        if event.button == MouseButton.RIGHT and figure.drawState == States.INACTIVE:
+            self.remove()
+            return 
+
+        self.selected = True
+        x0, y0 = self.rect.xy
+        lineXData = self.line.get_xdata()
+        lineYData = self.line.get_ydata()
+        self.press = x0, y0, event.xdata, event.ydata, lineXData, lineYData
+        self.figure.lock = self
+
+        # draw everything but the selected rectangle and store the pixel buffer
+        canvas = self.rect.figure.canvas
+        axes = self.rect.axes
+        self.rect.set_animated(True)
+        self.line.set_animated(True)
+        canvas.draw()
+        self.background = canvas.copy_from_bbox(self.rect.axes.bbox)
+
+        # now redraw just the rectangle
+        axes.draw_artist(self.rect)
+
+        # and blit just the redrawn area
+        canvas.blit(axes.bbox)
+
+    def on_motion(self, event):
+        'on motion we will move the rect if the mouse is over us'
+        if self.figure.lock is not self:
+            return
+        if event.inaxes != self.rect.axes: return
+        x0, y0, xpress, ypress, lineXData, lineYData = self.press
+        dx = event.xdata - xpress
+        dy = event.ydata - ypress
+        self.rect.set_xy([x0+dx,y0+dy])
+        
+        self.line.set_xdata(lineXData+dx)
+        self.line.set_ydata(lineYData+dy)
+
+        canvas = self.rect.figure.canvas
+        axes = self.rect.axes
+        # restore the background region
+        canvas.restore_region(self.background)
+
+
+        # redraw line and rect with the current rectangle
+        axes.draw_artist(self.rect)
+        axes.draw_artist(self.line)
+        # blit just the redrawn area
+        canvas.blit(axes.bbox)
+
+    def on_release(self, event):
+        'on release we reset the press data'
+        if self.figure.lock is not self:
+            return
+
+        self.press = None
+        self.figure.lock = None
+
+        # turn off the rect animation property and reset the background
+        self.rect.set_animated(False)
+        self.line.set_animated(False)
+        self.background = None
+
+        # redraw the full figure
+        self.rect.figure.canvas.draw()
+
+    def disconnect(self):
+        'disconnect all the stored connection ids'
+        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
+        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
+        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+
+            
+            
+    ### Class methods
+    def shapeSelected(figure,axes):
+        '''Called when figure has chosen this shape but not yet drawn it'''
+        if hasattr(axes,'format_coord_old'):
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) +' [rect constant E]'
+        else:
+            axes.format_coord_old = axes.format_coord
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rect constant E]'
+        
+    
+    def inactive(figure,axes,event):
+        width = height = 0.0
+
+        center = [event.xdata,event.ydata]
+        lowerLeft = [center[0]-0.5*width, center[1]-0.5*height]
+        figure.newShape = Rectangle(lowerLeft,width=width,height=height,**cut1DKkwargs) # 
+        
+        axes.add_patch(figure.newShape)
+
+        
+        
+        figure.background = axes.get_figure().canvas.copy_from_bbox(axes.bbox)
+
+        
+        figure.cidmove = None
+        figure.drawState = States.DIRECTION
+        
+        def on_move(self,event):
+            if event.inaxes:
+                
+                
+                # New width is given by distance from mouse to the left corner
+                newWidth = event.xdata-self.newShape.get_x()
+                
+
+                self.newShape.set_width(newWidth)
+                
+                canvas = axes.get_figure().canvas
+                # restore the background region
+                canvas.restore_region(self.background)
+        
+                # redraw both line and rectangle
+                axes.draw_artist(self.newShape)
+        
+                # blit just the redrawn area
+                canvas.blit(axes.bbox)
+                
+        return on_move
+    
+    def direction(figure,axes,event):
+        
+        newWidth = event.xdata-figure.newShape.get_x()
+        figure.newShape.set_width(newWidth)
+
+        center = figure.newShape.get_xy()+np.array([0.5*figure.newShape.get_height(),0.0])
+        dx = figure.newShape.get_width()
+        dy = 0.0
+        
+        figure.line = axes.plot([center[0],center[0]+dx],[center[1],center[1]+dy],cut1DKkwargs['edgecolor'],zorder=cut1DKkwargs['zorder']+1)[0]
+
+
+        figure.cidmove = None
+
+        
+        figure.drawState = States.WIDTH
+        
+        def on_move(self,event):
+            if event.inaxes:
+                
+                lowerLeft = self.newShape.get_y()
+                center = lowerLeft+self.newShape.get_height()*0.5
+                # New width is given by distance from mouse to the left corner
+                newHeight = np.abs(event.ydata-center)*2.0
+                
+
+                self.newShape.set_height(newHeight)
+                self.newShape.set_y(center-0.5*newHeight)
+                
+                canvas = axes.get_figure().canvas
+                # restore the background region
+                canvas.restore_region(self.background)
+        
+                # redraw rectangle
+                axes.draw_artist(self.newShape)
+                axes.draw_artist(self.line)
+        
+                # blit just the redrawn area
+                canvas.blit(axes.bbox)
+                
+        return on_move
+
+    def width(figure,axes,event):
+        figure.drawState = States.INACTIVE
+        xy,width,height = figure.newShape.xy,figure.newShape.get_width(),figure.newShape.get_height()
+        
+        rect = Rectangle(xy,width = width, height=height,
+                        **cut1DKkwargs)
+        
+        # Find corresponding function to generated DR
+        func = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectangleHorizontal)]
+        Cut1DFunction = func
+        
+        axes.add_patch(rect)
+        dr = DraggableRectangleHorizontal(rect,figure.line,figure,Cut1DFunction,figure)
+        figure.new = False
+        figure.newShape.remove()
+        figure.newShape = None
+
+        dr.selected = True
+        dr.connect()
+        figure.shapes.append(dr)
+        
+        return None
+
+
+class DraggableRectangleVertical(DraggableShape):
+    ### To be used in a QE plane only allowing a QCut for constant q
+    def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
+        self.rect = rect
+        self.press = None
+        self.background = None
+        self.line = line
+        self._selected = False
+        self.plottingObject = plottingObject
+        self.Cut1DFunction = Cut1DFunction
+        self.figure = figure
+        
+    def remove(self):
+        fig = self.rect.figure
+        self.disconnect()
+        self.rect.remove()
+        self.line.remove()
+        if self.selected:
+            self.figure.selectedDr = None
+        fig.canvas.draw()        
+
+    @property
+    def selected(self):
+        return self._selected
+    
+    @selected.getter
+    def selected(self):
+        return self._selected
+    
+    @selected.setter
+    def selected(self,value):
+        if self._selected == bool(value):
+            return
+        if value:
+            if not self.figure.selectedDr is None:
+                self.figure.selectedDr.selected = False
+            self.figure.selectedDr = self
+            color = selectedColor
+        else:
+            color = deselectedColor
+            
+        self.rect.set_edgecolor(color)
+        self.line.set_color(color)
+
+        self.rect.figure.canvas.draw()
+        self._selected = bool(value)
+
+    def connect(self):
+        'connect to all the events we need'
+        self.cidpress = self.rect.figure.canvas.mpl_connect(
+            'button_press_event', self.on_press)
+        self.cidrelease = self.rect.figure.canvas.mpl_connect(
+            'button_release_event', self.on_release)
+        self.cidmotion = self.rect.figure.canvas.mpl_connect(
+            'motion_notify_event', self.on_motion)
+
+
+    def on_press(self, event):
+        'on button press we will see if the mouse is over us and store some data'
+        if event.inaxes != self.rect.axes: return
+        if self.figure.lock is not None: return
+        contains, attrd = self.rect.contains(event)
+        if not contains: return
+        
+        figure = self.plottingObject
+        if event.button == MouseButton.RIGHT and figure.drawState == States.INACTIVE:
+            self.remove()
+            return 
+
+        self.selected = True
+        x0, y0 = self.rect.xy
+        lineXData = self.line.get_xdata()
+        lineYData = self.line.get_ydata()
+        self.press = x0, y0, event.xdata, event.ydata, lineXData, lineYData
+        self.figure.lock = self
+
+        # draw everything but the selected rectangle and store the pixel buffer
+        canvas = self.rect.figure.canvas
+        axes = self.rect.axes
+        self.rect.set_animated(True)
+        self.line.set_animated(True)
+        canvas.draw()
+        self.background = canvas.copy_from_bbox(self.rect.axes.bbox)
+
+        # now redraw just the rectangle
+        axes.draw_artist(self.rect)
+
+        # and blit just the redrawn area
+        canvas.blit(axes.bbox)
+
+    def on_motion(self, event):
+        'on motion we will move the rect if the mouse is over us'
+        if self.figure.lock is not self:
+            return
+        if event.inaxes != self.rect.axes: return
+        x0, y0, xpress, ypress, lineXData, lineYData = self.press
+        dx = event.xdata - xpress
+        dy = event.ydata - ypress
+        self.rect.set_xy([x0+dx,y0+dy])
+        
+        self.line.set_xdata(lineXData+dx)
+        self.line.set_ydata(lineYData+dy)
+
+        canvas = self.rect.figure.canvas
+        axes = self.rect.axes
+        # restore the background region
+        canvas.restore_region(self.background)
+
+
+        # redraw line and rect with the current rectangle
+        axes.draw_artist(self.rect)
+        axes.draw_artist(self.line)
+        # blit just the redrawn area
+        canvas.blit(axes.bbox)
+
+    def on_release(self, event):
+        'on release we reset the press data'
+        if self.figure.lock is not self:
+            return
+
+        self.press = None
+        self.figure.lock = None
+
+        # turn off the rect animation property and reset the background
+        self.rect.set_animated(False)
+        self.line.set_animated(False)
+        self.background = None
+
+        # redraw the full figure
+        self.rect.figure.canvas.draw()
+
+    def disconnect(self):
+        'disconnect all the stored connection ids'
+        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
+        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
+        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+
+            
+            
+    ### Class methods
+    def shapeSelected(figure,axes):
+        '''Called when figure has chosen this shape but not yet drawn it'''
+        if hasattr(axes,'format_coord_old'):
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) +' [rect constant Q]'
+        else:
+            axes.format_coord_old = axes.format_coord
+            axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rect constant Q]'
+        
+    
+    def inactive(figure,axes,event):
+        width = height = 0.0
+
+        center = [event.xdata,event.ydata]
+        lowerLeft = [center[0]-0.5*width, center[1]-0.5*height]
+        figure.newShape = Rectangle(lowerLeft,width=width,height=height,**cut1DKkwargs) # 
+        
+        axes.add_patch(figure.newShape)
+
+        figure.background = axes.get_figure().canvas.copy_from_bbox(axes.bbox)
+
+        
+        figure.cidmove = None
+        figure.drawState = States.DIRECTION
+        
+        def on_move(self,event):
+            if event.inaxes:
+                
+                
+                # New width is given by distance from mouse to the left corner
+                newHeight = event.ydata-self.newShape.get_y()
+                self.newShape.set_height(newHeight)
+                
+                canvas = axes.get_figure().canvas
+                # restore the background region
+                canvas.restore_region(self.background)
+        
+                # redraw both line and rectangle
+                axes.draw_artist(self.newShape)
+        
+                # blit just the redrawn area
+                canvas.blit(axes.bbox)
+                
+        return on_move
+    
+    def direction(figure,axes,event):
+        
+        newHeight = event.ydata-figure.newShape.get_y()
+        figure.newShape.set_height(newHeight)
+
+        center = figure.newShape.get_xy()+np.array([0.5*figure.newShape.get_width(),0.0])
+        dx = 0.0
+        dy = newHeight
+        
+        figure.line = axes.plot([center[0],center[0]+dx],[center[1],center[1]+dy],cut1DKkwargs['edgecolor'],zorder=cut1DKkwargs['zorder']+1)[0]
+
+        figure.cidmove = None
+
+        
+        figure.drawState = States.WIDTH
+        
+        def on_move(self,event):
+            if event.inaxes:
+                
+                lowerLeft = self.newShape.get_x()
+                center = lowerLeft+self.newShape.get_width()*0.5
+                # New width is given by distance from mouse to the left corner
+                newWidth = np.abs(event.xdata-center)*2.0
+                
+
+                self.newShape.set_width(newWidth)
+                self.newShape.set_x(center-0.5*newWidth)
+                
+                canvas = axes.get_figure().canvas
+                # restore the background region
+                canvas.restore_region(self.background)
+        
+                # redraw rectangle
+                axes.draw_artist(self.newShape)
+                axes.draw_artist(self.line)
+        
+                # blit just the redrawn area
+                canvas.blit(axes.bbox)
+                
+        return on_move
+
+    def width(figure,axes,event):
+        figure.drawState = States.INACTIVE
+        xy,width,height = figure.newShape.xy,figure.newShape.get_width(),figure.newShape.get_height()
+        
+        rect = Rectangle(xy,width = width, height=height,
+                        **cut1DKkwargs)
+        
+        # Find corresponding function to generated DR
+        func = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectangleVertical)]
+        Cut1DFunction = func
+        
+        axes.add_patch(rect)
+        dr = DraggableRectangleVertical(rect,figure.line,figure,Cut1DFunction,figure)
         figure.new = False
         figure.newShape.remove()
         figure.newShape = None
