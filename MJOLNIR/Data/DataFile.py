@@ -1472,8 +1472,9 @@ class DataFile(object):
             values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
             units = ['anstrom','mev','degree','degree']
             for att,value,unit in zip(attributes,values,units):
-                dset = ana.create_dataset(att,(1,),'float32')
-                dset[0] = getattr(self,value)
+                data = getattr(self,value)
+                dset = ana.create_dataset(att,(len(data),),'float32')
+                dset[:len(data)] = data
                 if not unit is None:
                     dset.attrs['units'] = np.string_(unit)
                 
