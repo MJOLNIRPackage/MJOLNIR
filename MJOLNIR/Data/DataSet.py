@@ -26,6 +26,12 @@ from scipy.ndimage import filters
 import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
 from scipy.ndimage import gaussian_filter
+from MJOLNIR._interactiveSettings import States, cut1DHolder
+from MJOLNIR.Data.DraggableShapes import prepareInteractiveCutting, DraggableCircle, DraggableRectangle, \
+    extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle, DraggableRectanglePerpendicular,extractCut1DPropertiesRectanglePerpendicular,\
+        DraggableRectangleHorizontal,extractCut1DPropertiesRectangleHorizontal,DraggableRectangleVertical, extractCut1DPropertiesRectangleVertical
+#from MJOLNIR.Data.DraggableShapes import extractCut1DProperties, clearBoxes
+
 # from shapely.geometry import Polygon as PolygonS
 # from shapely.geometry import Point as PointS
 # from shapely.vectorized import contains
@@ -839,7 +845,7 @@ class DataSet(object):
  
     
     @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
-    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,pixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,vmin=None,vmax=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, **kwargs):
+    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,vmin=None,vmax=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
@@ -864,7 +870,7 @@ class DataSet(object):
             
             - rescaleFunction (function): Function used to reverse energy bins (default _tools.rescale)
             
-            - pixel (float): Step size in 1/A along cut (default 0.05)
+            - minPixel (float): Step size in 1/A along cut (default 0.05)
             
             - width (float): Integration width in 1/A perpendicular to cut (default 0.1)
             
@@ -885,6 +891,12 @@ class DataSet(object):
             - colorbar (bool): If True, plot colorbar (default False)
             
             - outputFunction (function): Function called when onclick on axis is triggered (default print)
+            
+            - cut1DFunctionRectanglePerpendicular (function): Function called when performing a perpendicular cut
+
+            - cut1DFunctionRectangleHorizontal (function): Function called when performing horizontal cut in the curren view
+
+            - cut1DFunctionRectangleVertical (function): Function called when performing horizontal cut in the curren view
             
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
             
@@ -963,7 +975,17 @@ class DataSet(object):
         positions2D = positions[:2]
         propos = np.concatenate([np.dot(ProjectMatrix,positions2D-q1.reshape(2,1)),[positions[2]]])
         
+        orthogonalMinValue = np.min(propos[1])
+        orthogonalMaxValue = np.max(propos[1])
         
+        start = np.dot(orthovec,q1)*orthovec/(np.dot(orthovec,orthovec.T))
+        minOrthoPosition = orthovec*orthogonalMinValue+start
+        maxOrthoPosition = orthovec*orthogonalMaxValue+start
+        if rlu:
+            minOrthoPosition = samples[0].calculateQxQyToHKL(*minOrthoPosition)
+            maxOrthoPosition = samples[0].calculateQxQyToHKL(*maxOrthoPosition)
+
+       
         insideEnergy = np.logical_and(positions[2]<=EMax,positions[2]>=EMin)
         insideQ = np.logical_and(propos[0]>0.0,propos[0]<dirLength)
         insideWidth = np.logical_and(propos[1]<orthobins[1],propos[1]>orthobins[0])
@@ -974,7 +996,7 @@ class DataSet(object):
         
         # Create bins from 0 to length of cuts and add a pixel length to ensure
         # that the full range is binned
-        QBins = np.arange(0,dirLength+pixel,pixel)
+        QBins = np.arange(0,dirLength+minPixel,minPixel)
         
         if EnergyBins is None: # If no EnergyBins are given, EMin,EMax, and dE are known to be given
             EnergyBins = np.arange(EMin,EMax+dE,dE)
@@ -1018,6 +1040,13 @@ class DataSet(object):
         else:
             overplot = True
         
+
+        # Add orthogonal positions to axes
+        ax.minOrthoPosition = minOrthoPosition
+        ax.maxOrthoPosition = maxOrthoPosition
+        ax.width = width
+        ax.minPixel = minPixel
+        ax.orthovec = orthovec
         # If a new axis has been made, apply all formating of axis and hover
         if not overplot :
             
@@ -1043,6 +1072,7 @@ class DataSet(object):
                 
                 if plot:
                     ax.set_xlabel('HKL [RLU]')
+                ax.Q1 = Q1
                 
             
             else:
@@ -1060,6 +1090,10 @@ class DataSet(object):
                 
                 if plot:
                     ax.set_xlabel('QxQy [1/A]')
+                ax.Q1 = q1
+            ax.convertPlotAxisReal = convertPlotAxisReal
+            ax.dirvec = dirvec
+            ax.dE = dE
             
             if ax:
                 ax.set_ylabel('E [meV]')
@@ -1114,19 +1148,102 @@ class DataSet(object):
                     
                     
                     printString+=', Int = {:f}, Cts = {:f}, Norm = {:.3f}, Mon = {:f}, NormCount = {:f}'.format(I,cts,Norm,Mon,NC)
-                    outputFunction(printString)
+                    if not ax.suppressPrint:
+                        outputFunction(printString)
+                    #else:
+                    #    outputFunction(printString)
                     
             ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Int,normcounts,intensity,MonitorCount,Normalization,outputFunction=outputFunction))
             if colorbar:
                 ax.colorbar = ax.get_figure().colorbar(ax.pmesh[0],pad=0.1)
                 ax.colorbar.set_label('Int [arb]')
 
-
+        ax.ds = self
         if rlu:
             QPos = np.asarray(Qx).reshape(1,*Qx.shape)*dirvec.reshape(2,1,1)
             Qx = self.sample[0].calculateQxQyToHKL(*QPos)+Q1.reshape(3,1,1)
+            ax.sample = ax.ds.sample[0]
         else:
             Qx = np.asarray(Qx).reshape(1,*Qx.shape)*dirvec.reshape(2,1,1)+q1.reshape(2,1,1)
+            ax.sample = None
+
+
+        Draggables = [DraggableRectanglePerpendicular,DraggableRectangleHorizontal,DraggableRectangleVertical]
+
+        
+        def cut1DFunctionRectangleDefault(self,dr):
+            global cut1DHolder
+            parameters = extractCut1DPropertiesRectanglePerpendicular(dr.rect,self.ds.sample[0])
+            
+            # Convert center point into actual position in Q
+            offset = ax.convertPlotAxisReal(parameters['center'][0]).T[0]
+            
+            del parameters['center'] # remove the 'center' as it is not allowed in plotCut1D
+
+            # transform the orthogonal vector if needed 
+            if rlu:
+                orthogonalVector = samples[0].calculateQxQyToHKL(*orthovec)
+            else:
+                orthogonalVector = orthovec
+            
+            # find actual offset along current cut
+            offset -= np.dot(orthogonalVector,offset)*orthogonalVector/np.dot(orthogonalVector.T,orthogonalVector)
+            
+            parameters['q1'] = minOrthoPosition+offset
+            parameters['q2'] = maxOrthoPosition+offset
+
+            parameters['minPixel'] = minPixel
+            cut1DHolder.append([self.ds.plotCut1D(**parameters)])
+        
+        def cut1DFunctionRectangleHorizontalDefault(self,dr):
+            global cut1DHolder
+            parameters = extractCut1DPropertiesRectangleHorizontal(dr.rect,self.ds.sample[0])
+            
+            # Convert center point into actual position in Q
+            parameters['q1'] = ax.convertPlotAxisReal(parameters['q1'][0]).T[0]
+            parameters['q2'] = ax.convertPlotAxisReal(parameters['q2'][0]).T[0]
+            
+            parameters['minPixel'] = minPixel
+            parameters['width'] = width
+            cut1DHolder.append([self.ds.plotCut1D(**parameters)])
+
+        def cut1DFunctionRectangleVerticalDefault(self,dr):
+            global cut1DHolder
+            parameters = extractCut1DPropertiesRectangleVertical(dr.rect,self.ds.sample[0])
+            
+            # Convert center point into actual position in Q
+            parameters['q'] = ax.convertPlotAxisReal(parameters['q']).T[0]
+            
+            
+            parameters['minPixel'] = ax.dE
+            parameters['width'] = width
+            cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
+        
+
+            
+
+        if cut1DFunctionRectanglePerpendicular is None:
+
+            ax.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectangleDefault(ax,dr)
+        else:
+            ax.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectanglePerpendicular(ax,dr)
+
+        if cut1DFunctionRectangleHorizontal is None:
+
+            ax.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontalDefault(ax,dr)
+        else:
+            ax.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontal(ax,dr)
+
+        if cut1DFunctionRectangleVertical is None:
+            ax.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVerticalDefault(ax,dr)
+        else:
+            ax.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(ax,dr)
+
+        DraggableFunctions = [ax.cut1DFunctionRectanglePerpendicular,ax.cut1DFunctionRectangleHorizontal,ax.cut1DFunctionRectangleVertical]
+
+        prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
+
+
 
         if plot:
             return ax,Int,Qx,E
@@ -1312,7 +1429,8 @@ class DataSet(object):
         raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQEAxes))
     
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
-    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,dataFiles=None,xScale=1.0,yScale=1.0,outputFunction=print,**kwargs):
+    def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,
+    dataFiles=None,xScale=1.0,yScale=1.0,outputFunction=print,cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
             
         Kwargs:
@@ -1348,6 +1466,10 @@ class DataSet(object):
             - zorder (int): If provided decides the z ordering of plot (default 10)
 
             - outputFunction (function): Function called on output string (default print)
+
+            - cut1DFunctionRectangle (function): Function to be called when a 1D rectangular cut is created (default None)
+
+            - cut1DFunctionCircle (function): Function to be called when a circuar cut is created (default None)
             
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
@@ -1397,6 +1519,7 @@ class DataSet(object):
         else: 
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor,DS.sample,DS.maskIndices
+            self = DS
         if ax is None:
             if rlu is True:
                 ax = self.createRLUAxes()
@@ -1409,15 +1532,6 @@ class DataSet(object):
                 _3D = True
             else:
                 _3D = False
-        
-        #if len(qx.shape)==1 or len(qx.shape)==4:
-        #    
-        #    qx = np.concatenate(qx,axis=0)
-        #    qy = np.concatenate(qy,axis=0)
-        #    energy = np.concatenate(energy,axis=0)
-        #    I = np.concatenate(I,axis=0)
-        #    Norm = np.concatenate(Norm,axis=0)
-        #    Monitor = np.concatenate(Monitor,axis=0)
         
         
         if rlu == True: # Rotate positions with taslib.misalignment to line up with RLU
@@ -1578,6 +1692,55 @@ class DataSet(object):
             else:
                 ax.set_zlim(minEBins-0.1,maxEBins+0.1)
         else:
+            ## Setup interactive 1D Cutting only when 3D is false
+            ax.new=False
+            ax.line = None
+            ax.cidmove = None
+            ax.drawState = States.INACTIVE
+            ax.ds = self
+            ax.rects = []
+            ax.drs = []
+            ax.EMin = EMin
+            ax.EMax = EMax
+
+            # The two possible draggables:
+            Draggables = [DraggableCircle,DraggableRectangle]
+
+            ## Define the cut functions to be called
+            def cut1DFunctionRectangleDefault(self,dr):
+                global cut1DHolder
+                parameters = extractCut1DPropertiesRectangle(dr.rect,self.sample)
+                
+                EMin = self.EMin
+                EMax = self.EMax
+                cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
+
+
+            def cut1DFunctionCircleDefault(self,dr):
+                global cut1DHolder
+                parameters = extractCut1DPropertiesCircle(dr.circ,self.sample)
+                parameters['E1'] = self.ds.energy.min()
+                parameters['E2'] = self.ds.energy.max()
+                parameters['minPixel'] = self.EMax-self.EMin
+                
+                cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
+
+            if cut1DFunctionRectangle is None:
+                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangleDefault(ax,dr)
+            else:
+                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(ax,dr)
+            
+            if cut1DFunctionCircle is None:
+                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircleDefault(ax,dr)
+            else:
+                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(ax,dr)
+            
+
+            DraggableFunctions = [ax.cut1DFunctionCircle,ax.cut1DFunctionRectangle]
+
+            prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
+            
+
             def onclick(ax, event,Qx,Qy,data,outputFunction): # pragma: no cover
                 if event.xdata is not None and ax.in_axes(event):
                     try:
@@ -1585,7 +1748,7 @@ class DataSet(object):
                     except:
                         pass
                     else:
-                        if C != 0:
+                        if C != 0 or ax.drawState != States.INACTIVE:
                             return
                 if not ax.in_axes(event):
                     return
@@ -1614,8 +1777,8 @@ class DataSet(object):
                 else:
                     printString+='I = {:.4E}'.format(Intensity)
                     printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-
-                outputFunction(printString)
+                if not ax.suppressPrint:
+                    outputFunction(printString)
             ax.cid = ax.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(ax,x,Qx,Qy,[intensity,monitorCount,Normalization,NormCount],outputFunction=outputFunction))
             
         if len(Qx)!=0:
@@ -2907,7 +3070,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2939,6 +3102,10 @@ class DataSet(object):
             - outputFunction (func): Function to print the format_coord when the user clicks the axis (default print)
 
             - CurratAxeBraggList (list): List of Bragg reflections used to calulcate Currat-Axe spurions (default None)
+
+            - cut1DFunctionRectangle (function): Function to be called when generating interactive rectangle cut (default None)
+
+            - cut1DFunctionCircle (function): Function to be called when generating interactive circle cut (default None)
 
             - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
 
@@ -3038,7 +3205,11 @@ class DataSet(object):
             Ef = self[0].instrumentCalibrationEf[:,1]
             Ef = Ef[np.logical_not(np.isclose(Ef,0.0))]
             EfLimits = [f(Ef) for f in [np.min,np.max]]
-            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits)
+            Viewer = Viewer3D.Viewer3D(Data=Data,bins=bins,axis=axis,ax=axes,grid=grid,log=log,
+            adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,
+            CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits,
+            dataset=self,cut1DFunctionRectangle=cut1DFunctionRectangle, 
+            cut1DFunctionCircle=cut1DFunctionCircle)
         return Viewer
 
     def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):
@@ -3469,6 +3640,36 @@ class DataSet(object):
         else:
             self.absolutNormalized = normFactor
 
+    def autoSort(self,sortFunction = None):
+        """Sort datafiles according to lowest energy, then abs(2Theta), then scan direction in A3, then A3 start position.
+        
+        Kwargs:
+        
+            - sortFunction (function): Takes enumerate and data file (Default as described above)
+            
+        Sorting function takes in (index, dataFile) and should return a tuple of sorting values in descending priority.
+
+        Default sorting function is:
+        
+        >>> def sortFunction(IdxDf): 
+        >>>     df = IdxDf[1]
+        >>>     return (np.round(df.Ei[0],1), np.abs(np.round(df.twotheta[0],1)), -np.sign(np.diff(df.A3[:2]))[0], np.round(df.A3[0],2))
+            """
+        if sortFunction is None:
+            def sortFunction(IdxDf): 
+                df = IdxDf[1]
+                return (np.round(df.Ei[0],1), np.abs(np.round(df.twotheta[0],1)), -np.sign(np.diff(df.A3[:2]))[0], np.round(df.A3[0],2))
+        
+    
+        idx,dfs = np.array(sorted(enumerate(self.dataFiles), key=sortFunction)).T # sorted into [[idx0,idx1,...],[df0,df1,...]] after trasposing
+        self._dataFiles = list(dfs)
+        idx = idx.astype(np.int)
+
+        if not len(self.convertedFiles) == 0:
+            self._convertedFiles = list(np.array(self.convertedFiles)[idx])
+        
+        self._getData()
+
 
 
 
@@ -3741,8 +3942,10 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False
         Normalization = np.histogram(q_inside,bins=qbins[-1],weights=Norm[e_inside].flatten())[0].astype(Norm.dtype)
         NormCount = np.histogram(q_inside,bins=qbins[-1],weights=np.ones_like(I[e_inside]).flatten())[0].astype(I.dtype)
 
-        _data = pd.DataFrame(np.array([intensity,monitorCount,Normalization,NormCount],dtype=int).T,
-                        columns=['Intensity','Monitor','Normalization','BinCount'],dtype=int)
+        _data = pd.DataFrame(np.array([monitorCount,NormCount],dtype=int).T,
+                        columns=['Monitor','BinCount'],dtype=int)
+        _data['Intensity'] = intensity
+        _data['Normalization'] = Normalization
         _data['q'] = 0.5*(bins[:-1]+bins[1:])
         _data['Energy'] = np.ones_like(_data['q'])*0.5*(binStart+binEnd)
         _data['EnergyCut'] = np.ones_like(_data['q'],dtype=int)*energyBin

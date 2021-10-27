@@ -74,7 +74,9 @@ HDFTranslation = {'sample':'/entry/sample',
                   'scanCommand':'entry/scancommand',
                   'title':'entry/title',
                   'absoluteTime':'entry/control/absolute_time',
-                  'protonBeam':'entry/proton_beam/data'
+                  'protonBeam':'entry/proton_beam/data',
+                  'singleDetector1':'entry/CAMEA/segment_1/data',
+                  'singleDetector8':'entry/CAMEA/segment_8/data'
 }
 ## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
 
@@ -183,6 +185,8 @@ class DataFile(object):
                     self.userEmail = np.array(f.get(HDFTranslation['email']))[0]
                     self.userAddress = np.array(f.get(HDFTranslation['address']))[0]
                     self.userAffiliation = np.array(f.get(HDFTranslation['affiliation']))[0]
+                    self.singleDetector1 = np.array(f.get(HDFTranslation['singleDetector1']))
+                    self.singleDetector8 = np.array(f.get(HDFTranslation['singleDetector8']))
 
                     # Monochromator
 
@@ -381,6 +385,20 @@ class DataFile(object):
                 self._A4 = [0.0]
             else:
                 self._A4 = A4
+
+    @property
+    def dasel(self):
+        if hasattr(self,'detectorSelection') and hasattr(self,'analyzerSelection'):
+            return self.detectorSelection,self.analyzerSelection
+        else:
+            return None,None
+
+    @dasel.getter
+    def dasel(self):
+        if hasattr(self,'detectorSelection') and hasattr(self,'analyzerSelection'):
+            return self.detectorSelection,self.analyzerSelection
+        else:
+            return None,None
 
     @property
     def binning(self):
@@ -1468,8 +1486,9 @@ class DataFile(object):
             values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
             units = ['anstrom','mev','degree','degree']
             for att,value,unit in zip(attributes,values,units):
-                dset = ana.create_dataset(att,(1,),'float32')
-                dset[0] = getattr(self,value)
+                data = getattr(self,value)
+                dset = ana.create_dataset(att,(len(data),),'float32')
+                dset[:len(data)] = data
                 if not unit is None:
                     dset.attrs['units'] = np.string_(unit)
                 

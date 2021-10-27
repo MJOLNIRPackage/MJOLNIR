@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 from MJOLNIR import _tools
+from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
+from MJOLNIR.Data.DraggableShapes import clearBoxes, DraggableCircle,DraggableRectangle, prepareInteractiveCuttingView3D,\
+    extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle
 import functools
 
 pythonVersion = sys.version_info[0]
@@ -21,7 +24,7 @@ pythonSubVersion = sys.version_info[1]
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
-                 cmap=None, CurratAxeBraggList=None,Ei=None,EfLimits=None,**kwargs):#pragma: no cover
+                 cmap=None, CurratAxeBraggList=None,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None, cut1DFunctionCircle = None, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -50,6 +53,12 @@ class Viewer3D(object):
             
             - EfLimits (float,float): Minimal and maximal Ef for current instrument (default None)
 
+            - dataset (DataSet): Reference to data set used - needed for interactive cutting with (default None)
+
+            - cut1DFunctionRectangle (function): Function to be called when performing an interactive rectangle (default None)
+
+            - cut1DFunctionCircle (function): Function to be called when performing an interactive rectangle (default None)
+
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
         """
@@ -58,6 +67,19 @@ class Viewer3D(object):
         
         self.Ei = Ei
         self.EfLimits = EfLimits
+
+        self.outputFunction = outputFunction
+
+        # Settings needed for interactive 1D cutting
+        self.new=False
+        self.line = None
+        self.cidmove = None
+        self.drawState = States.INACTIVE
+        self.ds = dataset
+        self.rects = []
+        self.drs = []
+        self.clearBoxes = lambda: clearBoxes(self)
+        
 
         self.plotCurratAxe = False # Set to false but will change to True when correct list is created
         self._CurratAxeBraggList = None
@@ -154,11 +176,49 @@ class Viewer3D(object):
         self.figure.subplots_adjust(bottom=0.25)
         self.cmap = cmap # Update to accomedate deprication warning
         self.value = 0
+        self.setAxis(2)
+        # Set up interactive generation of 1DCuts
+
+        def cut1DFunctionRectangleDefault(self,dr):
+            global cut1DHolder
+            parameters = extractCut1DPropertiesRectangle(dr.rect,self.ax.sample)
+            step = self.dQE[self.axis]
+            pos = np.zeros(3,dtype=int)
+            pos[self.axis]=self.Energy_slider.val
+            
+            EMin = self.bins[self.axis][pos[0],pos[1],pos[2]]
+            EMax = EMin+step
+            cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
+
+
+        def cut1DFunctionCircleDefault(self,dr):
+            global cut1DHolder
+            parameters = extractCut1DPropertiesCircle(dr.circ,self.ax.sample)
+            parameters['E1'] = self.ds.energy.min()
+            parameters['E2'] = self.ds.energy.max()
+            step = self.dQE[self.axis]
+            parameters['minPixel'] = step
+                
+            cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
+
+        if cut1DFunctionRectangle is None:
+            self.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangleDefault(self,dr)
+        else:
+            self.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(self,dr)
         
+        if cut1DFunctionCircle is None:
+            self.cut1DFunctionCircle = lambda dr: cut1DFunctionCircleDefault(self,dr)
+        else:
+            self.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(self,dr)
+        
+        Draggables = [DraggableCircle,DraggableRectangle]
+        DraggableFunctions = [self.cut1DFunctionCircle,self.cut1DFunctionRectangle]
+
+        prepareInteractiveCuttingView3D(self,Draggables,DraggableFunctions)
 
         viewAxis = axis
         axis_color='white'
-        self.setAxis(2)
+        
         self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
         self.figure.canvas.mpl_connect('scroll_event',lambda event: onscroll(event, self))
         
@@ -492,7 +552,7 @@ def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
         except:
             pass
         else:
-            if C != 0:
+            if C != 0 or self.drawState != States.INACTIVE:
                 return
         return function(self,event.xdata,event.ydata,*args,**kwargs)
 
@@ -534,19 +594,23 @@ def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
     if returnText:
         return printString
     else:
-        outputFunction(printString)
+        if hasattr(self.ax,'suppressPrint'):
+            if not self.ax.suppressPrint:
+                outputFunction(printString)
+        else:
+            outputFunction(printString)
         
 def onkeypress(event,self): # pragma: no cover
-    if event.key in ['+','up','right']:
+    if event.key in Viewer3DSettings['upwards']:
         increaseAxis(event,self)
-    elif event.key in ['-','down','left']:
+    elif event.key in Viewer3DSettings['downwards']:
         decreaseAxis(event,self)
-    elif event.key in ['home']:
+    elif event.key in Viewer3DSettings['home']:
         self.Energy_slider.set_val(self.Energy_slider.valmin)
-    elif event.key in ['end']:
+    elif event.key in Viewer3DSettings['end']:
         self.Energy_slider.set_val(self.Energy_slider.valmax)
 
-    elif event.key in ['0']:
+    elif event.key in Viewer3DSettings['QxE']:
         if self.axis!=0:
             reloadslider(self,0)
             #del self.im
@@ -561,7 +625,7 @@ def onkeypress(event,self): # pragma: no cover
             self.plot()
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
-    elif event.key in ['1']:
+    elif event.key in Viewer3DSettings['QyE']:
         if self.axis!=1:
             reloadslider(self,1)
             #del self.im
@@ -576,7 +640,7 @@ def onkeypress(event,self): # pragma: no cover
             self.plot()
             self.ax.set_xlim([np.min(self.X),np.max(self.X)])
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
-    elif event.key in ['2']:
+    elif event.key in Viewer3DSettings['QxQy']:
         if self.axis!=2:
             reloadslider(self,2)
             #del self.im
@@ -613,9 +677,9 @@ def reloadslider(self,axis): # pragma: no cover
     
         
 def onscroll(event,self): # pragma: no cover
-    if(event.button=='up'):
+    if(event.button in Viewer3DSettings['upwardsScroll']):
         increaseAxis(event,self)
-    elif event.button=='down':
+    elif event.button in Viewer3DSettings['downwardsScroll']:
         decreaseAxis(event,self)
 
 
@@ -747,3 +811,15 @@ def addColorbarSliders(self,c_min,c_max,c_minval,c_maxval,ax_cmin,ax_cmax,log=Tr
         fig.canvas.draw()
     
     fig.savefig = savefig
+
+def cut1DFunctionDefault(self,dr):
+    global cut1DHolder
+    parameters = extractCut1DProperties(dr.rect,self.ax.sample)
+    step = self.dQE[self.axis]
+    pos = np.zeros(3,dtype=int)
+    pos[self.axis]=self.Energy_slider.val
+    
+    EMin = self.bins[self.axis][pos[0],pos[1],pos[2]]
+    EMax = EMin+step
+    cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
+
