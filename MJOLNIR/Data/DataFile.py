@@ -387,6 +387,20 @@ class DataFile(object):
                 self._A4 = A4
 
     @property
+    def dasel(self):
+        if hasattr(self,'detectorSelection') and hasattr(self,'analyzerSelection'):
+            return self.detectorSelection,self.analyzerSelection
+        else:
+            return None,None
+
+    @dasel.getter
+    def dasel(self):
+        if hasattr(self,'detectorSelection') and hasattr(self,'analyzerSelection'):
+            return self.detectorSelection,self.analyzerSelection
+        else:
+            return None,None
+
+    @property
     def binning(self):
         return self._binning
 
