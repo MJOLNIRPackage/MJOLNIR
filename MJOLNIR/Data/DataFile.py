@@ -27,7 +27,8 @@ from collections import defaultdict
 multiFLEXXDetectors = 31*5
 reFloat = r'-?\d*\.\d*'
 factorsqrtEK = 0.694692
-supportedRawFormats = ['hdf','MultiFLEXX','FlatCone']
+supportedRawFormats = ['hdf','','dat']
+supportedInstruments = ['CAMEA','MultiFLEXX','FlatCone','Bambus']
 supportedConvertedFormats = ['nxs']
 
 def cosd(x):
@@ -133,6 +134,8 @@ class DataFile(object):
 	            self.type='hdf'
             elif os.path.splitext(fileLocation)[1]=='': # No extension
                 self.type = 'MultiFLEXX'
+            elif fileLocation.split('.')[-1]=='dat':
+                self.type = 'Bambus'
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
             self.name = os.path.basename(fileLocation)
@@ -141,7 +144,7 @@ class DataFile(object):
             self._mask = False
             self.absolutNormalized = False
 
-            if not self.type == 'MultiFLEXX':
+            if self.type in ['hdf','nxs']:
                 with hdf.File(fileLocation,mode='r') as f:
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get(HDFTranslation['sample']))
                     instr = getInstrument(f)
@@ -288,9 +291,10 @@ class DataFile(object):
                     self.mask = np.zeros_like(self.I,dtype=bool)
                     if self.binning == 8:
                         self.mask[:,:,:2] = True
-            else: # type is multiFLEXX
+            elif self.type == 'MultiFLEXX': # type is multiFLEXX
                 self.loadMultiFLEXXData(fileLocation)
-            
+            elif self.type == 'Bambus':
+                self.loadBambusData(fileLocation)
             self.scanSteps = self.scanValues.shape[1]
             if True:
                 for attr in dir(self):
@@ -823,6 +827,254 @@ class DataFile(object):
             
         self.twotheta = self.A4
 
+
+    def loadBambusData(self,fileLocation,calibrationFile=None):
+        self.fileLocation = fileLocation
+        self.possibleBinnings = [1] # Standard value (1 energy/detector)
+        self.binning = 1
+        self.instrument = 'Bambus'
+        self.type = self.instrument
+        
+
+        ## No dasel
+        self.analyzerSelection = 0
+        self.detectorSelection = 0
+
+        with open(fileLocation) as f:
+            dataString = f.readlines()
+
+
+
+        # Format for starting time is 2021-11-26 10:45:05
+        searchString = r'([0-9]+)-([0-9]+)-([0-9]+)\s([0-9]+):([0-9]+):([0-9]+)'
+        
+        matches = re.findall(searchString,dataString[0])
+        if len(matches) == 0:
+            self.startTime = 'UNKNONW'
+        else:
+            self.startTime = '-'.join(matches[0][:3])+' '+':'.join(matches[0][3:])
+        self.endTime = 'UNKNONW'
+
+        if calibrationFile is None:
+            calibrationFile = MJOLNIR.__bambusNormalization__
+
+        detectors = 20
+        self.mask = False
+
+        calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
+        amplitude = calibrationData[:,3]
+        background = calibrationData[:,6] 
+        bound = calibrationData[:,7:9]
+        final_energy = calibrationData[:,4]
+        width = calibrationData[:,5]
+        A4 = -calibrationData[:,9]
+
+        EfTable = np.array([amplitude,final_energy,width,background]).T
+        calibrations=[[EfTable,A4,bound]]
+        bound =  np.array(detectors*[0,1],dtype=int).reshape(-1,2)
+
+        self.instrumentCalibrationEdges = bound
+        self.instrumentCalibrationEf = EfTable
+        self.instrumentCalibrationA4 = A4
+
+        self.instrumentCalibrations = calibrations
+
+        ## Load header data:
+
+        ## Format is "#    param : value"
+
+        parameters = {}
+
+        for I,line in enumerate(dataString):
+            if line[:2] == '# ':
+                param,*value = [x.strip() for x in line.split(':')]
+                param = param.replace('#','').strip()
+                if len(value)>1:
+                    value = ':'.join(value)
+                parameters[param] = value[0]
+            else:
+                if line.find('### Scan data') >-1:
+                    dataline = I
+                    break
+
+        # Convert from ch number in data file to detector,energy (A1,A2,...,20D,20E)
+        detectorMap = np.array([ 0,  1,  2, 27,  3, 50, 51, 52, 77, 53,  4,  5,  6, 28,  7, 54, 55,
+            56, 78, 57,  8,  9, 10, 29, 11, 58, 59, 60, 79, 61, 12, 13, 14, 30,
+            15, 62, 63, 64, 80, 65, 16, 17, 18, 31, 19, 66, 67, 68, 81, 69, 20,
+            21, 22, 32, 23, 70, 71, 72, 82, 73, 24, 25, 26, 33, 37, 74, 75, 76,
+            83, 87, 38, 39, 40, 34, 41, 88, 89, 90, 84, 91, 42, 43, 44, 35, 45,
+            92, 93, 94, 85, 95, 46, 47, 48, 36, 49, 96, 97, 98, 86, 99])
+
+
+        # Load data
+        titles = dataString[dataline+1].strip().split('\t')
+        units =  dataString[dataline+2].strip().split('\t')
+
+
+        # remove the '# ' part of the first title
+        titles[0] = titles[0].replace('#','').strip()
+
+
+        # Find splitter in data set ';'
+        
+        splitter = titles.index(';')
+        
+
+        # Shape becomes [scan points, timer + mon1 + mon2 + chsum + 100 detectors + events]
+        data = [[float(x) for x in line.split('\t')[splitter+1:]] for line in dataString[dataline+3:-1]]
+        scanData = [[float(x) for x in line.split('\t')[:splitter]] for line in dataString[dataline+3:-1]]
+        
+        if len(data[-1]) == 0: # empty last line
+            data = np.array(data[:-1])
+            scanData = np.array(scanData[:-1])
+        else:
+            data = np.array(data)
+            scanData = np.array(scanData)
+            
+
+        #reshape into [scan points, 20 wedges, 5 energies]
+        self.I = np.array([d[detectorMap] for d in data[:,4:-1]]).reshape(-1,20*5)
+
+
+        self.timer = data[:,0].astype(float)
+        self.mon1,self.mon2,self.ctot,self.events = data[:,[1,2,3,-1]].astype(int).T
+
+        self.scanParameters = np.asarray(titles[:splitter])
+        self.scanUnits = np.asarray(units[:splitter])
+        self.scanValues = np.asarray(scanData[:,:splitter]).T.astype(float)
+
+        self.__dict__.update(parameters)
+
+
+
+
+        #### Import sample correctly
+
+        sample = {}
+        def extractFromParenthesis(string):
+            return list(map(float,re.findall(r'(?<=\().*?(?=\))',string)[0].split(',')))
+
+
+        cell = np.concatenate([extractFromParenthesis(dat) for dat in [self.Sample_lattice,self.Sample_angles]])
+
+        for param,value in zip(['a','b','c','alpha','beta','gamma'],cell):
+            sample[param] = value
+
+
+        q1 = np.array(extractFromParenthesis(self.Sample_orient1))
+        q2 = np.array(extractFromParenthesis(self.Sample_orient2))
+
+
+
+        Ei = 10.0 # TODO: What is the good solution here? Dummy incoming energy needed to calcualte UB
+        k = np.sqrt(Ei)*factorsqrtEK
+
+        Cell = TasUBlib.calcCell(cell)
+        B = TasUBlib.calculateBMatrix(Cell)
+
+        A3offset = float(self.Sample_psi0.split(' ')[0])
+
+        A41 = TasUBlib.calTwoTheta(B,[*q1,Ei,Ei],-1)
+        A31 = TasUBlib.calcTheta(k,k,A41)+A3offset
+        A42 = TasUBlib.calTwoTheta(B,[*q2,Ei,Ei],-1)
+        A32 = TasUBlib.calcTheta(k,k,A42)
+
+        planeVector1 = list(q1)
+        planeVector1.append(A31) # A3 
+        planeVector1.append(A41) # A4
+        [planeVector1.append(0.0) for _ in range(2)]# append values for gonios set to zero
+        planeVector1.append(Ei)
+        planeVector1.append(Ei)
+
+        planeVector2 = list(q2)
+        planeVector2.append(A32) # A3 
+        planeVector2.append(A42) # A4 
+        [planeVector2.append(0.0) for _ in range(2)]# append values for gonios set to zero
+        planeVector2.append(Ei)
+        planeVector2.append(Ei)
+
+        # add correct angle in theta between the two reflections
+        between = TasUBlib.tasAngleBetweenReflections(B,np.array(planeVector1),np.array(planeVector2))
+
+        planeVector2[3]+=between
+
+        sample['projectionVector1']=np.array(planeVector1)
+        sample['projectionVector2']=np.array(planeVector2)
+
+        sample['name'] = self.Sample_samplename
+
+
+        self.sample = MJOLNIR.Data.Sample.Sample(**sample)
+
+        for sP,sV in zip(self.scanParameters,self.scanValues):
+            setattr(self,sP,sV)
+        
+
+        monoQ = np.array(float(self.mono_value.split(' ')[0]))
+        self.Ei = np.array(float(self.Ei_value.split(' ')[0]))
+        self.A4 = np.array([float(self.stt_value.split(' ')[0])])
+
+        if isinstance(self.sth_value,str):
+            self._A3 = np.array(float(self.sth_value.split(' ')[0]))
+        else:
+            self._A3 = self.sth_value
+
+        self.A4Off = 0.0
+        self.A3Off = None
+
+        self.countingTime = np.array([self.etime[0],*np.diff(self.etime)])
+        
+
+        nameSwaps = [['filename','name'],
+                    ['info','scanCommand'],
+                    ['Exp_remark','comment'],
+                    
+                    #['MAG','magneticField'],
+                    ['mon1','Monitor'],
+                    ['timer','Time'],
+                    #['TT','temperature'],
+                    #['comnd','scanCommand'],
+                    #['instr','instrument'],
+                    #['EI','Ei'],
+                    
+                    ['Exp_localcontact','localContact'],
+                    ['Exp_proposal','proposalID'],
+                    ['Exp_title','title'],
+                    ['Exp_users','userName'],
+
+                    
+                    
+                    
+                    #['DA','analyzerDSpacing'],
+                    #['expno','experimentIdentifier'],
+                    ['localContact','localContactName'],
+                    #['date','startTime']
+                    ]
+
+
+        if not hasattr(self,'electricField'):
+            self.electricField = None
+        if not hasattr(self,'magneticField'):
+            self.magneticField = None
+
+        if not hasattr(self,'temperature'):
+            self.temperature = None
+            
+        self.twotheta = self.A4
+
+
+        ## Format scanCommand
+
+        def updateKeyName(obj,key,newName):
+            if not hasattr(obj,key):
+                return
+            setattr(obj,newName,getattr(obj,key))
+            delattr(obj,key)
+
+
+        for pair in nameSwaps:
+            updateKeyName(self,pair[0],pair[1])
+
         
     @_tools.KwargChecker()
     def convert(self,binning=None,printFunction=None):
@@ -830,7 +1082,7 @@ class DataFile(object):
             EPrDetector = 8 
             if binning is None:
                 binning = self.binning
-        elif self.type in ['MultiFLEXX','FlatCone']:
+        elif self.type in ['MultiFLEXX','FlatCone','Bambus']:
             EPrDetector = 1
             if binning is None:
                 binning = self.binning
@@ -850,7 +1102,7 @@ class DataFile(object):
         detectors = Data.shape[1]
         steps = Data.shape[0]
         
-        if self.type in ['MultiFLEXX','FlatCone']:
+        if self.type in ['MultiFLEXX','FlatCone','Bambus']:
             Data.shape = (Data.shape[0],Data.shape[1],-1)
 
         A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
