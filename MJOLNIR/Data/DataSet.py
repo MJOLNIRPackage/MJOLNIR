@@ -121,7 +121,7 @@ class DataSet(object):
     def dataFiles(self,dataFiles):
         try:
             correctDataFiles = isListOfDataFiles(dataFiles)
-            [self._dataFiles.append(file) for file in correctDataFiles if file.type in MJOLNIR.Data.DataFile.supportedRawFormats]
+            [self._dataFiles.append(file) for file in correctDataFiles if file.type in MJOLNIR.Data.DataFile.supportedRawFormats+MJOLNIR.Data.DataFile.supportedInstruments]
             [self._convertedFiles.append(file) for file in correctDataFiles if file.type in MJOLNIR.Data.DataFile.supportedConvertedFormats]
         except Exception as e:
             raise
@@ -298,8 +298,8 @@ class DataSet(object):
     def append(self,item):
         try:
             correctDataFiles = isListOfDataFiles(item)
-            [self._dataFiles.append(file) for file in correctDataFiles if file.type=='hdf' or file.type=='MultiFLEXX' or file.type=='FlatCone']
-            [self._convertedFiles.append(file) for file in correctDataFiles if file.type=='nxs']
+            [self._dataFiles.append(file) for file in correctDataFiles if file.type in MJOLNIR.Data.DataFile.supportedRawFormats or file.type in MJOLNIR.Data.DataFile.supportedInstruments]
+            [self._convertedFiles.append(file) for file in correctDataFiles if file.type in MJOLNIR.Data.DataFile.supportedConvertedFormats]
         except Exception as e:
             raise(e)
         self._getData
@@ -454,7 +454,7 @@ class DataSet(object):
         return returnData,bins
 
     @_tools.KwargChecker()
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=True,dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,ufit=False):
+    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=False,dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,ufit=False):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -586,7 +586,7 @@ class DataSet(object):
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=True,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,extend=False,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
         Args:
@@ -621,7 +621,7 @@ class DataSet(object):
         
         """
         if data is None:
-            Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,rlu=rlu,plotCoverage=plotCoverage,constantBins=constantBins)
+            Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,extend=extend,rlu=rlu,dataFiles=dataFiles,plotCoverage=plotCoverage,constantBins=constantBins)
         else:
             Data,bins = data
         with warnings.catch_warnings():
@@ -2627,22 +2627,21 @@ class DataSet(object):
 
         """
         if dataFiles is None:
-                if len(self.convertedFiles)==0:
-                    raise AttributeError('No data file to be binned provided in either input or DataSet object.')
-                else:
-                    I = self.I
-                    qx = self.qx
-                    qy = self.qy
-                    energy = self.energy
-                    Norm = self.Norm
-                    Monitor = self.Monitor
-                    sample = self.convertedFiles[0].sample
+            if len(self.convertedFiles)==0:
+                raise AttributeError('No data file to be binned provided in either input or DataSet object.')
+            else:
+                I = self.I.extractData()
+                qx = self.qx.extractData()
+                qy = self.qy.extractData()
+                energy = self.energy.extractData()
+                Norm = self.Norm.extractData()
+                Monitor = self.Monitor.extractData()
+                samples = self.sample
+                maskIndices = self.maskIndices
 
         else: 
-            #dataFiles = isListOfDataFiles(dataFiles)
             DS = DataSet(convertedFiles = dataFiles)
-            I,qx,qy,energy,Norm,Monitor = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor
-            sample = DS.convertedFiles[0].sample
+            I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
             
         I = np.concatenate([x.flatten() for x in I])
         qx = np.concatenate([x.flatten() for x in qx])#self.qx
