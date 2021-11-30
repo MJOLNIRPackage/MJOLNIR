@@ -5,6 +5,7 @@ sys.path.append('../..')
 import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 from MJOLNIR import _tools
+import MJOLNIR
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR.TasUBlibDEG import cosd,sind
 from MJOLNIR.Data import Sample,RLUAxes
@@ -17,8 +18,8 @@ import h5py as hdf
 import datetime
 import pytest
 
-NumberOfSigmas= 3 # Defining the active area of a peak on a detector as \pm n*sigma
-
+NumberOfSigmas= 3.0 # Defining the active area of a peak on a detector as \pm n*sigma
+predictionInstrumentSupport = ['CAMEA','MultiFLEXX','Bambus'] # Instrument supported in prediction function
 
 
 class Instrument(GeometryConcept.GeometryConcept):
@@ -270,19 +271,20 @@ class Instrument(GeometryConcept.GeometryConcept):
         H1 = 0.7
         H2 = 0.71
 
-        det_cen = 1.2
+        det_cen = 1.2#182
         wedges=8
+        wedgeAngle = 8
 
         offset = 28.0# -4.835960288880082# offset such that last pixel of detector 0 is at 0
 
-
-        string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='Jakob Lass' Date ='16/03/18' position='0.0,0.0,0.0'>\n"
+        today = datetime.date.today().strftime("%d/%m/%Y")
+        string = "<?xml version='1.0'?>\n<Instrument Initialized='False' Author='MJOLNIR' Date ='{}' position='0.0,0.0,0.0'>\n".format(today)
         for W in -np.arange(wedges):
             
             string+="\t<Wedge position='0.0,0.0,0.0' concept='ManyToMany'>\n"
             
-            Anaposx = -np.sin((W*8.0+offset)*np.pi/180)*z_an
-            Anaposy = np.cos((W*8.0+offset)*np.pi/180)*z_an
+            Anaposx = -np.sin((W*wedgeAngle+offset)*np.pi/180)*z_an
+            Anaposy = np.cos((W*wedgeAngle+offset)*np.pi/180)*z_an
             
             for i in range(len(z_an)):
                 XX = Anaposx[i]/(np.sqrt(2)*z_an[i])
@@ -297,9 +299,9 @@ class Instrument(GeometryConcept.GeometryConcept):
             detx_2 = -np.sin((ang_2+W*8.0+offset)*np.pi/180)*det_cen
             detz_2 = np.cos((ang_2+W*8.0+offset)*np.pi/180)*det_cen
             for i in range(7):
-                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H2 if np.mod(W,2) else H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
+                string+="\t\t<TubeDetector1D position='"+str(detx_1[i])+','+str(detz_1[i])+','+str(H2 if np.mod(W,2) else H1)+"' direction='"+str(detx_1[i])+','+str(detz_1[i])+",0.0' pixels='1024' length='1.0' diameter='0.025' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
                 if i<6:
-                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H1 if np.mod(W,2) else H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='1024' length='1' diameter='0.02' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
+                    string+="\t\t<TubeDetector1D position='"+str(detx_2[i])+','+str(detz_2[i])+','+str(H1 if np.mod(W,2) else H2)+"' direction='"+str(detx_2[i])+','+str(detz_2[i])+",0.0' pixels='1024' length='1.0' diameter='0.025' split='0,189, 298, 404, 510, 618, 726, 837,1024'></TubeDetector1D>\n"
             string+="\t</Wedge>\n"
             
         string+="</Instrument>"
@@ -1353,7 +1355,7 @@ def converterToQxQy(A3,A4,Ei,Ef):
     Qx,Qy = (QV*q.reshape(-1,1))[:,:2].T
     return (Qx,Qy)
 
-def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,outputFunction=None):
+def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,outputFunction=None, instrument='CAMEA'):
     """Generate an overview of coverage for points between A3Start and Stop for given A4, Ei, and cell
 
     Args:
@@ -1380,6 +1382,8 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
 
         - outputFunction (function): Function called when a point is clicked (default print)
 
+        - instrument (string): Instrument for which the prediction is to be made (default CAMEA)
+
     """
     s = Sample.Sample(*Cell,projectionVector1=r1,projectionVector2=r2)
  
@@ -1392,15 +1396,36 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
 
     t = simpleDataSet(s)
     fig = plt.figure(figsize=(16,11))
-    Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(3,3,i+1)) for i in range(9)]
     
-    MJOLNIRDir = os.path.dirname(_tools.__file__)
-    calibPath = os.path.join(MJOLNIRDir,'Normalization_1.calib')
+    if instrument == 'CAMEA':
+        calib = np.loadtxt(MJOLNIR.__CAMEANormalization__,delimiter=',',skiprows=3)
+        detectors = 104
+        wedges = 8
+        energies = 8
+        Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(3,3,i+1)) for i in range(9)]
 
-    calib = np.loadtxt(calibPath,delimiter=',',skiprows=3)
+    elif instrument == 'MultiFLEXX':
+        calib = np.loadtxt(MJOLNIR.__multiFLEXXNormalization__,delimiter=',',skiprows=1)
+        detectors = 31
+        wedges = 31
+        energies = 5
+        A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
+        Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(2,3,i+1)) for i in range(6)]
 
-    A4Instrument = calib[:,-1].reshape(104,8)
-    EfInstrument = calib[:,4].reshape(104,8)
+    elif instrument == 'Bambus':
+        calib = np.loadtxt(MJOLNIR.__bambusNormalization__,delimiter=',',skiprows=1)
+        detectors = 20 
+        wedges = 20
+        energies = 5
+        A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
+        Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(2,3,i+1)) for i in range(6)]
+
+    else:
+        raise AttributeError('Privded instrumnt "{}" not understood'.format(instrument))
+    
+    A4Instrument = calib[:,-1].reshape(detectors,energies)
+    
+    EfInstrument = calib[:,4].reshape(detectors,energies)
     EfInstrument[np.isclose(EfInstrument,0.0)]=np.nan
 
     A3PointValues = np.linspace(A3Start,A3Stop,A3Steps)-s.theta
@@ -1411,23 +1436,36 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
 
     endColor = np.array([0.12156863, 0.46666667, 0.70588235, 0.5])
     startColor = np.array([0.83921569, 0.15294118, 0.15686275, 0.5])
-    diff = (endColor-startColor)/7.0
+    diff = (endColor-startColor)/float(energies-1)
 
     def format_axes_func(self,x,y,Ei,Ef,A3Off=s.theta,A4Sign=-1.0):
         A3,A4 = converterToA3A4(x,y,Ei,Ef,-A3Off,A4Sign=A4Sign)
         return ax.sample.format_coord(x,y)+', A3 = {:.2f} deg, A4 = {:.2f} deg, Ef = {:.2f}'.format(A3,A4,Ef)
-
-    for i,(ax,Ef,A4) in enumerate(zip(Ax,EfInstrument.reshape(104,8).T,A4Instrument.reshape(104,8).T)):
+    
+    for i,(ax,Ef,A4) in enumerate(zip(Ax,EfInstrument.reshape(detectors,energies).T,A4Instrument.reshape(detectors,energies).T)):
         ax.Ef = np.nanmean(Ef)
+        
         for A4Position in A4Positions:
             if points:
                 for A3 in A3PointValues:
                     H,L = converterToQxQy(A3=A3, A4=A4+A4Position,Ei = Ei, Ef = Ef)
                     ax.scatter(H,L,color=startColor[:-1]+diff[:-1]*i)
 
-            A4Edge = np.array([np.concatenate([a4,[a4[-1]]*steps,a4[::-1],[a4[0]]*steps]) for a4 in A4.reshape(8,13)])
-            EfEdge = np.array([np.concatenate([ef,[ef[-1]]*steps,ef[::-1],[ef[0]]*steps]) for ef in Ef.reshape(8,13)])
-            A3Edge = np.array(list(np.concatenate([[A3Values[0]]*13,A3Values,[A3Values[-1]]*13,A3Values[::-1]]))*8).reshape(8,-1)
+            detPrWedge = int(detectors/wedges)
+            if instrument == 'CAMEA':
+                
+                A4Edge = np.array([np.concatenate([a4,[a4[-1]]*steps,a4[::-1],[a4[0]]*steps]) for a4 in A4.reshape(wedges,detPrWedge)])
+                EfEdge = np.array([np.concatenate([ef,[ef[-1]]*steps,ef[::-1],[ef[0]]*steps]) for ef in Ef.reshape(wedges,detPrWedge)])
+                A3Edge = np.array(list(np.concatenate([[A3Values[0]]*detPrWedge,A3Values,[A3Values[-1]]*detPrWedge,A3Values[::-1]]))*wedges).reshape(wedges,-1)
+            else:
+                
+                ### Generate points for plotting. Traces out the shape by first chaning A4, then A3, then -A4, and then -A3
+                A4Edge = np.array([np.concatenate([a4-A4Width,np.array([a4[-1]]*steps)-A4Width,a4[::-1]+A4Width,np.array([a4[0]]*steps)+A4Width,[a4[0]-A4Width]]) for a4 in A4.reshape(wedges,detPrWedge)])#.reshape(energies,detPrWedge)])
+                EfEdge = np.array([np.concatenate([ef,[ef[-1]]*steps,ef[::-1],[ef[0]]*(steps+1)]) for ef in Ef.reshape(wedges,detPrWedge)])#.reshape(energies,detPrWedge)])
+                A3Edge = np.array(list(np.concatenate([[A3Values[0]]*detPrWedge,A3Values,[A3Values[-1]]*detPrWedge,A3Values[::-1],[A3Values[0]]]))*wedges).reshape(wedges,-1)
+            
+            
+            
             Hedge,Ledge = np.array([converterToQxQy(A3=a3, A4=a4+A4Position,Ei = Ei, Ef = ef) for a3,a4,ef in zip(A3Edge,A4Edge,EfEdge)]).transpose([1,0,2])
             [a.plot(hedge,ledge,color=startColor+diff*i) for hedge,ledge in zip(Hedge,Ledge) for a in [Ax[-1],ax]]
 
@@ -1441,16 +1479,23 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
     Ax[-1].set_ylabel(_tools.generateLabelDirection(s.projectionVector2) + ' RLU')
     Ax[-1].set_title('All Planes')
 
-    fig.tight_layout()
-    Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-s.theta,A4Sign=A4Positions[0])
-    Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-s.theta,A4Sign=A4Positions[0])
-    Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-s.theta,A4Sign=A4Positions[0])
-    Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-s.theta,A4Sign=A4Positions[0])
-    Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta,A4Sign=A4Positions[0])
-    Ax[5].format_coord = lambda x,y: format_axes_func(Ax[5],x,y,Ei,np.nanmean(EfInstrument,axis=0)[5],-s.theta,A4Sign=A4Positions[0])
-    Ax[6].format_coord = lambda x,y: format_axes_func(Ax[6],x,y,Ei,np.nanmean(EfInstrument,axis=0)[6],-s.theta,A4Sign=A4Positions[0])
-    Ax[7].format_coord = lambda x,y: format_axes_func(Ax[7],x,y,Ei,np.nanmean(EfInstrument,axis=0)[7],-s.theta,A4Sign=A4Positions[0])
-    fig.tight_layout()
+    #fig.tight_layout()
+    if instrument == 'CAMEA':
+        Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-s.theta,A4Sign=A4Positions[0])
+        Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-s.theta,A4Sign=A4Positions[0])
+        Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-s.theta,A4Sign=A4Positions[0])
+        Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-s.theta,A4Sign=A4Positions[0])
+        Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta,A4Sign=A4Positions[0])
+        Ax[5].format_coord = lambda x,y: format_axes_func(Ax[5],x,y,Ei,np.nanmean(EfInstrument,axis=0)[5],-s.theta,A4Sign=A4Positions[0])
+        Ax[6].format_coord = lambda x,y: format_axes_func(Ax[6],x,y,Ei,np.nanmean(EfInstrument,axis=0)[6],-s.theta,A4Sign=A4Positions[0])
+        Ax[7].format_coord = lambda x,y: format_axes_func(Ax[7],x,y,Ei,np.nanmean(EfInstrument,axis=0)[7],-s.theta,A4Sign=A4Positions[0])
+    else:
+        Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-s.theta,A4Sign=A4Positions[0])
+        Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-s.theta,A4Sign=A4Positions[0])
+        Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-s.theta,A4Sign=A4Positions[0])
+        Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-s.theta,A4Sign=A4Positions[0])
+        Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta,A4Sign=A4Positions[0])
+    
 
     def onclick(event,axes,outputFunction):
         for ax in axes:
@@ -1471,5 +1516,5 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
                     outputFunction(ax.format_coord(x,y))
                 break
     fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event,Ax,outputFunction=outputFunction))
-
+    fig.tight_layout()
     return Ax
