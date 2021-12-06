@@ -118,6 +118,16 @@ extraAttributes = ['name','fileLocation','twoTheta']
 possibleAttributes = list(HDFTranslation.keys())+list(HDFInstrumentTranslation.keys())+extraAttributes
 possibleAttributes.sort(key=lambda v: v.lower())
 
+analyzerLimits = {'CAMEA':7,
+                  'Bambus': 4,
+                  'MultiFLEXX': 4,
+                  'FlatCone':1}
+
+detectorLimits = {'CAMEA':103,
+                  'Bambus':19,
+                  'MultiFLEXX':31,
+                  'FlatCone':32}
+
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
     def __init__(self,fileLocation=None):
@@ -710,6 +720,7 @@ class DataFile(object):
             self.multiData = np.array([np.array(x.split()[1:],dtype=int) for x in dataPart[2::3]])
             self.multiData = self.multiData[:,:155] # Remove additional 5 zeros in data file
             self.type = 'MultiFLEXX'
+            self.instrument = 'MultiFLEXX'
             if 'Finished' in dataPart[-1]:
                 self.endTime = dataPart[-1].replace('Finished at ','')
             else:
@@ -722,9 +733,11 @@ class DataFile(object):
                 self.pntData = np.array([np.array(x.split(),dtype=float) for x in dataPart[1:split]])
                 self.multiData = np.array([np.array(x.split(),dtype=int) for x in dataPart[split+1:]])
                 self.type = 'FlatCone'
+                self.instrument = 'FlatCone'
             else:
                 self.pntData = np.array([np.array(x.split(),dtype=float) for x in dataPart[1:] if x[:8]!='Finished'])
                 self.type='1D'
+                self.instrument = 'UNKNOWN'
                 
 
         ## Extract the data from above
@@ -911,8 +924,9 @@ class DataFile(object):
         units =  dataString[dataline+2].strip().split('\t')
 
 
-        # remove the '# ' part of the first title
+        # remove the '# ' part of the first title and unit
         titles[0] = titles[0].replace('#','').strip()
+        units[0] = units[0].replace('#','').strip()
 
 
         # Find splitter in data set ';'
@@ -933,7 +947,7 @@ class DataFile(object):
             
 
         #reshape into [scan points, 20 wedges, 5 energies]
-        self.I = np.array([d[detectorMap] for d in data[:,4:-1]]).reshape(-1,20*5)
+        self.I = np.array([d[detectorMap] for d in data[:,4:-1]]).reshape(-1,20*5,1)
 
 
         self.timer = data[:,0].astype(float)
@@ -942,6 +956,16 @@ class DataFile(object):
         self.scanParameters = np.asarray(titles[:splitter])
         self.scanUnits = np.asarray(units[:splitter])
         self.scanValues = np.asarray(scanData[:,:splitter]).T.astype(float)
+
+        self.scanParameters[0] = self.scanParameters[0].replace('#','').strip()
+        self.scanUnits[0] = self.scanUnits[0].replace('#','').strip()
+
+        ### Move last scan parameter to first position in lists
+
+        self.scanParameters = self.scanParameters[[-1,*range(len(self.scanParameters)-1)]]
+        self.scanUnits = self.scanUnits[[-1,*range(len(self.scanParameters)-1)]]
+        self.scanValues = self.scanValues[[-1,*range(len(self.scanParameters)-1)]]
+
 
         self.__dict__.update(parameters)
 
@@ -1075,15 +1099,38 @@ class DataFile(object):
         for pair in nameSwaps:
             updateKeyName(self,pair[0],pair[1])
 
+    @_tools.KwargChecker()
+    def calcualteDataIndexFromDasel(self,detectorSelection=None,analyzerSelection=None):
+        if detectorSelection is None:
+            detectorSelection = self.detectorSelection
+        if analyzerSelection is None:
+            analyzerSelection = self.analyzerSelection
+
+        if self.instrument == 'CAMEA':
+            if detectorSelection > detectorLimits['CAMEA']:
+                raise AttributeError('Provided detectorSelection is out of range. Recieved {} and instrument has {} detectors enumerated [0-{}]'.format(detectorSelection,detectorLimits['CAMEA']+1,detectorLimits['CAMEA']))
+            if analyzerSelection > analyzerLimits['CAMEA']:
+                raise AttributeError('Provided analyzerSelection is out of range. Recieved {} and instrument has {} analyzers enumerated [0-{}]'.format(analyzerSelection,analyzerLimits['CAMEA']+1,analyzerLimits['CAMEA']))
+            analyzerPixels = self.instrumentCalibrationEdges[analyzerSelection+detectorSelection*8] 
+            return detectorSelection,range(int(analyzerPixels[0]),int(analyzerPixels[1]))
         
+        else:
+            if detectorSelection > detectorLimits[self.instrument]:
+                raise AttributeError('Provided detectorSelection is out of range. Recieved {} and instrument has {} detectors enumerated [0-{}]'.format(detectorSelection,detectorLimits[self.instrument]+1,detectorLimits[self.instrument]))
+            if analyzerSelection > analyzerLimits['Bambus']:
+                raise AttributeError('Provided analyzerSelection is out of range. Recieved {} and instrument has {} analyzers enumerated [0-{}]'.format(analyzerSelection,analyzerLimits[self.instrument]+1,analyzerLimits[self.instrument]))
+            # Calcualte detector number from detector and analyzer. As there are 5 energies(analyzers) per wedge
+            return detectorSelection*(analyzerLimits[self.instrument]+1)+analyzerSelection,[0] # Last index is to be able to sum over
+    
+    
     @_tools.KwargChecker()
     def convert(self,binning=None,printFunction=None):
         if self.instrument == 'CAMEA':
-            EPrDetector = 8 
+            self.EPrDetector = 8 
             if binning is None:
                 binning = self.binning
         elif self.type in ['MultiFLEXX','FlatCone','Bambus']:
-            EPrDetector = 1
+            self.EPrDetector = 1
             if binning is None:
                 binning = self.binning
         else:
@@ -1120,27 +1167,27 @@ class DataFile(object):
             A3Zero = np.deg2rad(np.array(A3Zero))
 
         A4 = np.deg2rad(A4Normalization)
-        A4=A4.reshape(detectors,binning*EPrDetector,order='C')
+        A4=A4.reshape(detectors,binning*self.EPrDetector,order='C')
 
-        PixelEdge = EdgesNormalization.reshape(detectors,EPrDetector,binning,2).astype(int)
+        PixelEdge = EdgesNormalization.reshape(detectors,self.EPrDetector,binning,2).astype(int)
         A4File = self.A4.copy()
         
         A4File = A4File.reshape((-1,1,1))
 
-        A4Mean = (A4.reshape((1,detectors,binning*EPrDetector))+np.deg2rad(A4File-A4Zero))
+        A4Mean = (A4.reshape((1,detectors,binning*self.EPrDetector))+np.deg2rad(A4File-A4Zero))
         
-        Intensity=np.zeros((Data.shape[0],Data.shape[1],EPrDetector*binning),dtype=int)
+        Intensity=np.zeros((Data.shape[0],Data.shape[1],self.EPrDetector*binning),dtype=int)
         for i in range(detectors): # for each detector
-            for j in range(EPrDetector):
+            for j in range(self.EPrDetector):
                 for k in range(binning):
                     Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
 
         
-        EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],EPrDetector*binning)
+        EfMean = EfNormalization[:,1].reshape(1,A4.shape[0],self.EPrDetector*binning)
         EfNormalization = EfNormalization[:,0]#.reshape(1,A4.shape[0],EPrDetector*binning)#
         #EfNormalization = EfNormalization[:,0]*(np.sqrt(2*np.pi)*EfNormalization[:,2])
         
-        EfNormalization.shape = (1,A4.shape[0],EPrDetector*binning)
+        EfNormalization.shape = (1,A4.shape[0],self.EPrDetector*binning)
         A3 = np.deg2rad(np.array(self.A3).copy())+A3Zero #file.get('/entry/sample/rotation_angle/')
         if A3.shape[0]==1:
             A3 = A3*np.ones((steps))
@@ -1169,7 +1216,7 @@ class DataFile(object):
         if DeltaE.shape[0]==1:
             DeltaE = DeltaE*np.ones((steps,1,1))
         Monitor = self.Monitor.copy().reshape((steps,1,1))
-        Monitor = Monitor*np.ones((1,detectors,EPrDetector*binning))
+        Monitor = Monitor*np.ones((1,detectors,self.EPrDetector*binning))
         Normalization = EfNormalization*np.ones((steps,1,1))
 
        
@@ -2123,39 +2170,61 @@ def shallowRead(files,parameters):
     
     for file in files:
         vals = []
-        with hdf.File(file,mode='r') as f:
-            instr = getInstrument(f)
+        if os.path.splitext(file)[1] == 'hdf': # if an hdf file
+            with hdf.File(file,mode='r') as f:
+                instr = getInstrument(f)
+                for p in parameters:
+                    if p == 'name':
+                        v = os.path.basename(file)
+                        vals.append(v)
+                        continue
+                    elif p == 'fileLocation':
+                        v = os.path.dirname(file)
+                        vals.append(v)
+                        continue
+                    elif p == 'twoTheta':
+                        A4 = np.array(instr.get(HDFInstrumentTranslation['A4']))
+                        for func,args in HDFInstrumentTranslationFunctions['A4']:
+                            A4 = getattr(A4,func)(*args)
+                        A4Offset = np.array(instr.get(HDFInstrumentTranslation['A4Offset']))
+                        for func,args in HDFInstrumentTranslationFunctions['A4Offset']:
+                            A4Offset = getattr(A4Offset,func)(*args)
+                        vals.append(A4-A4Offset)
+                        continue
+                    elif p in HDFTranslation:
+                        v = np.array(f.get(HDFTranslation[p]))
+                        TrF= HDFTranslationFunctions
+                    elif p in HDFInstrumentTranslation:
+                        v = np.array(instr.get(HDFInstrumentTranslation[p]))
+                        TrF= HDFInstrumentTranslationFunctions
+                    else:
+                        raise AttributeError('Parameter "{}" not found'.format(p))
+                    for func,args in TrF[p]:
+                        v = getattr(v,func)(*args)
+                    
+                    vals.append(v)
+                values.append(vals)
+        else:
+            df = DataFile(file)
             for p in parameters:
-                if p == 'name':
-                    v = os.path.basename(file)
-                    vals.append(v)
-                    continue
-                elif p == 'fileLocation':
-                    v = os.path.dirname(file)
-                    vals.append(v)
-                    continue
-                elif p == 'twoTheta':
-                    A4 = np.array(instr.get(HDFInstrumentTranslation['A4']))
-                    for func,args in HDFInstrumentTranslationFunctions['A4']:
-                        A4 = getattr(A4,func)(*args)
-                    A4Offset = np.array(instr.get(HDFInstrumentTranslation['A4Offset']))
-                    for func,args in HDFInstrumentTranslationFunctions['A4Offset']:
-                        A4Offset = getattr(A4Offset,func)(*args)
-                    vals.append(A4-A4Offset)
-                    continue
-                elif p in HDFTranslation:
-                    v = np.array(f.get(HDFTranslation[p]))
-                    TrF= HDFTranslationFunctions
-                elif p in HDFInstrumentTranslation:
-                    v = np.array(instr.get(HDFInstrumentTranslation[p]))
-                    TrF= HDFInstrumentTranslationFunctions
-                else:
-                    raise AttributeError('Parameter "{}" not found'.format(p))
-                for func,args in TrF[p]:
-                    v = getattr(v,func)(*args)
                 
-                vals.append(v)
+                try:
+                    vals.append(getattr(df,p))
+                except:
+                    if 'sample' in p:
+                        try:
+                            vals.append(getattr(df.sample,p.replace('sample','').lower()))
+                        except:
+                            vals.append('Not Found :S')
+                    else:
+                        try:
+                            vals.append(getattr(df,p.lower()))
+                        except:
+                            vals.append('Not Found :S')
             values.append(vals)
+            
+
+
     return values    
 
 

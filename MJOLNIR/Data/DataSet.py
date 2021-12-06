@@ -3229,12 +3229,16 @@ class DataSet(object):
         # If no detector or analyzer is provided use dasel from file
         if analyzerSelection is None:
             analyzerSelection = [d.analyzerSelection for d in self]
+        elif not hasattr(analyzerSelection,'__len__'):
+            analyzerSelection = [analyzerSelection]
         elif len(analyzerSelection) != len(self):
             raise AttributeError('Provided analyzerSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(analyzerSelection)))
             
         
         if detectorSelection is None:
             detectorSelection = [d.detectorSelection for d in self]
+        elif not hasattr(detectorSelection,'__len__'):
+            detectorSelection = [detectorSelection]
         elif len(detectorSelection) != len(self):
             raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
         
@@ -3246,9 +3250,9 @@ class DataSet(object):
 
         X = [d.scanValues for d in dataFiles]
        
-        analyzerPixels = [d.instrumentCalibrationEdges[analyzer+detector*8] for d,analyzer,detector in zip(dataFiles,analyzerSelection,detectorSelection)] # Find pixel limits for specified selection (8 Energies/detector)
         
-        I = [np.sum(d.I[:,detector,pixels[0]:pixels[1]],axis=1) for d,detector,pixels in zip(dataFiles,detectorSelection,analyzerPixels)]
+        idxs = [df.calcualteDataIndexFromDasel(detector,analyzer) for df,detector,analyzer in zip(dataFiles,detectorSelection,analyzerSelection)]
+        I = [np.sum(d.I[:,idx[0],idx[1]],axis=1) for d,idx in zip(dataFiles,idxs)]
         
         # Names to be changed for readability
         nameChange = {'polar_angle':'A4',
@@ -3261,7 +3265,7 @@ class DataSet(object):
         return X,I,parameter,unit
          
 
-    def plotRaw1D(self,detectorSelection=None,analyzerSelection=None, legend=True, grid=-10):
+    def plotRaw1D(self,detectorSelection=None,analyzerSelection=None, legend=True, grid=-10,outputFunction=print):
         """plot 1D figures of data in the specified DASEL.
         
         kwargs:
@@ -3278,7 +3282,7 @@ class DataSet(object):
         """
 
         
-        def intrextrapolate(oldPosition,oldValues,newValues,outputFunction=print):# pragma: no cover
+        def intrextrapolate(oldPosition,oldValues,newValues):# pragma: no cover
             """interpolates between old and new through linear regression and returns best estimate at old positions
             
             arg:
@@ -3354,7 +3358,7 @@ class DataSet(object):
 
         ax.X,ax.I,ax.parameter,ax.unit = self.cutRaw1D(detectorSelection=detectorSelection,analyzerSelection=analyzerSelection)
 
-        ax.xlabels = ['{} [{}s]'.format(p,u) for p,u in zip(ax.parameter,ax.unit)]
+        ax.xlabels = ['{} [{}]'.format(p,u) for p,u in zip(ax.parameter,ax.unit)]
         ax.__labels__ = np.concatenate([ax.xlabels,['Int [count]']],axis=0)
         
         plots = []
