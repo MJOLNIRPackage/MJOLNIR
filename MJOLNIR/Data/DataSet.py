@@ -565,13 +565,14 @@ class DataSet(object):
         I,Mon,Norm,BinC = Data
         DataValues = [Qx,Qy,H,K,L,Energy,I,Mon,Norm,BinC]
         columns = ['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount']
-        dtypes = [float]*6+[int]*2+[float]+[int]
+        dtypes = [float]*9+[float]+[int]
 
         pdData = pd.DataFrame()
         if not len(I) == 0:
             for dat,col,typ in zip(DataValues,columns,dtypes):
                 pdData[col] = dat.astype(typ)
             pdData['Int'] = pdData['Intensity']*pdData['BinCount']/(pdData['Normalization']*pdData['Monitor'])
+            pdData['Int_err'] = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Normalization']*pdData['Monitor'])
 
         
         if not ufit:
@@ -624,10 +625,9 @@ class DataSet(object):
             Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,extend=extend,rlu=rlu,dataFiles=dataFiles,plotCoverage=plotCoverage,constantBins=constantBins)
         else:
             Data,bins = data
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
-            INT_err = np.divide(np.sqrt(Data['Intensity'])*Data['BinCount'],Data['Monitor']*Data['Normalization'])
+        
+        INT = Data['Int']#
+        INT_err = Data['Int_err']#
         
         
         
@@ -2643,12 +2643,6 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData(),DS.sample,DS.maskIndices
             
-        I = np.concatenate([x.flatten() for x in I])
-        qx = np.concatenate([x.flatten() for x in qx])#self.qx
-        qy = np.concatenate([x.flatten() for x in qy])#self.qy
-        energy = np.concatenate([x.flatten() for x in energy])#self.energy
-        Norm = np.concatenate([x.flatten() for x in Norm])#self.Norm
-        Monitor = np.concatenate([x.flatten() for x in Monitor])#self.Monitor
         positions = [qx,qy,energy]
 
         if rlu==True: # Recalculate q points into qx and qy points
@@ -2669,13 +2663,14 @@ class DataSet(object):
         data['K'] = HKL[1]*np.ones_like(intensity)
         data['L'] = HKL[2]*np.ones_like(intensity)
         data['Energy'] = 0.5*(bins[0][1:]+bins[0][:-1])
-        data['Intensity'] = intensity.astype(int)
-        data['Monitor'] = MonitorCount.astype(int)
+        data['Intensity'] = intensity.astype(float)
+        data['Monitor'] = MonitorCount.astype(float)
         data['Normalization'] = Normalization.astype(float)
         data['BinCount'] = normcounts.astype(int)
         data['binDistance'] = np.linalg.norm(data[variables]-np.array(data[variables].iloc[1]),axis=1)
         
         data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
+        data['Int_err'] = np.sqrt(data['Intensity'])*data['BinCount']/(data['Normalization']*data['Monitor'])
         if not ufit:
             return data,bins
         
@@ -2729,10 +2724,10 @@ class DataSet(object):
         else:
             Data,bins = data
             
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            INT = np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
-            INT_err = np.divide(np.sqrt(Data['Intensity'])*Data['BinCount'],Data['Monitor']*Data['Normalization'])
+        #with warnings.catch_warnings():
+        #    warnings.simplefilter("ignore")
+        INT = Data['Int']#np.divide(Data['Intensity']*Data['BinCount'],Data['Monitor']*Data['Normalization'])
+        INT_err = Data['Int_err']#np.divide(np.sqrt(Data['Intensity'])*Data['BinCount'],Data['Monitor']*Data['Normalization'])
         
 
 
