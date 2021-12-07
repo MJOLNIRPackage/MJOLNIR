@@ -116,6 +116,42 @@ def test_DataSet_Error():
 
     ds.dataFiles = os.path.join(dataPath,'camea2018n000136.hdf')
 
+def test_LoadBambusData():
+    ds = DataSet(dataFiles=[os.path.join(dataPath,'BambusTest.dat')])
+
+
+    ## Set up values to check
+    Ei = 3.684
+    A4 = 38.194
+    A3 = 20.0
+    
+    assert(ds[0].instrument == 'Bambus')
+    assert(ds[0].binning == 1)
+    assert(ds[0].dasel == (0,0))
+    assert(ds.instrumentCalibrationEf.shape == (len(ds),100,4))
+
+    scanParameters = ds[0].scanParameters
+    scanValues = ds[0].scanValues
+
+    assert(len(scanParameters) == len(scanValues))
+    
+
+    for param,value in zip(['Ei','A4','A3'],[Ei,A4,A3]):
+        assert(np.isclose(getattr(ds[0],param)[0],value))
+
+
+    try: # Only binning 1 can be used
+        ds.convertDataFile(binning = 3)
+        assert False
+    except AttributeError:
+        assert True
+
+    
+    assert(ds[0].I.shape == (scanValues.shape[1],100,1))
+
+    ds.convertDataFile()
+
+
 def test_DataSet_Pythonic():
     dataFiles = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
     dataset = DataSet(dataFiles=dataFiles)
