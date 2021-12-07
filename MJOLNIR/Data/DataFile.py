@@ -866,7 +866,7 @@ class DataFile(object):
             self.startTime = 'UNKNONW'
         else:
             self.startTime = '-'.join(matches[0][:3])+' '+':'.join(matches[0][3:])
-        self.endTime = 'UNKNONW'
+        self.endTime = 'UNKNOWN'
 
         if calibrationFile is None:
             calibrationFile = MJOLNIR.__bambusNormalization__
