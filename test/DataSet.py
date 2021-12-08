@@ -239,6 +239,8 @@ def test_DataSet_Convert_Data():
     convertedFile = dataset.convertedFiles[0]
     
     otherFile = MJOLNIR.Data.DataFile.DataFile(dataFiles.replace('.hdf','.nxs'))
+
+    assert(otherFile==convertedFile)
     assert(convertedFile==otherFile)
     os.remove(os.path.join(dataPath,'camea2018n000136.nxs'))
     

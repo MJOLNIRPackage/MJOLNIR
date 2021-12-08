@@ -329,6 +329,13 @@ class DataFile(object):
                     setattr(self,key,None)
         else: # Create an empty data set
             pass
+
+        if self.instrument == 'CAMEA':
+            self.EPrDetector = 8 
+        elif self.type in ['MultiFLEXX','FlatCone','Bambus']:
+            self.EPrDetector = 1
+        else:
+            pass
         
 
     @property
@@ -1125,12 +1132,7 @@ class DataFile(object):
     
     @_tools.KwargChecker()
     def convert(self,binning=None,printFunction=None):
-        if self.instrument == 'CAMEA':
-            self.EPrDetector = 8 
-            if binning is None:
-                binning = self.binning
-        elif self.type in ['MultiFLEXX','FlatCone','Bambus']:
-            self.EPrDetector = 1
+        if self.instrument == 'CAMEA' or self.type in ['MultiFLEXX','FlatCone','Bambus']:
             if binning is None:
                 binning = self.binning
         else:
@@ -1143,6 +1145,7 @@ class DataFile(object):
         EfNormalization = self.instrumentCalibrationEf.copy()
         A4Normalization = self.instrumentCalibrationA4.copy()#np.array(instrument.get('calib{}/a4offset'.format(str(binning))))
         EdgesNormalization = self.instrumentCalibrationEdges.copy()#np.array(instrument.get('calib{}/boundaries'.format(str(binning))))
+        self.counts = self.I.copy()
         Data = self.I.copy()#np.array(instrument.get('detector/data'))
 
 
