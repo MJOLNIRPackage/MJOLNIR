@@ -46,14 +46,19 @@ class DraggableRectangle(DraggableShape):
         self.figure = figure
         
     def remove(self):
+        fig = self.rect.figure
         self.disconnect()
         fig = self.rect.figure
+        self.rect.set_visible(False)
         self.rect.remove()
+        self.line.set_visible(False)
         self.line.remove()
         if self.selected:
             self.figure.selectedDr = None
+        idx = self.figure.shapes.index(self)
+        del self.figure.shapes[idx]
         fig.canvas.draw()
-        
+
 
     @property
     def selected(self):
@@ -285,12 +290,12 @@ class DraggableRectangle(DraggableShape):
         figure.new = False
         figure.newShape = None
         figure.line = None
-        figure.shapes.append(rect)
+        #figure.shapes.append(rect)
         figure.drawState = States.INACTIVE
        
         
 
-        figure.drs.append(dr)
+        figure.shapes.append(dr)
 
         return None
 
@@ -459,9 +464,13 @@ class DraggableCircle(DraggableShape):
     def remove(self):
         fig = self.circ.figure
         self.disconnect()
+        self.circ.set_visible(False)
         self.circ.remove()
+        del self.circ
         if self.selected:
             self.figure.selectedDr = None
+        idx = self.figure.shapes.index(self)
+        del self.figure.shapes[idx]
         fig.canvas.draw()        
 
     @property
@@ -654,9 +663,13 @@ class DraggableRectanglePerpendicular(DraggableShape):
     def remove(self):
         fig = self.rect.figure
         self.disconnect()
+        self.rect.set_visible(False)
         self.rect.remove()
+        del self.rect
         if self.selected:
             self.figure.selectedDr = None
+        idx = self.figure.shapes.index(self)
+        del self.figure.shapes[idx]
         fig.canvas.draw()        
 
     @property
@@ -861,11 +874,16 @@ class DraggableRectangleHorizontal(DraggableShape):
     def remove(self):
         fig = self.rect.figure
         self.disconnect()
+        fig = self.rect.figure
+        self.rect.set_visible(False)
         self.rect.remove()
+        self.line.set_visible(False)
         self.line.remove()
         if self.selected:
             self.figure.selectedDr = None
-        fig.canvas.draw()        
+        idx = self.figure.shapes.index(self)
+        del self.figure.shapes[idx]
+        fig.canvas.draw()     
 
     @property
     def selected(self):
@@ -1115,11 +1133,16 @@ class DraggableRectangleVertical(DraggableShape):
     def remove(self):
         fig = self.rect.figure
         self.disconnect()
+        fig = self.rect.figure
+        self.rect.set_visible(False)
         self.rect.remove()
+        self.line.set_visible(False)
         self.line.remove()
         if self.selected:
             self.figure.selectedDr = None
-        fig.canvas.draw()        
+        idx = self.figure.shapes.index(self)
+        del self.figure.shapes[idx]
+        fig.canvas.draw()     
 
     @property
     def selected(self):
