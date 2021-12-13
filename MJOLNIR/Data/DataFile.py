@@ -328,7 +328,8 @@ class DataFile(object):
                 else:
                     setattr(self,key,None)
         else: # Create an empty data set
-            pass
+            self.instrument = 'CAMEA'
+            self.type = 'Unknown'
 
         if self.instrument == 'CAMEA':
             self.EPrDetector = 8 
