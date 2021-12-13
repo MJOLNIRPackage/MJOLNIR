@@ -388,7 +388,7 @@ def test_DataSet_1Dcut():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile(saveFile=False)
 
-    ax,Data,bins = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.',ticks=5,tickRound=2)
+    ax,Data,bins = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
     Data2,bins2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
     
     # Check that the two data sets have the same values (except for Data2 also having 'binDistance')
@@ -468,7 +468,7 @@ def test_DataSet_1Dcut_ufit():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile(saveFile=False)
 
-    ax,dataset = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.',ticks=5,tickRound=2,ufit=True)
+    ax,dataset = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.',ufit=True)
     dataset2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,ufit=True)
     
 
@@ -546,7 +546,7 @@ def test_DataSet_1DcutE():
     assert(ufitData.meta['instrument'] == 'CAMEA')
     assert(ufitData.meta['datafilename'] == files)
 
-    ax,Data3,[bins3] = Datset.plotCut1DE(E1=Emin,E2=Emax,q=Q,width=0.1,minPixel=0.01,constantBins=True,ticks=5,tickRound=3)
+    ax,Data3,[bins3] = Datset.plotCut1DE(E1=Emin,E2=Emax,q=Q,width=0.1,minPixel=0.01,constantBins=True)
 
 
 
@@ -565,58 +565,29 @@ def test_DataSet_2Dcut():
     Datset = DataSet(dataFiles = convertFiles)
 
     Datset.convertDataFile(saveFile=False)
-    ax,Data,pos,cpos,distance = Datset.plotCutQELine(QPoints=[q1,q2],width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)# Remove to improve test coverage ,vmin=0.0 , vmax= 5e-06)
-    Data2,pos2,cpos2,distance2 = Datset.cutQELine(QPoints=[q1,q2],width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)
+    ax,Data,bins = Datset.plotCutQE(q1,q2,width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)# Remove to improve test coverage ,vmin=0.0 , vmax= 5e-06)
+    Data2,bins2 = Datset.cutQE(q1,q2,width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)
 
+    comparisons = list(Data.columns)
+    del comparisons[comparisons.index('binDistance')]
 
-    assert(Data.equals(Data2))
-
-    for i in range(len(pos)):
-        for j in range(len(pos[i])):
-            for k in range(len(pos[i][j])):
-                assert(np.all(pos[i][j][k]==pos2[i][j][k]))
-
-    for i in range(len(cpos)):
-        for j in range(len(cpos[i])):
-            assert(np.all(cpos2[i][j]==cpos[i][j]))
-        
-    for i in range(len(distance)):
-        for j in range(len(distance[i])):
-            assert(np.all(distance2[i][j]==distance[i][j]))
+    np.all([np.allclose(Data[p],Data2[p],equal_nan=True) for p in comparisons])
 
     Q1 = np.array([1,0,0])
     Q2 = np.array([0.5,1,0])
 
     q1,q2 = Datset.convertToQxQy([Q1,Q2])
 
-    Data1,pos1,cpos1,distance1 = Datset.cutQE(Q1,Q2,width,minPixel,EnergyBins,rlu=True)
-    Data2,pos2,cpos2,distance2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins,rlu=False)
+    Data1,bins = Datset.cutQE(Q1,Q2,width,minPixel,EnergyBins=EnergyBins,rlu=True)
+    Data2,bins2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins=EnergyBins,rlu=False)
 
+    comparisons = list(Data.columns)
+    del comparisons[comparisons.index('binDistance')]
+    
+    assert(np.all(comparisons == Data2.columns))
 
-    # Expanded comparison as pandas dataframes cannot ignore nans when comparing two frames
-    assert(np.all(Data1.columns == Data2.columns))
-    checker = []
-    for col in Data1.columns:
-        Nans = Data1[col].isna()
-        if np.any(Nans):
-            Nans2 = Data1[col].isna()
-            checker.append(np.all(np.isclose(Data1[col][np.logical_not(Nans)],Data2[col][np.logical_not(Nans2)])))
-        else:
-            checker.append(np.all(np.isclose(Data1[col],Data2[col])))
-    print(checker)
-    assert(np.all(checker))
-
-    for i in range(len(pos)):
-        for j in range(len(pos[i])):
-            assert(np.all(np.isclose(pos1[i][j],pos2[i][j])))
-
-    for i in range(len(cpos)):
-        for j in range(len(cpos[i])):
-            assert(np.all(np.isclose(cpos2[i][j],cpos1[i][j])))
-        
-    for i in range(len(distance)):
-        for j in range(len(distance[i])):
-            assert(np.all(np.isclose(distance2[i][j],distance1[i][j])))
+    
+    np.all([np.allclose(Data1[p],Data2[p],equal_nan=True) for p in comparisons])
 
 def test_DataSet_cutPowder():
     Tolerance = 0.01
@@ -945,8 +916,8 @@ def test_DataSet_cutQELine():
         assert True
 
 
-    DataList,BinList,centerPosition,binDistance=dataset.cutQELine(QPointsHKL,EnergyBins,width=width,minPixel=minPixel,rlu=True)
-    DataList2,BinList2,centerPosition2,binDistance2=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
+    DataList,BinList=dataset.cutQELine(QPointsHKL,EnergyBins,width=width,minPixel=minPixel,rlu=True)
+    DataList2,BinList2=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
 
     assert(len(DataList['qCut'][0])==(len(QPointsHKL)-1)*(len(EnergyBins)-1))# Assert that there are 3 cuts with 4 energies
 
@@ -956,85 +927,86 @@ def test_DataSet_cutQELine():
     
 
 def test_DataSet_plotCutQELine():
-    Points = np.array([[0.7140393034102988,-0.4959224853328328],
-                        [1.128363301356428,-1.6520150761601147],
-                        [1.9002545852012716,-0.9393552598967219],
-                        [1.0432282332853056,-0.12375569239528339]],dtype=float)
-    QPoints = np.zeros((Points.shape[0],3))
-    QPoints[:,:2]=Points
-    EnergyBins = np.linspace(1.7,2.7,11)
-    minPixel = 0.001
-    width=0.1
-    import matplotlib
-    matplotlib.use('Agg')
+    if False:
+        Points = np.array([[0.7140393034102988,-0.4959224853328328],
+                            [1.128363301356428,-1.6520150761601147],
+                            [1.9002545852012716,-0.9393552598967219],
+                            [1.0432282332853056,-0.12375569239528339]],dtype=float)
+        QPoints = np.zeros((Points.shape[0],3))
+        QPoints[:,:2]=Points
+        EnergyBins = np.linspace(1.7,2.7,11)
+        minPixel = 0.001
+        width=0.1
+        import matplotlib
+        matplotlib.use('Agg')
 
-    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
-    dataset = DataSet(convertedFiles=DataFile)
-    dataset.convertDataFile(saveFile=False)
-    
-    try: # No Q-points
-        dataset.plotCutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=False)
-        assert False
-    except AttributeError:
-        assert True
+        DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
+        dataset = DataSet(convertedFiles=DataFile)
+        dataset.convertDataFile(saveFile=False)
+        
+        try: # No Q-points
+            dataset.plotCutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=False)
+            assert False
+        except AttributeError:
+            assert True
 
-    try: # No points in E range
-        dataset.plotCutQELine(QPoints,EnergyBins+100,width=width,minPixel=minPixel,rlu=True,vmin=0.0,vmax=1.5e-6,ticks=10)
-        assert False
-    except AttributeError:
-        assert True
+        try: # No points in E range
+            dataset.plotCutQELine(QPoints,EnergyBins+100,width=width,minPixel=minPixel,rlu=True,vmin=0.0,vmax=1.5e-6)
+            assert False
+        except AttributeError:
+            assert True
 
-    try: # No wrong dim of QPonts
-        dataset.plotCutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
-        assert False
-    except AttributeError:
-        assert True
+        try: # No wrong dim of QPonts
+            dataset.plotCutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
+            assert False
+        except AttributeError:
+            assert True
 
-    try: # No wrong dim of QPonts
-        dataset.plotCutQELine(QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=True)
-        assert False
-    except AttributeError:
-        assert True
-
-
-    fig = plt.figure()
-    ax = fig.gca()
-
-    ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,ax=ax,vmin=0.0,vmax=1.5e-6,log=True,seperatorWidth=3)
+        try: # No wrong dim of QPonts
+            dataset.plotCutQELine(QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=True)
+            assert False
+        except AttributeError:
+            assert True
 
 
-    HKLPoints = np.array([[1.0,0.0,0.0],
-                        [0.5,1.5,0.0],
-                        [1.7,-0.1,0.0],
-                        [1.0,1.0,0.0]])
+        fig = plt.figure()
+        ax = fig.gca()
+
+        ax,Data,Bins = dataset.plotCutQELine(
+            QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,ax=ax,vmin=0.0,vmax=1.5e-6,log=True,seperatorWidth=3)
+
+
+        HKLPoints = np.array([[1.0,0.0,0.0],
+                            [0.5,1.5,0.0],
+                            [1.7,-0.1,0.0],
+                            [1.0,1.0,0.0]])
 
 
 
-    ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = dataset.plotCutQELine(
-        HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,ticks=1,tickRound=1,colorbar=True,log=True)
+        ax,Data,Bins = dataset.plotCutQELine(
+            HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,colorbar=True,log=True)
 
+        
+        # 3D
+        from mpl_toolkits.mplot3d import Axes3D
+        from matplotlib.colors import ListedColormap
+        cmap = plt.cm.coolwarm
+        my_cmap = cmap(np.arange(cmap.N))
+        my_cmap[:,-1] = np.linspace(0, 1, cmap.N)
+        my_cmap = ListedColormap(my_cmap)
 
-    # 3D
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib.colors import ListedColormap
-    cmap = plt.cm.coolwarm
-    my_cmap = cmap(np.arange(cmap.N))
-    my_cmap[:,-1] = np.linspace(0, 1, cmap.N)
-    my_cmap = ListedColormap(my_cmap)
+        fig = plt.figure(figsize=(10,11))
+        ax = fig.add_subplot(111, projection='3d')
 
-    fig = plt.figure(figsize=(10,11))
-    ax = fig.add_subplot(111, projection='3d')
+        Energies = np.concatenate(dataset.energy,axis=0)
+        E = np.arange(Energies.min()+0.35,Energies.max(),0.35)
+        
 
-    Energies = np.concatenate(dataset.energy,axis=0)
-    E = np.arange(Energies.min()+0.35,Energies.max(),0.35)
-    
+        ax,Data,Bins = \
+        dataset.plotCutQELine(QPoints=HKLPoints,EnergyBins=E,ax = ax,width=0.05,minPixel=0.01,
+                vmin=7.5e-7,vmax=7e-6,cmap=cmap,rlu=True)
 
-    ax,DataList,BinListTotal,centerPositionTotal,binDistanceTotal = \
-    dataset.plotCutQELine(QPoints=HKLPoints,EnergyBins=E,ax = ax,width=0.05,minPixel=0.01,
-            vmin=7.5e-7,vmax=7e-6,cmap=cmap,rlu=True)
-
-    plt.close('all')
+#    plt.close('all')
 
 
 def test_DataSet_extractDetectorData():
