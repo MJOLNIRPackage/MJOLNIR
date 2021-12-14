@@ -35,7 +35,7 @@ def Tester():
     
     fig = plt.figure(figsize=(14,6))
     ax = fig.gca()
-    ax,DataLists,Bins,BinCenters,Offsets = \
+    ax,DataLists,Bins = \
     ds.plotCutQELine(QPoints=QPoints, width=width, minPixel=minPixel, \
                      ax=ax, EnergyBins=EnergyBins)
     

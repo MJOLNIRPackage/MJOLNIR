@@ -34,40 +34,31 @@ def Tester():
                                _tools.binEdges(Energies,0.1),
                                _tools.binEdges(Energies,0.07)])
         
-        # Create figure into which the plot is made
-        fig = plt.figure(figsize=(14,6))
-        ax = fig.gca()
         
-        ax,DataLists,BinListTotal,centerPositionTotal,binDistanceTotal = \
+        ax,DataLists,BinListTotal = \
         ds.plotCutQELine(QPoints=QPoints, width=width, minPixel=minPixel, \
-                         ax=ax, EnergyBins=EnergyBins, ticks = 12,\
-                         vmin=1e-8, vmax=1e-5, tickRound = 4, plotSeperator = True,
+                         EnergyBins=EnergyBins, ticks = 12,\
+                         vmin=1e-8, vmax=1e-5, plotSeperator = True,
                          seperatorWidth=0.5,zorder=10)
         ax.grid(True,zorder=0,c='k')
-        fig.savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/plotCutQELineMnF2.png',format='png',dpi=300)
+        ax.get_figure().savefig('/home/lass/Dropbox/PhD/Software/MJOLNIR/docs/Tutorials/Advanced/plotCutQELineMnF2.png',format='png',dpi=300)
         
         # Plot a single cut through the data set
         
         fig2,ax2 = plt.subplots()
         segID = 2
-        # Find all energies in segment
-        E = np.array([x[0][-1] for x in centerPositionTotal[segID]])
-        # Find index of energies corresponding to the list
-        EnergyIndexes = [E.searchsorted(x) for x in np.linspace(1.5,6.5,5)]
-        plot = 0
-        for energyID in EnergyIndexes:    
-            # Extract data for segment 2 and current energy
-            _dataList = DataLists[np.logical_and(DataLists['qCut']==segID, DataLists['energyCut']==energyID)].astype(float)
+        # Extract the data from SegmentId
+        df = DataLists[segID]
         
+        for energy,EnergyDF in df.groupby('Energy'):    
                     
-            Intensity = _dataList['Int']*1e5
-            Intensity_err = np.divide(np.sqrt(_dataList['Intensity'])*_dataList['BinCount'],_dataList['Monitor']*_dataList['Normalization'])
+            Intensity = EnergyDF['Int']*1e5
+            Intensity_err = EnergyDF['Int_err']
             
-            position = _dataList['L'] # Plotting along L
-            Energy = np.mean(_dataList['Energy'])
+            position = EnergyDF['L'] # Plotting along L
             
-            ax2.errorbar(position,Intensity+len(EnergyIndexes)-plot,yerr=Intensity_err,fmt='-',label='E = {:.1f} meV'.format(Energy))
-            plot+=1
+            ax2.errorbar(position,Intensity,yerr=Intensity_err,fmt='-',label='E = {:.1f} meV'.format(energy))
+            
         ax2.set_title('Cut through data along $L$')
         ax2.set_xlabel('L [rlu]')
         ax2.set_ylabel('Int [arb]')
@@ -111,8 +102,6 @@ outroText = 'Running the above code results in the following figure: '\
 +'|      ticks     | The number of tick marks to be plotted, minimum is len(QPoints)                 | 8              | N/A  |\n'\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
 +'| seperatorWidth | Width of vertical line denoting change of cutting direction                     | 2              | pts  |\n'\
-+'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
-+'|    tickRound   | Number of decimals to be used when creating tick marks                          | 3              | N/A  |\n'\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
 +'|  plotSeperator | If a vertical black line is to be plotted to denote change of cutting direction | True           | N/A  |\n'\
 +'+----------------+---------------------------------------------------------------------------------+----------------+------+\n'\
