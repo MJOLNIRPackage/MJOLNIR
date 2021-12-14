@@ -927,66 +927,58 @@ def test_DataSet_cutQELine():
     
 
 def test_DataSet_plotCutQELine():
-    if False:
-        Points = np.array([[0.7140393034102988,-0.4959224853328328],
-                            [1.128363301356428,-1.6520150761601147],
-                            [1.9002545852012716,-0.9393552598967219],
-                            [1.0432282332853056,-0.12375569239528339]],dtype=float)
-        QPoints = np.zeros((Points.shape[0],3))
-        QPoints[:,:2]=Points
-        EnergyBins = np.linspace(1.7,2.7,11)
-        minPixel = 0.001
-        width=0.1
-        import matplotlib
-        matplotlib.use('Agg')
+    
+    Points = np.array([[0.7140393034102988,-0.4959224853328328],
+                        [1.128363301356428,-1.6520150761601147],
+                        [1.9002545852012716,-0.9393552598967219],
+                        [1.0432282332853056,-0.12375569239528339]],dtype=float)
+    QPoints = np.zeros((Points.shape[0],3))
+    QPoints[:,:2]=Points
+    EnergyBins = np.linspace(1.7,2.7,11)
+    minPixel = 0.001
+    width=0.1
+    import matplotlib
+    matplotlib.use('Agg')
 
-        DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
-        dataset = DataSet(convertedFiles=DataFile)
-        dataset.convertDataFile(saveFile=False)
-        
-        try: # No Q-points
-            dataset.plotCutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=False)
-            assert False
-        except AttributeError:
-            assert True
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
+    dataset = DataSet(convertedFiles=DataFile)
+    dataset.convertDataFile(saveFile=False)
+    
+    try: # No Q-points
+        dataset.plotCutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=False)
+        assert False
+    except AttributeError:
+        assert True
 
-        try: # No points in E range
-            dataset.plotCutQELine(QPoints,EnergyBins+100,width=width,minPixel=minPixel,rlu=True,vmin=0.0,vmax=1.5e-6)
-            assert False
-        except AttributeError:
-            assert True
+    try: # No wrong dim of QPonts
+        dataset.plotCutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
+        assert False
+    except AttributeError:
+        assert True
 
-        try: # No wrong dim of QPonts
-            dataset.plotCutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
-            assert False
-        except AttributeError:
-            assert True
-
-        try: # No wrong dim of QPonts
-            dataset.plotCutQELine(QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=True)
-            assert False
-        except AttributeError:
-            assert True
+    try: # No wrong dim of QPonts
+        dataset.plotCutQELine(QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=True)
+        assert False
+    except AttributeError:
+        assert True
 
 
-        fig = plt.figure()
-        ax = fig.gca()
-
-        ax,Data,Bins = dataset.plotCutQELine(
-            QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,ax=ax,vmin=0.0,vmax=1.5e-6,log=True,seperatorWidth=3)
+    ax,Data,Bins = dataset.plotCutQELine(
+        QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,vmin=0.0,vmax=1.5e-6,log=True,seperatorWidth=3)
 
 
-        HKLPoints = np.array([[1.0,0.0,0.0],
-                            [0.5,1.5,0.0],
-                            [1.7,-0.1,0.0],
-                            [1.0,1.0,0.0]])
+    HKLPoints = np.array([[1.0,0.0,0.0],
+                        [0.5,1.5,0.0],
+                        [1.7,-0.1,0.0],
+                        [1.0,1.0,0.0]])
 
 
 
-        ax,Data,Bins = dataset.plotCutQELine(
-            HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,colorbar=True,log=True)
+    ax,Data,Bins = dataset.plotCutQELine(
+        HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,colorbar=True,log=True)
 
-        
+    
+    if True:
         # 3D
         from mpl_toolkits.mplot3d import Axes3D
         from matplotlib.colors import ListedColormap
@@ -1001,12 +993,14 @@ def test_DataSet_plotCutQELine():
         Energies = np.concatenate(dataset.energy,axis=0)
         E = np.arange(Energies.min()+0.35,Energies.max(),0.35)
         
+        try:
+            ax,Data,Bins = \
+            dataset.plotCutQELine(QPoints=HKLPoints,EnergyBins=E,ax = ax,width=0.05,minPixel=0.01,
+                    vmin=7.5e-7,vmax=7e-6,cmap=cmap,rlu=True)
+            assert False
+        except NotImplementedError:
+            assert True
 
-        ax,Data,Bins = \
-        dataset.plotCutQELine(QPoints=HKLPoints,EnergyBins=E,ax = ax,width=0.05,minPixel=0.01,
-                vmin=7.5e-7,vmax=7e-6,cmap=cmap,rlu=True)
-
-#    plt.close('all')
 
 
 def test_DataSet_extractDetectorData():

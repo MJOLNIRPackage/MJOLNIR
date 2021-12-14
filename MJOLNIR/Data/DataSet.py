@@ -1031,7 +1031,15 @@ class DataSet(object):
             ax.colorbar(ax.pmeshs[0])
 
         ax.grid(grid)
+
+        def to_csv(fileName,ax):
+            shape = (len(ax.X),len(ax.Y))
+            with open(fileName,'w') as f:
+                f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,shape))
+            d = ax.Data.fillna(-1)
+            d.to_csv(fileName,mode='a')
         
+        ax.to_csv = lambda fileName: to_csv(fileName,ax)
 
         Draggables = [DraggableRectanglePerpendicular,DraggableRectangleHorizontal,DraggableRectangleVertical]
 
@@ -1654,6 +1662,30 @@ class DataSet(object):
             ymin = np.min([np.min(qy) for qy in Qy])
             ymax = np.max([np.max(qy) for qy in Qy])
             ax.set_ylim(ymin,ymax)#np.min(Qy),np.max(Qy))
+
+        if not _3D:
+            def to_csv(fileName,ax):
+                Qx,Qy = [x[0] for x in ax.bins]
+                QxCenter = 0.25*(Qx[:-1,:-1]+Qx[:-1,1:]+Qx[1:,1:]+Qx[1:,:-1])
+                QyCenter = 0.25*(Qy[:-1,:-1]+Qy[:-1,1:]+Qy[1:,1:]+Qy[1:,:-1])
+                H,K,L = ax.sample.calculateQxQyToHKL(QxCenter,QyCenter)
+                E = np.full(H.shape,np.mean([ax.EMin,ax.EMax]))
+                intensity,monitorCount,Normalization,NormCount = [x[0] for x in ax.data]
+                Int = np.divide(intensity*NormCount,Normalization*monitorCount)
+                Int[np.isnan(Int)] = -1
+                Int_err = np.divide(np.sqrt(intensity)*NormCount,Normalization*monitorCount)
+                Int_err[np.isnan(Int_err)] = -1
+                dataToPandas = {'Qx':QxCenter.flatten(),'Qy':QyCenter.flatten(),'H':H.flatten(),'K':K.flatten(),'L':L.flatten(),'Energy':E.flatten(), 'Intensity':intensity.flatten(), 'Monitor':monitorCount.flatten(),
+                                'Normalization':Normalization.flatten(),'BinCounts':NormCount.flatten(),'Int':Int.flatten(),'Int_err':Int_err.flatten()}
+                ax.d = pd.DataFrame(dataToPandas)
+
+                with open(fileName,'w') as f:
+                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,Int.shape))
+
+                ax.d.to_csv(fileName,mode='a')
+            ax.to_csv = lambda fileName: to_csv(fileName,ax)
+            ax.bins = [Qx,Qy]
+            ax.data = [intensity,monitorCount,Normalization,NormCount]
         return [intensity,monitorCount,Normalization,NormCount],[Qx,Qy],ax
 
     @_tools.KwargChecker()
@@ -1939,9 +1971,8 @@ class DataSet(object):
         if(len(QPoints)<2):
             raise AttributeError('Number of Q points given is less than 2.')
         if rlu==True: # Recalculate q points into qx and qy points
-        #    sample =self.sample[0]
-        #    positions = self.convertToQxQy(QPoints)
-            pass
+            if QPoints.shape[1]!=3:
+                raise AttributeError('Provide Q list is not 3 dimensional, should have shape (n,3) in HKL mode but got shape {}.'.format(QPoints.shape))
             
         elif rlu==False: # RLU is false
         #    positions = QPoints
@@ -2140,8 +2171,7 @@ class DataSet(object):
             ax.format_coord = lambda x,y: format_coord(x,y,ax)
 
             ax.dE = np.diff(BinList[0][1][0,:]).mean()
-            rlu = True
-            plotSeps = True
+
             ax.Data = DataList
             ax.rlu = rlu
             if rlu:
@@ -2993,6 +3023,10 @@ class DataSet(object):
             Viewer = Viewer3DPyQtGraph.Interactive3DViewer(Data,bins,self.sample[0],log=log)
             win.setCentralWidget(Viewer)
             win.show()
+
+            def to_csv(fileName,viewer):
+                raise NotImplementedError('You can only save to csv using the regular view3D obtion')
+            Viewer.to_csv = lambda fileName: to_csv(fileName,Viewer)
             
             
 
@@ -3006,6 +3040,38 @@ class DataSet(object):
             CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits,
             dataset=self,cut1DFunctionRectangle=cut1DFunctionRectangle, 
             cut1DFunctionCircle=cut1DFunctionCircle)
+
+            def to_csv(fileName,self):
+                shape = self.Counts.shape
+                
+                Int = np.divide(self.Counts*self.NormCounts,self.Monitor*self.Normalization)
+                Int_err = np.divide(np.sqrt(self.Counts)*self.NormCounts,self.Monitor*self.Normalization)
+                
+                Qx,Qy,E = [x for x in self.bins]
+                E = E[0,0]
+                E = 0.5*(E[1:]+E[:-1])
+                Qx = Qx[:,:,0]
+                Qx = 0.25*(Qx[1:,1:]+Qx[:-1,1:]+Qx[1:,:-1]+Qx[:-1,:-1])
+                Qy = Qy[:,:,0]
+                Qy = 0.25*(Qy[1:,1:]+Qy[:-1,1:]+Qy[1:,:-1]+Qy[:-1,:-1])
+                H,K,L = self.axRLU.sample.calculateQxQyToHKL(Qx,Qy)
+                Qx = np.repeat(Qx[:,:,np.newaxis],E.shape[-1],axis=-1)
+                Qy = np.repeat(Qy[:,:,np.newaxis],E.shape[-1],axis=-1)
+                H = np.repeat(H[:,:,np.newaxis],E.shape[-1],axis=-1)
+                K = np.repeat(K[:,:,np.newaxis],E.shape[-1],axis=-1)
+                L = np.repeat(L[:,:,np.newaxis],E.shape[-1],axis=-1)
+                E = np.repeat(E[np.newaxis],H.shape[1],axis=0)
+                E = np.repeat(E[np.newaxis],H.shape[0],axis=0)
+                
+                dataToPandas = {'Qx':Qx.flatten(),'Qy':Qy.flatten(),'H':H.flatten(),'K':K.flatten(),'L':L.flatten(),'Energy':E.flatten(), 'Intensity':self.Counts.flatten(), 'Monitor':self.Monitor.flatten(),
+                                                'Normalization':self.Normalization.flatten(),'BinCounts':self.NormCounts.flatten(),'Int':Int.flatten(),'Int_err':Int_err.flatten()}
+                self.d = pd.DataFrame(dataToPandas).fillna(-1)
+                
+                with open(fileName,'w') as f:
+                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,shape))
+                    self.d.to_csv(fileName,mode='a')
+            Viewer.to_csv = lambda fileName: to_csv(fileName,Viewer)
+
         return Viewer
 
     def cutRaw1D(self,detectorSelection=None,analyzerSelection=None):
