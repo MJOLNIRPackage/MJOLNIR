@@ -1,5 +1,0 @@
-18/11-18 - Spinwaves in PbTi
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-In data files 178 through 190 measurements of PbTi is saved showing nice spin waves.

@@ -1,9 +1,0 @@
-05/12-18 - LSCO II 
-^^^^^^^^^^^^^^^^^^
-
-Continuation of elastic measurements on LSCO. Changed :math:`E_i` to 4.05 meV incoming to move Bragg peak to higher :math:`A4` values to avoid the excess background from the direct beam hitting the side of the tank opening. Further, a Boral plate was mounted.
-
-
-.. figure:: BoralPlate.png
-  :width: 45%
-  :align: center
