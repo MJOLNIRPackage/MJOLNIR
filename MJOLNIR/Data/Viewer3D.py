@@ -1,5 +1,6 @@
 import os
 import sys
+from typing import Type
 
 sys.path.append('.')
 sys.path.append('..')
@@ -79,6 +80,8 @@ class Viewer3D(object):
         self.rects = []
         self.drs = []
         self.clearBoxes = lambda: clearBoxes(self)
+
+        self.currentData = None
         
 
         self.plotCurratAxe = False # Set to false but will change to True when correct list is created
@@ -347,7 +350,8 @@ class Viewer3D(object):
             self.caxis = (cmin,cmax)
 
     def setAxis(self,axis):
-        
+        if hasattr(self,'im'): # this function is also called before any plot has been performed
+            self.im.set_array(self.emptyData) # Set data in current im to a fully masked data set
         if axis==2:
             if self.rlu:
                 self.figure.delaxes(self.ax)
@@ -387,6 +391,9 @@ class Viewer3D(object):
         
 
         masked_array = np.ma.array (self.Data, mask=np.isnan(self.Data)).transpose(axes)
+        self.emptyData = masked_array[:,:,0].T.flatten().copy()
+        self.emptyData.mask = np.ones_like(self.emptyData,dtype=bool)
+        self._axesChanged = True
         upperLim = self.Data.shape[axis]-1
         self.label = label
         self.X = X
@@ -400,9 +407,9 @@ class Viewer3D(object):
 
     def calculateValue(self):
         try:
-            val = 0.5*(self.Z[0,0,self.value+1]+self.Z[0,0,self.value])
+            val = 0.5*(self.Z[0,0,int(self.value)+1]+self.Z[0,0,int(self.value)])
         except:
-            val = 0.5*(2*self.Z[0,0,self.value]-self.Z[0,0,self.value-1])
+            val = 0.5*(2*self.Z[0,0,int(self.value)]-self.Z[0,0,int(self.value)-1])
         if hasattr(self,'EnergySliderTransform'):
             val/=self.EnergySliderTransform[self.axis]
         return val
@@ -478,13 +485,18 @@ class Viewer3D(object):
     
     def plot(self):
         self.text.set_text(self.stringValue())
-        self.im.remove()
-        if self.shading=='flat':
-            self.im = self.ax.pcolormesh(self.X[:,:,self.value].T,self.Y[:,:,self.value].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face',cmap=self.cmap)
-        elif self.shading=='gouraud': # pragma: no cover
-            XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
-            YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
-            self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,edgecolors='face',cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
+        try:
+            self.im.set_array(self.emptyData)
+        except TypeError:
+            pass
+        if self._axesChanged:
+            tempData = np.ma.array(self.im.get_array().T)
+            tempData.mask = np.ones_like(tempData,dtype=bool)
+            self.im.set_array(tempData)
+            self._axesChanged = False
+        else:
+            self.im.set_array(self.masked_array[:,:,self.value].T.flatten())
+        
             
         if not self.CurratAxeBraggList is None and not self.Ei is None and self.plotCurratAxe is True and self.rlu is True:
             #if self.axis==2: ### QxQy plane
@@ -613,7 +625,8 @@ def onkeypress(event,self): # pragma: no cover
     elif event.key in Viewer3DSettings['QxE']:
         if self.axis!=0:
             reloadslider(self,0)
-            #del self.im
+            del self.im
+            #self.currentData = None
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
@@ -628,7 +641,8 @@ def onkeypress(event,self): # pragma: no cover
     elif event.key in Viewer3DSettings['QyE']:
         if self.axis!=1:
             reloadslider(self,1)
-            #del self.im
+            del self.im
+            #self.currentData = None
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
@@ -643,7 +657,8 @@ def onkeypress(event,self): # pragma: no cover
     elif event.key in Viewer3DSettings['QxQy']:
         if self.axis!=2:
             reloadslider(self,2)
-            #del self.im
+            del self.im
+            #self.currentData = None
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
@@ -663,7 +678,7 @@ def reloadslider(self,axis): # pragma: no cover
     self.setAxis(axis)
     self.Energy_slider.set_val(0)
     self.Energy_slider.label.remove()
-    self.Energy_slider.disconnect(self.Energy_slider.cids[0])
+    self.Energy_slider.disconnect_events()#(self.Energy_slider.cids[0])
     self.Energy_slider.vline.set_visible(False)
     
     del self.Energy_slider

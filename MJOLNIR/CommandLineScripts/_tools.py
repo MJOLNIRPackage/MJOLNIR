@@ -3,20 +3,23 @@ import sys
 import pickle
 import re
 import MJOLNIR._tools
+from MJOLNIR.Data import DataFile
 import numpy as np
+from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog
+from PyQt5.Qt import QApplication
+from PyQt5 import Qt
 
 from os.path import expanduser
 settingsFile = expanduser("~") # Use home folder for storing settings file
 
 settingsFile = os.path.join(settingsFile,'.MJOLNIRsettings')
 
-rawFileFormats = ' '.join([x for x in ['.hdf']])
-convertedFileFormats = ' '.join([x for x in ['*.nxs']])
-fileFormats = ' '.join([x for x in [rawFileFormats,convertedFileFormats]])
+allowedRawFilesString = 'Raw ('+' '.join(['*.'+str(x) for x in DataFile.supportedRawFormats])+')'
+allowedConvertedFilesString = 'Converted ('+' '.join(['*.'+str(x) for x in DataFile.supportedConvertedFormats])+')'
+allowedAllFilesString = 'All Files (*)'
 
-
-fileTypes = (('Data files',fileFormats),('Raw files',rawFileFormats),('Converted files',convertedFileFormats),('All files','*'))
-
+allowedString = ';;'.join([allowedRawFilesString,allowedConvertedFilesString,allowedAllFilesString])
+global dataFilesLoaded
 # All functions are tested through the test_coonadline.py script but are called through the terminal thus not recorded as tested.
 def loadSetting(string): # pragma: no cover
     if Exists():
@@ -62,20 +65,7 @@ def extractDataFiles(args,settingsName,oneFile = False):# pragma: no cover
         if reuse:
             files = startingPath
         else:
-            try:
-                import tkinter as tk
-                from tkinter import filedialog
-            except:
-                import Tkinter as tk
-                import tkFileDialog as filedialog
-            
-            root = tk.Tk()
-            root.withdraw()
-            if oneFile:
-                files = filedialog.askopenfilename(initialdir=startingDir, title = 'Select file',filetypes=fileTypes)
-            else:
-                files = filedialog.askopenfilenames(initialdir=startingDir, title = 'Select file(s)',filetypes=fileTypes)
-
+            files = loadFiles(startingDir)
         files = tuple(np.unique(files))
         if len(list(files))==0: # No file chosen
             sys.exit()
@@ -99,3 +89,34 @@ def extractDataFiles(args,settingsName,oneFile = False):# pragma: no cover
         else:
             files = args.DataFile
     return files
+
+class App(QWidget):
+    def __init__(self,startingPath=None):
+        super().__init__()
+        self.title = 'MJOLNIR Command Line - Load Files'
+        self.startingPath = startingPath
+        self.initUI()
+    
+    def initUI(self):
+        self.hide()
+        self.setWindowTitle(self.title)
+        self.openFileNamesDialog()
+        
+        
+        Qt.QCoreApplication.quit()
+    
+    def openFileNamesDialog(self):
+        #options = QFileDialog.Options()
+        #options |= QFileDialog.DontUseNativeDialog
+        #print(self,"MJOLNIR Command Line - Load Files", allowedString,self.startingPath)
+        files, _ = QFileDialog.getOpenFileNames(self,"MJOLNIR Command Line - Load Files", self.startingPath,allowedString)
+        global dataFilesLoaded 
+        dataFilesLoaded = files
+        self.close()
+    
+
+    
+def loadFiles(startingPath=None):
+    app = QApplication(sys.argv)
+    ex = App(startingPath=startingPath)
+    return dataFilesLoaded

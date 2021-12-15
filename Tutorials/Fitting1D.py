@@ -1,5 +1,5 @@
 import sys 
-sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
+sys.path.append(r'C:\Users\lass_j\Documents\Software\MJOLNIR')
 
 from Tutorial_Class import Tutorial
 
@@ -11,7 +11,7 @@ def Tester():
     import numpy as np
     from lmfit.models import GaussianModel
     
-    numbers = '499,500'
+    numbers = '483-490,492-500'
     files = _tools.fileListGenerator(numbers,'/home/lass/Dropbox/PhD/CAMEAData/',year=2018)
     ds = DataSet.DataSet(files)
     ds.convertDataFile(binning=8,saveFile=False)
@@ -33,10 +33,12 @@ def Tester():
     q3 = [0,0,1.0]
     
     # Create two different energy ranges for the cut from q1 to q2 and q2 to q3
-    EBins = [np.linspace(ds.energy.min(),ds.energy.max(),31),np.linspace(ds.energy.min(),ds.energy.max(),25)]
+    EBins = np.array([np.linspace(ds.energy.min(),ds.energy.max(),31),np.linspace(ds.energy.min(),ds.energy.max(),25)])
     
     # Perform the cut and plot it. Returns a cutObject
-    ax,Data,Bin,center,Distance = ds.plotCutQELine(QPoints=[q1,q2,q3],width=0.05,minPixel=0.01,EnergyBins=EBins)
+    ax,Data,Bin = ds.plotCutQELine(QPoints=[q1,q2,q3],width=0.05,minPixel=0.01,EnergyBins=EBins,plotSeperator=True) # 
+    
+    ax.set_clim(0,5e-6)
     
     # Extract axis and save figure
     fig = ax.get_figure()
@@ -47,12 +49,12 @@ def Tester():
     
     out = [] # Holder for fitting results
     
-    # Utilize the groupby function of the pandas DataFrame to loop through the different cuts
-    for ID,_cutdata in Data.groupby('qCut'):
+    # Loop through the different cuts
+    for ID,_cutdata in enumerate(Data):
         # ID: which segment, either 0: q1->q2, or 1: q2->q3
         # _data: pandas frame containing data for this cut
         
-        for _,_data in _cutdata.groupby('energyCut'):
+        for _,_data in _cutdata.groupby('Energy'):
             # Transpose as to easier perform fit
             x = _data[['H','K','L','Energy']]
             
@@ -78,6 +80,10 @@ def Tester():
                 # Direction along which to fit
                 fittingX = x['L']
                 
+                E = x['Energy'].values[0]
+                if E<1.6:
+                    continue
+            
                 # Cut out portions to make use of the automatic parameter estimation
                 ix1 = fittingX< -0.1 # All points before -0.1 is for first Gaussian
                 ix2 = np.logical_and(fittingX> -0.1,fittingX<0.5) # Between ix1 and ix2 is second Gaussian
@@ -90,10 +96,13 @@ def Tester():
                 pars.update(gauss3.guess(y[ix3],x=fittingX[ix3].values))
             
             elif ID == 1:
+
                 # Repeat procedure from above for second segment with only 2 Gaussians or 1 depending on energy
                 fittingX = x['H'].values
                 gauss1 = GaussianModel(prefix='g1_')
                 E = x['Energy'].values[0]
+                if E<1.6:
+                    continue
                 if E<6.1:
         
                     gauss2 = GaussianModel(prefix='g2_')
@@ -105,7 +114,7 @@ def Tester():
         
                     pars = gauss1.guess(y[ix1],x=fittingX[ix1])
                     pars.update(gauss2.guess(y[ix2],x=fittingX[ix2]))
-                elif E<6.6:
+                elif E<6.45:
                     mod = gauss1
                     pars = gauss1.guess(y,x=fittingX)
                 else:
@@ -131,16 +140,16 @@ def Tester():
             # Depending on segment, the centres of the Gaussians are either [-1,0,c] or [c,0,-1]
             # 'Errors' refers to the errorbars and are in this case plotted as the widths
             if ID == 0:
-                Center3D    = [[-1.0,0,c] for c in centres]
-                Center3DErr = [[-1.0,0,c+err] for c,err in zip(centres,widths)]
+                Center3D    = np.array([[-1.0,0,c] for c in centres])
+                Center3DErr = np.array([[-1.0,0,c+err] for c,err in zip(centres,widths)])
         
             elif ID == 1:
-                Center3D    = [[c,0,-1] for c in centres]
-                Center3DErr = [[c+err,0,-1] for c,err in zip(centres,widths)]
+                Center3D    = np.array([[c,0,1] for c in centres])
+                Center3DErr = np.array([[c+err,0,1] for c,err in zip(centres,widths)])
             
             # Calculate the position along the plot for the HKL points.
-            XPosition = [ax.converterFunction(c,ID=ID) for c in Center3D]
-            XPositionErr = [ax.converterFunction(CE,ID=ID)-XC for CE,XC in zip(Center3DErr,XPosition)]
+            XPosition = np.concatenate([ax.calculatePositionInv(c.reshape(1,-1)) for c in Center3D])
+            XPositionErr = np.concatenate([ax.calculatePositionInv(CE.reshape(1,-1)) for CE in Center3DErr])-XPosition
             # The above is needed as an axis only has one x-axis and plotting multiple segments require some trickery, 
             # resulting in rescaling and offsets. It is all taken care of in the converterFunction of the axis.
             
