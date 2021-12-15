@@ -51,8 +51,15 @@ is not installable through conda thus one needs to first set up the virtual envi
 
 .. code-block:: bash
 
-   conda create --name MJOLNIR python=3.6 spyder=3.1.4
+   conda create --name MJOLNIR python=3.6
+   conda activate MJOLNIR
    pip install MJOLNIR
+
+In the case that a Jupyter Notebook is wanted, add
+
+.. code-block:: bash
+
+   pip install jupyter
 
 The specific version of python is not a requirement but merely a suggestion. The same is valid for `Spyder <https://www.spyder-ide.org/>`_ which is a recommendable IDE for python and more. 
 The specific version is the last that supports running scripts in interactive python environments.
@@ -64,6 +71,19 @@ an argument to PyPI
 
    pip install -i https://test.pypi.org/simple/ MJOLNIR
 
+
+Gui through pip
+^^^^^^^^^^^^^^^
+
+The graphical interface can be installed through pip, but with some caveats. Depending on the python version different distributions of PyQt5 and PyQt5-Sip are needed. If these are to be
+installed manually the flag '--user' is to be used when running windows.
+
+.. code-block:: bash
+
+   conda create --name MJOLNIR python=3.6
+   conda activate MJOLNIR
+   pip install MJOLNIR
+   pip install MJOLNIRGui
 
 License
 ^^^^^^^

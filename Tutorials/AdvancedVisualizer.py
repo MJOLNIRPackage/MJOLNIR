@@ -57,7 +57,7 @@ def Tester():
 
     # Plotting data quickly in equi-sized voxels can be done by
     Viewer = ds.View3D(0.03,0.03,0.09,grid=9,rlu=True)
-    #Generate the viewer with voxel size 0.03 Å x 0.03 Å x 0.05 meV, using
+    #Generate the viewer with voxel size 0.03 1/AA x 0.03 1/AA x 0.05 meV, using
     # the key word grid, one toggles the regular grid but providing the input
     # as a number the zorder of the grid is specified (Data is plotted at 10).
     # It is also possible to plot data without making use of reciprocal lattice

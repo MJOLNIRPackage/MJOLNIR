@@ -48,7 +48,7 @@ def Tester():
     
     # Change cut to be along first axis (in this case [1,0,0]). This is in general
     # the vector in reciprocal space closest to [1,0,0]. In reciprocal lattice,
-    # axis 1 is always orthogonal på axis 0. This is important to remember when
+    # axis 1 is always orthogonal on axis 0. This is important to remember when
     # dealing with non-orthogonal crystals or non-trivial alignments.
     
     Viewer.setProjection(0)
