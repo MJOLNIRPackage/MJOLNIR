@@ -627,9 +627,9 @@ class Instrument(GeometryConcept.GeometryConcept):
                                     binPixelData = binPixelData[BotId:TopId]
                                     EiLocal = Ei[BotId:TopId]
                                     Bg = np.min(binPixelData[[0,-1]])
-                                    guess = np.array([np.max(binPixelData), ECenter,0.08],dtype=float)
+                                    guess = np.array([np.max(binPixelData), ECenter,0.08,Bg],dtype=float)
                                     try:
-                                        res = scipy.optimize.curve_fit(lambda x,A,mu,sigma:Gaussian(x,A,mu,sigma,0.0),EiLocal,binPixelData.astype(float),p0=guess)
+                                        res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
                                         
                                     except: # pragma: no cover
                                         if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
@@ -643,7 +643,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                                         plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
                                         plt.close()
 
-                                    fittedParameters[i,j,k]=np.concatenate([res[0],[0.0]])
+                                    fittedParameters[i,j,k]=res[0]
                                     fittedParameters[i,j,k,0] *= np.sqrt(2*np.pi)*fittedParameters[i,j,k,2] #np.sum(binPixelData) # Use integrated intensity as amplitude 29-07-2020 JL
                                      
                                     if plot: # pragma: no cover
