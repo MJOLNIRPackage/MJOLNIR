@@ -1028,7 +1028,7 @@ class DataSet(object):
         ax.ds = self
         
         if colorbar:
-            ax.colorbar(ax.pmeshs[0])
+            ax.get_figure().colorbar(ax.pmeshs[0])
 
         ax.grid(grid)
 
