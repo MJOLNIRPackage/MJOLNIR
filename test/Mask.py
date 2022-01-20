@@ -60,7 +60,7 @@ def test_BooleanAlgebra():
             super(simpleMaskingObject,self).__init__(coordinates=coordinates,maskInside=maskInside)
             
         
-        def __call__(self):
+        def call(self):
             return self.maskInside
         
     true =  simpleMaskingObject(maskInside=True)

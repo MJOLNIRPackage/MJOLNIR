@@ -1,6 +1,7 @@
 from __future__ import division
 from abc import ABCMeta
 import numpy as np
+from MJOLNIR.Data import DataSet
 import warnings
 # Compability of python 2 and 3 with metaclasses
 # Python 2 and 3:
@@ -25,8 +26,8 @@ class MaskingObjectMeta(ABCMeta):
         
         if not name in ['MaskingObject','MultiMask']: # If MaskingObject, then just continue
             
-            if not '__call__' in namespace: # Check if __call__ exists
-                missingMethods.append('__call__')
+            if not 'call' in namespace: # Check if call exists
+                missingMethods.append('call')
                 
             
             if namespace['dimensionality'] == '2D' or namespace['dimensionality'] == '3D':
@@ -77,8 +78,13 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         pass
     
     
-    def __call__(self,X,Y=None,Z=None):
-        pass
+    def __call__(self,X=None,*args,**kwargs):
+        if X is None:
+            return self.call()
+        elif isinstance(X,(DataSet.DataSet)):
+            return [self.call(x,*args,**kwargs) for x in X]
+        else:
+            return self.call(X,*args,**kwargs)
     
     def __add__(self,other):
         return MultiMask(masks=[self,other],operation=np.logical_or)
@@ -131,7 +137,7 @@ class MultiMask(MaskingObject):
         self.coordinates = np.array(list(set(coordinates))) # unique coordinates
 
     
-    def __call__(self,*args,**kwargs):
+    def call(self,*args,**kwargs):
         masks = []
         for m in self.masks:
             masks.append(m(*args,**kwargs))
@@ -256,7 +262,7 @@ class lineMask(MaskingObject):
     def plot(self,ax,transformation=None,*args,**kwargs):# pragma: no cover
         warnings.warn('It is not possible to plot a 1D masks.')#raise NotImplementedError('It is not possible to plot a 1D masks.')
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
@@ -364,7 +370,7 @@ class rectangleMask(MaskingObject):
             points = transformation(*points)
         ax.plot(*points,**kwargs)
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
@@ -538,7 +544,7 @@ class boxMask(MaskingObject):
         ax.plot3D(*points,**kwargs)
     
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
@@ -640,7 +646,7 @@ class circleMask(MaskingObject):
                 points = transformation(*points)
             ax.plot_wireframe(*points, **kwargs)
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
@@ -694,7 +700,7 @@ class indexMask(MaskingObject):
     def plot(self,ax,transformation=None,*args,**kwargs):# pragma: no cover
         raise NotImplementedError('It is not possible to plot a 1D masks.')
     
-    def __call__(self,x,*args):
+    def call(self,x,*args):
         points = x#np.concatenate([[x],args])
         
         if not len(points.shape)>self.axis:
