@@ -187,9 +187,9 @@ def test_molarMassCalculation():
     assert(np.all([np.isclose(elem[key],elements[key],atol=1e-8) for key in elem.keys()]))
 
     
-def test_absolutNormalization():
+def test_absoluteNormalization():
     sampleMass = 6.2
-    normFactor = calculateAbsolutNormalization(sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,sampleMass=sampleMass,correctVanadium=True)
+    normFactor = calculateAbsoluteNormalization(sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,sampleMass=sampleMass,correctVanadium=True)
     # Known value for MnF2
     assert(np.isclose(normFactor,2.0016916920401816e-07))
 
@@ -197,7 +197,7 @@ def test_absolutNormalization():
     vanadiumMonitor=1e5
     vanadiumSigmaIncoherent = 5.08
     constants = 4*np.pi/13.77
-    Van = calculateAbsolutNormalization(sampleChemicalFormula='V',formulaUnitsPerUnitCell=1,sampleMass=vanadiumMass,correctVanadium=True)
+    Van = calculateAbsoluteNormalization(sampleChemicalFormula='V',formulaUnitsPerUnitCell=1,sampleMass=vanadiumMass,correctVanadium=True)
     
 
     Van*=vanadiumMonitor*vanadiumSigmaIncoherent/constants
@@ -205,7 +205,7 @@ def test_absolutNormalization():
 
     # Same as above but use the molecular mass in stead of calculated
     sampleMass = 6.2
-    normFactor2 = calculateAbsolutNormalization(sampleMolarMass=92.9349*2,sampleMass=sampleMass,correctVanadium=True)
+    normFactor2 = calculateAbsoluteNormalization(sampleMolarMass=92.9349*2,sampleMass=sampleMass,correctVanadium=True)
     # Known value calcualted above
     assert(np.isclose(normFactor,normFactor2))
 
