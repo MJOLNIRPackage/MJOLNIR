@@ -465,23 +465,10 @@ class DataFile(object):
 
     @mask.setter
     def mask(self,mask):
-        if isinstance(mask,Mask.MaskingObject):
-            coordsInside = np.array([hasattr(self,coord) for coord in mask.coordinates])
-            if not np.all(coordsInside):
-                names = np.array(mask.coordinates)
-                raise AttributeError('Provided mask has coord(s) not in DataFile:','\n'.join(names[np.logical_not(coordsInside)]))
-            self._maskingObject = mask
-        elif hasattr(self,'_maskingObject'): # if _maskingObject exists from ealier, delete it
-            del self._maskingObject
-        if hasattr(self,'I'): # if identity has    
-            if hasattr(self,'_maskingObject'):
-                self._mask = self._maskingObject(self) # Generate boolean mask
-            else:
-                if not np.all(self.I.shape == mask.shape):
-                    raise AttributeError('Shape of provided mask {} does not match shape of data {}.'.format(mask.shape,self.I.shape))
-                self._mask = mask
-        else:
-            self._mask = mask
+        if hasattr(self,'I'):
+            if not np.all(self.I.shape == mask.shape):
+                raise AttributeError('Shape of provided mask {} does not match shape of data {}.'.format(mask.shape,self.I.shape))
+        self._mask = mask
 
     def updateProperty(self,dictionary):
         if isinstance(dictionary,dict):
@@ -1107,6 +1094,8 @@ class DataFile(object):
         for pair in nameSwaps:
             updateKeyName(self,pair[0],pair[1])
 
+        self._mask = np.zeros_like(self.I)
+
     @_tools.KwargChecker()
     def calcualteDataIndexFromDasel(self,detectorSelection=None,analyzerSelection=None):
         if detectorSelection is None:
@@ -1222,7 +1211,7 @@ class DataFile(object):
         Monitor = self.Monitor.copy().reshape((steps,1,1))
         Monitor = Monitor*np.ones((1,detectors,self.EPrDetector*binning))
         Normalization = EfNormalization*np.ones((steps,1,1))
-
+        mask = np.zeros_like(Intensity) # TODO: Redo???
        
         ###########################
         #Monitor[:,:,:binning] = 0 #
@@ -1231,7 +1220,7 @@ class DataFile(object):
 
         convFile = DataFile(self) # Copy everything from old file
         updateDict = {'I':Intensity,'Monitor':Monitor,'qx':QX,'qy':QY,'energy':DeltaE,'binning':binning,'Norm':Normalization,
-        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.hdf','.nxs')}
+        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.hdf','.nxs'),'mask':mask}
         convFile.updateProperty(updateDict)
 
         if convFile.type == 'nxs' and convFile.binning == 8:
@@ -1685,7 +1674,100 @@ class DataFile(object):
 
         """
         self.sample.updateSampleParameters(unitCell=unitCell) 
+
+    def calculateCurratAxeMask(self,BraggPeaks,dqx=None,dqy=None,dH=None,dK=None,dL=None,maskInside=True):
+        """Generate an elliptical mask centered on the Currat-Axe spurion.
         
+        Args:
+        
+            - BraggPeaks (list): List of Bragg peaks to be used for mask. Shape is given by [[H1,K1,L1], [H2,K2,L2], ... [HN,KN,LN]]
+            
+        Kwargs:
+
+            - dqx (float): Radius used for masking along qx (default None)
+
+            - dqy (float): Radius used for masking along qy (default None)
+
+            - dH (float): Radius used for masking along H (default None)
+
+            - dK (float): Radius used for masking along K (default None)
+
+            - dL (float): Radius used for masking along L (default None)
+
+        Returns:
+
+            - mask (list): Boolean numpy array with shape equal to self.I.shape
+
+        Note:
+
+            If either dqx or dqy is None, utilizes the dH, dK, dL instead.
+
+        """
+
+        if np.any([dqx is None,dqy is None]):
+            if np.any([x is None for x in [dH,dK,dL]]):
+                raise AttributeError('Provided masking radius not understood. Either dqx and dqy are to be given or dH, dK, and dL.\nRecieved: \n{}'.format('\n'.join(['    {}\t= {}'.format(x,v) for x,v in zip(['dqx','dqy','dH','dK','dL'],[dqx,dqy,dH,dK,dL])])))
+
+            rlu = True
+            
+            factor = np.array([1.0,dH/dK,dH/dL]).reshape(3,1,1,1,1)
+            
+        else:
+            rlu = False
+
+            factor = dqx/dqy
+
+        s = self.sample
+    
+        Ei = self.Ei[0]
+        Ef = self.instrumentCalibrationEf[:,1].reshape(-1,self.EPrDetector*self.binning).mean(axis=0)
+        monoQx,monoQy = s.CurratAxe(Ei=Ei,Ef=Ef,Bragg=BraggPeaks,HKL=False)[:,0,:,:2].transpose(2,0,1)
+        anaQx,anaQy = s.CurratAxe(Ei=Ei,Ef=Ef,Bragg=BraggPeaks,HKL=False,spurionType='Analyser')[:,0,:,:2].transpose(2,0,1) # Into shape (2,len(Bragg),len(Ef))
+        
+        if not rlu:
+            
+            # Reshape to fit qx,qy from data file
+            monoQx = monoQx.transpose(1,0).reshape(1,1,len(Ef),-1)
+            monoQy = monoQy.transpose(1,0).reshape(1,1,len(Ef),-1)
+            
+            qx = self.qx[:,:,:,np.newaxis]
+            qy = self.qy[:,:,:,np.newaxis]
+            
+            monoInside = np.any(np.linalg.norm([qx-monoQx,(qy-monoQy)*factor],axis=0)<dqx,axis=-1)
+            
+            
+            
+            anaQx = anaQx.transpose(1,0).reshape(1,1,len(Ef),-1)
+            anaQy = anaQy.transpose(1,0).reshape(1,1,len(Ef),-1)
+            
+            anaInside = np.any(np.linalg.norm([qx-anaQx,(qy-anaQy)*factor],axis=0)<dqx,axis=-1)
+            
+        else:
+            monoH,monoK,monoL = s.calculateQxQyToHKL(monoQx,monoQy)
+            
+            monoH = monoH.transpose(1,0).reshape(1,1,len(Ef),-1)
+            monoK = monoK.transpose(1,0).reshape(1,1,len(Ef),-1)
+            monoL = monoL.transpose(1,0).reshape(1,1,len(Ef),-1)
+            
+            H = self.h[:,:,:,np.newaxis]
+            K = self.k[:,:,:,np.newaxis]
+            L = self.l[:,:,:,np.newaxis]
+            
+            monoInside = np.any(np.linalg.norm(np.array([H-monoH,K-monoK,L-monoL])*factor,axis=0)<dH,axis=-1)
+            
+            anaH,anaK,anaL = s.calculateQxQyToHKL(anaQx,anaQy)
+            
+            anaH = anaH.transpose(1,0).reshape(1,1,len(Ef),-1)
+            anaK = anaK.transpose(1,0).reshape(1,1,len(Ef),-1)
+            anaL = anaL.transpose(1,0).reshape(1,1,len(Ef),-1)
+            
+            anaInside = np.any(np.linalg.norm(np.array([H-anaH,K-anaK,L-anaL])*factor,axis=0)<dH,axis=-1)
+            
+
+        mask = np.logical_or(monoInside,anaInside)
+        if not maskInside:
+            mask = np.logical_not(mask)
+        return mask
 
     def saveHDF(self,saveFileName):
         """Save current HDF file object into an HDF file.
