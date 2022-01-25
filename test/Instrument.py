@@ -113,7 +113,7 @@ def test_Instrument_plot():
     Instr.append(wedge)
     plt.ioff()
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
 
     Instr.plot(ax)
 

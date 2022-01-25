@@ -14,7 +14,7 @@ def test_Generic_plot():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     try:
         GenericDetector.plot(ax)
         assert False
@@ -74,7 +74,7 @@ def test_TubeDetector1D_plot():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
 
     TubeDetector.plot(ax)
     

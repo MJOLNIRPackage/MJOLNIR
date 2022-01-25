@@ -132,7 +132,7 @@ def test_Wedge_plot():
     wedge.append([Det,Ana])
     plt.ioff()
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
 
     wedge.plot(ax)
 
