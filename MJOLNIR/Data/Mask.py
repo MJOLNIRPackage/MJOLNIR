@@ -231,7 +231,7 @@ class lineMask(MaskingObject):
         """Generate a rectangle mask with side corner1 to corner 2 and use corner 3 to define height.
         
         args:
-            start (1D point): Starting positon
+            start (1D point): Starting position
             
             end (1D point): Ending corner
             
@@ -269,11 +269,11 @@ class lineMask(MaskingObject):
             if y is None:
                 #if x.shape[0] != 1:
                 #    raise AttributeError('Dimensionality of x is to be (1,N), received {}'.format(x.shape))
-                points = x
+                points = [x]
             else:
                 raise AttributeError('Dimensionality of input is to be (1,N), received both an x and y')
         
-        mask = np.array([np.logical_and(points>self.start,points<=self.end)])
+        mask = np.sum([np.logical_and(p>self.start,p<=self.end) for p in points],axis=0)>0
         
         if self.maskInside == False:
             mask = np.logical_not(mask)
