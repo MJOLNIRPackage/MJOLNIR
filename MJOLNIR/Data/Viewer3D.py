@@ -88,12 +88,14 @@ class Viewer3D(object):
         self._CurratAxeBraggList = None
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
             with warnings.catch_warnings() as w:
+                warnings.simplefilter("ignore")
                 self.Data = np.divide(Data[0]*Data[3],Data[1]*Data[2])
             
             self.Counts,self.Monitor,self.Normalization,self.NormCounts = Data
             self.allData = True
         elif len(Data) == 2: # From bin3D with no normalization or monitor
             with warnings.catch_warnings() as w:
+                warnings.simplefilter("ignore")
                 self.Data = np.divide(Data[0],Data[1])
             self.allData = False
         else:
@@ -247,13 +249,20 @@ class Viewer3D(object):
         #self.imcbaxes = self.figure.add_axes([0.0, 0.2, 0.2, 0.7])
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
         if self.shading=='flat':
+            self.ax.grid(False)
             self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap)
         elif self.shading=='gouraud':  # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
+            self.ax.grid(False)
             self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap) # ,vmin=1e-6,vmax=6e-6
         else:
             raise AttributeError('Did not understand shading {}.'.format(self.shading))
+        if self.grid:
+            self.ax.grid(self.grid,zorder=self.gridZOrder)
+        else:
+            self.ax.grid(self.grid)
+
         self._caxis = self.im.get_clim()
         self.figpos = [0.125,0.25,0.63,0.63]#self.ax.get_position()
         
@@ -627,12 +636,17 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,0)
             del self.im
             #self.currentData = None
+            self.ax.grid(False)
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            if self.grid:
+                self.ax.grid(self.grid,zorder=self.gridZOrder)
+            else:
+                self.ax.grid(self.grid)
             self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
@@ -643,12 +657,17 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,1)
             del self.im
             #self.currentData = None
+            self.ax.grid(False)
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            if self.grid:
+                self.ax.grid(self.grid,zorder=self.gridZOrder)
+            else:
+                self.ax.grid(self.grid)
             self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
@@ -659,6 +678,7 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,2)
             del self.im
             #self.currentData = None
+            self.ax.grid(False)
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
@@ -667,6 +687,10 @@ def onkeypress(event,self): # pragma: no cover
                 self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            if self.grid:
+                self.ax.grid(self.grid,zorder=self.gridZOrder)
+            else:
+                self.ax.grid(self.grid)
             self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
