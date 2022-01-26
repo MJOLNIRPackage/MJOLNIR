@@ -1,4 +1,4 @@
-from MJOLNIR.Geometry.Instrument import Instrument
+from MJOLNIR.Geometry.Instrument import Instrument,prediction
 import MJOLNIR.Geometry.Analyser as Analyser
 import MJOLNIR.Geometry.Detector as Detector
 import MJOLNIR.Geometry.Wedge as Wedge
@@ -332,4 +332,29 @@ def test_Normalization_tables(quick):
     else:
         Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation=os.path.join(dataPath,''),plot=False,tables=[1],sampleMass=4.7) 
 
+
+def test_Prediction():
+    A3Start = 0.0
+    A3Stop = 100
+    A3Steps = 101 
+    Ei = 5.0
+    A4 = [-36,-40]
+    points = False
+    # [H,K,L,A3,A4,0.0,0.0,Ei,Ef]
+    r1 = np.array([1,0,0,25.0,-24,0.0,0.0,Ei,Ei])
+    r2 = np.array([0,0,1,115.0,-24,0.0,0.0,Ei,Ei])
+    
+    cell = np.array([6.0,6.0,6.0,90.0,90.0,90.0])
+
+    plt.ion()
+
+    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,Cell=cell,r1=r1,r2=r2,
+    points=points, instrument='CAMEA')
+
+    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,Cell=cell,r1=r1,r2=r2,
+    points=points, instrument='MultiFLEXX')
+
+    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,Cell=cell,r1=r1,r2=r2,
+    points=points, instrument='Bambus')
+    
 
