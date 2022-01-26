@@ -202,7 +202,7 @@ class DataSet(object):
                 m = []
                 for df in self: 
                     df.mask = mask
-                    m.append
+                    m.append(mask)
                 mask = m
         else:
             raise AttributeError('Mask not understood. Received',mask)
