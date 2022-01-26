@@ -6,7 +6,7 @@ import pyqtgraph as pg
 from MJOLNIR import _tools
 import matplotlib.pyplot as plt
 
-class Interactive3DViewer(QtGui.QWidget):
+class Interactive3DViewer(QtGui.QWidget):# pragma: no cover
     def __init__(self,data,bins,sample,log=False,*args,**kwargs):
         annoyingFigure = plt.gca().get_figure()
         if not len(annoyingFigure.get_children()) <= 1: # If less than or equal to 1 child figure is empty
@@ -223,7 +223,7 @@ class Interactive3DViewer(QtGui.QWidget):
 
 from pyqtgraph import ptime
 
-class CustomImageView(pg.ImageView):
+class CustomImageView(pg.ImageView):# pragma: no cover
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         
