@@ -184,7 +184,7 @@ class Viewer3D(object):
         self.setAxis(2)
         # Set up interactive generation of 1DCuts
 
-        def cut1DFunctionRectangleDefault(self,dr):
+        def cut1DFunctionRectangleDefault(self,dr):# pragma: no cover
             global cut1DHolder
             parameters = extractCut1DPropertiesRectangle(dr.rect,self.ax.sample)
             step = self.dQE[self.axis]
@@ -196,7 +196,7 @@ class Viewer3D(object):
             cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
 
 
-        def cut1DFunctionCircleDefault(self,dr):
+        def cut1DFunctionCircleDefault(self,dr):# pragma: no cover
             global cut1DHolder
             parameters = extractCut1DPropertiesCircle(dr.circ,self.ax.sample)
             parameters['E1'] = self.ds.energy.min()
@@ -285,10 +285,7 @@ class Viewer3D(object):
         self.dQE = [dQx,dQy,ddE]
 
         self.resolution = [0.05,0.05]
-        if not self.EfLimits is None:
-            self.Ef = np.arange(*self.EfLimits,self.dQE[2])
-            
-            self.CurratAxeBraggList = CurratAxeBraggList
+        
                 
 
         self.Energy_slider.set_val(self.value)
@@ -309,6 +306,11 @@ class Viewer3D(object):
         ## Hack for this to look nice as just changing direction does not render correctly
         self.setPlane(1)
         self.setPlane(0)
+
+        if not self.EfLimits is None:
+            self.Ef = np.arange(*self.EfLimits,self.dQE[2])
+            
+            self.CurratAxeBraggList = CurratAxeBraggList
 
         if adjustable and pythonVersion>2 and pythonSubVersion>5:
 
@@ -698,7 +700,7 @@ def onkeypress(event,self): # pragma: no cover
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
 
 
-def reloadslider(self,axis): # pragma: no cover
+def reloadslider(self,axis):
     self.setAxis(axis)
     self.Energy_slider.set_val(0)
     self.Energy_slider.label.remove()
@@ -851,7 +853,7 @@ def addColorbarSliders(self,c_min,c_max,c_minval,c_maxval,ax_cmin,ax_cmax,log=Tr
     
     fig.savefig = savefig
 
-def cut1DFunctionDefault(self,dr):
+def cut1DFunctionDefault(self,dr):# pragma: no cover
     global cut1DHolder
     parameters = extractCut1DProperties(dr.rect,self.ax.sample)
     step = self.dQE[self.axis]

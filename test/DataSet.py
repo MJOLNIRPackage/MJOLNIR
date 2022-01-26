@@ -308,7 +308,7 @@ def test_DataSet_full_test():
         Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
     
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
-    viewer = dataset.View3D(0.08,0.08,0.25)
+    viewer = dataset.View3D(0.08,0.08,0.25,CurratAxeBraggList=[[1,0,0]])
     
     if pythonVersion == 3: # Only possible in python 3
         viewer.ax.set_xticks_base(0.5)
@@ -317,8 +317,12 @@ def test_DataSet_full_test():
     viewer.setProjection(0)
     viewer.setPlane(4)
     del viewer 
-    viewer = dataset.View3D(0.08,0.08,0.25,rlu=False)
+    viewer = dataset.View3D(0.08,0.08,0.25,rlu=False,log=True)
+    
+    viewer.ax.get_figure().savefig('View3D.png')
+
     os.remove(os.path.join(dataPath,'camea2018n000136.nxs'))
+    os.remove('View3D.png')
     del viewer
     plt.close('all')
 
@@ -1236,13 +1240,33 @@ def testMasking():
 
     mask = circ*Emask+Emask*rect
     calcMask = (circ*Emask)(ds)
-    print(len(ds))
-    print(len(calcMask))
-    print([x.shape for x in calcMask])
     ds.mask = mask(ds)
     masks = [mask(df) for df in ds]
-    print(np.sum(ds.I.mask))
+    
     assert(np.sum(ds.I.mask)==np.sum([np.sum(m) for m in masks]))
+
+
+    # Test failing mask
+    try:
+        ds.mask = 'Error'
+        assert False
+    except AttributeError:
+        assert True
+    
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        mask = np.array([np.ones_like(I) for I in ds.I]) # Mask all
+        ds.mask = mask
+
+    ds = DataSet([DataFile[0],DataFile[0]])
+    ds.convertDataFile()
+
+    
+    print([x.shape for x in mask])
+    print(mask[0].shape)
+    
+    ds.mask = mask[0] # Only provide 1 mask to be applied to both data files
+    
     
 
 def testupdateSampleParameters():
