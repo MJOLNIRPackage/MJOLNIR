@@ -1,7 +1,7 @@
 from __future__ import division
 from abc import ABCMeta
 import numpy as np
-from MJOLNIR.Data import DataSet
+from MJOLNIR.Data import DataSet,DataFile
 import warnings
 # Compability of python 2 and 3 with metaclasses
 # Python 2 and 3:
@@ -726,3 +726,48 @@ class indexMask(MaskingObject):
 
 
         
+class CurratAxeMask(MaskingObject):
+    dimensionality = '3D'
+    
+    def __init__(self,braggPeaks,dqx=None,dqy=None,dH=None,dK=None,dL=None,spurionType='both',maskInside=True,name=None):
+        """Mask Currat-Axe spurions from provided Bragg peaks within wanted area.
+        
+        Args:
+        
+            - BraggPeaks (list): List of Bragg peaks to be used for mask. Shape is given by [[H1,K1,L1], [H2,K2,L2], ... [HN,KN,LN]]
+            
+        Kwargs:
+
+            - dqx (float): Radius used for masking along qx (default None)
+
+            - dqy (float): Radius used for masking along qy (default None)
+
+            - dH (float): Radius used for masking along H (default None)
+
+            - dK (float): Radius used for masking along K (default None)
+
+            - dL (float): Radius used for masking along L (default None)
+
+            - spurionType (str): Either monochromator, analyser or both (default 'both')
+            
+            - maskInside (bool): If true, points inside is masked otherwise outside (default True)
+        
+        """
+        super(CurratAxeMask,self).__init__(coordinates=None,maskInside=maskInside,name=name)
+        self.braggPeaks = braggPeaks
+        self.dqx = dqx
+        self.dqy = dqy
+        self.dH = dH
+        self.dK = dK
+        self.dL = dL
+        self.spurionType = spurionType
+        
+    def plot(self,ax,transformation=None,*args,**kwargs):# pragma: no cover
+        raise NotImplementedError('It is not possible to plot a Currat-Axe masks currently.')
+    
+    def call(self,x,*args):
+        if not isinstance(x,DataFile.DataFile):
+            raise AttributeError('Expected mask to be called with '+str(type(DataFile.DataFile))+' object as argument. Received '+str(type(x)))
+        
+        
+        return x.calculateCurratAxeMask(self.braggPeaks,dqx=self.dqx,dqy=self.dqy,dH=self.dH,dK=self.dK,dL=self.dL,spurionType=self.spurionType,maskInside=self.maskInside)

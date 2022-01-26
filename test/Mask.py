@@ -1,3 +1,4 @@
+from xml.dom.minidom import Attr
 import numpy as np
 import warnings
 # Compability of python 2 and 3 with metaclasses
@@ -5,7 +6,7 @@ import warnings
 from six import with_metaclass
 # or
 from future.utils import with_metaclass
-from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask
+from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask,CurratAxeMask
 
 
 def test_subclass_MaskingObject():
@@ -292,4 +293,26 @@ def test_indexMask():
     assert(np.all(mask[:,:,:,1,:]==True))
     assert(np.all(mask[:,:,:,2,:]==False))
     
+def test_CurratAxeMask():
+    # Real test is performed in the DataSet testing
+
+    M = CurratAxeMask([[1,0,0]])
+    X = np.linspace(0,1,11)
     
+    try:
+        M(X)
+        assert False
+    except AttributeError:
+        assert True
+
+def test_CurratAxeMask():
+    # Real test is performed in the DataSet testing
+
+    M = CurratAxeMask([[1,0,0]])
+    X = np.linspace(0,1,11)
+    
+    try:
+        M(X)
+        assert False
+    except AttributeError:
+        assert True

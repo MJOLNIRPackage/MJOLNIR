@@ -3549,7 +3549,7 @@ class DataSet(object):
         self._getData()
 
 
-    def calculateCurratAxeMask(self,BraggPeaks,dqx=None,dqy=None,dH=None,dK=None,dL=None,maskInside=True):
+    def calculateCurratAxeMask(self,BraggPeaks,dqx=None,dqy=None,dH=None,dK=None,dL=None,spurionType='both',maskInside=True):
         """Generate an elliptical mask centered on the Currat-Axe spurion.
         
         Args:
@@ -3568,6 +3568,10 @@ class DataSet(object):
 
             - dL (float): Radius used for masking along L (default None)
 
+            - spurionType (str): Either monochromator, analyser or both (default 'both')
+
+            - maskInside (bool): If true, points inside is masked otherwise outside (default True)
+
         Returns:
 
             - mask (list): List of boolean numpy arrays with shapes equal to df.I.shape
@@ -3580,7 +3584,7 @@ class DataSet(object):
 
         mask = []
         for df in self:
-            mask.append(df.calculateCurratAxeMask(BraggPeaks=BraggPeaks,dqx=dqx,dqy=dqy,dH=dH,dK=dK,dL=dL,maskInside=maskInside))
+            mask.append(df.calculateCurratAxeMask(BraggPeaks=BraggPeaks,dqx=dqx,dqy=dqy,dH=dH,dK=dK,dL=dL,spurionType=spurionType,maskInside=maskInside))
         
         return mask
 

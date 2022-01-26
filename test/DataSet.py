@@ -303,9 +303,10 @@ def test_DataSet_full_test():
     matplotlib.use('Agg')
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
     
-    warnings.simplefilter('ignore')
-    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
-    warnings.simplefilter('once')
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+    
     viewer = MJOLNIR.Data.Viewer3D.Viewer3D(Intensity,bins)
     viewer = dataset.View3D(0.08,0.08,0.25)
     
@@ -317,7 +318,7 @@ def test_DataSet_full_test():
     viewer.setPlane(4)
     del viewer 
     viewer = dataset.View3D(0.08,0.08,0.25,rlu=False)
-    os.remove(os.path.join(dataPath,'camea2018n000137.nxs'))
+    os.remove(os.path.join(dataPath,'camea2018n000136.nxs'))
     del viewer
     plt.close('all')
 
@@ -327,18 +328,19 @@ def test_DataSet_Visualization():
     DataFiles = [os.path.join(dataPath,'camea2018n000136.hdf')]
 
     dataset = DataSet(dataFiles=DataFiles)
-    dataset.convertDataFile(saveLocation='Data',saveFile=True)
+    dataset.convertDataFile(saveLocation='Data\\',saveFile=True)
 
     Data,bins = dataset.binData3D(0.08,0.08,0.25)
-    Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000136.nxs'))])
+    Data,bins = dataset.binData3D(0.08,0.08,0.25,dataFiles = [MJOLNIR.Data.DataFile.DataFile(os.path.join('Data','camea2018n000136.nxs'))])
     
     plt.ioff()
     import matplotlib
     matplotlib.use('Agg')
 
-    warnings.simplefilter('ignore')
-    Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
-    warnings.simplefilter('once')
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        Intensity = np.divide(Data[0]*Data[3],Data[1]*Data[2])
+    
     viewer = Viewer3D.Viewer3D(Intensity,bins)
     viewer.caxis = (0,100)
     try:
@@ -361,7 +363,8 @@ def test_DataSet_Visualization():
 
     plt.plot()
     plt.close('all')
-    os.remove(os.path.join(dataPath,'camea2018n000136.nxs'))
+    os.remove(os.path.join('Data','camea2018n000136.nxs'))
+    
 
 def test_DataSet_binEdges():
     X = np.random.rand(100)*3 # array between 0 and 3 -ish
@@ -600,7 +603,7 @@ def test_DataSet_cutPowder():
     
     Datset = DataSet(dataFiles = convertFiles)
     Datset.convertDataFile(saveFile=True)
-    mask = np.ones_like(Datset.I.data)
+    mask = Datset.mask#np.ones_like(Datset.mask)[0]
 
     Datset.mask = mask
     Datset.mask = np.logical_not(mask)
@@ -1232,7 +1235,11 @@ def testMasking():
     rect = Mask.rectangleMask(corner1=np.array([1.0,0.0]),corner2=np.array([1.5,0.5]),coordinates=['h','k'])
 
     mask = circ*Emask+Emask*rect
-    ds.mask = mask
+    calcMask = (circ*Emask)(ds)
+    print(len(ds))
+    print(len(calcMask))
+    print([x.shape for x in calcMask])
+    ds.mask = mask(ds)
     masks = [mask(df) for df in ds]
     print(np.sum(ds.I.mask))
     assert(np.sum(ds.I.mask)==np.sum([np.sum(m) for m in masks]))
@@ -1252,12 +1259,56 @@ def testupdateSampleParameters():
         assert(np.all(np.isclose(d.sample.cell,newCell)))
         assert(np.all(np.isclose(d.sample.UB,newUB)))
 
-def test_absolutNormalziation():
+def test_CurratAxeMasking():
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
+    ds = DataSet(DataFile)
+    
+    # Correct wrong alignment of about 3.5 degrees
+    theta=np.rad2deg(0.05979407243252655)
+    for df in ds:
+        df.A3-=theta
+    ds.convertDataFile(binning=3)
+
+    averageSum = np.mean(ds.I.extractData())
+
+    braggpeaks = [[1,0,0]]
+    # Calcualte mask directly from dataset
+    curratAxeMask = ds.calculateCurratAxeMask(braggpeaks,dH=0.1,dK=0.1,dL=0.001)
+    ds.mask = curratAxeMask
+
+    # Calcualte mask using a mask object and on the dataset
+    CAMask = Mask.CurratAxeMask(braggpeaks,dH=0.1,dK=0.1,dL=0.001)
+
+    evaluatedCAMask = CAMask(ds)
+    assert(np.all(np.equal(evaluatedCAMask,curratAxeMask)))
+
+    # Calcualte the two different contributions
+    CAMaskMono = Mask.CurratAxeMask(braggpeaks,dH=0.1,dK=0.1,dL=0.001,spurionType='Monochromator')
+    CAMaskAna = Mask.CurratAxeMask(braggpeaks,dH=0.1,dK=0.1,dL=0.001,spurionType='Analyser')
+    CAMaskMonoEvaluated = CAMaskMono(ds)
+    CAMaskAnaEvaluated = CAMaskAna(ds)
+    CAMaskCombi = [np.logical_or(CAMM,CAMA) for CAMM,CAMA in zip(CAMaskMonoEvaluated,CAMaskAnaEvaluated)]
+    assert(np.all(np.equal(evaluatedCAMask,CAMaskCombi)))
+
+
+    averageSumMasked = np.mean(ds.I.extractData())
+    assert(averageSum-averageSumMasked>0.004)
+
+    curratAxeMask = ds.calculateCurratAxeMask(braggpeaks,dqx=0.15,dqy=0.15)
+    ds.mask = curratAxeMask
+
+
+    averageSumMasked = np.mean(ds.I.extractData())
+    assert(averageSum-averageSumMasked>0.004)
+    
+
+
+def test_absoluteNormalziation():
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf')]
     ds = DataSet(DataFile)
 
     try:
-        ds.absolutNormalize(10.0,'MnF2')
+        ds.absoluteNormalize(10.0,'MnF2')
         assert False
     except  AttributeError: # Must be converted first!
         assert True
@@ -1266,15 +1317,15 @@ def test_absolutNormalziation():
     norm = np.mean(ds.Norm.extractData())
     
     # Use value for MnF2 to check 
-    ds.absolutNormalize(sampleMass=6.2,sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,
+    ds.absoluteNormalize(sampleMass=6.2,sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,
                                       correctVanadium=False)
     
     factor = 0.06088201383247563 # Factor calculated for MnF2
 
-    assert(np.isclose(factor,ds.absolutNormalized))
+    assert(np.isclose(factor,ds.absoluteNormalized))
 
     # Redo normalization to retrive the same factor
-    ds.absolutNormalize(sampleMass=6.2,sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,
+    ds.absoluteNormalize(sampleMass=6.2,sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,
                                       correctVanadium=False)
 
-    assert(np.isclose(factor,ds.absolutNormalized))
+    assert(np.isclose(factor,ds.absoluteNormalized))
