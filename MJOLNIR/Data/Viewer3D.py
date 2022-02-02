@@ -179,7 +179,7 @@ class Viewer3D(object):
             ax.set_navigate(True)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
-        self.cmap = cmap # Update to accomedate deprication warning
+        self.cmap = cmap # Update to accommodate deprecation warning
         self.value = 0
         self.setAxis(2)
         # Set up interactive generation of 1DCuts
