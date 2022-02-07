@@ -470,6 +470,30 @@ class DataFile(object):
                 raise AttributeError('Shape of provided mask {} does not match shape of data {}.'.format(mask.shape,self.I.shape))
         self._mask = mask
 
+    @property
+    def shape(self):
+        return self.I.shape
+
+    @shape.getter
+    def shape(self):
+        return self.I.shape
+
+    @shape.setter
+    def shape(self,shape):
+        raise AttributeError('Shape of a DataFile cannot be set.')
+
+    @property
+    def size(self):
+        return self.I.size
+
+    @size.getter
+    def size(self):
+        return self.I.size
+
+    @size.setter
+    def size(self,size):
+        raise AttributeError('size of a DataFile cannot be set.')
+
     def updateProperty(self,dictionary):
         if isinstance(dictionary,dict):
             for key in dictionary.keys():
@@ -1713,12 +1737,10 @@ class DataFile(object):
                 raise AttributeError('Provided masking radius not understood. Either dqx and dqy are to be given or dH, dK, and dL.\nRecieved: \n{}'.format('\n'.join(['    {}\t= {}'.format(x,v) for x,v in zip(['dqx','dqy','dH','dK','dL'],[dqx,dqy,dH,dK,dL])])))
 
             rlu = True
-            
-            factor = np.array([1.0,dH/dK,dH/dL]).reshape(3,1,1,1,1)
+            factor = np.array([1.0,dH/dK,dH/dL]).reshape(3,1,1,1)
             
         else:
             rlu = False
-
             factor = dqx/dqy
 
         if not spurionType.lower() in ['monochromator','analyser','both']:
@@ -1734,45 +1756,68 @@ class DataFile(object):
             anaQx,anaQy = s.CurratAxe(Ei=Ei,Ef=Ef,Bragg=BraggPeaks,HKL=False,spurionType='Analyser')[:,0,:,:2].transpose(2,0,1) # Into shape (2,len(Bragg),len(Ef))
         
         if not rlu:
-            qx = self.qx[:,:,:,np.newaxis]
-            qy = self.qy[:,:,:,np.newaxis]
-
+            qx = self.qx[:,:,:]
+            qy = self.qy[:,:,:]
+            monoInside = None
+            anaInside = None
             # Reshape to fit qx,qy from data file
             if spurionType.lower() in ['monochromator','both']:
-                monoQx = monoQx.transpose(1,0).reshape(1,1,len(Ef),-1)
-                monoQy = monoQy.transpose(1,0).reshape(1,1,len(Ef),-1)
-                
-                monoInside = np.any(np.linalg.norm([qx-monoQx,(qy-monoQy)*factor],axis=0)<dqx,axis=-1)
+                monoQx = monoQx.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                monoQy = monoQy.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                for localMonoQx,localMonoQy in zip(monoQx,monoQy):
+                    if monoInside is None:
+                        monoInside = np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
+                        monoInside.dtype = bool
+                    else:
+                        monoInside += np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
             
             if spurionType.lower() in ['analyser','both']:
-                anaQx = anaQx.transpose(1,0).reshape(1,1,len(Ef),-1)
-                anaQy = anaQy.transpose(1,0).reshape(1,1,len(Ef),-1)
-                
-                anaInside = np.any(np.linalg.norm([qx-anaQx,(qy-anaQy)*factor],axis=0)<dqx,axis=-1)
+
+                anaQx = anaQx.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                anaQy = anaQy.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                for localAnaQx,localAnaQy in zip(anaQx,anaQy):
+                    if anaInside is None:
+                        anaInside = np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
+                        anaInside.dtype = bool
+                    else:
+                        anaInside += np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
             
         else:
-            H = self.h[:,:,:,np.newaxis]
-            K = self.k[:,:,:,np.newaxis]
-            L = self.l[:,:,:,np.newaxis]
+            H = self.h[:,:,:]
+            K = self.k[:,:,:]
+            L = self.l[:,:,:]
+
+            monoInside = None
+            anaInside = None
 
             if spurionType.lower() in ['monochromator','both']:
                 monoH,monoK,monoL = s.calculateQxQyToHKL(monoQx,monoQy)
                 
-                monoH = monoH.transpose(1,0).reshape(1,1,len(Ef),-1)
-                monoK = monoK.transpose(1,0).reshape(1,1,len(Ef),-1)
-                monoL = monoL.transpose(1,0).reshape(1,1,len(Ef),-1)
+                monoH = monoH.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                monoK = monoK.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                monoL = monoL.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
                 
-                monoInside = np.any(np.linalg.norm(np.array([H-monoH,K-monoK,L-monoL])*factor,axis=0)<dH,axis=-1)
-            
+                for localMonoH,localMonoK,localMonoL in zip(monoH,monoK,monoL):
+                    if monoInside is None:
+                        monoInside = np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
+                        monoInside.dtype = bool
+                    else:
+                        monoInside += np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
+
             if spurionType.lower() in ['analyser','both']:
                 anaH,anaK,anaL = s.calculateQxQyToHKL(anaQx,anaQy)
                 
-                anaH = anaH.transpose(1,0).reshape(1,1,len(Ef),-1)
-                anaK = anaK.transpose(1,0).reshape(1,1,len(Ef),-1)
-                anaL = anaL.transpose(1,0).reshape(1,1,len(Ef),-1)
-                
-                anaInside = np.any(np.linalg.norm(np.array([H-anaH,K-anaK,L-anaL])*factor,axis=0)<dH,axis=-1)
-            
+                anaH = anaH.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                anaK = anaK.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                anaL = anaL.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+
+                for localAnaH,localAnaK,localAnaL in zip(anaH,anaK,anaL):
+                    if anaInside is None:
+                        anaInside = np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
+                        anaInside.dtype = bool
+                    else:
+                        anaInside += np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
+
         if spurionType.lower() == 'both':
             mask = np.logical_or(monoInside,anaInside)
         elif spurionType.lower() == 'monochromator':
