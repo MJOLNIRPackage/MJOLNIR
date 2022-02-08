@@ -2,6 +2,7 @@ from __future__ import division
 from abc import ABCMeta
 import numpy as np
 from MJOLNIR.Data import DataSet,DataFile
+import sympy
 import warnings
 # Compability of python 2 and 3 with metaclasses
 # Python 2 and 3:
@@ -72,6 +73,17 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
             self.coordinates = coordinates
         self.bar = self.negate
         self.name = name
+        self.negated = False
+
+    def __eq__(self,other):
+        if not isinstance(self,(type(other))): # not same type:
+            return False
+        tests = [self.name == other.name, self.negated == other.negated, 
+        np.all(self.coordinates == other.coordinates)]
+        return np.all(tests)
+
+    def __hash__(self):
+        return hash(self.__dict__.values())
 
     def plot(self,ax): # pragma: no cover
         """plotting function to put the masked object onto the figure"""
@@ -99,10 +111,9 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         return self.clone()
     
     def __sub__(self,other):
+        other.negated = True
         return self+(-other)
     
-    def __truediv__(self,other):
-        return self*(-other)
     
     def generateInputKwargs(self):
         """Generate dictionary with initial args/kwargs used for init"""
@@ -122,6 +133,7 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         
         newMask = self.clone()
         newMask.maskInside = not newMask.maskInside
+        newMask.negated = True
         return newMask
         
 class MultiMask(MaskingObject):
@@ -129,6 +141,7 @@ class MultiMask(MaskingObject):
         if not hasattr(masks,'__len__'):
             masks = [masks]
             
+        self.name = None
         self.masks = masks
         self.operation = operation
         self.negated = negated
@@ -171,9 +184,7 @@ class MultiMask(MaskingObject):
     
     def __sub__(self,other):
         return self+(-other)
-    
-    def __truediv__(self,other):
-        return self*(-other)
+
     
     def generateInputKwargs(self):
         """Generate dictionary with initial args/kwargs used for init"""
@@ -771,3 +782,44 @@ class CurratAxeMask(MaskingObject):
         
         
         return x.calculateCurratAxeMask(self.braggPeaks,dqx=self.dqx,dqy=self.dqy,dH=self.dH,dK=self.dK,dL=self.dL,spurionType=self.spurionType,maskInside=self.maskInside)
+
+
+def parse(string,masks):
+    for m in masks:
+        locals()[m.name]=m
+    
+    return eval(string)
+
+
+
+def flatten(t):
+    return [item for sublist in t for item in sublist]
+
+
+def extractSubMasks(m):
+    if isinstance(m,(MultiMask)):
+        if m.operation is np.logical_or:
+            op = '+'
+        else:
+            op = '*'
+        
+        
+        signs = ['-'*mask.negated for mask in m.masks]
+        m.masks = [mask.bar() if mask.negated else mask for mask in m.masks]
+        result = [extractSubMasks(mask) for mask in m.masks]
+        eq = [res[0] for res in result]
+        masks = flatten([res[1] for res in result])
+    
+        s = '('+op.join([s+str(e) for s,e in zip(signs,eq)])+')'
+
+        maskSet = set()
+        for mask in masks+m.masks:
+            if not isinstance(mask,(MultiMask)):
+                maskSet.add(mask)
+        return s.format(*eq),maskSet
+    else:
+        return sympy.symbols(m.name),[m]
+def extract(mask):
+    eq,masks = extractSubMasks(mask)
+    masks = list(set(masks))
+    return str(sympy.simplify(eq)),masks

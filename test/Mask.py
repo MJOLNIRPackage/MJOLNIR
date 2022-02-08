@@ -6,8 +6,8 @@ import warnings
 from six import with_metaclass
 # or
 from future.utils import with_metaclass
-from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask,CurratAxeMask
-
+from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask, CurratAxeMask, parse, extract
+import sympy
 
 def test_subclass_MaskingObject():
     # Generate a subclass of MaskingObect that is missing stuff
@@ -88,16 +88,6 @@ def test_BooleanAlgebra():
     
     assert((false-false)() == True)
     
-    # Check 'division' i.e. oposite of *
-    #   A   B   Op  Res
-    #   1   1   /    0
-    #   1   0   /    1
-    #   0   1   /    0
-    #   0   0   /    0
-    assert((true/true  )() == False)
-    assert((true/false )() == True)
-    assert((false/true )() == False)
-    assert((false/false)() == False)
     
     
     
@@ -316,3 +306,32 @@ def test_CurratAxeMask():
         assert False
     except AttributeError:
         assert True
+
+def test_Combinatorics_Extraction():
+    # Test of combination and extraction of multiple masks
+    masks = []
+
+    masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m1'))
+    masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m3'))
+    masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m4'))
+
+    combiString = '(m1-m4+m3)*(-(m1+m3))'
+
+    combiMask = parse(combiString,masks)
+
+
+    combiString2,masks2 = extract(combiMask)
+
+
+    assert(str(sympy.simplify(combiString)) == combiString2)
+    assert(set(masks) == set(masks2))
+
+
+    # One more time!
+
+    combiMask2 = parse(combiString2,masks2)
+    combiString3,masks3 = extract(combiMask2)
+
+
+    assert(str(sympy.simplify(combiString)) == str(sympy.simplify(combiString3)))
+    assert(set(masks) == set(masks3))
