@@ -6,7 +6,7 @@ import warnings
 from six import with_metaclass
 # or
 from future.utils import with_metaclass
-from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask, CurratAxeMask, parse, extract
+from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask, CurratAxeMask, parse, extract, load
 import sympy
 
 def test_subclass_MaskingObject():
@@ -315,7 +315,7 @@ def test_Combinatorics_Extraction():
     masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m3'))
     masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m4'))
 
-    combiString = '(m1-m4+m3)*(-(m1+m3))'
+    combiString = '(m1+m4*m1)*m3'
 
     combiMask = parse(combiString,masks)
 
@@ -323,7 +323,7 @@ def test_Combinatorics_Extraction():
     combiString2,masks2 = extract(combiMask)
 
 
-    assert(str(sympy.simplify(combiString)) == combiString2)
+    assert(str(sympy.expand(combiString)) == combiString2)
     assert(set(masks) == set(masks2))
 
 
@@ -333,5 +333,15 @@ def test_Combinatorics_Extraction():
     combiString3,masks3 = extract(combiMask2)
 
 
-    assert(str(sympy.simplify(combiString)) == str(sympy.simplify(combiString3)))
+    assert(str(sympy.expand(combiString)) == str(sympy.expand(combiString3)))
     assert(set(masks) == set(masks3))
+
+
+    combiMask2.save('mask.mask')
+    loadedMask = load('mask.mask')
+
+
+    combiString4,masks4 = extract(loadedMask)
+
+    assert(str(sympy.expand(combiString)) == str(sympy.expand(combiString4)))
+    assert(set(masks) == set(masks4))

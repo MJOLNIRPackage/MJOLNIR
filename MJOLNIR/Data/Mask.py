@@ -4,6 +4,7 @@ import numpy as np
 from MJOLNIR.Data import DataSet,DataFile
 import sympy
 import warnings
+import pickle
 # Compability of python 2 and 3 with metaclasses
 # Python 2 and 3:
 from six import with_metaclass
@@ -135,6 +136,11 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         newMask.maskInside = not newMask.maskInside
         newMask.negated = True
         return newMask
+
+    def save(self,file):
+        mp = pickle.dumps(self)
+        with open(file,'wb') as f:
+            f.write(mp)
         
 class MultiMask(MaskingObject):
     def __init__(self,masks,operation=np.logical_and,negated=False):
@@ -822,4 +828,10 @@ def extractSubMasks(m):
 def extract(mask):
     eq,masks = extractSubMasks(mask)
     masks = list(set(masks))
-    return str(sympy.simplify(eq)),masks
+    return str(sympy.expand(eq)),masks
+
+
+def load(file):
+    with open(file,'rb') as f:
+        mask = pickle.load(f)
+    return mask
