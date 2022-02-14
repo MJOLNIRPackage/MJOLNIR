@@ -73,6 +73,8 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
                 coordinates = [coordinates]
             self.coordinates = coordinates
         self.bar = self.negate
+        if name is None:
+            name = 'mask_0'
         self.name = name
         self.negated = False
 
@@ -149,12 +151,46 @@ class MultiMask(MaskingObject):
             
         self.name = None
         self.masks = masks
+
+        names = self.getNames()
+        newNames = [names[0]] # first mask always keeps it name
+        for idx,name in enumerate(names[1:],start=1):
+
+            if len(names)>idx+1:
+                otherNames = newNames+names[idx+1:]
+            else:
+                otherNames = newNames
+
+            while name in otherNames:
+                try:
+                    idx = int(name.split('_')[-1])
+                except ValueError:
+                    name = name+'_1'
+                else:
+                    name = name[:-(len(str(idx))+1)] + '_' + str(idx+1)
+            newNames.append(name)
+
+        for mask,newName in zip(self.getMasks(),newNames):
+            mask.name = newName
+
         self.operation = operation
         self.negated = negated
         self.bar = self.negate
         coordinates = np.concatenate([np.array(m.coordinates) for m in self.masks]).flatten()
         self.coordinates = np.array(list(set(coordinates))) # unique coordinates
 
+    def getNames(self):
+        return [mask.name for mask in self.getMasks()]
+
+    def getMasks(self):
+        masks = np.concatenate([[mask] if not isinstance(mask,(MultiMask)) else mask.getMasks() for mask in self.masks],axis=0).flatten()
+        uniqueMasks = []
+        for mask in masks:
+            if not mask in uniqueMasks:
+                uniqueMasks.append(mask)
+       
+        return uniqueMasks
+        
     
     def call(self,*args,**kwargs):
         masks = []
@@ -827,8 +863,12 @@ def extractSubMasks(m):
         return sympy.symbols(m.name),[m]
 def extract(mask):
     eq,masks = extractSubMasks(mask)
-    masks = list(set(masks))
-    return str(sympy.expand(eq)),masks
+    uniqueMasks = []
+    for mask in masks:
+        if not mask in uniqueMasks:
+            uniqueMasks.append(mask)
+    
+    return str(sympy.expand(eq)),uniqueMasks
 
 
 def load(file):

@@ -324,7 +324,8 @@ def test_Combinatorics_Extraction():
 
 
     assert(str(sympy.expand(combiString)) == combiString2)
-    assert(set(masks) == set(masks2))
+    assert(len(masks) == len(masks2))
+    assert(np.all([mask in masks for mask in masks2]))
 
 
     # One more time!
@@ -334,7 +335,8 @@ def test_Combinatorics_Extraction():
 
 
     assert(str(sympy.expand(combiString)) == str(sympy.expand(combiString3)))
-    assert(set(masks) == set(masks3))
+    assert(len(masks) == len(masks3))
+    assert(np.all([mask in masks for mask in masks3]))
 
 
     combiMask2.save('mask.mask')
@@ -344,4 +346,31 @@ def test_Combinatorics_Extraction():
     combiString4,masks4 = extract(loadedMask)
 
     assert(str(sympy.expand(combiString)) == str(sympy.expand(combiString4)))
-    assert(set(masks) == set(masks4))
+    assert(len(masks) == len(masks4))
+    assert(np.all([mask in masks for mask in masks4]))
+
+def test_Masks_naming():
+
+    dqx = None#0.1
+    dqy = 0.3
+    
+    dH = 0.1
+    dK = 0.1
+    dL = 0.01
+    
+    
+    Braggs = np.array([[2,0,0],[0,2,0],[1,3,0],[-1,3,0]])
+    CAMask = CurratAxeMask(Braggs,dqx,dqy,dH,dK,dL)
+    EMask = lineMask(-1, -1+4*0.08,coordinates='energy')
+    EMask2 = lineMask(1, 1+4*0.08,coordinates='energy')
+    
+    mask = CAMask*EMask+EMask2+EMask2+EMask2
+    print('Masknames are',[mask.name for mask in [CAMask,EMask,EMask2]])
+    # no names are provided and thus 
+    expectedNames = ['mask_'+str(i) for i in range(3)] # is expected
+    names = mask.getNames()
+    names.sort()
+
+    # independent of how many times the same mask is used
+
+    assert(np.all(names==expectedNames))
