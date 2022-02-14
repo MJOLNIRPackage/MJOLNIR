@@ -157,7 +157,6 @@ class MultiMask(MaskingObject):
         if not hasattr(masks,'__len__'):
             masks = [masks]
             
-        self.name = None
         self.masks = masks
 
         names = self.getNames()
