@@ -83,7 +83,7 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
             return False
         tests = [self.name == other.name, self.negated == other.negated, 
         np.all(self.coordinates == other.coordinates)]
-        return np.all(tests)
+        return np.all(tests) and self.__hash__ == other.__hash__
 
     def __hash__(self):
         return hash(self.__dict__.values())
@@ -141,6 +141,14 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
 
     def save(self,file):
         mp = pickle.dumps(self)
+        correct = True
+        if not '.' in file:
+            correct = False
+        elif file.split('.')[-1] == 'mask':
+            correct = False
+        
+        if not correct:
+            file = file+'.mask'
         with open(file,'wb') as f:
             f.write(mp)
         
