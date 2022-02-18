@@ -3588,6 +3588,12 @@ class DataSet(object):
         
         return mask
 
+    def removeMasking(self):
+        if not self._maskingObject is None:
+            self.mask = [np.zeros_like(df.I,dtype=bool) for df in self]
+            self._maskingObject = None
+            
+
 
 
 
