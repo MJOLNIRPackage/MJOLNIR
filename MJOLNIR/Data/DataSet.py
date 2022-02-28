@@ -20,6 +20,7 @@ from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
 from mpl_toolkits.axisartist import SubplotHost
+from matplotlib.ticker import FuncFormatter
 import pandas as pd
 import pytest
 from scipy.ndimage import filters
@@ -2174,7 +2175,7 @@ class DataSet(object):
                 
 
 
-            ax.xaxis.set_major_formatter(lambda x,i: major_formatter(ax,x,i))
+            ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
             ax.format_coord = lambda x,y: format_coord(x,y,ax)
 
             ax.dE = np.diff(BinList[0][1][0,:]).mean()
@@ -5474,7 +5475,7 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
             positions+=[ax.energy]
         return '\n'.join([ax.fmtPrecisionString.format(pos) for pos in positions])
     
-    ax.xaxis.set_major_formatter(lambda x,i: major_formatter(ax,x,i))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
     
     # Create the onclick behaviour
     def onclick(event,ax,Data,outputFunction):# pragma: no cover
@@ -5612,7 +5613,7 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
             positions = [tickPosition]
         return '\n'.join([ax.fmtPrecisionString.format(pos) for pos in positions])
     
-    ax.xaxis.set_major_formatter(lambda x,i: major_formatter(ax,x,i))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
     
     # Create the onclick behaviour
     def onclick(event,ax,Data,outputFunction):# pragma: no cover
