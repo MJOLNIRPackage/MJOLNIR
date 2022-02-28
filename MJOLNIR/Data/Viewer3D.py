@@ -506,7 +506,7 @@ class Viewer3D(object):
             self.im.set_array(tempData)
             self._axesChanged = False
         else:
-            self.im.set_array(self.masked_array[:,:,self.value].T.flatten())
+            self.im.set_array(self.masked_array[:,:,int(self.value)].T.flatten())
         
             
         if not self.CurratAxeBraggList is None and not self.Ei is None and self.plotCurratAxe is True and self.rlu is True:
