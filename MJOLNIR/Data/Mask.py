@@ -81,9 +81,19 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
     def __eq__(self,other):
         if not isinstance(self,(type(other))): # not same type:
             return False
-        tests = [self.name == other.name, self.negated == other.negated, 
-        np.all(self.coordinates == other.coordinates)]
-        return np.all(tests) and self.__hash__ == other.__hash__
+        kwargs = self.generateInputKwargs()
+        otherkwargs = other.generateInputKwargs()
+        if not np.all([selfkeys in otherkwargs.keys() for selfkeys in kwargs.keys()]):
+            return False
+        
+        for key,value in kwargs.items():
+            try:
+                truth = np.all(value == otherkwargs[key])
+            except ValueError:
+                truth = np.all(np.isclose(value,otherkwargs[key]))
+            if not truth:
+                return False
+        return True
 
     def __hash__(self):
         return hash(self.__dict__.values())

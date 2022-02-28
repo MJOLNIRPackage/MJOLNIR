@@ -7,7 +7,7 @@ from six import with_metaclass
 # or
 from future.utils import with_metaclass
 from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask, CurratAxeMask, parse, extract, load
-import sympy
+import sympy,os
 
 def test_subclass_MaskingObject():
     # Generate a subclass of MaskingObect that is missing stuff
@@ -344,10 +344,16 @@ def test_Combinatorics_Extraction():
 
 
     combiString4,masks4 = extract(loadedMask)
-
+    os.remove('mask.mask')
     assert(str(sympy.expand(combiString)) == str(sympy.expand(combiString4)))
     assert(len(masks) == len(masks4))
-    assert(np.all([mask in masks for mask in masks4]))
+
+    for I,mask in enumerate(masks):
+        print(I,mask,hash(mask))
+    for I,mask in enumerate(masks4):
+        print(I,mask,hash(mask))
+        print(np.any([mask == m for m in masks]))
+    assert(np.all([np.any([mask == m for m in masks]) for mask in masks4]))
 
 def test_Masks_naming():
 
