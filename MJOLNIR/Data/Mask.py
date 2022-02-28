@@ -144,7 +144,7 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         correct = True
         if not '.' in file:
             correct = False
-        elif file.split('.')[-1] == 'mask':
+        elif not file.split('.')[-1].strip() == 'mask':
             correct = False
         
         if not correct:
