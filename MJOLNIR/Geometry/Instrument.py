@@ -627,9 +627,9 @@ class Instrument(GeometryConcept.GeometryConcept):
                                     binPixelData = binPixelData[BotId:TopId]
                                     EiLocal = Ei[BotId:TopId]
                                     Bg = np.min(binPixelData[[0,-1]])
-                                    guess = np.array([np.max(binPixelData), ECenter,0.08],dtype=float)
+                                    guess = np.array([np.max(binPixelData), ECenter,0.08,Bg],dtype=float)
                                     try:
-                                        res = scipy.optimize.curve_fit(lambda x,A,mu,sigma:Gaussian(x,A,mu,sigma,0.0),EiLocal,binPixelData.astype(float),p0=guess)
+                                        res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
                                         
                                     except: # pragma: no cover
                                         if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
@@ -638,12 +638,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                                             plt.ioff
                                         plt.figure()
                                         plt.scatter(EiLocal,binPixelData)
-                                        plt.plot(Ei,Gaussian(Ei,*guess,0.0))
+                                        plt.plot(Ei,Gaussian(Ei,*guess))
                                     
                                         plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
                                         plt.close()
 
-                                    fittedParameters[i,j,k]=np.concatenate([res[0],[0.0]])
+                                    fittedParameters[i,j,k]=res[0]
                                     fittedParameters[i,j,k,0] *= np.sqrt(2*np.pi)*fittedParameters[i,j,k,2] #np.sum(binPixelData) # Use integrated intensity as amplitude 29-07-2020 JL
                                      
                                     if plot: # pragma: no cover
@@ -1309,7 +1309,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=rotation_angle_zero,polar_angle_offset=polar_angle_offset)
         
 
-def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1):
+def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1): # pragma: no cover
     Qx = np.asarray(Qx)
     Qy = np.asarray(Qy)
 
@@ -1438,7 +1438,7 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
     startColor = np.array([0.83921569, 0.15294118, 0.15686275, 0.5])
     diff = (endColor-startColor)/float(energies-1)
 
-    def format_axes_func(self,x,y,Ei,Ef,A3Off=s.theta,A4Sign=-1.0):
+    def format_axes_func(self,x,y,Ei,Ef,A3Off=s.theta,A4Sign=-1.0):# pragma: no cover
         A3,A4 = converterToA3A4(x,y,Ei,Ef,-A3Off,A4Sign=A4Sign)
         return ax.sample.format_coord(x,y)+', A3 = {:.2f} deg, A4 = {:.2f} deg, Ef = {:.2f}'.format(A3,A4,Ef)
     
@@ -1497,7 +1497,7 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
         Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta,A4Sign=A4Positions[0])
     
 
-    def onclick(event,axes,outputFunction):
+    def onclick(event,axes,outputFunction):# pragma: no cover
         for ax in axes:
             if ax.in_axes(event):
                 try:

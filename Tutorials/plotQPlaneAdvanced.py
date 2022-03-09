@@ -2,14 +2,16 @@ import sys
 sys.path.append('/home/lass/Dropbox/PhD/Software/MJOLNIR/')
 
 from Tutorial_Class import Tutorial
-
+import matplotlib
+matplotlib.use('qt5')
+import matplotlib.pyplot as plt
+plt.ioff()
 
 def Tester():
     from MJOLNIR.Data import DataSet
     from MJOLNIR import _tools # Usefull tools useful across MJOLNIR 
     import numpy as np
     import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d import Axes3D
     
     numbers = '483-489,494-500' # String of data numbers
     fileList = _tools.fileListGenerator(numbers,'/home/lass/Dropbox/PhD/CAMEAData/',2018) # Create file list from 2018 in specified folder

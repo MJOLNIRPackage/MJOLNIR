@@ -20,6 +20,7 @@ from MJOLNIR import _tools
 from mpl_toolkits.axisartist.grid_helper_curvelinear import \
     GridHelperCurveLinear
 from mpl_toolkits.axisartist import SubplotHost
+from matplotlib.ticker import FuncFormatter
 import pandas as pd
 import pytest
 from scipy.ndimage import filters
@@ -75,7 +76,7 @@ class DataSet(object):
         self._calibrationfiles = []
         self._mask = False
         self.index = 0
-        self.absolutNormalized = 0 # Float to keep track of normalization has taken place (0 means false)
+        self.absoluteNormalized = 0 # Float to keep track of normalization has taken place (0 means false)
 
 
         if dataFiles is not None:
@@ -187,32 +188,29 @@ class DataSet(object):
 
     @mask.setter
     def mask(self,mask):
-        if isinstance(mask,list):
-            if isinstance(mask[0],Mask.MaskingObject): # If list of maskobjects is provided
-                if not len(mask) == len(self): #not the same number of masks as data files
-                    raise AttributeError('Provided number of masks ({}) does not match number of data files ({})'.format(len(mask),len(self)))
-                self._maskingObject = mask
+        if isinstance(mask,list): # is a list 
+            if not len(mask) == len(self):
+                raise AttributeError('Provided mask length does not match dataset. Received length {} but length of dataset is {}'.format(len(mask),len(self)))
+            for m,df in zip(mask,self):
+                df.mask = m
+
+        elif isinstance(mask,np.ndarray): # Is a numpy array
+            if len(mask)==len(self): # if first axis is the same as the length of self, iterate through
                 for m,df in zip(mask,self):
                     df.mask = m
-                masksum = -1
-            elif hasattr(self,'_maskingObject'): # not masking object but self has one, delete it
-                del self._maskingObject
-            masksum = np.sum([np.sum(x) for x  in mask])
-            self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
-
-        elif isinstance(mask,Mask.MaskingObject):
-            self._maskingObject = mask
-            m = []
-            for df in self:
-                df.mask = mask
-                m.append(df._mask)
-            mask = m
-            masksum = -1
+                
+            else: # If not apply mask to all datasets
+                m = []
+                for df in self: 
+                    df.mask = mask
+                    m.append(mask)
+                mask = m
         else:
-            if hasattr(self,'_maskingObject'): # not masking object but self has one, delete it
-                del self._maskingObject
-            masksum = np.sum(mask)
-            self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
+            raise AttributeError('Mask not understood. Received',mask)
+
+        masksum = np.sum([np.sum(x) for x  in mask])
+        self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
+        
         if masksum==0:
             pass#warnings.warn('Provided mask has no masked elements!')
         elif masksum==self.I.size:
@@ -222,7 +220,13 @@ class DataSet(object):
             if hasattr(val,'extractData'):
                 val.mask = mask
 
-        self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
+        self._getData
+
+    def appendMask(self,mask):
+        if isinstance(mask,list):
+            self.mask = [np.logical_or(oM,m) for oM,m in zip(self.mask,mask)]
+        else:
+            self.mask = np.logical_or(self.mask,mask)
 
     @property
     def settings(self):
@@ -887,7 +891,9 @@ class DataSet(object):
             if not smoothing is None:
                 Int = gaussian_filter(Int,smoothing)
 
-            Int_err = np.divide(np.sqrt(Int)*normcounts,MonitorCount*Normalization)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                Int_err = np.divide(np.sqrt(Int)*normcounts,MonitorCount*Normalization)
             realPositions = np.outer(QBins,dirvec)+q1 # In QxQy
             realPositions = 0.5*(realPositions[:-1]+realPositions[1:])
             H,K,L = self.convertToHKL(realPositions).T
@@ -1028,7 +1034,7 @@ class DataSet(object):
         ax.ds = self
         
         if colorbar:
-            ax.colorbar(ax.pmeshs[0])
+            ax.get_figure().colorbar(ax.pmeshs[0])
 
         ax.grid(grid)
 
@@ -1490,11 +1496,9 @@ class DataSet(object):
             Normalization.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=Norm[e_inside])[0].astype(Norm.dtype))
             NormCount.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=np.ones_like(I[e_inside]))[0].astype(I.dtype))
                 
-                
-
-            warnings.simplefilter('ignore')
-            Int.append(np.divide(intensity[-1]*NormCount[-1],monitorCount[-1]*Normalization[-1]))
-            warnings.simplefilter('once')
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                Int.append(np.divide(intensity[-1]*NormCount[-1],monitorCount[-1]*Normalization[-1]))
 
         if binning == 'polar':
             Qx = [np.outer(np.cos(xBins[i]-offset[i]),yBins[i]) for i in range(len(intensity))]
@@ -1535,6 +1539,7 @@ class DataSet(object):
                 levels = np.linspace(vmin,vmax,50)
                 pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
             else:
+                ax.grid(False)
                 pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i],zorder=zorder,cmap=cmap,**kwargs))
         if not _3D:
             ax.set_aspect('equal')
@@ -1639,9 +1644,10 @@ class DataSet(object):
                 Norm = data[1][0][arg2D[0],arg2D[1]]
                 Mon = data[2][0][arg2D[0],arg2D[1]]
                 NC = data[3][0][arg2D[0],arg2D[1]]
-                warnings.simplefilter('ignore')
-                Intensity = np.divide(cts*NC,Norm*Mon)
-                warnings.simplefilter('once')
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Intensity = np.divide(cts*NC,Norm*Mon)
+
                 localSize = np.linalg.norm(np.array([QX[arg2D[0],arg2D[1]]-Qx[arg2D[0],arg2D[1]],QY[arg2D[0],arg2D[1]]-Qy[arg2D[0],arg2D[1]]]))
 
                 if not np.isfinite(Intensity) or np.linalg.norm(np.array([Qx[arg2D[0],arg2D[1]]-event.xdata,Qy[arg2D[0],arg2D[1]]-event.ydata]))>localSize:
@@ -1671,10 +1677,12 @@ class DataSet(object):
                 H,K,L = ax.sample.calculateQxQyToHKL(QxCenter,QyCenter)
                 E = np.full(H.shape,np.mean([ax.EMin,ax.EMax]))
                 intensity,monitorCount,Normalization,NormCount = [x[0] for x in ax.data]
-                Int = np.divide(intensity*NormCount,Normalization*monitorCount)
-                Int[np.isnan(Int)] = -1
-                Int_err = np.divide(np.sqrt(intensity)*NormCount,Normalization*monitorCount)
-                Int_err[np.isnan(Int_err)] = -1
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Int = np.divide(intensity*NormCount,Normalization*monitorCount)
+                    Int[np.isnan(Int)] = -1
+                    Int_err = np.divide(np.sqrt(intensity)*NormCount,Normalization*monitorCount)
+                    Int_err[np.isnan(Int_err)] = -1
                 dataToPandas = {'Qx':QxCenter.flatten(),'Qy':QyCenter.flatten(),'H':H.flatten(),'K':K.flatten(),'L':L.flatten(),'Energy':E.flatten(), 'Intensity':intensity.flatten(), 'Monitor':monitorCount.flatten(),
                                 'Normalization':Normalization.flatten(),'BinCounts':NormCount.flatten(),'Int':Int.flatten(),'Int_err':Int_err.flatten()}
                 ax.d = pd.DataFrame(dataToPandas)
@@ -2167,7 +2175,7 @@ class DataSet(object):
                 
 
 
-            ax.xaxis.set_major_formatter(lambda x,i: major_formatter(ax,x,i))
+            ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
             ax.format_coord = lambda x,y: format_coord(x,y,ax)
 
             ax.dE = np.diff(BinList[0][1][0,:]).mean()
@@ -2420,7 +2428,9 @@ class DataSet(object):
         if raw: # Shape is (1 or 3, no Files, steps, 104, binning)
             Data = np.array([self.I,self.Norm,self.Monitor])
         else:
-            Data = np.divide(self.I,self.Norm*self.Monitor)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                Data = np.divide(self.I,self.Norm*self.Monitor)
         
         if A4 is None and A4Id is None and Ef is None and EfId is None:
             return Data
@@ -2455,7 +2465,9 @@ class DataSet(object):
             if raw: # Shape is (1 or 3, no Files, steps, 104, binning)
                 Data = np.array([file.I,file.Norm,file.Monitor])
             else:
-                Data = np.divide(file.I,file.Norm*file.Monitor)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Data = np.divide(file.I,file.Norm*file.Monitor)
             
             if not A4Id is None:
                 rData = Data[:,A4Id].reshape(-1,1,8*binning)
@@ -2878,7 +2890,7 @@ class DataSet(object):
                 position = visualizationBinPosition+np.linalg.norm(Q)
                 
             x,y = np.meshgrid(position,_bins[0])
-            
+            ax.grid(False)
             pmesh = ax.pcolormesh(x,y,_data['Int'].values.reshape(-1,1))
             meshs.append(pmesh)
             
@@ -3043,9 +3055,10 @@ class DataSet(object):
 
             def to_csv(fileName,self):
                 shape = self.Counts.shape
-                
-                Int = np.divide(self.Counts*self.NormCounts,self.Monitor*self.Normalization)
-                Int_err = np.divide(np.sqrt(self.Counts)*self.NormCounts,self.Monitor*self.Normalization)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Int = np.divide(self.Counts*self.NormCounts,self.Monitor*self.Normalization)
+                    Int_err = np.divide(np.sqrt(self.Counts)*self.NormCounts,self.Monitor*self.Normalization)
                 
                 Qx,Qy,E = [x for x in self.bins]
                 E = E[0,0]
@@ -3430,28 +3443,28 @@ class DataSet(object):
         newFile = DataSet(data)
         return newFile
 
-    def undoAbsolutNormalize(self):
+    def undoAbsoluteNormalize(self):
         """Undo normalization previously performed"""
-        if self.absolutNormalized!=0:
-            normFactor = self.absolutNormalized
+        if self.absoluteNormalized!=0:
+            normFactor = self.absoluteNormalized
             for d in self:
                 d.Norm *= normFactor
-                if hasattr(d,'absolutNormalizationFactor'):
-                    d.absolutNormalizationFactor*= 1.0/normFactor
+                if hasattr(d,'absoluteNormalizationFactor'):
+                    d.absoluteNormalizationFactor*= 1.0/normFactor
                 else:
-                    d.absolutNormalizationFactor= 1
-                d.absolutNormalized = False
+                    d.absoluteNormalizationFactor= 1
+                d.absoluteNormalized = False
 
-            self.absolutNormalized = False
-
-
+            self.absoluteNormalized = False
 
 
-    def absolutNormalize(self,sampleMass=None,sampleMolarMass=None,sampleChemicalFormula=None,formulaUnitsPerUnitCell=1.0,
+
+
+    def absoluteNormalize(self,sampleMass=None,sampleMolarMass=None,sampleChemicalFormula=None,formulaUnitsPerUnitCell=1.0,
                          sampleGFactor=2.0, correctVanadium=False,vanadiumMass=15.25,
                          vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumChemicalFormula='V',vanadiumGFactor=2.0,
                          vanadiumUnitsPerUnitCell=1.0,vanadiumMolarMass=None):
-        """Normaliza dataset to absolut units () by 
+        """Normaliza dataset to absolute units () by 
 
         Kwargs:
 
@@ -3478,33 +3491,33 @@ class DataSet(object):
         """
 
         if len(self.convertedFiles) == 0:
-            raise AttributeError("Data set needs to be converted before absolut normalization can be applied.")
+            raise AttributeError("Data set needs to be converted before absolute normalization can be applied.")
         
         
 
         normFactor = \
-        _tools.calculateAbsolutNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMolarMass=sampleMolarMass,sampleMass=sampleMass,
+        _tools.calculateAbsoluteNormalization(sampleChemicalFormula=sampleChemicalFormula,sampleMolarMass=sampleMolarMass,sampleMass=sampleMass,
                                              formulaUnitsPerUnitCell=formulaUnitsPerUnitCell,sampleGFactor=sampleGFactor,
                                              correctVanadium=correctVanadium,vanadiumMass=vanadiumMass,vanadiumChemicalFormula=vanadiumChemicalFormula,
                                              vanadiumMonitor=vanadiumMonitor,vanadiumSigmaIncoherent=vanadiumSigmaIncoherent,vanadiumMolarMass=vanadiumMolarMass,
                                              vanadiumGFactor=vanadiumGFactor,vanadiumUnitsPerUnitCell=vanadiumUnitsPerUnitCell)
             
-        if self.absolutNormalized != 0:
-            warnings.warn("\nAlready Normalized\nDataSet seems to already have beeen normalized absolutly. Reverting previous normalization...")
-            normFactor /= self.absolutNormalized
+        if self.absoluteNormalized != 0:
+            warnings.warn("\nAlready Normalized\nDataSet seems to already have beeen normalized absolutely. Reverting previous normalization...")
+            normFactor /= self.absoluteNormalized
 
         for d in self:
             d.Norm *= normFactor
-            if hasattr(d,'absolutNormalizationFactor'):
-                d.absolutNormalizationFactor*= normFactor
+            if hasattr(d,'absoluteNormalizationFactor'):
+                d.absoluteNormalizationFactor*= normFactor
             else:
-                d.absolutNormalizationFactor= normFactor
-            d.absolutNormalized = True
+                d.absoluteNormalizationFactor= normFactor
+            d.absoluteNormalized = True
 
-        if self.absolutNormalized != 0:
-            self.absolutNormalized *= normFactor
+        if self.absoluteNormalized != 0:
+            self.absoluteNormalized *= normFactor
         else:
-            self.absolutNormalized = normFactor
+            self.absoluteNormalized = normFactor
 
     def autoSort(self,sortFunction = None):
         """Sort datafiles according to lowest energy, then abs(2Theta), then scan direction in A3, then A3 start position.
@@ -3535,6 +3548,52 @@ class DataSet(object):
             self._convertedFiles = list(np.array(self.convertedFiles)[idx])
         
         self._getData()
+
+
+    def calculateCurratAxeMask(self,BraggPeaks,dqx=None,dqy=None,dH=None,dK=None,dL=None,spurionType='both',maskInside=True):
+        """Generate an elliptical mask centered on the Currat-Axe spurion.
+        
+        Args:
+        
+            - BraggPeaks (list): List of Bragg peaks to be used for mask. Shape is given by [[H1,K1,L1], [H2,K2,L2], ... [HN,KN,LN]]
+            
+        Kwargs:
+
+            - dqx (float): Radius used for masking along qx (default None)
+
+            - dqy (float): Radius used for masking along qy (default None)
+
+            - dH (float): Radius used for masking along H (default None)
+
+            - dK (float): Radius used for masking along K (default None)
+
+            - dL (float): Radius used for masking along L (default None)
+
+            - spurionType (str): Either monochromator, analyser or both (default 'both')
+
+            - maskInside (bool): If true, points inside is masked otherwise outside (default True)
+
+        Returns:
+
+            - mask (list): List of boolean numpy arrays with shapes equal to df.I.shape
+
+        Note:
+
+            If either dqx or dqy is None, utilizes the dH, dK, dL instead.
+
+        """
+
+        mask = []
+        for df in self:
+            mask.append(df.calculateCurratAxeMask(BraggPeaks=BraggPeaks,dqx=dqx,dqy=dqy,dH=dH,dK=dK,dL=dL,spurionType=spurionType,maskInside=maskInside))
+        
+        return mask
+
+    def removeMasking(self):
+        if not self._maskingObject is None:
+            self.mask = [np.zeros_like(df.I,dtype=bool) for df in self]
+            self._maskingObject = None
+            
 
 
 
@@ -4254,13 +4313,17 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
         # Check if plane inpu is single plane
         if subplanes==1:
             plotPlane = plane
-            IntensityBin = np.divide(Isorted[:,plane],Normsorted[:,plane]*Monsorted[:,plane])+1e-20
-            IntensityBin = np.ma.masked_invalid(IntensityBin)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                IntensityBin = np.divide(Isorted[:,plane],Normsorted[:,plane]*Monsorted[:,plane])+1e-20
+                IntensityBin = np.ma.masked_invalid(IntensityBin)
 
         else:
             plotPlane = int(np.mean(plane))
-            IntensityBin = np.divide(np.nansum(Isorted[:,plane],axis=1),np.nanmean(Normsorted[:,plane],axis=1)*np.nansum(Monsorted[:,plane],axis=1))+1e-20
-            IntensityBin = np.ma.masked_invalid(IntensityBin)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                IntensityBin = np.divide(np.nansum(Isorted[:,plane],axis=1),np.nanmean(Normsorted[:,plane],axis=1)*np.nansum(Monsorted[:,plane],axis=1))+1e-20
+                IntensityBin = np.ma.masked_invalid(IntensityBin)
         #    return plotPlane,IntensityBin,subplanes
         
         #plotPlane,IntensityBin,subplanes = binPlanes(plane,Isorted,Normsorted,Monsorted)
@@ -5378,7 +5441,7 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
         def format_coord(x,y,ax):# pragma: no cover
             qx,qy = ax.calculatePosition(x)
             if ax._2D:
-                "qx = {0:.3e}, qy = {1:.3e}, I = {3:0.4e}".format(qx,qy,y)
+                "qx = {0:.3e}, qy = {1:.3e}, I = {2:0.4e}".format(qx,qy,y)
             else:
                 E = ax.energy
                 if showEnergy:
@@ -5412,7 +5475,7 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
             positions+=[ax.energy]
         return '\n'.join([ax.fmtPrecisionString.format(pos) for pos in positions])
     
-    ax.xaxis.set_major_formatter(lambda x,i: major_formatter(ax,x,i))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
     
     # Create the onclick behaviour
     def onclick(event,ax,Data,outputFunction):# pragma: no cover
@@ -5550,7 +5613,7 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
             positions = [tickPosition]
         return '\n'.join([ax.fmtPrecisionString.format(pos) for pos in positions])
     
-    ax.xaxis.set_major_formatter(lambda x,i: major_formatter(ax,x,i))
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
     
     # Create the onclick behaviour
     def onclick(event,ax,Data,outputFunction):# pragma: no cover

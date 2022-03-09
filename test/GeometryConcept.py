@@ -14,7 +14,7 @@ def test_Concept_plot():
     Concept = GeometryConcept()
     plt.ioff()
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = fig.add_subplot(projection='3d')
     try:
         Concept.plot(ax)
         assert False

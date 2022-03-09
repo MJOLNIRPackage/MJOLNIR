@@ -465,23 +465,34 @@ class DataFile(object):
 
     @mask.setter
     def mask(self,mask):
-        if isinstance(mask,Mask.MaskingObject):
-            coordsInside = np.array([hasattr(self,coord) for coord in mask.coordinates])
-            if not np.all(coordsInside):
-                names = np.array(mask.coordinates)
-                raise AttributeError('Provided mask has coord(s) not in DataFile:','\n'.join(names[np.logical_not(coordsInside)]))
-            self._maskingObject = mask
-        elif hasattr(self,'_maskingObject'): # if _maskingObject exists from ealier, delete it
-            del self._maskingObject
-        if hasattr(self,'I'): # if identity has    
-            if hasattr(self,'_maskingObject'):
-                self._mask = self._maskingObject(self) # Generate boolean mask
-            else:
-                if not np.all(self.I.shape == mask.shape):
-                    raise AttributeError('Shape of provided mask {} does not match shape of data {}.'.format(mask.shape,self.I.shape))
-                self._mask = mask
-        else:
-            self._mask = mask
+        if hasattr(self,'I'):
+            if not np.all(self.I.shape == mask.shape):
+                raise AttributeError('Shape of provided mask {} does not match shape of data {}.'.format(mask.shape,self.I.shape))
+        self._mask = mask
+
+    @property
+    def shape(self):
+        return self.I.shape
+
+    @shape.getter
+    def shape(self):
+        return self.I.shape
+
+    @shape.setter
+    def shape(self,shape):
+        raise AttributeError('Shape of a DataFile cannot be set.')
+
+    @property
+    def size(self):
+        return self.I.size
+
+    @size.getter
+    def size(self):
+        return self.I.size
+
+    @size.setter
+    def size(self,size):
+        raise AttributeError('size of a DataFile cannot be set.')
 
     def updateProperty(self,dictionary):
         if isinstance(dictionary,dict):
@@ -1107,6 +1118,8 @@ class DataFile(object):
         for pair in nameSwaps:
             updateKeyName(self,pair[0],pair[1])
 
+        self._mask = np.zeros_like(self.I)
+
     @_tools.KwargChecker()
     def calcualteDataIndexFromDasel(self,detectorSelection=None,analyzerSelection=None):
         if detectorSelection is None:
@@ -1222,7 +1235,7 @@ class DataFile(object):
         Monitor = self.Monitor.copy().reshape((steps,1,1))
         Monitor = Monitor*np.ones((1,detectors,self.EPrDetector*binning))
         Normalization = EfNormalization*np.ones((steps,1,1))
-
+        mask = np.zeros_like(Intensity) # TODO: Redo???
        
         ###########################
         #Monitor[:,:,:binning] = 0 #
@@ -1231,7 +1244,7 @@ class DataFile(object):
 
         convFile = DataFile(self) # Copy everything from old file
         updateDict = {'I':Intensity,'Monitor':Monitor,'qx':QX,'qy':QY,'energy':DeltaE,'binning':binning,'Norm':Normalization,
-        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.hdf','.nxs')}
+        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.hdf','.nxs'),'mask':mask}
         convFile.updateProperty(updateDict)
 
         if convFile.type == 'nxs' and convFile.binning == 8:
@@ -1685,7 +1698,135 @@ class DataFile(object):
 
         """
         self.sample.updateSampleParameters(unitCell=unitCell) 
+
+    def calculateCurratAxeMask(self,BraggPeaks,dqx=None,dqy=None,dH=None,dK=None,dL=None,spurionType='both',maskInside=True):
+        """Generate an elliptical mask centered on the Currat-Axe spurion.
         
+        Args:
+        
+            - BraggPeaks (list): List of Bragg peaks to be used for mask. Shape is given by [[H1,K1,L1], [H2,K2,L2], ... [HN,KN,LN]]
+            
+        Kwargs:
+
+            - dqx (float): Radius used for masking along qx (default None)
+
+            - dqy (float): Radius used for masking along qy (default None)
+
+            - dH (float): Radius used for masking along H (default None)
+
+            - dK (float): Radius used for masking along K (default None)
+
+            - dL (float): Radius used for masking along L (default None)
+
+            - spurionType (str): Either monochromator, analyser or both (default 'both')
+
+            - maskInside (bool): If true, points inside is masked otherwise outside (default True)
+
+        Returns:
+
+            - mask (list): Boolean numpy array with shape equal to self.I.shape
+
+        Note:
+
+            If either dqx or dqy is None, utilizes the dH, dK, dL instead.
+
+        """
+
+        if np.any([dqx is None,dqy is None]):
+            if np.any([x is None for x in [dH,dK,dL]]):
+                raise AttributeError('Provided masking radius not understood. Either dqx and dqy are to be given or dH, dK, and dL.\nRecieved: \n{}'.format('\n'.join(['    {}\t= {}'.format(x,v) for x,v in zip(['dqx','dqy','dH','dK','dL'],[dqx,dqy,dH,dK,dL])])))
+
+            rlu = True
+            factor = np.array([1.0,dH/dK,dH/dL]).reshape(3,1,1,1)
+            
+        else:
+            rlu = False
+            factor = dqx/dqy
+
+        if not spurionType.lower() in ['monochromator','analyser','both']:
+            raise AttributeError('Provided spurion type not understood. Received '+spurionType+' but expected '+', '.join(['monochromator','analyser','both']))
+
+        s = self.sample
+    
+        Ei = self.Ei[0]
+        Ef = self.instrumentCalibrationEf[:,1].reshape(-1,self.EPrDetector*self.binning).mean(axis=0)
+        if spurionType.lower() in ['monochromator','both']:
+            monoQx,monoQy = s.CurratAxe(Ei=Ei,Ef=Ef,Bragg=BraggPeaks,HKL=False)[:,0,:,:2].transpose(2,0,1)
+        if spurionType.lower() in ['analyser','both']:
+            anaQx,anaQy = s.CurratAxe(Ei=Ei,Ef=Ef,Bragg=BraggPeaks,HKL=False,spurionType='Analyser')[:,0,:,:2].transpose(2,0,1) # Into shape (2,len(Bragg),len(Ef))
+        
+        if not rlu:
+            qx = self.qx[:,:,:]
+            qy = self.qy[:,:,:]
+            monoInside = None
+            anaInside = None
+            # Reshape to fit qx,qy from data file
+            if spurionType.lower() in ['monochromator','both']:
+                monoQx = monoQx.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                monoQy = monoQy.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                for localMonoQx,localMonoQy in zip(monoQx,monoQy):
+                    if monoInside is None:
+                        monoInside = np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
+                        monoInside.dtype = bool
+                    else:
+                        monoInside += np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
+            
+            if spurionType.lower() in ['analyser','both']:
+
+                anaQx = anaQx.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                anaQy = anaQy.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                for localAnaQx,localAnaQy in zip(anaQx,anaQy):
+                    if anaInside is None:
+                        anaInside = np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
+                        anaInside.dtype = bool
+                    else:
+                        anaInside += np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
+            
+        else:
+            H = self.h[:,:,:]
+            K = self.k[:,:,:]
+            L = self.l[:,:,:]
+
+            monoInside = None
+            anaInside = None
+
+            if spurionType.lower() in ['monochromator','both']:
+                monoH,monoK,monoL = s.calculateQxQyToHKL(monoQx,monoQy)
+                
+                monoH = monoH.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                monoK = monoK.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                monoL = monoL.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                
+                for localMonoH,localMonoK,localMonoL in zip(monoH,monoK,monoL):
+                    if monoInside is None:
+                        monoInside = np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
+                        monoInside.dtype = bool
+                    else:
+                        monoInside += np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
+
+            if spurionType.lower() in ['analyser','both']:
+                anaH,anaK,anaL = s.calculateQxQyToHKL(anaQx,anaQy)
+                
+                anaH = anaH.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                anaK = anaK.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+                anaL = anaL.transpose(1,0).reshape(1,1,len(Ef),-1).transpose(3,0,1,2)
+
+                for localAnaH,localAnaK,localAnaL in zip(anaH,anaK,anaL):
+                    if anaInside is None:
+                        anaInside = np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
+                        anaInside.dtype = bool
+                    else:
+                        anaInside += np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
+
+        if spurionType.lower() == 'both':
+            mask = np.logical_or(monoInside,anaInside)
+        elif spurionType.lower() == 'monochromator':
+            mask = monoInside
+        else:
+            mask = anaInside
+        if not maskInside:
+            mask = np.logical_not(mask)
+        return mask
 
     def saveHDF(self,saveFileName):
         """Save current HDF file object into an HDF file.

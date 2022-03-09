@@ -32,8 +32,11 @@ def Tester():
     # the total mask then becomes
     mask = circle*lowEnergy+rectangle*lowEnergy.bar()
 
+    # Calculate the mask for the current data set
+    evaluatedMask = mask(ds)
+
     # Apply the mask
-    ds.mask = mask
+    ds.mask = evaluatedMask
     
     # Generate a 3d viewer
     view = ds.View3D(0.05,0.05,0.05)
@@ -69,7 +72,7 @@ title = 'Masking of Data files'
 
 introText = 'After an experiment has been performed, there are usually some parts of the data that contain noise or background. Whether these parts are '\
     +'spurious signals or well established background does not play an important role. In order to mask them out, a set of masks have been created, covering '\
-    +'masks in 1D, 2D and 3D. Due to the ambiguity in definint e.g. a box in 3D, it is adventageous to generate a mask for then to plot it in an axes. '\
+    +'masks in 1D, 2D and 3D. Due to the ambiguity in defining e.g. a box in 3D, it is advantageous to generate a mask for then to plot it in an axes. '\
     +'This can be done either in 2D or 3D as needed, but notice that 1D masks are not plotable. \n\nThe following masks are available:\n\n'\
     +'+---------------+----------------+---------------------------------------------------------------------------------+\n'\
     +'| Mask          | Dimensionality | Description                                                                     |\n'\
@@ -84,12 +87,14 @@ introText = 'After an experiment has been performed, there are usually some part
     +'+---------------+----------------+---------------------------------------------------------------------------------+\n'\
     +'| boxMask       |       3D       | Mask a box defined by three or four points                                      |\n'\
     +'+---------------+----------------+---------------------------------------------------------------------------------+\n'\
-    +'| indexmask     |       N/A      | Maks specific indices along one axis                                            |\n'\
+    +'| indexmask     |       N/A      | Mask specific indices along one axis                                            |\n'\
+    +'+---------------+----------------+---------------------------------------------------------------------------------+\n'\
+    +'| curratAxrMask |       N/A      | Mask designed to remove spurios Currat-Axe signals                              |\n'\
     +'+---------------+----------------+---------------------------------------------------------------------------------+\n'\
     +'\nWhen a mask is generated, one can specify the coordinates in which the masking is to take place. Usually, this is going to be the "h"'\
     +', "k", "l", and "energy" axis of the data, but others are also supported. This also means that plotting the mask on to of the data '\
     +'provides some difficulty. This is the reason behind the "transformation" argument of the plot method. It takes a function as input which converts '\
-    +'between the choosen coordinates and the plotted ones; an example will be shown below.\n\n'\
+    +'between the chosen coordinates and the plotted ones; an example will be shown below.\n\n'\
     +'Most often, masking is to be performed in many coordinates that might depend on each other. This could be masking Bragg peaks, where the position is '\
     +'known in (h,k,l) but only for a limited energy range. This means that masks are to be merged either using a boolean "and" or "or" command.\n\nCommands to '\
     +'combine masks: \n\n'\
@@ -99,8 +104,9 @@ introText = 'After an experiment has been performed, there are usually some part
         +'- "-": OR NOT, requires first mask to be true or second mask to be false to mask region\n\n'\
     +'These algebraic operators also have a given order of operation making it easier to construct '\
     +'more complicated mask combinations. In addition to these two operations, their negated variants also exists: "/" means "Nan" and "-" means "Nor". \n\n'\
-    +'Combining any two masks generates a multiMaks object that simply wraps the two masks together. It has both a plotting and a calling method taking care '\
-    +'of the needed addition of multiple masks.'
+    +'Combining any two masks generates a multiMask object that simply wraps the two masks together. It has both a plotting and a calling method taking care '\
+    +'of the needed addition of multiple masks. In order to apply the mask to the data set one has to calculate the boolean matrix for that data set by calling '\
+    +'the mask with the data set as argument.'
         
 
 outroText = 'The end result of applying these masks is shown below.' \
@@ -108,11 +114,11 @@ outroText = 'The end result of applying these masks is shown below.' \
 '.. |pic3| image:: masking_QELine.png\n   :width: 33%\n\n'\
 +'Combining masks\n###############\n\nMasking has been implemented into MJOLNIR in such a way, that one can combine masks rather freely. '\
 +'With the above list of possible masks as building blocks, it is believed that almost all masks can be generated by combining the masks with the '\
-+'correct arithmatic operations. Masks are combined using the standard order of operators, meaning that AND (*) operations are performed befor OR (+). '\
++'correct arithmetic operations. Masks are combined using the standard order of operators, meaning that AND (*) operations are performed before OR (+). '\
 +'In additionally, parentheses are allowed making it easier to perform more advanced mask combinations, where multiple masks are to be negated or AND\'ed with '\
 +'another masks. This complexity also allows for situations where multiple combinations are equivalent. Using the masks defined in the example, then \n\n'\
 +'.. math::\n\n    (circle*lowEnergy).bar() = circle.bar()*lowEnergy.bar()\n\n'\
-+'Behind the sence, a pair-wise tree is created by multiMasks and all operations are propagated through this tree, remembering the mask relations. \n\n'\
++'Behind the scene, a pair-wise tree is created by multiMasks and all operations are propagated through this tree, remembering the mask relations. \n\n'\
 +'General features\n################\n\nAll of the masks are build on a common base object with a set of methods. In detail, these methods are ensure by the '\
 +'use of a meta class, but the exact implementation is out of scope. What is ensured is that all masks have a *__call__* and a *plot* method. The *_call__* method '\
 +'is used to generate the mask needed in MJOLNIR, and depending on the attributes used to generate a mask it either takes coordinates with the correct '\
@@ -123,10 +129,10 @@ outroText = 'The end result of applying these masks is shown below.' \
 +'method on the *ax.sample* object. Plotting of masks on axes is currently in a non-optimal state... Best way of achieving the goal is to find an example, as '\
 +'above, or simply write the maintainer.\n\n'\
 +'All masks can be combined with the others, independent of their attributes or coordinates as long as the datafile object to be masks has all of these '\
-+'attributes. As explained above, four different arithmetic operations exsist, but on top of that, all masks has the *bar* method. This method simply negates '\
-+'the masks, in effect masking values outside of e.g. the cirlce, instead of inside.\n\n'\
++'attributes. As explained above, four different arithmetic operations exist, but on top of that, all masks has the *bar* method. This method simply negates '\
++'the masks, in effect masking values outside of e.g. the circle, instead of inside.\n\n'\
 +'Masking objects\n###############\n\nCurrently, there are 5 different masks, that are supported by MJOLNIR. These covers the main parts, where masks are needed, '\
-+'but might need extension down the line. In acsending order of dimensionality, these are presented below.\n\n'\
++'but might need extension down the line. In ascending order of dimensionality, these are presented below.\n\n'\
 +'lineMask\n--------\n\nThe most simple for of masking is in 1D, where values are either inside our outside a given interval. The lineMask requires two '\
 +'attributes (start and end) to generate a mask. It is intended to mask 1D parameters as energy or to be combined with other masks to create more complex '\
 +'maskings. In the above example, the lineMask was used to give an energy dependency on the two masks of h and l.\n\n'\
@@ -138,13 +144,16 @@ outroText = 'The end result of applying these masks is shown below.' \
 +'If this is done, the first two points are used to define an edge, and the last point gives the extend of the rectangle orthogonal to this edge. That is, '\
 +'the third point might not be located on the edge of the rectangle. This three-input option allows the creation of rotated rectangles. Points are then masked by '\
 +'rotating then such that the rectangle lines up with the coordinate axes and center at (0,0). This allows for two simple 1D checks.\n\n'\
-+'boxMask\n-------\n\nExtending the rectangle into 3D creates the boxMask. This mask also supports two different inpunts; either three corner points making the '\
++'boxMask\n-------\n\nExtending the rectangle into 3D creates the boxMask. This mask also supports two different inputs; either three corner points making the '\
 +'edges of the box parallel to the coordinate axes, or 4 point input. In this latter case, the two first points creates on edge, which is extended to form a rectangular '\
 +'base with width corresponding to the orthogonal distance to the third point. Lastly, this rectangle is extended by the orthogonal distance to the last point. Like '\
 +'the rectangleMask, points are masked by rotating the box such that it center is in (0,0,0) and edges are along the coordinate axes. Due to the complexity of 3D '\
 +'rotations, three rotations matrices are involved.\n\n'\
-+'indexMask\n---------\n\nLastly, it can at times be necessary to perform masking depending on the indices of the points. This could be when a full detector tube '\
-+'is to be masks, but the A4 value is unknown. This can be performed by the indexMask, where a start and end index together with an axis defines the masks.'
++'indexMask\n---------\n\nAt times it be necessary to perform masking depending on the indices of the points. This could be when a full detector tube '\
++'is to be masks, but the A4 value is unknown. This can be performed by the indexMask, where a start and end index together with an axis defines the masks.\n\n'\
++'CurratAxeMask\n-------------\n\n In all experiments having a strong Bragg peak, be it either magnetic or structural, there is a high chance that the  '\
++'accidental scattering of it polutes the inelastic signals. This mask traces out the paths of the spurions originating from the provided Bragg peaks '\
++'across all scans.' 
 
 
 introText = title+'\n'+'^'*len(title)+'\n'+introText

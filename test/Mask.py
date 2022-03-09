@@ -1,3 +1,4 @@
+from xml.dom.minidom import Attr
 import numpy as np
 import warnings
 # Compability of python 2 and 3 with metaclasses
@@ -5,8 +6,8 @@ import warnings
 from six import with_metaclass
 # or
 from future.utils import with_metaclass
-from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask
-
+from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask, CurratAxeMask, parse, extract, load
+import sympy,os
 
 def test_subclass_MaskingObject():
     # Generate a subclass of MaskingObect that is missing stuff
@@ -60,7 +61,7 @@ def test_BooleanAlgebra():
             super(simpleMaskingObject,self).__init__(coordinates=coordinates,maskInside=maskInside)
             
         
-        def __call__(self):
+        def call(self):
             return self.maskInside
         
     true =  simpleMaskingObject(maskInside=True)
@@ -87,16 +88,6 @@ def test_BooleanAlgebra():
     
     assert((false-false)() == True)
     
-    # Check 'division' i.e. oposite of *
-    #   A   B   Op  Res
-    #   1   1   /    0
-    #   1   0   /    1
-    #   0   1   /    0
-    #   0   0   /    0
-    assert((true/true  )() == False)
-    assert((true/false )() == True)
-    assert((false/true )() == False)
-    assert((false/false)() == False)
     
     
     
@@ -292,4 +283,100 @@ def test_indexMask():
     assert(np.all(mask[:,:,:,1,:]==True))
     assert(np.all(mask[:,:,:,2,:]==False))
     
+def test_CurratAxeMask():
+    # Real test is performed in the DataSet testing
+
+    M = CurratAxeMask([[1,0,0]])
+    X = np.linspace(0,1,11)
     
+    try:
+        M(X)
+        assert False
+    except AttributeError:
+        assert True
+
+def test_CurratAxeMask():
+    # Real test is performed in the DataSet testing
+
+    M = CurratAxeMask([[1,0,0]])
+    X = np.linspace(0,1,11)
+    
+    try:
+        M(X)
+        assert False
+    except AttributeError:
+        assert True
+
+def test_Combinatorics_Extraction():
+    # Test of combination and extraction of multiple masks
+    masks = []
+
+    masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m1'))
+    masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m3'))
+    masks.append(rectangleMask([0.0,0.0],[1.0,1.0],name='m4'))
+
+    combiString = '(m1+m4*m1)*m3'
+
+    combiMask = parse(combiString,masks)
+
+
+    combiString2,masks2 = extract(combiMask)
+
+
+    assert(str(sympy.expand(combiString)) == combiString2)
+    assert(len(masks) == len(masks2))
+    assert(np.all([mask in masks for mask in masks2]))
+
+
+    # One more time!
+
+    combiMask2 = parse(combiString2,masks2)
+    combiString3,masks3 = extract(combiMask2)
+
+
+    assert(str(sympy.expand(combiString)) == str(sympy.expand(combiString3)))
+    assert(len(masks) == len(masks3))
+    assert(np.all([mask in masks for mask in masks3]))
+
+
+    combiMask2.save('mask.mask')
+    loadedMask = load('mask.mask')
+
+
+    combiString4,masks4 = extract(loadedMask)
+    os.remove('mask.mask')
+    assert(str(sympy.expand(combiString)) == str(sympy.expand(combiString4)))
+    assert(len(masks) == len(masks4))
+
+    for I,mask in enumerate(masks):
+        print(I,mask,hash(mask))
+    for I,mask in enumerate(masks4):
+        print(I,mask,hash(mask))
+        print(np.any([mask == m for m in masks]))
+    assert(np.all([np.any([mask == m for m in masks]) for mask in masks4]))
+
+def test_Masks_naming():
+
+    dqx = None#0.1
+    dqy = 0.3
+    
+    dH = 0.1
+    dK = 0.1
+    dL = 0.01
+    
+    
+    Braggs = np.array([[2,0,0],[0,2,0],[1,3,0],[-1,3,0]])
+    CAMask = CurratAxeMask(Braggs,dqx,dqy,dH,dK,dL)
+    EMask = lineMask(-1, -1+4*0.08,coordinates='energy')
+    EMask2 = lineMask(1, 1+4*0.08,coordinates='energy')
+    
+    mask = CAMask*EMask+EMask2+EMask2+EMask2
+    print('Masknames are',[mask.name for mask in [CAMask,EMask,EMask2]])
+    # no names are provided and thus 
+    expectedNames = ['mask_'+str(i) for i in range(3)] # is expected
+    names = mask.getNames()
+    names.sort()
+
+    # independent of how many times the same mask is used
+
+    assert(np.all(names==expectedNames))

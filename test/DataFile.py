@@ -26,6 +26,23 @@ def test_DataFile():
     files = [os.path.join(dataPath,'camea2018n000137.hdf'),
              os.path.join(dataPath,'camea2018n000137.nxs')]
     DF1 = DataFile(files[0])
+
+    size = DF1.size
+    shape = DF1.shape
+    assert(size==DF1.I.size)
+    assert(np.all(shape == DF1.I.shape))
+
+    try:
+        DF1.size = 0
+        assert False
+    except AttributeError:
+        assert True
+    try:
+        DF1.shape = 0
+        assert False
+    except AttributeError:
+        assert True
+
     assertFile(files[1])
     DF2 = DataFile(files[1])
     s = str(DF2)

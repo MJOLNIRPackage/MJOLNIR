@@ -361,7 +361,7 @@ class Sample(object):
         if spurionType.lower() == 'monochromator':
             for B in Bragg:
                 Ql = []
-                Angles = np.array([TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,A3Off,np.array([B[0],B[1],B[2],e,e]))[:2] for e in Ef])
+                Angles = np.array([TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,0.0,np.array([B[0],B[1],B[2],e,e]))[:2] for e in Ef])
                 for ei in Ei:
                     Ql.append(np.array([TasUBlib.calcTasQH(self.orientationMatrixINV,angle,ei,e,0) for angle,e in zip(Angles,Ef)])[:,1])
                 QlLocal.append(Ql)
@@ -369,11 +369,11 @@ class Sample(object):
             for B in Bragg:
                 Ql = []
                 for ei in Ei:
-                    Angles2 = np.array(TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,A3Off,np.array([B[0],B[1],B[2],ei,ei]))[:2])
-                    Ql.append(np.array([TasUBlib.calcTasQH(self.orientationMatrixINV,Angles2,ei,e,A3Off*0.0) for e in Ef])[:,1]) # Extract Qx,Qy
+                    Angles2 = np.array(TasUBlib.calcTasQAngles(self.orientationMatrix,self.planeNormal,1.0,0.0,np.array([B[0],B[1],B[2],ei,ei]))[:2])
+                    Ql.append(np.array([TasUBlib.calcTasQH(self.orientationMatrixINV,Angles2,ei,e,0.0) for e in Ef])[:,1]) # Extract Qx,Qy
                 QlLocal.append(Ql)
         else:
-            raise AttributeError('Provided spurionType not understood. Expected "Monochromator" or "Analyser" but recieved "{}".'.format(spurionType))
+            raise AttributeError('Provided spurionType not understood. Expected "Monochromator" or "Analyser" but received "{}".'.format(spurionType))
 
         returnVal = np.array(QlLocal) # Shape (l,m,n,3)
         

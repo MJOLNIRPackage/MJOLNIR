@@ -1,7 +1,10 @@
 from __future__ import division
 from abc import ABCMeta
 import numpy as np
+from MJOLNIR.Data import DataSet,DataFile
+import sympy
 import warnings
+import pickle
 # Compability of python 2 and 3 with metaclasses
 # Python 2 and 3:
 from six import with_metaclass
@@ -25,8 +28,8 @@ class MaskingObjectMeta(ABCMeta):
         
         if not name in ['MaskingObject','MultiMask']: # If MaskingObject, then just continue
             
-            if not '__call__' in namespace: # Check if __call__ exists
-                missingMethods.append('__call__')
+            if not 'call' in namespace: # Check if call exists
+                missingMethods.append('call')
                 
             
             if namespace['dimensionality'] == '2D' or namespace['dimensionality'] == '3D':
@@ -70,15 +73,43 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
                 coordinates = [coordinates]
             self.coordinates = coordinates
         self.bar = self.negate
+        if name is None:
+            name = 'mask_0'
         self.name = name
+        self.negated = False
+
+    def __eq__(self,other):
+        if not isinstance(self,(type(other))): # not same type:
+            return False
+        kwargs = self.generateInputKwargs()
+        otherkwargs = other.generateInputKwargs()
+        if not np.all([selfkeys in otherkwargs.keys() for selfkeys in kwargs.keys()]):
+            return False
+        
+        for key,value in kwargs.items():
+            try:
+                truth = np.all(value == otherkwargs[key])
+            except ValueError:
+                truth = np.all(np.isclose(value,otherkwargs[key]))
+            if not truth:
+                return False
+        return True
+
+    def __hash__(self):
+        return hash(self.__dict__.values())
 
     def plot(self,ax): # pragma: no cover
         """plotting function to put the masked object onto the figure"""
         pass
     
     
-    def __call__(self,X,Y=None,Z=None):
-        pass
+    def __call__(self,X=None,*args,**kwargs):
+        if X is None:
+            return self.call()
+        elif isinstance(X,(DataSet.DataSet)):
+            return [self.call(x,*args,**kwargs) for x in X]
+        else:
+            return self.call(X,*args,**kwargs)
     
     def __add__(self,other):
         return MultiMask(masks=[self,other],operation=np.logical_or)
@@ -93,10 +124,9 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         return self.clone()
     
     def __sub__(self,other):
+        other.negated = True
         return self+(-other)
     
-    def __truediv__(self,other):
-        return self*(-other)
     
     def generateInputKwargs(self):
         """Generate dictionary with initial args/kwargs used for init"""
@@ -116,7 +146,21 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         
         newMask = self.clone()
         newMask.maskInside = not newMask.maskInside
+        newMask.negated = True
         return newMask
+
+    def save(self,file):
+        mp = pickle.dumps(self)
+        correct = True
+        if not '.' in file:
+            correct = False
+        elif not file.split('.')[-1].strip() == 'mask':
+            correct = False
+        
+        if not correct:
+            file = file+'.mask'
+        with open(file,'wb') as f:
+            f.write(mp)
         
 class MultiMask(MaskingObject):
     def __init__(self,masks,operation=np.logical_and,negated=False):
@@ -124,14 +168,48 @@ class MultiMask(MaskingObject):
             masks = [masks]
             
         self.masks = masks
+
+        names = self.getNames()
+        newNames = [names[0]] # first mask always keeps it name
+        for idx,name in enumerate(names[1:],start=1):
+
+            if len(names)>idx+1:
+                otherNames = newNames+names[idx+1:]
+            else:
+                otherNames = newNames
+
+            while name in otherNames:
+                try:
+                    idx = int(name.split('_')[-1])
+                except ValueError:
+                    name = name+'_1'
+                else:
+                    name = name[:-(len(str(idx))+1)] + '_' + str(idx+1)
+            newNames.append(name)
+
+        for mask,newName in zip(self.getMasks(),newNames):
+            mask.name = newName
+
         self.operation = operation
         self.negated = negated
         self.bar = self.negate
         coordinates = np.concatenate([np.array(m.coordinates) for m in self.masks]).flatten()
         self.coordinates = np.array(list(set(coordinates))) # unique coordinates
 
+    def getNames(self):
+        return [mask.name for mask in self.getMasks()]
+
+    def getMasks(self):
+        masks = np.concatenate([[mask] if not isinstance(mask,(MultiMask)) else mask.getMasks() for mask in self.masks],axis=0).flatten()
+        uniqueMasks = []
+        for mask in masks:
+            if not mask in uniqueMasks:
+                uniqueMasks.append(mask)
+       
+        return uniqueMasks
+        
     
-    def __call__(self,*args,**kwargs):
+    def call(self,*args,**kwargs):
         masks = []
         for m in self.masks:
             masks.append(m(*args,**kwargs))
@@ -165,9 +243,7 @@ class MultiMask(MaskingObject):
     
     def __sub__(self,other):
         return self+(-other)
-    
-    def __truediv__(self,other):
-        return self*(-other)
+
     
     def generateInputKwargs(self):
         """Generate dictionary with initial args/kwargs used for init"""
@@ -225,7 +301,7 @@ class lineMask(MaskingObject):
         """Generate a rectangle mask with side corner1 to corner 2 and use corner 3 to define height.
         
         args:
-            start (1D point): Starting positon
+            start (1D point): Starting position
             
             end (1D point): Ending corner
             
@@ -256,18 +332,18 @@ class lineMask(MaskingObject):
     def plot(self,ax,transformation=None,*args,**kwargs):# pragma: no cover
         warnings.warn('It is not possible to plot a 1D masks.')#raise NotImplementedError('It is not possible to plot a 1D masks.')
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
             if y is None:
                 #if x.shape[0] != 1:
                 #    raise AttributeError('Dimensionality of x is to be (1,N), received {}'.format(x.shape))
-                points = x
+                points = [x]
             else:
                 raise AttributeError('Dimensionality of input is to be (1,N), received both an x and y')
         
-        mask = np.array([np.logical_and(points>self.start,points<=self.end)])
+        mask = np.sum([np.logical_and(p>self.start,p<=self.end) for p in points],axis=0)>0
         
         if self.maskInside == False:
             mask = np.logical_not(mask)
@@ -364,7 +440,7 @@ class rectangleMask(MaskingObject):
             points = transformation(*points)
         ax.plot(*points,**kwargs)
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
@@ -538,7 +614,7 @@ class boxMask(MaskingObject):
         ax.plot3D(*points,**kwargs)
     
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
@@ -640,7 +716,7 @@ class circleMask(MaskingObject):
                 points = transformation(*points)
             ax.plot_wireframe(*points, **kwargs)
     
-    def __call__(self,x,y=None,z=None):
+    def call(self,x,y=None,z=None):
         if len(self.coordinates)>0:
             points = np.array([getattr(x,coord) for coord in self.coordinates])
         else:
@@ -694,7 +770,7 @@ class indexMask(MaskingObject):
     def plot(self,ax,transformation=None,*args,**kwargs):# pragma: no cover
         raise NotImplementedError('It is not possible to plot a 1D masks.')
     
-    def __call__(self,x,*args):
+    def call(self,x,*args):
         points = x#np.concatenate([[x],args])
         
         if not len(points.shape)>self.axis:
@@ -720,3 +796,99 @@ class indexMask(MaskingObject):
 
 
         
+class CurratAxeMask(MaskingObject):
+    dimensionality = '3D'
+    
+    def __init__(self,braggPeaks,dqx=None,dqy=None,dH=None,dK=None,dL=None,spurionType='both',maskInside=True,name=None):
+        """Mask Currat-Axe spurions from provided Bragg peaks within wanted area.
+        
+        Args:
+        
+            - BraggPeaks (list): List of Bragg peaks to be used for mask. Shape is given by [[H1,K1,L1], [H2,K2,L2], ... [HN,KN,LN]]
+            
+        Kwargs:
+
+            - dqx (float): Radius used for masking along qx (default None)
+
+            - dqy (float): Radius used for masking along qy (default None)
+
+            - dH (float): Radius used for masking along H (default None)
+
+            - dK (float): Radius used for masking along K (default None)
+
+            - dL (float): Radius used for masking along L (default None)
+
+            - spurionType (str): Either monochromator, analyser or both (default 'both')
+            
+            - maskInside (bool): If true, points inside is masked otherwise outside (default True)
+        
+        """
+        super(CurratAxeMask,self).__init__(coordinates=None,maskInside=maskInside,name=name)
+        self.braggPeaks = braggPeaks
+        self.dqx = dqx
+        self.dqy = dqy
+        self.dH = dH
+        self.dK = dK
+        self.dL = dL
+        self.spurionType = spurionType
+        
+    def plot(self,ax,transformation=None,*args,**kwargs):# pragma: no cover
+        raise NotImplementedError('It is not possible to plot a Currat-Axe masks currently.')
+    
+    def call(self,x,*args):
+        if not isinstance(x,DataFile.DataFile):
+            raise AttributeError('Expected mask to be called with '+str(type(DataFile.DataFile))+' object as argument. Received '+str(type(x)))
+        
+        
+        return x.calculateCurratAxeMask(self.braggPeaks,dqx=self.dqx,dqy=self.dqy,dH=self.dH,dK=self.dK,dL=self.dL,spurionType=self.spurionType,maskInside=self.maskInside)
+
+
+def parse(string,masks):
+    for m in masks:
+        locals()[m.name]=m
+    
+    return eval(string)
+
+
+
+def flatten(t):
+    return [item for sublist in t for item in sublist]
+
+
+def extractSubMasks(m):
+    if isinstance(m,(MultiMask)):
+        if m.operation is np.logical_or:
+            op = '+'
+        else:
+            op = '*'
+        
+        
+        signs = ['-'*mask.negated for mask in m.masks]
+        m.masks = [mask.bar() if mask.negated else mask for mask in m.masks]
+        result = [extractSubMasks(mask) for mask in m.masks]
+        eq = [res[0] for res in result]
+        masks = flatten([res[1] for res in result])
+    
+        s = '('+op.join([s+str(e) for s,e in zip(signs,eq)])+')'
+
+        maskSet = set()
+        for mask in masks+m.masks:
+            if not isinstance(mask,(MultiMask)):
+                maskSet.add(mask)
+        return s.format(*eq),maskSet
+    else:
+        return sympy.symbols(m.name),[m]
+def extract(mask):
+    eq,masks = extractSubMasks(mask)
+    uniqueMasks = []
+    for mask in masks:
+        if not mask in uniqueMasks:
+            uniqueMasks.append(mask)
+    
+    return str(sympy.expand(eq)),uniqueMasks
+
+
+def load(file):
+    with open(file,'rb') as f:
+        mask = pickle.load(f)
+    return mask

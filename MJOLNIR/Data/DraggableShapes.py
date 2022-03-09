@@ -11,7 +11,7 @@ deselectedColor, States, cut1DKkwargs
 # http://www.scipy.org/Cookbook/Matplotlib/Animations
 
 
-class DraggableShape():
+class DraggableShape(): # pragma: no cover
     lock = None  # only one can be moved at a time
     selectedShape = None # Only one can be selected at one point
     cidkeypress = None
@@ -33,7 +33,7 @@ class DraggableShape():
 
 
             
-class DraggableRectangle(DraggableShape):
+class DraggableRectangle(DraggableShape):# pragma: no cover
     
     def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
         self.rect = rect
@@ -299,7 +299,7 @@ class DraggableRectangle(DraggableShape):
 
         return None
 
-def corner2center(x,y,width,angle):
+def corner2center(x,y,width,angle):# pragma: no cover
     # Rotate from rectangle space to real space
     angleRad = np.deg2rad(angle+90)
     # Unit vector along height of rectangle
@@ -310,7 +310,7 @@ def corner2center(x,y,width,angle):
     center = np.array([x,y])+ortho
     return center
 
-def center2corner(x,y,width,angle):
+def center2corner(x,y,width,angle):# pragma: no cover
     # Rotate from rectangle space to real space
     angleRad = np.deg2rad(angle+90)
     # Unit vector along height of rectangle
@@ -321,7 +321,7 @@ def center2corner(x,y,width,angle):
     corner = np.array([x,y])-ortho
     return corner
 
-def extractCut1DPropertiesRectangle(rect,sample=None, rounding = 4):
+def extractCut1DPropertiesRectangle(rect,sample=None, rounding = 4):# pragma: no cover
     # Extract parameters from a rectangle
     xy = rect.get_xy()
     width = rect.get_width()
@@ -353,7 +353,7 @@ def extractCut1DPropertiesRectangle(rect,sample=None, rounding = 4):
     return params
 
 
-def extractCut1DPropertiesRectanglePerpendicular(rect,sample=None, rounding = 4):
+def extractCut1DPropertiesRectanglePerpendicular(rect,sample=None, rounding = 4):# pragma: no cover
     # Extract parameters from a rectangle
     xy = rect.get_xy()
     width = rect.get_width()
@@ -372,7 +372,7 @@ def extractCut1DPropertiesRectanglePerpendicular(rect,sample=None, rounding = 4)
               'ufit':ufit}
     return params
 
-def extractCut1DPropertiesRectangleHorizontal(rect,sample=None, rounding = 4):
+def extractCut1DPropertiesRectangleHorizontal(rect,sample=None, rounding = 4):# pragma: no cover
     # Extract parameters from a rectangle
     xy = rect.get_xy()
     width = rect.get_width()
@@ -393,7 +393,7 @@ def extractCut1DPropertiesRectangleHorizontal(rect,sample=None, rounding = 4):
               'ufit':ufit}
     return params
 
-def extractCut1DPropertiesRectangleVertical(rect,sample=None, rounding = 4):
+def extractCut1DPropertiesRectangleVertical(rect,sample=None, rounding = 4):# pragma: no cover
     # Extract parameters from a rectangle
     xy = rect.get_xy()
     width = rect.get_width()
@@ -415,7 +415,7 @@ def extractCut1DPropertiesRectangleVertical(rect,sample=None, rounding = 4):
               'ufit':ufit}
     return params
 
-def extractCut1DPropertiesCircle(circ,sample=None, rounding = 4):
+def extractCut1DPropertiesCircle(circ,sample=None, rounding = 4):# pragma: no cover
     # Extract parameters from a rectangle
     center = circ.center
     width = circ.radius*2
@@ -436,7 +436,7 @@ def extractCut1DPropertiesCircle(circ,sample=None, rounding = 4):
 
 ## Utility functions to make plots interactive
 
-def clearBoxes(self):
+def clearBoxes(self):# pragma: no cover
     """Clear all generated draggable rectangles"""
     if hasattr(self,'ax'):
         axes = self.ax
@@ -450,7 +450,7 @@ def clearBoxes(self):
     axes.get_figure().canvas.draw()
 
 
-class DraggableCircle(DraggableShape):
+class DraggableCircle(DraggableShape):# pragma: no cover
     
     def __init__(self, circ,plottingObject,Cut1DFunction,figure):
         self.circ = circ
@@ -649,7 +649,7 @@ class DraggableCircle(DraggableShape):
         
         return None
 
-class DraggableRectanglePerpendicular(DraggableShape):
+class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
     ### To be used in a QE plane only allowing a perpendicular cut, i.e. Q_perp (integrating over E and Q_para)
     def __init__(self, rect,plottingObject,Cut1DFunction,figure):
         self.rect = rect
@@ -859,7 +859,7 @@ class DraggableRectanglePerpendicular(DraggableShape):
         return None
 
 
-class DraggableRectangleHorizontal(DraggableShape):
+class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
     ### To be used in a QE plane only allowing a QCut for constant energy
     def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
         self.rect = rect
@@ -1118,7 +1118,7 @@ class DraggableRectangleHorizontal(DraggableShape):
         return None
 
 
-class DraggableRectangleVertical(DraggableShape):
+class DraggableRectangleVertical(DraggableShape):# pragma: no cover
     ### To be used in a QE plane only allowing a QCut for constant q
     def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
         self.rect = rect
@@ -1372,7 +1372,7 @@ class DraggableRectangleVertical(DraggableShape):
         return None
 
 
-def cancel(self,axes):
+def cancel(self,axes):# pragma: no cover
     self.resetFormatCoord()
     self.newShape = None
     self.new = False
@@ -1391,7 +1391,7 @@ def cancel(self,axes):
 
 
 
-def on_key_press(self,event):
+def on_key_press(self,event):# pragma: no cover
     if not hasattr(self,'drawState'):
         return
     if not event.key in cut1DSettingsAll:
@@ -1457,7 +1457,7 @@ def on_key_press(self,event):
     
 
 
-def on_press(self,event):
+def on_press(self,event):# pragma: no cover
     if not hasattr(self,'drawState'):
         return
     if hasattr(self,'ax'):
@@ -1493,7 +1493,7 @@ def on_press(self,event):
             self.resetFormatCoord()
         
         
-def reset(self):
+def reset(self):# pragma: no cover
     if not hasattr(self,'drawState'):
         return
     self.suppressPrint=False
@@ -1502,7 +1502,7 @@ def reset(self):
         del self.format_coord_old
 
 
-def prepareInteractiveCutting(ax,draggables, draggableFunctions):
+def prepareInteractiveCutting(ax,draggables, draggableFunctions):# pragma: no cover
     fig = ax.get_figure()
     ax.resetFormatCoord = lambda: reset(ax)
     ax.new=False
@@ -1527,7 +1527,7 @@ def prepareInteractiveCutting(ax,draggables, draggableFunctions):
                 'button_press_event', lambda event:on_press(ax,event))
 
 
-def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions):
+def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions):# pragma: no cover
     fig = self.ax.get_figure()
     self.ax.resetFormatCoord = lambda: reset(self.ax)
     self.ax.new=False

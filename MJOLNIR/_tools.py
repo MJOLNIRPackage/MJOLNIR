@@ -993,10 +993,10 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
     return sampleMolarMass
 
 
-def calculateAbsolutNormalization(sampleMass=None,sampleChemicalFormula=None,sampleMolarMass=None,formulaUnitsPerUnitCell=1,
+def calculateAbsoluteNormalization(sampleMass=None,sampleChemicalFormula=None,sampleMolarMass=None,formulaUnitsPerUnitCell=1,
                                   sampleGFactor=2,correctVanadium=False,vanadiumChemicalFormula = 'V', vanadiumMass=15.25,vanadiumMolarMass=None,
                                   vanadiumMonitor=100000,vanadiumSigmaIncoherent=5.08,vanadiumGFactor=2.0,vanadiumUnitsPerUnitCell=1.0):
-    """Calculate absolut normalization relative to Vanadium
+    """Calculate absolute normalization relative to Vanadium
     
     Args: 
         

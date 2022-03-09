@@ -88,12 +88,14 @@ class Viewer3D(object):
         self._CurratAxeBraggList = None
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
             with warnings.catch_warnings() as w:
+                warnings.simplefilter("ignore")
                 self.Data = np.divide(Data[0]*Data[3],Data[1]*Data[2])
             
             self.Counts,self.Monitor,self.Normalization,self.NormCounts = Data
             self.allData = True
         elif len(Data) == 2: # From bin3D with no normalization or monitor
             with warnings.catch_warnings() as w:
+                warnings.simplefilter("ignore")
                 self.Data = np.divide(Data[0],Data[1])
             self.allData = False
         else:
@@ -177,12 +179,12 @@ class Viewer3D(object):
             ax.set_navigate(True)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
-        self.cmap = cmap # Update to accomedate deprication warning
+        self.cmap = cmap # Update to accommodate deprecation warning
         self.value = 0
         self.setAxis(2)
         # Set up interactive generation of 1DCuts
 
-        def cut1DFunctionRectangleDefault(self,dr):
+        def cut1DFunctionRectangleDefault(self,dr):# pragma: no cover
             global cut1DHolder
             parameters = extractCut1DPropertiesRectangle(dr.rect,self.ax.sample)
             step = self.dQE[self.axis]
@@ -194,7 +196,7 @@ class Viewer3D(object):
             cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
 
 
-        def cut1DFunctionCircleDefault(self,dr):
+        def cut1DFunctionCircleDefault(self,dr):# pragma: no cover
             global cut1DHolder
             parameters = extractCut1DPropertiesCircle(dr.circ,self.ax.sample)
             parameters['E1'] = self.ds.energy.min()
@@ -247,13 +249,20 @@ class Viewer3D(object):
         #self.imcbaxes = self.figure.add_axes([0.0, 0.2, 0.2, 0.7])
         #self.im = self.ax.imshow(self.masked_array[:,:,self.value].T,cmap=self.cmap,extent=[self.X[0],self.X[-1],self.Y[0],self.Y[-1]],origin='lower')
         if self.shading=='flat':
+            self.ax.grid(False)
             self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap)
         elif self.shading=='gouraud':  # pragma: no cover
             XX = 0.5*(self.X[:-1,:-1,self.value]+self.X[1:,1:,self.value]).T
             YY = 0.5*(self.Y[:-1,:-1,self.value]+self.Y[1:,1:,self.value]).T
+            self.ax.grid(False)
             self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=cmap) # ,vmin=1e-6,vmax=6e-6
         else:
             raise AttributeError('Did not understand shading {}.'.format(self.shading))
+        if self.grid:
+            self.ax.grid(self.grid,zorder=self.gridZOrder)
+        else:
+            self.ax.grid(self.grid)
+
         self._caxis = self.im.get_clim()
         self.figpos = [0.125,0.25,0.63,0.63]#self.ax.get_position()
         
@@ -276,10 +285,7 @@ class Viewer3D(object):
         self.dQE = [dQx,dQy,ddE]
 
         self.resolution = [0.05,0.05]
-        if not self.EfLimits is None:
-            self.Ef = np.arange(*self.EfLimits,self.dQE[2])
-            
-            self.CurratAxeBraggList = CurratAxeBraggList
+        
                 
 
         self.Energy_slider.set_val(self.value)
@@ -300,6 +306,11 @@ class Viewer3D(object):
         ## Hack for this to look nice as just changing direction does not render correctly
         self.setPlane(1)
         self.setPlane(0)
+
+        if not self.EfLimits is None:
+            self.Ef = np.arange(*self.EfLimits,self.dQE[2])
+            
+            self.CurratAxeBraggList = CurratAxeBraggList
 
         if adjustable and pythonVersion>2 and pythonSubVersion>5:
 
@@ -495,7 +506,7 @@ class Viewer3D(object):
             self.im.set_array(tempData)
             self._axesChanged = False
         else:
-            self.im.set_array(self.masked_array[:,:,self.value].T.flatten())
+            self.im.set_array(self.masked_array[:,:,int(self.value)].T.flatten())
         
             
         if not self.CurratAxeBraggList is None and not self.Ei is None and self.plotCurratAxe is True and self.rlu is True:
@@ -627,12 +638,17 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,0)
             del self.im
             #self.currentData = None
+            self.ax.grid(False)
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1,0]+self.X[1:,1:,0]).T,0.5*(self.Y[:-1,:-1,0]+self.Y[1:,1:,0]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            if self.grid:
+                self.ax.grid(self.grid,zorder=self.gridZOrder)
+            else:
+                self.ax.grid(self.grid)
             self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
@@ -643,12 +659,17 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,1)
             del self.im
             #self.currentData = None
+            self.ax.grid(False)
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
                 self.im = self.ax.pcolormesh(0.5*(self.X[:-1,:-1]+self.X[1:,:1:]).T,0.5*(self.Y[:-1,-1]+self.Y[1:,1:]).T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            if self.grid:
+                self.ax.grid(self.grid,zorder=self.gridZOrder)
+            else:
+                self.ax.grid(self.grid)
             self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
@@ -659,6 +680,7 @@ def onkeypress(event,self): # pragma: no cover
             reloadslider(self,2)
             del self.im
             #self.currentData = None
+            self.ax.grid(False)
             if self.shading=='flat':
                 self.im = self.ax.pcolormesh(self.X[:,:,0].T,self.Y[:,:,0].T,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap)
             elif self.shading=='gouraud':
@@ -667,6 +689,10 @@ def onkeypress(event,self): # pragma: no cover
                 self.im = self.ax.pcolormesh(XX,YY,self.masked_array[:,:,self.value].T,zorder=10,shading=self.shading,cmap=self.cmap) # ,vmin=1e-6,vmax=6e-6
             else:
                 raise AttributeError('Did not understand shading {}.'.format(self.shading))
+            if self.grid:
+                self.ax.grid(self.grid,zorder=self.gridZOrder)
+            else:
+                self.ax.grid(self.grid)
             self.im.set_clim(self.caxis)
             self.Energy_slider.set_val(0)
             self.plot()
@@ -674,7 +700,7 @@ def onkeypress(event,self): # pragma: no cover
             self.ax.set_ylim([np.min(self.Y),np.max(self.Y)])
 
 
-def reloadslider(self,axis): # pragma: no cover
+def reloadslider(self,axis):
     self.setAxis(axis)
     self.Energy_slider.set_val(0)
     self.Energy_slider.label.remove()
@@ -827,7 +853,7 @@ def addColorbarSliders(self,c_min,c_max,c_minval,c_maxval,ax_cmin,ax_cmax,log=Tr
     
     fig.savefig = savefig
 
-def cut1DFunctionDefault(self,dr):
+def cut1DFunctionDefault(self,dr):# pragma: no cover
     global cut1DHolder
     parameters = extractCut1DProperties(dr.rect,self.ax.sample)
     step = self.dQE[self.axis]

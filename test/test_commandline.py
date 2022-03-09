@@ -135,6 +135,7 @@ def test_Convert_binning():
     f = DataFile.DataFile(dataFiles[0].replace('hdf','nxs'))
     assert(f.name == dataFiles[0].split(os.path.sep)[1].replace('hdf','nxs'))
     assert(f.binning == 1)
+    os.remove(dataFiles[0].replace('hdf','nxs'))
     
 def test_Convert_SaveLocation():
     if not os.path.isdir(os.path.join('Data','Data')):
@@ -147,6 +148,7 @@ def test_Convert_SaveLocation():
     print(fileName)
     print(f.name)
     assert(f.name == fileName)
+    os.remove('Data'+os.path.sep+fileName.replace('hdf','nxs'))
     
     
 def test_Convert_Reuse():
@@ -159,6 +161,7 @@ def test_Convert_Reuse():
     subprocess.check_output(['MJOLNIRConvert','-r'])
     for file in subSet:
         assert(os.path.isfile(file.replace('hdf','nxs')))
+        os.remove(file.replace('hdf','nxs'))
 
 
 ### 3DView
