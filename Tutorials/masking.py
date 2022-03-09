@@ -32,8 +32,11 @@ def Tester():
     # the total mask then becomes
     mask = circle*lowEnergy+rectangle*lowEnergy.bar()
 
+    # Calculate the mask for the current data set
+    evaluatedMask = mask(ds)
+
     # Apply the mask
-    ds.mask = mask
+    ds.mask = evaluatedMask
     
     # Generate a 3d viewer
     view = ds.View3D(0.05,0.05,0.05)
@@ -102,7 +105,8 @@ introText = 'After an experiment has been performed, there are usually some part
     +'These algebraic operators also have a given order of operation making it easier to construct '\
     +'more complicated mask combinations. In addition to these two operations, their negated variants also exists: "/" means "Nan" and "-" means "Nor". \n\n'\
     +'Combining any two masks generates a multiMask object that simply wraps the two masks together. It has both a plotting and a calling method taking care '\
-    +'of the needed addition of multiple masks.'
+    +'of the needed addition of multiple masks. In order to apply the mask to the data set one has to calculate the boolean matrix for that data set by calling '\
+    +'the mask with the data set as argument.'
         
 
 outroText = 'The end result of applying these masks is shown below.' \
@@ -146,7 +150,7 @@ outroText = 'The end result of applying these masks is shown below.' \
 +'the rectangleMask, points are masked by rotating the box such that it center is in (0,0,0) and edges are along the coordinate axes. Due to the complexity of 3D '\
 +'rotations, three rotations matrices are involved.\n\n'\
 +'indexMask\n---------\n\nAt times it be necessary to perform masking depending on the indices of the points. This could be when a full detector tube '\
-+'is to be masks, but the A4 value is unknown. This can be performed by the indexMask, where a start and end index together with an axis defines the masks.'\
++'is to be masks, but the A4 value is unknown. This can be performed by the indexMask, where a start and end index together with an axis defines the masks.\n\n'\
 +'CurratAxeMask\n-------------\n\n In all experiments having a strong Bragg peak, be it either magnetic or structural, there is a high chance that the  '\
 +'accidental scattering of it polutes the inelastic signals. This mask traces out the paths of the spurions originating from the provided Bragg peaks '\
 +'across all scans.' 
