@@ -74,7 +74,7 @@ class MaxNLocator(mticker.MaxNLocator):
                 symmetric=False,
                 prune=None):
         # trim argument has no effect. It has been left for API compatibility
-        mticker.MaxNLocator.__init__(self, nbins, steps=steps,
+        super(MaxNLocator,self).__init__(nbins, steps=steps,
                                     integer=integer,
                                     symmetric=symmetric, prune=prune)
         self.create_dummy_axis()
@@ -98,7 +98,7 @@ class MultipleLocator(mticker.MultipleLocator):
     def __init__(self,base=None):
         if base is None:
             base = 0.25
-        mticker.MultipleLocator.__init__(self, base)
+        super(MultipleLocator,self).__init__(base)
         self.create_dummy_axis()
         self._factor = 1#0.0
         self._multiplerVals = np.array([1,2,4,5,10])
