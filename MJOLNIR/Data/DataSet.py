@@ -2908,7 +2908,9 @@ class DataSet(object):
 
 
     @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
+               instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
+               cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2940,6 +2942,8 @@ class DataSet(object):
             - outputFunction (func): Function to print the format_coord when the user clicks the axis (default print)
 
             - CurratAxeBraggList (list): List of Bragg reflections used to calulcate Currat-Axe spurions (default None)
+            
+            - plotCurratAxe (bool): Flag to determine whether or not to plot the Currat-Axe spurions
 
             - cut1DFunctionRectangle (function): Function to be called when generating interactive rectangle cut (default None)
 

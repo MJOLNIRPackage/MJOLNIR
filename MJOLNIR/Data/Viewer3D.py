@@ -25,7 +25,7 @@ pythonSubVersion = sys.version_info[1]
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
-                 cmap=None, CurratAxeBraggList=None,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None, cut1DFunctionCircle = None, **kwargs):#pragma: no cover
+                 cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None, cut1DFunctionCircle = None, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -49,6 +49,8 @@ class Viewer3D(object):
             - outputFunction (function): Function called on output string (default print)
 
             - CurratAxeBraggList (list): List of Bragg peaks for which Currat-Axe spurions are to be calculated, [[H1,K1,L1],[H2,K2,L2],..] (default None)
+
+            - plotCurratAxe (bool): Flag to determine whether or not to plot the Currat-Axe spurions
             
             - Ei (list): List of incoming energies (default None)
             
@@ -84,7 +86,7 @@ class Viewer3D(object):
         self.currentData = None
         
 
-        self.plotCurratAxe = False # Set to false but will change to True when correct list is created
+        self.plotCurratAxe = plotCurratAxe # Set to false but will change to True when correct list is created
         self._CurratAxeBraggList = None
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
             with warnings.catch_warnings() as w:
