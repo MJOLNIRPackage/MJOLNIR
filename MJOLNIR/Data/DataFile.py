@@ -2315,7 +2315,7 @@ def shallowRead(files,parameters):
     
     for file in files:
         vals = []
-        if os.path.splitext(file)[1] == 'hdf': # if an hdf file
+        if os.path.splitext(file)[-1] == '.hdf': # if an hdf file
             with hdf.File(file,mode='r') as f:
                 instr = getInstrument(f)
                 for p in parameters:
