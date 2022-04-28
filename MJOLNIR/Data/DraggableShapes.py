@@ -1,10 +1,12 @@
+from pydoc import resolve
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 from matplotlib.patches import Rectangle,Circle
 import numpy as np
+from pkg_resources import ResolutionError
 
 #from MJOLNIR.Data import Viewer3D
-from MJOLNIR._interactiveSettings import cut1DSettings,cut1DSettingsAll,selectedColor, \
+from MJOLNIR._interactiveSettings import selectedColor, \
 deselectedColor, States, cut1DKkwargs
 
 # draggable rectangle with the animation blit techniques; see
@@ -1372,181 +1374,185 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         return None
 
 
-def cancel(self,axes):# pragma: no cover
-    self.resetFormatCoord()
-    self.newShape = None
-    self.new = False
+# def cancel(self,axes):# pragma: no cover
+#     self.resetFormatCoord()
+#     self.newShape = None
+#     self.new = False
     
-    # Only when something has been drawn is cid set
-    if not self.cidmove is None:
-        axes.get_figure().canvas.mpl_disconnect(self.cidmove)
-        self.cidmove = None
+#     # Only when something has been drawn is cid set
+#     if not self.cidmove is None:
+#         axes.get_figure().canvas.mpl_disconnect(self.cidmove)
+#         self.cidmove = None
         
-        del self.patches[-1]
-        plt.draw()  
+#         del self.patches[-1]
+#         self.get_figure().canvas.draw_idle()
 
-    # Reset state and return
-    self.drawState = States.INACTIVE
-    return 
+#     # Reset state and return
+#     self.drawState = States.INACTIVE
+#     return 
 
 
 
-def on_key_press(self,event):# pragma: no cover
-    if not hasattr(self,'drawState'):
-        return
-    if not event.key in cut1DSettingsAll:
-        self.resetFormatCoord()
-        self.suppressPrint = False
+# def on_key_press(self,event):# pragma: no cover
+#     if not hasattr(self,'drawState'):
+#         return
+#     if hasattr(self,'ax'):
+#         axes = self.ax
+#     else:
+#         axes = self
+#     if not event.key in cut1DSettingsAll:
+#         self.resetFormatCoord()
+#         self.suppressPrint = False
 
-        return
-    if event.key in cut1DSettings['move']:
-        if hasattr(self,'ax'):
-            axes = self.ax
-        else:
-            axes = self
+#         return
+#     if event.key in cut1DSettings['move']:
+#         if hasattr(self,'ax'):
+#             axes = self.ax
+#         else:
+#             axes = self
             
-        cancel(self,axes)
+#         cancel(self,axes)
             
-        if self.lock is None:
-            self.lock = True
-            self.resetFormatCoord()
-        else:
-            self.lock = None
-            self.format_coord_old = self.format_coord
-            self.format_coord = lambda x,y:self.format_coord_old(x,y)+' [manage]'
-            self.suppressPrint = True
+#         if self.lock is None:
+#             self.lock = True
+#             self.resetFormatCoord()
+#         else:
+#             self.lock = None
+#             self.format_coord_old = self.format_coord
+#             self.format_coord = lambda x,y:self.format_coord_old(x,y)+' [manage]'
+#             self.suppressPrint = True
         
 
-        return
-    elif event.key in cut1DSettings['cut'] and self.new is False:
-        self.lock=True
-        self.resetFormatCoord()
-        dr = self.selectedDr
-        if not dr is None:
-            dr.Cut1DFunction(dr)
+#         return
+#     elif event.key in cut1DSettings['cut'] and self.new is False:
+#         self.lock=True
+#         self.resetFormatCoord()
+#         dr = self.selectedDr
+#         if not dr is None:
+#             dr.Cut1DFunction(dr)
 
-            return
+#             return
     
-    elif event.key in cut1DSettings['new']:
-        self.lock=True
-        if hasattr(self,'ax'):
-            axes = self.ax
-        else:
-            axes = self
+#     elif event.key in cut1DSettings['new']:
+#         self.lock=True
+#         if hasattr(self,'ax'):
+#             axes = self.ax
+#         else:
+#             axes = self
             
-        if not self.drawState == States.INACTIVE:
-            cancel(self,axes)
-            return
+#         if not self.drawState == States.INACTIVE:
+#             cancel(self,axes)
+#             return
 
             
-        # If new is False, no new shapes will be initialized
-        # If new is not False, the shape is the draggableShape with index self.new-1
-        # Modulus ensures that there is an overflow back to shape 0 instead of out of bounce
-        self.new = np.mod(self.new+1,len(self.draggableShapes)+1)#
+#         # If new is False, no new shapes will be initialized
+#         # If new is not False, the shape is the draggableShape with index self.new-1
+#         # Modulus ensures that there is an overflow back to shape 0 instead of out of bounce
+#         self.new = np.mod(self.new+1,len(self.draggableShapes)+1)#
         
         
         
-        if self.new>0:
-            self.selectedShape = self.draggableShapes[self.new-1]
-            self.selectedShape.shapeSelected(self,axes)
-            self.suppressPrint = True
-        else:
-            self.resetFormatCoord()
+#         if self.new>0:
+#             self.selectedShape = self.draggableShapes[self.new-1]
+#             self.selectedShape.shapeSelected(self,axes)
+#             self.suppressPrint = True
+#         else:
+#             self.resetFormatCoord()
         
-        self.lock = True
+#         self.lock = True
+
+
+
+# def on_press(self,event):# pragma: no cover
+#     if not hasattr(self,'drawState'):
+#         return
+#     if hasattr(self,'ax'):
+#         axes = self.ax
+#     else:
+#         axes = self
+
+#     if not self.new > 0:
+#         return
+#     if event.inaxes != axes:
+#         return
+
     
+#     # Right-clicking cancels any ongoing action and reset to inactive
+#     if event.button == MouseButton.RIGHT:
+#         cancel(self,axes)
+#         return 
 
 
-def on_press(self,event):# pragma: no cover
-    if not hasattr(self,'drawState'):
-        return
-    if hasattr(self,'ax'):
-        axes = self.ax
-    else:
-        axes = self
-
-    if not self.new > 0:
-        return
-    if event.inaxes != axes:
-        return
-
-    
-    # Right-clicking cancels any ongoing action and reset to inactive
-    if event.button == MouseButton.RIGHT:
-        cancel(self,axes)
-        return 
-
-
-    if not self.drawState is None:
-        if not self.cidmove is None: # If exists, disconnect it
-            axes.get_figure().canvas.mpl_disconnect(self.cidmove)
-            self.cidmove = None
-        stateName = self.drawState.name.lower()
-        # call the designated state function on the selected shape
-        on_move = getattr(self.selectedShape,stateName)(self,axes,event)
-        self.suppressPrint = True
-        # connect the returned move function if not None. None is return in the last function 
+#     if not self.drawState is None:
+#         if not self.cidmove is None: # If exists, disconnect it
+#             axes.get_figure().canvas.mpl_disconnect(self.cidmove)
+#             self.cidmove = None
+#         stateName = self.drawState.name.lower()
+#         # call the designated state function on the selected shape
+#         on_move = getattr(self.selectedShape,stateName)(self,axes,event)
+#         self.suppressPrint = True
+#         # connect the returned move function if not None. None is return in the last function 
         
-        if not on_move is None:
-            self.cidmove = axes.get_figure().canvas.mpl_connect('motion_notify_event',lambda event:on_move(self,event))
-        else:
-            self.resetFormatCoord()
+#         if not on_move is None:
+#             self.cidmove = axes.get_figure().canvas.mpl_connect('motion_notify_event',lambda event:on_move(self,event))
+#         else:
+#             self.resetFormatCoord()
         
         
-def reset(self):# pragma: no cover
-    if not hasattr(self,'drawState'):
-        return
-    self.suppressPrint=False
-    if hasattr(self,'format_coord_old'):
-        self.format_coord = self.format_coord_old
-        del self.format_coord_old
+# def reset(self):# pragma: no cover
+#     if not hasattr(self,'drawState'):
+#         return
+#     self.suppressPrint=False
+#     if hasattr(self,'format_coord_old'):
+#         self.format_coord = self.format_coord_old
+#         del self.format_coord_old
 
 
-def prepareInteractiveCutting(ax,draggables, draggableFunctions):# pragma: no cover
-    fig = ax.get_figure()
-    ax.resetFormatCoord = lambda: reset(ax)
-    ax.new=False
-    ax.cidmove = None
-    ax.drawState = States.INACTIVE
+# def prepareInteractiveCutting(ax,draggables, draggableFunctions):# pragma: no cover
+#     fig = ax.get_figure()
+#     ax.resetFormatCoord = lambda: reset(ax)
+#     ax.new=False
+#     ax.cidmove = None
+#     ax.drawState = States.INACTIVE
     
-    ax.shapes = []
-    ax.drs = []
-    ax.draggableShapes = draggables
-    ax.draggableFunctions = draggableFunctions
-    ax.ax = ax
+#     ax.shapes = []
+#     ax.drs = []
+#     ax.draggableShapes = draggables
+#     ax.draggableFunctions = draggableFunctions
+#     ax.ax = ax
     
-    ax.selectedDr = None
-    ax.lock = True
+#     ax.selectedDr = None
+#     ax.lock = True
     
-    ax.suppressPrint = False
+#     ax.suppressPrint = False
     
-    fig.canvas.mpl_connect(
-        'key_press_event', lambda event:on_key_press(ax,event))
+#     fig.canvas.mpl_connect(
+#         'key_press_event', lambda event:on_key_press(ax,event))
     
-    fig.canvas.mpl_connect(
-                'button_press_event', lambda event:on_press(ax,event))
+#     fig.canvas.mpl_connect(
+#                 'button_press_event', lambda event:on_press(ax,event))
 
 
-def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions):# pragma: no cover
-    fig = self.ax.get_figure()
-    self.ax.resetFormatCoord = lambda: reset(self.ax)
-    self.ax.new=False
-    self.ax.cidmove = None
-    self.ax.drawState = States.INACTIVE
+# def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions):# pragma: no cover
+#     fig = self.ax.get_figure()
+#     self.ax.resetFormatCoord = lambda: reset(self.ax)
+#     self.ax.new=False
+#     self.ax.cidmove = None
+#     self.ax.drawState = States.INACTIVE
     
-    self.ax.shapes = []
-    self.ax.drs = []
-    self.ax.draggableShapes = draggables
-    self.ax.draggableFunctions = draggableFunctions
-    self.ax.ax = self.ax
+#     self.ax.shapes = []
+#     self.ax.drs = []
+#     self.ax.draggableShapes = draggables
+#     self.ax.draggableFunctions = draggableFunctions
+#     self.ax.ax = self.ax
     
-    self.ax.selectedDr = None
-    self.ax.lock = True
+#     self.ax.selectedDr = None
+#     self.ax.lock = True
     
-    self.ax.suppressPrint = False
+#     self.ax.suppressPrint = False
     
-    fig.canvas.mpl_connect(
-        'key_press_event', lambda event:on_key_press(self.ax,event))
+#     fig.canvas.mpl_connect(
+#         'key_press_event', lambda event:on_key_press(self.ax,event))
     
-    fig.canvas.mpl_connect(
-                'button_press_event', lambda event:on_press(self.ax,event))
+#     fig.canvas.mpl_connect(
+#                 'button_press_event', lambda event:on_press(self.ax,event))
