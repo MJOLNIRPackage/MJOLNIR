@@ -6,9 +6,8 @@ import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 from MJOLNIR import _tools
 import MJOLNIR
-from MJOLNIR import TasUBlibDEG as TasUBlib
-from MJOLNIR.TasUBlibDEG import cosd,sind
-from MJOLNIR.Data import Sample,RLUAxes
+from MJOLNIR import TasUBlibDEG
+from MJOLNIR.Data import RLUAxes
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -17,6 +16,7 @@ from scipy.stats import norm
 import h5py as hdf
 import datetime
 import pytest
+from MJOLNIR.Geometry.eck_Flipped import get_E, get_scattering_angle,get_mono_angle,get_angle_ki_Q,get_angle_kf_Q,calc_eck
 
 NumberOfSigmas= 3.0 # Defining the active area of a peak on a detector as \pm n*sigma
 predictionInstrumentSupport = ['CAMEA','MultiFLEXX','Bambus'] # Instrument supported in prediction function
@@ -755,7 +755,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
                     fitParameters.append(fittedParameters)
                     activePixelRanges.append(np.array(activePixelDetector))
-                    tableString = 'Normalization for {} pixel(s) using VanData {} and A4Data{}\nPerformed {}\nDetector,Energy,Pixel,IntegratedIntensity,Center,Width,Background,lowerBin,upperBin,A4Offset\n'.format(detpixels,Vanadiumdatafile,A4datafile,datetime.datetime.now())
+                    tableString = 'Normalization for {} pixel(s) using VanData {} and A4Data{}{}\nPerformed {}\nDetector,Energy,Pixel,IntegratedIntensity,Center,Width,Background,lowerBin,upperBin,A4Offset\n'.format(detpixels,Vanadiumdatafile,A4datafile,(sampleMass!=0)*', using Vanadium mass {}'.format(sampleMass),datetime.datetime.now())
                     for i in range(len(fittedParameters)):
                         for j in range(len(fittedParameters[i])):
                             for k in range(len(fittedParameters[i][j])):
@@ -1168,7 +1168,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
             tth.append(2.*th)
         return theta,tth
 
-    def storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=0.0,polar_angle_offset=0.0):
+    def storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=0.0,polar_angle_offset=0.0,dir='.'):
         nxdata = entry.create_group('data')
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
@@ -1244,13 +1244,26 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         #dset.attrs['units'] = np.string_('counts')
         
         
-        makeMonitor(entry,Numpoints)
+        makeMonitor(entry,Numpoints,dir)
         entry.create_dataset('scancommand',data=[np.string_(scanType)])
         entry.create_dataset('scanvars',data=scanvars)
-    def makeMonitor(entry,Numpoints):
+    def makeMonitor(entry,Numpoints,dir):
+        
+        ## read monitor if slit monitor exists
+
+        # Check if slit monitor exists
+        if os.path.exists(os.path.join(dir,'0','SlitMonitor.dat')):
+            mons = []
+            for  i in range(Numpoints):
+                dat = np.loadtxt(os.path.join(dir,str(i),'SlitMonitor.dat'))
+                totalCount = dat[:int(len(dat)/3)].sum()
+                mons.append(totalCount)
+        else:
+            mons = [10000]*Numpoints
+
         control = entry.create_group('control')
         control.attrs['NX_class'] = np.string_('NXmonitor')
-        mons = [10000]*Numpoints
+        
         control.create_dataset('data',data=mons,dtype='int32')
         dset = control.create_dataset('preset',(1,),dtype='int32')
         dset[0] = 10000
@@ -1306,7 +1319,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         import os
         Numpoints = sum([os.path.isdir(fname+'/'+i) for i in os.listdir(fname)])
         data,a3,a4,ei = readScanData(fname,Numpoints,factor=factor,pixels=pixels,detectors=detectors)
-        storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=rotation_angle_zero,polar_angle_offset=polar_angle_offset)
+        storeScanData(entry,data,a3,a4,ei,rotation_angle_zero=rotation_angle_zero,polar_angle_offset=polar_angle_offset,dir=fname)
         
 
 def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1): # pragma: no cover
@@ -1316,27 +1329,27 @@ def converterToA3A4(Qx,Qy, Ei,Ef,A3Off=0.0,A4Sign=-1): # pragma: no cover
     QC = np.array([Qx,Qy])
     q = np.linalg.norm(QC)
 
-    U1V = np.array([Qx.flatten(),Qy.flatten(),0.0],dtype=float)
+    U1V = np.array([Qx.flatten(),Qy.flatten(),np.zeros_like(Qx.flatten())],dtype=float)
 
     U1V/=np.linalg.norm(U1V)
     U2V = np.array([0.0,0.0,1.0],dtype=float)
     
     
-    TV = TasUBlib.buildTVMatrix(U1V, U2V)
+    TV = TasUBlibDEG.buildTVMatrix(U1V, U2V)
     R = np.linalg.inv(TV)
     
     ss = 1.0
     
     cossgl = np.sqrt(R[0,0]*R[0,0]+R[1,0]*R[1,0])
-    om = TasUBlib.arctan2d(R[1,0]/cossgl, R[0,0]/cossgl)
+    om = TasUBlibDEG.arctan2d(R[1,0]/cossgl, R[0,0]/cossgl)
     
     ki = np.sqrt(Ei)*_tools.factorsqrtEK
     kf = np.sqrt(Ef)*_tools.factorsqrtEK
     
     cos2t =(ki**2 + kf**2 - q**2) / (2. * np.abs(ki) * np.abs(kf))
     
-    A4 = ss*TasUBlib.arccosd(cos2t)
-    theta = TasUBlib.calcTheta(ki, kf, A4)
+    A4 = ss*TasUBlibDEG.arccosd(cos2t)
+    theta = TasUBlibDEG.calcTheta(ki, kf, A4)
     A3 = -om + np.sign(A4Sign)*ss*theta + A3Off
     return A3,np.sign(A4Sign)*A4
 
@@ -1347,7 +1360,7 @@ def converterToQxQy(A3,A4,Ei,Ef):
     kf = np.sqrt(Ef)*_tools.factorsqrtEK
 
     r = [0,0,0,A3,A4,0.0,0.0,Ei,Ef]
-    QV = TasUBlib.calcTasUVectorFromAngles(r)
+    QV = TasUBlibDEG.calcTasUVectorFromAngles(r)
     q = np.sqrt(ki**2 +kf**2-
         2. *ki *kf * np.cos(np.deg2rad(A4)))
 
@@ -1385,6 +1398,7 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
         - instrument (string): Instrument for which the prediction is to be made (default CAMEA)
 
     """
+    from MJOLNIR.Data import Sample
     s = Sample.Sample(*Cell,projectionVector1=r1,projectionVector2=r2)
  
     class simpleDataSet():
@@ -1518,3 +1532,134 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
     fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event,Ax,outputFunction=outputFunction))
     fig.tight_layout()
     return Ax
+
+def calculateResoultionMatrix(ds,sample,Position,Ei,Ef,rlu=True,A3Off=0.0):
+    
+    # Calculate to QxQy if not provided
+    if rlu:
+        #qe = np.concatenate([Position,[Ei,Ef]])
+        Qx,Qy = sample.calculateHKLToQxQy(*Position)
+        
+    else:
+        Qx,Qy = Position
+    
+    
+    ## find detector corresponding to Ef and A4
+    Efs = ds[0].instrumentCalibrationEf.reshape(104,8*8,4)[:,:,1].mean(axis=0)
+    EfIdx = np.argmin(np.abs(Ef-Efs))
+
+    
+    if ds[0].instrument == 'CAMEA':
+        distancesSampleAnalyzer=np.array([0.9300,0.9939,1.0569,1.1195,1.1827,1.2456,1.3098,1.3747])
+    else:
+        raise NotImplementedError('Currently, only calculations for CAMEA are implemented....')
+    dist = distancesSampleAnalyzer[int(np.floor(EfIdx/8))]
+    
+    cm2A = 1e8
+    min2rad = 1./ 60. / 180.*np.pi
+    rad2deg = 180. / np.pi
+    
+    d_mono = 3.355
+    d_ana = 3.355
+    
+    ki = np.sqrt(Ei)*TasUBlibDEG.factorsqrtEK
+    kf = np.sqrt(Ef)*TasUBlibDEG.factorsqrtEK
+    Q = np.linalg.norm([Qx,Qy])
+    
+    
+    E = get_E(ki, kf)
+    
+    A3,A4 = converterToA3A4(Qx,Qy,Ei,Ef,A3Off=A3Off)
+    sc_senses = [ 1., -1., 1.]
+    
+    ## Create the parameter list needed for the eck_Flipped function
+    params = {
+        # scattering triangle
+        "ki" : ki, "kf" : kf, "E" : E, "Q" : Q,
+    
+        # angles
+        "twotheta" : get_scattering_angle(ki, kf, Q),
+        "thetam" : get_mono_angle(ki, d_mono),
+        "thetaa" : get_mono_angle(kf, d_ana),
+        "angle_ki_Q" : get_angle_ki_Q(ki, kf, Q),
+        "angle_kf_Q" : get_angle_kf_Q(ki, kf, Q),
+    
+        # scattering senses
+        "mono_sense" : sc_senses[0],
+        "sample_sense" : sc_senses[1],
+        "ana_sense" : sc_senses[2],
+    
+        # distances
+        "dist_src_mono" : 120. * cm2A,
+        "dist_mono_sample" : 160. * cm2A,
+        "dist_sample_ana" : dist*100. * cm2A,
+        "dist_ana_det" : 70. * cm2A,
+    
+        # component sizes
+        "src_w" : 2. * cm2A,
+        "src_h" : 3. * cm2A,
+        "mono_w" : 26. * cm2A,
+        "mono_h" : 17. * cm2A,
+        "det_w" : 1.27 * cm2A,
+        "det_h" : 1. * cm2A,
+        "ana_w" : 5. * cm2A,
+        "ana_h" : 5. * cm2A,
+    
+        # focusing
+        "mono_curvh" : 1.,
+        "mono_curvv" : 1.,
+        "ana_curvh" : 1.,
+        "ana_curvv" : 0.,
+        "mono_is_optimally_curved_h" : True,
+        "mono_is_optimally_curved_v" : True,
+        "ana_is_optimally_curved_h" : True,
+        "ana_is_optimally_curved_v" : False,
+        "mono_is_curved_h" : True,
+        "mono_is_curved_v" : True,
+        "ana_is_curved_h" : True,
+        "ana_is_curved_v" : False,
+    
+        # collimation
+        "coll_h_pre_mono" : 9999. *min2rad,
+        "coll_v_pre_mono" : 9999. *min2rad,
+        "coll_h_pre_sample" : 9999. *min2rad,
+        "coll_v_pre_sample" : 9999. *min2rad,
+        "coll_h_post_sample" : 9999. *min2rad,
+        "coll_v_post_sample" : 60. *min2rad,
+        "coll_h_post_ana" : 9999. *min2rad,
+        "coll_v_post_ana" : 9999. *min2rad,
+    
+        # guide
+        "use_guide" : True,
+        "guide_div_h" : 120. *min2rad,
+        "guide_div_v" : 120. *min2rad,
+    
+        # mosaics
+        "mono_mosaic" : 42. *min2rad,
+        "mono_mosaic_v" : 42. *min2rad,
+        "ana_mosaic" : 42. *min2rad,
+        "ana_mosaic_v" : 42. *min2rad,
+    
+        # crystal reflectivities
+        # TODO, so far always 1
+        "dmono_refl" : 1.,
+        "dana_effic" : 1.,
+    
+        # off-center scattering
+        # WARNING: while this is calculated, it is not yet considered in the ellipse plots
+        "pos_x" : 0. * cm2A,
+        "pos_y" : 0. * cm2A,
+        "pos_z" : 0 * cm2A,
+    }
+    
+    
+    rescalc = calc_eck(params)
+    M = rescalc['reso']
+
+    # Rotate to Qx, Qy with A3
+    # 4D rotation matrix but only rotation in Qx,Qy
+    R = np.eye(4)
+    R[:2,:2] = _tools.Rot(-A3).reshape(2,2)
+
+    MRotated = np.dot(R,np.dot(M,R.T))
+    return MRotated
