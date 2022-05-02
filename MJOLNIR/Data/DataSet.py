@@ -1067,7 +1067,8 @@ class DataSet(object):
 
         
 
-
+        ax.type = 'QE'
+        ax = _interactiveSettings.setupModes(ax)
 
         
         return ax,data,bins
