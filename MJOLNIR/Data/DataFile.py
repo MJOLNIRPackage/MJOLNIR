@@ -2387,7 +2387,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
     df.A4 = np.array(A4)
     
     df.I = np.array(np.zeros((steps,detectors,pixels)))
-    df.binning = None
+    df.binning = 1
     
     if not normalizationFiles is None:
             calib = []
