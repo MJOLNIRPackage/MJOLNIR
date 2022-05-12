@@ -1472,6 +1472,8 @@ class DataSet(object):
         pmeshs = []
         if log:
             Int = [np.log10(1e-20+np.array(intens)) for intens in ax.Int]
+        else:
+            Int = [np.array(intens) for intens in ax.Int]
 
         for i in range(len(EBins)-1):
             if _3D:
