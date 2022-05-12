@@ -206,7 +206,7 @@ def axisChanged(axis,forceUpdate=False,direction='both'):
 
 
 
-def createQAxis(self,rlu = True, clean = False, figure=None,ids=[1, 1, 1],basex=None,basey=None):
+def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 1],basex=None,basey=None):
     """Create a reciprocal lattice plot for a given DataSet object.
     
     Args:
@@ -216,6 +216,8 @@ def createQAxis(self,rlu = True, clean = False, figure=None,ids=[1, 1, 1],basex=
     Kwargs:
 
         - rlu (bool): If true, plot in reciprocal lattice units, else in Qx, Qy (default True)
+
+        - withoutOnClick (bool): If False, utilize the updated onClick method (default False)
 
         - figure: Matplotlib figure in which the axis is to be put (default None)
 
@@ -376,7 +378,7 @@ def createQAxis(self,rlu = True, clean = False, figure=None,ids=[1, 1, 1],basex=
         if not ax.suppressPrint:
             outputFunction(printString)
 
-    if not clean:
+    if not withoutOnClick:
         ax.onClick = lambda x: onclick(ax,x,ax.Qx,ax.Qy,[ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount],outputFunction=ax.outputFunction)
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event', ax.onClick)
     
