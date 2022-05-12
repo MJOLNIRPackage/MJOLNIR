@@ -144,7 +144,7 @@ def resetUsingKey(ax,keys):
 
 
 def initializeINACTIVE(ax):
-    print('Initializing inactive mode')
+#    print('Initializing inactive mode')
 
     if hasattr(ax,'_key_press_event'):
         ax.figure.canvas.mpl_disconnect(ax._key_press_event)
@@ -164,12 +164,12 @@ def initializeINACTIVE(ax):
     return
 
 def deactivateINACTIVE(ax):
-    print('deactivating inactive mode')
+    #print('deactivating inactive mode')
     return
 
 
 def initializeRESOLUTION(ax):
-    print('initializeRESOLUTION')
+    #print('initializeRESOLUTION')
 
     # Change cursor to signify new mode
     
@@ -439,7 +439,7 @@ def initializeRESOLUTION(ax):
 
 
 def deactivateRESOLUTION(ax):
-    print('deactivateRESOLUTION')
+    #print('deactivateRESOLUTION')
     ax.format_coord = ax.old_format_coord
     for E in ax.resolutionEllipses:
         E.remove()
@@ -636,7 +636,7 @@ def initializeCUTTING(ax):
 
 
 def deactivateCUTTING(ax):
-    print('deactivateCUTTING')
+    #print('deactivateCUTTING')
     # ax.get_figure().canvas.mpl_disconnect(ax.onMoveAnnotateID)
     # ax.annotateBox.set_visible(False)
     
