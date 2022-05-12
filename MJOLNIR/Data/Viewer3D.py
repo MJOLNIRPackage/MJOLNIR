@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib.widgets import Slider
 from MJOLNIR import _tools
 from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
-from MJOLNIR.Data.DraggableShapes import clearBoxes, DraggableCircle,DraggableRectangle, prepareInteractiveCuttingView3D,\
+from MJOLNIR._interactiveSettings import clearBoxes, DraggableCircle,DraggableRectangle, prepareInteractiveCuttingView3D,\
     extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle
 import functools
 
@@ -122,7 +122,7 @@ class Viewer3D(object):
             self.grid = False
             self.gridZOrder = 0
 
-        if ax is None:
+        if ax is None: # TODO: REDO with actual correct axes!
             self.figure = plt.figure()
             self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
             self.xlabel = r'Qx [$A^{-1}$]'
@@ -292,7 +292,15 @@ class Viewer3D(object):
 
         self.Energy_slider.set_val(self.value)
 
-        self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
+        #self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
+        self.axRLU.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axRLU')
+        # self.axRLU._button_press_event = self.axRLU.get_figure().canvas.mpl_connect('button_press_event', self.axRLU.onClickFunction)
+
+        self.axQxE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQxE')
+        # self.axQxE._button_press_event = self.axQxE.get_figure().canvas.mpl_connect('button_press_event', self.axQxE.onClickFunction)
+
+        self.axQyE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQyE')
+        # self.axQyE._button_press_event = self.axQyE.get_figure().canvas.mpl_connect('button_press_event', self.axQyE.onClickFunction)
         
         try:
             maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
@@ -367,8 +375,12 @@ class Viewer3D(object):
             self.im.set_array(self.emptyData) # Set data in current im to a fully masked data set
         if axis==2:
             if self.rlu:
+                if hasattr(self.ax,'_button_press_event'):
+                    self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+                if hasattr(self.ax,'onClickFunction'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
             else:
                 self.ax.set_xlabel(self.xlabel)
                 self.ax.set_ylabel(self.ylabel)
@@ -376,8 +388,12 @@ class Viewer3D(object):
             label = self.zlabel#self.ax.get_ylabel
         elif axis==1:  # pragma: no cover
             if self.rlu:
+                if hasattr(self.ax,'_button_press_event'):
+                    self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+                if hasattr(self.ax,'onClickFunction'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
             else:
                 self.ax.set_xlabel(self.xlabel)
                 self.ax.set_ylabel(self.zlabel)
@@ -385,8 +401,12 @@ class Viewer3D(object):
             label =  self.ylabel#self.ax.get_ylabel
         elif axis==0:  # pragma: no cover
             if self.rlu:
+                if hasattr(self.ax,'_button_press_event'):
+                    self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+                if hasattr(self.ax,'onClickFunction'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
             else:
                 self.ax.set_xlabel(self.ylabel)
                 self.ax.set_ylabel(self.zlabel)
@@ -582,7 +602,7 @@ def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
         return function(self,event.xdata,event.ydata,*args,**kwargs)
 
 
-def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
+def onclick(self,x,y,returnText=False, outputFunction=print,extra=None): # pragma: no cover
     idz = self.value
     axis = self.axis
 
@@ -615,7 +635,8 @@ def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
         Mon = self.Monitor[ID[0],ID[1],ID[2]]
         NC = self.NormCounts[ID[0],ID[1],ID[2]]
         printString+=', Cts = {:}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-
+    if not extra is None:
+        printString+=extra
     if returnText:
         return printString
     else:

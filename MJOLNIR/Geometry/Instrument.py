@@ -17,6 +17,7 @@ import h5py as hdf
 import datetime
 import pytest
 from MJOLNIR.Geometry.eck_Flipped import get_E, get_scattering_angle,get_mono_angle,get_angle_ki_Q,get_angle_kf_Q,calc_eck
+from MJOLNIR import _interactiveSettings
 
 NumberOfSigmas= 3.0 # Defining the active area of a peak on a detector as \pm n*sigma
 predictionInstrumentSupport = ['CAMEA','MultiFLEXX','Bambus'] # Instrument supported in prediction function
@@ -394,7 +395,10 @@ class Instrument(GeometryConcept.GeometryConcept):
                 
                 monitor = np.array(VanFile.get('entry/control/data')) # Extract monitor count
                 # Divide data with corresponding monitor by reshaping it correctly
-                Data = np.array(VanFileInstrument.get('detector/counts')).transpose(2,0,1).astype(float)/monitor[np.newaxis,:,np.newaxis]
+                intensities = VanFileInstrument.get('detector/counts')
+                if intensities is None:
+                    intensities = VanFileInstrument.get('detector/data')
+                Data = np.array(intensities).transpose(2,0,1).astype(float)/monitor[np.newaxis,:,np.newaxis]
                 if sampleMass != None: # A sample mass has been proivided
 
                     sampleMolarMass = _tools.calculateMolarMass(sample,formulaUnitsPerUnitCell)
@@ -410,6 +414,13 @@ class Instrument(GeometryConcept.GeometryConcept):
                     Data[:,:,:100]=0
 
                 Ei = np.array(VanFileInstrument.get('monochromator/energy')).astype(float)
+
+                # Due to motor positioning error by too small steps, one scan could be unordered along energy!
+                sortIDXEi = np.argsort(Ei)
+                
+                Ei = Ei[sortIDXEi]
+                Data = Data[:,sortIDXEi]
+
                 analysers = 8
                 pixels = self.wedges[0].detectors[0].pixels
                 detectors = len(self.A4[0])*len(self.A4)
@@ -627,9 +638,11 @@ class Instrument(GeometryConcept.GeometryConcept):
                                     binPixelData = binPixelData[BotId:TopId]
                                     EiLocal = Ei[BotId:TopId]
                                     Bg = np.min(binPixelData[[0,-1]])
-                                    guess = np.array([np.max(binPixelData), ECenter,0.08,Bg],dtype=float)
+                                    guess = np.array([np.max(binPixelData), ECenter,0.08],dtype=float) # Bg
+                                    fitFunc = lambda x,A,mu,sigma:Gaussian(x,A,mu,sigma,0.0)
                                     try:
-                                        res = scipy.optimize.curve_fit(Gaussian,EiLocal,binPixelData.astype(float),p0=guess)
+                                        res = scipy.optimize.curve_fit(fitFunc,EiLocal,binPixelData.astype(float),p0=guess)
+                                        
                                         
                                     except: # pragma: no cover
                                         if not os.path.exists(savelocation+'/{}_pixels'.format(detpixels)):
@@ -638,12 +651,12 @@ class Instrument(GeometryConcept.GeometryConcept):
                                             plt.ioff
                                         plt.figure()
                                         plt.scatter(EiLocal,binPixelData)
-                                        plt.plot(Ei,Gaussian(Ei,*guess))
+                                        plt.plot(Ei,fitFunc(Ei,*guess))
                                     
                                         plt.savefig(savelocation+'/{}_pixels/Detector{}_{}.png'.format(detpixels,i,k),format='png',dpi=150)
                                         plt.close()
-
-                                    fittedParameters[i,j,k]=res[0]
+                                    
+                                    fittedParameters[i,j,k]=list(res[0])+[0.0]
                                     fittedParameters[i,j,k,0] *= np.sqrt(2*np.pi)*fittedParameters[i,j,k,2] #np.sum(binPixelData) # Use integrated intensity as amplitude 29-07-2020 JL
                                      
                                     if plot: # pragma: no cover
@@ -1402,21 +1415,36 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
     s = Sample.Sample(*Cell,projectionVector1=r1,projectionVector2=r2)
  
     class simpleDataSet():
-        def __init__(self,sample):
+        def __init__(self,sample,Ei):
             self.sample = [sample]
+            self.Ei = np.array([Ei])
+
+        def __len__(self):
+            return 1
+
+        def FindEi(self,deltaE):
+            return self.Ei
      
     if outputFunction is None:
         outputFunction = print
 
-    t = simpleDataSet(s)
+    t = simpleDataSet(s,Ei)
     fig = plt.figure(figsize=(16,11))
     
     if instrument == 'CAMEA':
-        calib = np.loadtxt(MJOLNIR.__CAMEANormalization__,delimiter=',',skiprows=3)
+        calib = np.loadtxt(MJOLNIR.__CAMEANormalizationBinning1__,delimiter=',',skiprows=3)
         detectors = 104
         wedges = 8
         energies = 8
-        Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(3,3,i+1)) for i in range(9)]
+        Ax = []
+        for i in range(9):
+            ax = RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(3,3,i+1))
+
+            ax.type = 'QPlane'
+            ax.ds = t
+            ax = _interactiveSettings.setupModes(ax)
+            Ax.append(ax)
+        
 
     elif instrument == 'MultiFLEXX':
         calib = np.loadtxt(MJOLNIR.__multiFLEXXNormalization__,delimiter=',',skiprows=1)
@@ -1424,7 +1452,7 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
         wedges = 31
         energies = 5
         A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
-        Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(2,3,i+1)) for i in range(6)]
+        Ax = [RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(2,3,i+1)) for i in range(6)]
 
     elif instrument == 'Bambus':
         calib = np.loadtxt(MJOLNIR.__bambusNormalization__,delimiter=',',skiprows=1)
@@ -1432,10 +1460,10 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
         wedges = 20
         energies = 5
         A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
-        Ax = [RLUAxes.createRLUAxes(t,figure=fig,ids=(2,3,i+1)) for i in range(6)]
+        Ax = [RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(2,3,i+1)) for i in range(6)]
 
     else:
-        raise AttributeError('Privded instrumnt "{}" not understood'.format(instrument))
+        raise AttributeError('Provided instrument "{}" not understood'.format(instrument))
     
     A4Instrument = calib[:,-1].reshape(detectors,energies)
     
@@ -1458,6 +1486,8 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
     
     for i,(ax,Ef,A4) in enumerate(zip(Ax,EfInstrument.reshape(detectors,energies).T,A4Instrument.reshape(detectors,energies).T)):
         ax.Ef = np.nanmean(Ef)
+        ax.EMin = Ei-ax.Ef
+        ax.EMax = Ei-ax.Ef
         
         for A4Position in A4Positions:
             if points:
@@ -1533,23 +1563,51 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
     fig.tight_layout()
     return Ax
 
-def calculateResoultionMatrix(ds,sample,Position,Ei,Ef,rlu=True,A3Off=0.0):
+def calculateResoultionMatrix(position,Ei,Ef,sample = None, rlu=True,binning = 8,A3Off=0.0, instrument='CAMEA'):
+    """calculate Resolution matrix at position in units if 1/AA,1/AA,1/AA,meV
     
+    Args:
+
+        - position (list): Position used for calculation, either Qx,Qy or (H,K,L)
+
+        - Ei (float): Incoming energy in meV
+
+        - Ef (float): Outgoing energy in meV
+
+    Kwargs:
+
+        - sample (MJOLNIR.Sample): Sample used to convert between HKL and QxQy (default None -> QxQy)
+
+        - rlu (bool): Whether or not to recalculate position from HKL to QxQy (default True)
+
+        - binning (int): Binning to be used when calculating resolution for CAMEA (default 8)
+
+        - instrument (str): Instrument used to calculate resolution (default CAMEA)
+    """
+
+
     # Calculate to QxQy if not provided
-    if rlu:
+    if rlu or sample is None:
         #qe = np.concatenate([Position,[Ei,Ef]])
-        Qx,Qy = sample.calculateHKLToQxQy(*Position)
+        Qx,Qy = sample.calculateHKLToQxQy(*position)
         
     else:
-        Qx,Qy = Position
+        Qx,Qy = position
     
     
+    if instrument == 'CAMEA': #CAMEA
+        if not binning>0 and binning <9:
+            raise AttributeError('Provided binning "{:}" not understood. Must be an integer between 1 and 8.'.format(binning))
+        fileName = getattr(MJOLNIR,'__CAMEANormalizationBinning{0}__'.format(binning))
+        calib = np.loadtxt(fileName,delimiter=',',skiprows=3)
+    else:
+        NotImplementedError('Currently, only calculations for CAMEA are implemented....')
     ## find detector corresponding to Ef and A4
-    Efs = ds[0].instrumentCalibrationEf.reshape(104,8*8,4)[:,:,1].mean(axis=0)
+    Efs = calib[:,3:7].reshape(104,binning*8,4)[:,:,1].mean(axis=0)
     EfIdx = np.argmin(np.abs(Ef-Efs))
 
     
-    if ds[0].instrument == 'CAMEA':
+    if instrument == 'CAMEA': #CAMEA
         distancesSampleAnalyzer=np.array([0.9300,0.9939,1.0569,1.1195,1.1827,1.2456,1.3098,1.3747])
     else:
         raise NotImplementedError('Currently, only calculations for CAMEA are implemented....')
