@@ -291,16 +291,19 @@ class Viewer3D(object):
                 
 
         self.Energy_slider.set_val(self.value)
+        if self.rlu:
+            #self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
+            self.axRLU.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axRLU')
+            # self.axRLU._button_press_event = self.axRLU.get_figure().canvas.mpl_connect('button_press_event', self.axRLU.onClickFunction)
 
-        #self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
-        self.axRLU.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axRLU')
-        # self.axRLU._button_press_event = self.axRLU.get_figure().canvas.mpl_connect('button_press_event', self.axRLU.onClickFunction)
+            self.axQxE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQxE')
+            # self.axQxE._button_press_event = self.axQxE.get_figure().canvas.mpl_connect('button_press_event', self.axQxE.onClickFunction)
 
-        self.axQxE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQxE')
-        # self.axQxE._button_press_event = self.axQxE.get_figure().canvas.mpl_connect('button_press_event', self.axQxE.onClickFunction)
-
-        self.axQyE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQyE')
-        # self.axQyE._button_press_event = self.axQyE.get_figure().canvas.mpl_connect('button_press_event', self.axQyE.onClickFunction)
+            self.axQyE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQyE')
+            # self.axQyE._button_press_event = self.axQyE.get_figure().canvas.mpl_connect('button_press_event', self.axQyE.onClickFunction)
+        else:
+            self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
+        
         
         try:
             maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
