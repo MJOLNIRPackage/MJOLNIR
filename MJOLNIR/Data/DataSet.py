@@ -1068,7 +1068,7 @@ class DataSet(object):
         
 
         ax.type = 'QE'
-        ax = _interactiveSettings.setupModes(ax)
+        #ax = _interactiveSettings.setupModes(ax)
 
         
         return ax,data,bins
@@ -1529,8 +1529,8 @@ class DataSet(object):
 
             ax.cut1DFunctionCircle = cut1DFunctionCircle
 
-            ax.type = 'QPlane'
-            ax = _interactiveSettings.setupModes(ax)
+            #ax.type = 'QPlane'
+            #ax = _interactiveSettings.setupModes(ax)
             
         if len(ax.Qx)!=0:
             xmin = np.min([np.min(qx) for qx in ax.Qx])
@@ -2044,7 +2044,7 @@ class DataSet(object):
                 index = ax.calculateIndex(x)[0] # index of dataset
                 dataIndex = ax.calculateDataIndex(x,y)
                 Int = ax.Data[index]['Int'].iloc[dataIndex]
-                returnString = ", ".join([label+" = "+ax.fmtPrecisionString.format(x) for x,label in zip([*pos,y],labels)])+', {:.3e}'.format(Int)
+                returnString = ", ".join([label+" = "+ax.fmtPrecisionString.format(x) for x,label in zip([*pos,y],labels)])+', I = {:.3e}'.format(Int)
                 
                 return  returnString
                 
@@ -2152,8 +2152,8 @@ class DataSet(object):
                 ax.xaxis.set_ticks(positions)
 
 
-            ax.type = 'QELine'
-            ax = _interactiveSettings.setupModes(ax)
+            #ax.type = 'QELine'
+            #ax = _interactiveSettings.setupModes(ax)
 
             ax.get_figure().tight_layout()
 
@@ -2846,7 +2846,7 @@ class DataSet(object):
         """
 
         if rlu:
-            rluax = self.createQAxis(clean=True,**kwargs)
+            rluax = self.createQAxis(**kwargs)
             figure = rluax.get_figure()
             figure.delaxes(rluax)
             qxEax = self.createQEAxes(axis=1,figure=figure)
@@ -3537,7 +3537,7 @@ class DataSet(object):
 
         
         """
-        return calculateResoultionMatrix(self,self[0].sample,position,Ei,Ef,rlu=rlu,A3Off=self[0].sample.theta)
+        return calculateResoultionMatrix(sample=self[0].sample,position=position,Ei=Ei,Ef=Ef,rlu=rlu,binning=self[0].binning,A3Off=self[0].sample.theta)
 
     def calculateResolutionMatrixAndVectors(self,position,projectionVector1,projectionVector2,Ei,Ef,rlu=True,rluAxis=False):
         """Calculate the resolution ellipsoid matrix at a specific point in reciprocal space and project to plane
