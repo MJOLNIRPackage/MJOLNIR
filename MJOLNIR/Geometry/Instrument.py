@@ -1440,9 +1440,9 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
         for i in range(9):
             ax = RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(3,3,i+1))
 
-            ax.type = 'QPlane'
+            #ax.type = 'QPlane'
             ax.ds = t
-            ax = _interactiveSettings.setupModes(ax)
+            #ax = _interactiveSettings.setupModes(ax)
             Ax.append(ax)
         
 
