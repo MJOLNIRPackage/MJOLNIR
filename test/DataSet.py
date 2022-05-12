@@ -634,9 +634,9 @@ def test_DataSet_createRLUAxes():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile(saveFile=True)
 
-    ax = ds.createRLUAxes()
-    ax = ds.createRLUAxes(basex=0.5,figure=fig)
-    ax = ds.createRLUAxes(basey=0.5)
+    ax = ds.createQAxis()
+    ax = ds.createQAxis(basex=0.5,figure=fig)
+    ax = ds.createQAxis(basey=0.5)
 
     if pythonVersion == 3: # Only possible in python 3
         ax.set_xticks_base(0.2)
