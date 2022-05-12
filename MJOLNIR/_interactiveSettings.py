@@ -112,15 +112,15 @@ for i,t in enumerate(['inactive','cutting','resolution']):
     modes[t.upper().replace(' ','')]=i
 Modes= Enum('Modes', modes)
 
-CutImageLocation = os.path.join(os.path.split(MJOLNIR.Data.__file__)[0],'scissors.png')
-CutCursor = QCursor(QPixmap(CutImageLocation))
+#CutImageLocation = os.path.join(os.path.split(MJOLNIR.Data.__file__)[0],'scissors.png')
+#CutCursor = QCursor(QPixmap(CutImageLocation))
 
 
 ## Cursor type mode
 pointerType = defaultdict(lambda: mpl_qt5.cursors.POINTER)
 # pointerType['RESOLUTION'] = resolutionCursor
 
-pointerType['CUTTING_INACTIVE'] = CutCursor
+#pointerType['CUTTING_INACTIVE'] = CutCursor
 pointerType['CUTTING_EMPTY'] = PyQt5.QtCore.Qt.ForbiddenCursor
 
 pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
