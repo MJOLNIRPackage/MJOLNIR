@@ -221,6 +221,8 @@ class DataFile(object):
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
                             if self.Monitor.flatten()[0]!=self.MonitorPreset and self.startTime[:4]=='2018': # For all data in 2018 with wrong monitor saved
                                 self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
+                        if len(self.Monitor)==len(self.I)+1: # Monitor is exactly one longer than I when opening a running file under NICOS
+                            self.Monitor = self.Monitor[:-1]
                     else:
                         self.Monitor=np.array(getHDFEntry(f,'monitor',fromNICOS=self.fromNICOS))
                     self.Time = np.array(getHDFEntry(f,'time',fromNICOS=self.fromNICOS))
