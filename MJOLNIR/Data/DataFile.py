@@ -308,7 +308,11 @@ class DataFile(object):
                     self.A3 = np.array(getHDFEntry(f,'A3',fromNICOS=self.fromNICOS))
                     self.A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=self.fromNICOS)).reshape(-1)
                     self.A4Off = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=self.fromNICOS))
-                    self.twotheta = self.A4-self.A4Off
+                    if self.fromNICOS:
+                        self.twotheta = self.A4
+                        self.A4 += self.A4Off
+                    else:
+                        self.twotheta = self.A4-self.A4Off
                     
                     self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
                     if len(self.scanParameters) == 1 and self.scanParameters[0] == 'rotation_angle' and len(self.A4)>1 and np.all(np.isclose(self.A4,self.A4[0],atol=0.01)): 
