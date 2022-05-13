@@ -54,7 +54,7 @@ HDFTranslation = {'sample':'/entry/sample',
                   'preset':'entry/control/preset',
                   'startTime':'entry/start_time',
                   'hdfMonitor':'entry/control/data',
-                  'monitor':'entry/data/monitor',
+                  'monitor':'entry/monitor_2/data',
                   'time':'entry/control/time',
                   'endTime':'entry/end_time',
                   'experimentalIdentifier':'entry/experiment_identifier',
@@ -83,7 +83,8 @@ HDFTranslation = {'sample':'/entry/sample',
 HDFTranslationNICOSAlternative = {
                    'temperature':'entry/sample/Ts/value',
                    'magneticField':'entry/sample/B/value',
-                   'ei':'entry/CAMEA/monochromator/energy'
+                   'ei':'entry/CAMEA/monochromator/energy',
+                   'hdfMonitor':'entry/monitor_2/data'
 }
 
 ## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
@@ -117,7 +118,8 @@ HDFInstrumentTranslation = {
 }
 
 HDFInstrumentTranslationNICOSAlternative = {
-                    'counts':'detector/data'
+                    'counts':'detector/data',
+                    'A4':'analyzer/polar_angle_raw'
 
 }
 
@@ -2213,6 +2215,7 @@ def decodeStr(string):
 
 @_tools.KwargChecker()
 def getScanParameter(self,f):
+
     """Extract scan parameter from hdf file.
 
     Args:
@@ -2242,7 +2245,7 @@ def getScanParameter(self,f):
                 scanDataPosition.append(decodeStr(fItem.attrs['target']))
             except:
                 pass
-
+    
     if len(scanParameters) == 0: # no data was stored... NICOS again, but due to manual scan
         
         scanItems = [x for x in np.array(f.get('/entry/scanvars'))[0].decode().split(',') if len(x)>0 ]
@@ -2263,16 +2266,19 @@ def getScanParameter(self,f):
                 scanParameters = ['A4']
                 scanValues = np.array([self.twotheta])
                 scanUnits = ['deg']
-                scanDataPosition = ['/entry/analyzer/polar_angle']
+                scanDataPosition = ['/entry/analyzer/polar_angle_raw']
             else:
                 raise AttributeError('Scan values from Datafile ("{}") cannot be determined'.format(self.name))
         else:
             for item in scanItems:
-                if item in ['a3','a4']:
+                if item in ['a3']:
                     item = item.upper()
                 
+                if item == 's2t':
+                    item = 'A4'
+                
                 if item == 'A4':
-                    fItem = getHDFInstrumentEntry(f,item)
+                    fItem = getHDFInstrumentEntry(getInstrument(f),item,self.fromNICOS)
                 else:
                     fItem = getHDFEntry(f,item,self.fromNICOS)
                     #fItem = f.get(position)    
