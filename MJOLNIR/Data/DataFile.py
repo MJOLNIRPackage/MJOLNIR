@@ -54,7 +54,7 @@ HDFTranslation = {'sample':'/entry/sample',
                   'preset':'entry/control/preset',
                   'startTime':'entry/start_time',
                   'hdfMonitor':'entry/control/data',
-                  'monitor':'entry/data/monitor',
+                  'monitor':'entry/monitor_2/data',
                   'time':'entry/control/time',
                   'endTime':'entry/end_time',
                   'experimentalIdentifier':'entry/experiment_identifier',
@@ -79,6 +79,14 @@ HDFTranslation = {'sample':'/entry/sample',
                   'singleDetector1':'entry/CAMEA/segment_1/data',
                   'singleDetector8':'entry/CAMEA/segment_8/data'
 }
+
+HDFTranslationNICOSAlternative = {
+                   'temperature':'entry/sample/Ts/value',
+                   'magneticField':'entry/sample/B/value',
+                   'ei':'entry/CAMEA/monochromator/energy',
+                   'hdfMonitor':'entry/monitor_2/data'
+}
+
 ## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
 
 HDFTranslationFunctions = defaultdict(lambda : [])
@@ -109,6 +117,12 @@ HDFInstrumentTranslation = {
                    'counts':'detector/counts'
 }
 
+HDFInstrumentTranslationNICOSAlternative = {
+                    'counts':'detector/data',
+                    'A4':'analyzer/polar_angle_raw'
+
+}
+
 HDFInstrumentTranslationFunctions = DefaultDict(lambda : [])
 HDFInstrumentTranslationFunctions['counts'] = [['swapaxes',[1,2]]]
 HDFInstrumentTranslationFunctions['A4'] = [['reshape',[-1]]]
@@ -117,6 +131,23 @@ extraAttributes = ['name','fileLocation','twoTheta']
 
 possibleAttributes = list(HDFTranslation.keys())+list(HDFInstrumentTranslation.keys())+extraAttributes
 possibleAttributes.sort(key=lambda v: v.lower())
+
+
+def getHDFEntry(f,property,fromNICOS=False):
+    if fromNICOS:
+        if property in HDFTranslationNICOSAlternative:
+            value = f.get(HDFTranslationNICOSAlternative[property]) 
+            return value
+
+    return f.get(HDFTranslation[property])
+
+def getHDFInstrumentEntry(instr,property,fromNICOS=False):
+    if fromNICOS:
+        if property in HDFInstrumentTranslationNICOSAlternative:
+            value = instr.get(HDFInstrumentTranslationNICOSAlternative[property]) 
+            return value
+    
+    return instr.get(HDFInstrumentTranslation[property])
 
 analyzerLimits = {'CAMEA':7,
                   'Bambus': 4,
@@ -138,10 +169,10 @@ class DataFile(object):
             if not os.path.isfile(fileLocation):
                 raise AttributeError('File location does not exist({}).'.format(fileLocation))
             if fileLocation.split('.')[-1]=='nxs':
-    	        self.type='nxs'
+                self.type='nxs'
         
             elif fileLocation.split('.')[-1]=='hdf':
-	            self.type='hdf'
+                self.type='hdf'
             elif os.path.splitext(fileLocation)[1]=='': # No extension
                 self.type = 'MultiFLEXX'
             elif fileLocation.split('.')[-1]=='dat':
@@ -149,57 +180,90 @@ class DataFile(object):
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
             self.name = os.path.basename(fileLocation)
-            self.fileLocation = os.path.abspath(fileLocation)		
+            self.fileLocation = os.path.abspath(fileLocation)
             self._binning = 1
             self._mask = False
             self.absolutNormalized = False
 
             if self.type in ['hdf','nxs']:
                 with hdf.File(fileLocation,mode='r') as f:
-                    self.sample = MJOLNIR.Data.Sample.Sample(sample=f.get(HDFTranslation['sample']))
+                    # Find out if file is a NICOS file
+                    # NICOS has data saved in /entry/data/data while six has /entry/data/counts
+                    if not f.get('/entry/data/data') is None: # we have a NICOS file
+                        self.fromNICOS = True
+                    elif not f.get('/entry/data/counts') is None:
+                        self.fromNICOS = False
+                    else:
+                        raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
+                    self.sample = MJOLNIR.Data.Sample.Sample(sample=getHDFEntry(f,'sample'))
                     instr = getInstrument(f)
                     if self.type == 'hdf':
-                        if np.shape(np.array(instr.get(HDFInstrumentTranslation['counts']))) == ():
+                        if np.shape(np.array(getHDFInstrumentEntry(instr,'counts',fromNICOS=self.fromNICOS))) == ():
                             raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
-                        self.I = np.array(instr.get(HDFInstrumentTranslation['counts'])).swapaxes(1,2)
+                        self.I = np.array(getHDFInstrumentEntry(instr,'counts',fromNICOS=self.fromNICOS)).swapaxes(1,2)
                     else:
-                        self.I=np.array(f.get(HDFTranslation['intensity']))
-                        self.counts = np.array(instr.get(HDFInstrumentTranslation['counts'])).swapaxes(1,2)
-                        self.qx=np.array(f.get(HDFTranslation['qx']))
-                        self.qy=np.array(f.get(HDFTranslation['qy']))
-                        self.h=np.array(f.get(HDFTranslation['QH']))
-                        self.k=np.array(f.get(HDFTranslation['QK']))
-                        self.l=np.array(f.get(HDFTranslation['QL']))
-                        self.energy=np.array(f.get(HDFTranslation['energy']))
-                        self.Norm=np.array(f.get(HDFTranslation['normalization']))
-                    self.MonitorMode = np.array(f.get(HDFTranslation['mode']))[0].decode()
-                    self.MonitorPreset=np.array(f.get(HDFTranslation['preset']))                
-                    self.startTime = np.array(f.get(HDFTranslation['startTime']))[0]
+                        self.I=np.array(getHDFEntry(f,'intensity'))
+                        self.counts = np.array(getHDFInstrumentEntry(instr,'counts')).swapaxes(1,2)
+                        self.qx=np.array(getHDFEntry(f,'qx'))
+                        self.qy=np.array(getHDFEntry(f,'qy'))
+                        self.h=np.array(getHDFEntry(f,'QH'))
+                        self.k=np.array(getHDFEntry(f,'QK'))
+                        self.l=np.array(getHDFEntry(f,'QL'))
+                        self.energy=np.array(getHDFEntry(f,'energy'))
+                        self.Norm=np.array(getHDFEntry(f,'normalization'))
+                    self.MonitorMode = np.array(getHDFEntry(f,'mode',fromNICOS=self.fromNICOS))[0].decode()
+                    self.MonitorPreset=np.array(getHDFEntry(f,'preset',fromNICOS=self.fromNICOS))
+                    if len(self.MonitorPreset)>1:
+                        self.MonitorPreset = self.MonitorPreset[0]             
+                    self.startTime = np.array(getHDFEntry(f,'startTime',fromNICOS=self.fromNICOS))[0]
                     if self.type == 'hdf':
-                        self.Monitor = np.array(f.get(HDFTranslation['hdfMonitor']))
+                        self.Monitor = np.array(getHDFEntry(f,'hdfMonitor',fromNICOS=self.fromNICOS))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
                             if self.Monitor.flatten()[0]!=self.MonitorPreset and self.startTime[:4]=='2018': # For all data in 2018 with wrong monitor saved
                                 self.Monitor = np.ones_like(self.Monitor)*self.MonitorPreset ### TODO: Make Mark save the correct monitor!!
                     else:
-                        self.Monitor=np.array(f.get(HDFTranslation['monitor']))
-                    self.Time = np.array(f.get(HDFTranslation['time']))
-                    self.endTime = np.array(f.get(HDFTranslation['endTime']))[0]
-                    self.experimentIdentifier = np.array(f.get(HDFTranslation['experimentalIdentifier']))[0]
-                    self.comment = np.array(f.get(HDFTranslation['comment']))[0]
-                    self.proposalId = np.array(f.get(HDFTranslation['proposal']))[0]
-                    self.proposalTitle = np.array(f.get(HDFTranslation['proposalTitle']))[0]
+                        self.Monitor=np.array(getHDFEntry(f,'monitor',fromNICOS=self.fromNICOS))
+                    self.Time = np.array(getHDFEntry(f,'time',fromNICOS=self.fromNICOS))
+                    self.endTime = np.array(getHDFEntry(f,'endTime',fromNICOS=self.fromNICOS))[0]
+                    expIdx =getHDFEntry(f,'experimentalIdentifier',fromNICOS=self.fromNICOS)
+                    if not expIdx is None:
+                        self.experimentIdentifier = np.array(expIdx)[0]
+                    else:
+                        self.experimentIdentifier = 'UNKNOWN'
+                    self.comment = np.array(getHDFEntry(f,'comment',fromNICOS=self.fromNICOS))[0]
+                    self.proposalId = np.array(getHDFEntry(f,'proposal',fromNICOS=self.fromNICOS))[0]
+                    self.proposalTitle = np.array(getHDFEntry(f,'proposalTitle',fromNICOS=self.fromNICOS))[0]
 
-                    self.localContactName = np.array(f.get(HDFTranslation['localContact']))[0]
+                    localContact = getHDFEntry(f,'localContact',fromNICOS=self.fromNICOS)
+                    if not localContact is None:
+                        self.localContactName = np.array(localContact)[0]
+                    else:
+                        self.localContactName = 'UNKNOWN'
                     
-                    self.proposalUserName = np.array(f.get(HDFTranslation['proposalUser']))[0]
-                    self.proposalUserEmail = np.array(f.get(HDFTranslation['proposalEmail']))[0]
+                    proposalUserName = getHDFEntry(f,'proposalUser',fromNICOS=self.fromNICOS)
+                    if not proposalUserName is None:
+                        self.proposalUserName = np.array(proposalUserName)[0]
+                        self.proposalUserEmail = np.array(getHDFEntry(f,'proposalEmail'))[0]
+                    else:
+                        self.proposalUserName = 'UNKNOWN'
+                        self.proposalUserEmail = 'UNKNOWN'
 
-                    self.userName = np.array(f.get(HDFTranslation['user']))[0]
-                    self.userEmail = np.array(f.get(HDFTranslation['email']))[0]
-                    self.userAddress = np.array(f.get(HDFTranslation['address']))[0]
-                    self.userAffiliation = np.array(f.get(HDFTranslation['affiliation']))[0]
-                    self.singleDetector1 = np.array(f.get(HDFTranslation['singleDetector1']))
-                    self.singleDetector8 = np.array(f.get(HDFTranslation['singleDetector8']))
+                    self.userName = np.array(getHDFEntry(f,'user',fromNICOS=self.fromNICOS))[0]
+                    self.userEmail = np.array(getHDFEntry(f,'email',fromNICOS=self.fromNICOS))[0]
+                    userAddress = getHDFEntry(f,'address',fromNICOS=self.fromNICOS)
+                    if not userAddress is None:
+                        self.userAddress = np.array(userAddress)[0]
+                    else:
+                        self.userAddress = 'UNKNOWN'
+
+                    userAffiliation = getHDFEntry(f,'affiliation',fromNICOS=self.fromNICOS)
+                    if not userAffiliation is None:
+                        self.userAffiliation = np.array(userAffiliation)[0]
+                    else:
+                        self.userAffiliation = 'UNKNOWN'
+                    
+                    self.singleDetector1 = np.array(getHDFEntry(f,'singleDetector1',fromNICOS=self.fromNICOS))
+                    self.singleDetector8 = np.array(getHDFEntry(f,'singleDetector8',fromNICOS=self.fromNICOS))
 
                     # Monochromator
 
@@ -235,17 +299,16 @@ class DataFile(object):
                     self.analyzerSelection = int(np.array(f.get('entry/CAMEA/analyzer/analyzer_selection'))[0])
                     self.detectorSelection = int(np.array(f.get('entry/CAMEA/detector/detector_selection'))[0])
 
-                    try:
-                        self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(f)
-                    except:
-                        pass
-
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
                     self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
-                    self.Ei = np.array(instr.get(HDFInstrumentTranslation['ei']))
-                    self.A3 = np.array(f.get(HDFTranslation['A3']))
-                    self.A4 = np.array(instr.get(HDFInstrumentTranslation['A4'])).reshape(-1)
+                    self.Ei = np.array(getHDFInstrumentEntry(instr,'ei',fromNICOS=self.fromNICOS))
+                    self.A3 = np.array(getHDFEntry(f,'A3',fromNICOS=self.fromNICOS))
+                    self.A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=self.fromNICOS)).reshape(-1)
+                    self.A4Off = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=self.fromNICOS))
+                    self.twotheta = self.A4-self.A4Off
+                    
+                    self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
                     if len(self.scanParameters) == 1 and self.scanParameters[0] == 'rotation_angle' and len(self.A4)>1 and np.all(np.isclose(self.A4,self.A4[0],atol=0.01)): 
                         # If all A4 values are the same, out 2t has been written on instrument computer
                         # and because of this, six saves 2t and not a4. Solution: set A4Offset to 0 and
@@ -255,7 +318,7 @@ class DataFile(object):
                         self.A4Off = np.array([0.0])
                         self.analyzerPolarAngleOffset = self.A4Off
                     else:
-                        self.A4Off = np.array(instr.get(HDFInstrumentTranslation['A4Offset']))
+                        self.A4Off = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=self.fromNICOS))
                         
 
                     try:
@@ -279,19 +342,19 @@ class DataFile(object):
                     self.instrumentCalibrations = np.array(calibrations,dtype=object)
                     self.loadBinning(self.binning)
 
-                    self.twotheta = self.A4-self.A4Off
-
-                    self.temperature = np.array(f.get(HDFTranslation['temperature']))
-                    self.magneticField = np.array(f.get(HDFTranslation['magneticField']))
-                    self.electricField = np.array(f.get(HDFTranslation['electricField']))
-                    self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(f)
-                    self.scanCommand = np.array(f.get(HDFTranslation['scanCommand']))[0]
+                    # As of 2022 and implementation of NICOS temperature and magnetic field is saved
+                    # in another subfolder in the data file (e.g. entry/sample/B/value)
+                    self.temperature = np.array(getHDFEntry(f,'temperature',fromNICOS=self.fromNICOS))
+                    self.magneticField = np.array(getHDFEntry(f,'magneticField',fromNICOS=self.fromNICOS))
+                    self.electricField = np.array(getHDFEntry(f,'electricField',fromNICOS=self.fromNICOS))
+                    
+                    self.scanCommand = np.array(getHDFEntry(f,'scanCommand',fromNICOS=self.fromNICOS))[0]
                     if self.type == 'nxs':
                         self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
-                    self.title = np.array(f.get(HDFTranslation['title']))[0]
+                    self.title = np.array(getHDFEntry(f,'title'))[0]
 
-                    self.absoluteTime = np.array(f.get(HDFTranslation['absoluteTime']))
-                    self.protonBeam = np.array(f.get(HDFTranslation['protonBeam']))
+                    self.absoluteTime = np.array(getHDFEntry(f,'absoluteTime',fromNICOS=self.fromNICOS))
+                    self.protonBeam = np.array(getHDFEntry(f,'protonBeam',fromNICOS=self.fromNICOS))
 
                     if self.type == 'hdf':
                         ###################
@@ -329,7 +392,29 @@ class DataFile(object):
                     setattr(self,key,None)
         else: # Create an empty data set
             self.instrument = 'CAMEA'
-            self.type = 'Unknown'
+            self.type = 'hdf'
+            self.I = np.array([])
+            self._binning = 1
+            self._mask = False
+            self.absolutNormalized = False
+            self.scanParameters = ''
+            self.scanUnits = ''
+            self.scanValues = np.array([])
+            self.Monitor = np.array([])
+            self._A3Off = 0.0
+            self._A3 = np.array([])
+            self._A4Off = 0.0
+            self._A4 = np.array([])
+            self.Ei = np.array([])
+            self.possibleBinnings = [1,3,5,8]
+            calibrations = []
+            for binning in self.possibleBinnings:
+                fileName = getattr(MJOLNIR,'__CAMEANormalizationBinning{}__'.format(binning))
+                calib = np.loadtxt(fileName,delimiter=',',skiprows=3)
+                calibrations.append([calib[:,3:7],calib[:,-1],calib[:,7:9]])
+            self.instrumentCalibrations = np.array(calibrations,dtype=object)
+            self.loadBinning(self.binning)
+
 
         if self.instrument == 'CAMEA':
             self.EPrDetector = 8 
@@ -465,7 +550,7 @@ class DataFile(object):
 
     @mask.setter
     def mask(self,mask):
-        if hasattr(self,'I'):
+        if hasattr(self,'I') and len(self.I.shape) > 1:
             if not np.all(self.I.shape == mask.shape):
                 raise AttributeError('Shape of provided mask {} does not match shape of data {}.'.format(mask.shape,self.I.shape))
         self._mask = mask
@@ -2129,7 +2214,8 @@ def decodeStr(string):
     #    return string
 
 @_tools.KwargChecker()
-def getScanParameter(f):
+def getScanParameter(self,f):
+
     """Extract scan parameter from hdf file.
 
     Args:
@@ -2145,12 +2231,12 @@ def getScanParameter(f):
     scanUnits = []
     scanDataPosition = []
 
-    
-    for item in f.get('/entry/data/'):
+    scanItems = f.get('/entry/data/')
+    for item in scanItems:
         if item in ['scanvar']: # only present in some files, but has to be ignored
             continue
         if not item in ['counts','summed_counts','en','h','intensity','k','l','monitor',
-        'normalization','qx','qy'] and item[-4:]!='zero':
+        'normalization','qx','qy','data'] and item[-4:]!='zero':
             scanParameters.append(item)
             fItem = f.get('/entry/data/{}'.format(item))
             scanUnits.append(decodeStr(fItem.attrs['units']))
@@ -2159,7 +2245,51 @@ def getScanParameter(f):
                 scanDataPosition.append(decodeStr(fItem.attrs['target']))
             except:
                 pass
-
+    
+    if len(scanParameters) == 0: # no data was stored... NICOS again, but due to manual scan
+        
+        scanItems = [x for x in np.array(f.get('/entry/scanvars'))[0].decode().split(',') if len(x)>0 ]
+        ## In a manual scan, no scanvars are saved.... guess that it is either A3, A4 or Ei
+        
+        if len(scanItems) == 0:
+            if np.abs(np.diff(self.Ei)).mean()>0.001: # it is an energy scan!
+                scanParameters = ['Ei']
+                scanValues = np.array([self.Ei])
+                scanUnits = ['meV']
+                scanDataPosition = ['/entry/CAMEA/monochromator/energy']
+            elif np.abs(np.diff(self.A3)).mean()>0.001:
+                scanParameters = ['A3']
+                scanValues = np.array([self.A3])
+                scanUnits = ['deg']
+                scanDataPosition = ['/entry/sample/rotation_angle']
+            elif np.abs(np.diff(self.twotheta)).mean()>0.001:
+                scanParameters = ['A4']
+                scanValues = np.array([self.twotheta])
+                scanUnits = ['deg']
+                scanDataPosition = ['/entry/analyzer/polar_angle_raw']
+            else:
+                raise AttributeError('Scan values from Datafile ("{}") cannot be determined'.format(self.name))
+        else:
+            for item in scanItems:
+                if item in ['a3']:
+                    item = item.upper()
+                
+                if item == 's2t':
+                    item = 'A4'
+                
+                if item == 'A4':
+                    fItem = getHDFInstrumentEntry(getInstrument(f),item,self.fromNICOS)
+                else:
+                    fItem = getHDFEntry(f,item,self.fromNICOS)
+                    #fItem = f.get(position)    
+                scanParameters.append(item)
+                
+                scanUnits.append(decodeStr(fItem.attrs['units']))
+                scanValues.append(np.array(fItem))
+                try:
+                    scanDataPosition.append(decodeStr(fItem.attrs['target']))
+                except:
+                    pass
 
     return scanParameters,np.array(scanValues),scanUnits,scanDataPosition
 
@@ -2263,7 +2393,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
     df.A4 = np.array(A4)
     
     df.I = np.array(np.zeros((steps,detectors,pixels)))
-    df.binning = None
+    df.binning = 1
     
     if not normalizationFiles is None:
             calib = []
@@ -2315,7 +2445,7 @@ def shallowRead(files,parameters):
     
     for file in files:
         vals = []
-        if os.path.splitext(file)[1] == 'hdf': # if an hdf file
+        if os.path.splitext(file)[-1] == '.hdf': # if an hdf file
             with hdf.File(file,mode='r') as f:
                 instr = getInstrument(f)
                 for p in parameters:
@@ -2328,19 +2458,19 @@ def shallowRead(files,parameters):
                         vals.append(v)
                         continue
                     elif p == 'twoTheta':
-                        A4 = np.array(instr.get(HDFInstrumentTranslation['A4']))
+                        A4 = np.array(getHDFInstrumentEntry(instr,'A4'))
                         for func,args in HDFInstrumentTranslationFunctions['A4']:
                             A4 = getattr(A4,func)(*args)
-                        A4Offset = np.array(instr.get(HDFInstrumentTranslation['A4Offset']))
+                        A4Offset = np.array(getHDFInstrumentEntry(instr,'A4Offset'))
                         for func,args in HDFInstrumentTranslationFunctions['A4Offset']:
                             A4Offset = getattr(A4Offset,func)(*args)
                         vals.append(A4-A4Offset)
                         continue
                     elif p in HDFTranslation:
-                        v = np.array(f.get(HDFTranslation[p]))
+                        v = np.array(getHDFEntry(f,p))
                         TrF= HDFTranslationFunctions
                     elif p in HDFInstrumentTranslation:
-                        v = np.array(instr.get(HDFInstrumentTranslation[p]))
+                        v = np.array(getHDFInstrumentEntry(instr,p))
                         TrF= HDFInstrumentTranslationFunctions
                     else:
                         raise AttributeError('Parameter "{}" not found'.format(p))

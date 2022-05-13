@@ -30,7 +30,6 @@ TestData/1024/
 TestData/ManuallyChangedData
 CommandLineScripts/.settings
 
-*.calib
 
 .*/
 dist/*

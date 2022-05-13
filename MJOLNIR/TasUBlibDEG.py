@@ -104,7 +104,7 @@ def buildTVMatrix(U1V,U2V):
     U2V /=np.linalg.norm(U2V)
     T3V = np.cross(U1V.T, U2V.T).T
     
-    return np.array([U1V,U2V,T3V])
+    return np.array([U1V.flatten(),U2V.flatten(),T3V.flatten()])
 
 def buildRMatrix(UB, planeNormal, qe):
     U1V = tasReflectionToQC(qe,UB)

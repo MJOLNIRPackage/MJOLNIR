@@ -15,7 +15,7 @@ import numpy as np
 from matplotlib.widgets import Slider
 from MJOLNIR import _tools
 from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
-from MJOLNIR.Data.DraggableShapes import clearBoxes, DraggableCircle,DraggableRectangle, prepareInteractiveCuttingView3D,\
+from MJOLNIR._interactiveSettings import clearBoxes, DraggableCircle,DraggableRectangle, prepareInteractiveCuttingView3D,\
     extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle
 import functools
 
@@ -25,7 +25,7 @@ pythonSubVersion = sys.version_info[1]
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
-                 cmap=None, CurratAxeBraggList=None,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None, cut1DFunctionCircle = None, **kwargs):#pragma: no cover
+                 cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None, cut1DFunctionCircle = None, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -49,6 +49,8 @@ class Viewer3D(object):
             - outputFunction (function): Function called on output string (default print)
 
             - CurratAxeBraggList (list): List of Bragg peaks for which Currat-Axe spurions are to be calculated, [[H1,K1,L1],[H2,K2,L2],..] (default None)
+
+            - plotCurratAxe (bool): Flag to determine whether or not to plot the Currat-Axe spurions
             
             - Ei (list): List of incoming energies (default None)
             
@@ -84,7 +86,7 @@ class Viewer3D(object):
         self.currentData = None
         
 
-        self.plotCurratAxe = False # Set to false but will change to True when correct list is created
+        self.plotCurratAxe = plotCurratAxe # Set to false but will change to True when correct list is created
         self._CurratAxeBraggList = None
         if len(Data)==4: # If data is provided as I, norm, mon, normcount
             with warnings.catch_warnings() as w:
@@ -120,7 +122,7 @@ class Viewer3D(object):
             self.grid = False
             self.gridZOrder = 0
 
-        if ax is None:
+        if ax is None: # TODO: REDO with actual correct axes!
             self.figure = plt.figure()
             self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
             self.xlabel = r'Qx [$A^{-1}$]'
@@ -289,8 +291,19 @@ class Viewer3D(object):
                 
 
         self.Energy_slider.set_val(self.value)
+        if self.rlu:
+            #self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
+            self.axRLU.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axRLU')
+            # self.axRLU._button_press_event = self.axRLU.get_figure().canvas.mpl_connect('button_press_event', self.axRLU.onClickFunction)
 
-        self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
+            self.axQxE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQxE')
+            # self.axQxE._button_press_event = self.axQxE.get_figure().canvas.mpl_connect('button_press_event', self.axQxE.onClickFunction)
+
+            self.axQyE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQyE')
+            # self.axQyE._button_press_event = self.axQyE.get_figure().canvas.mpl_connect('button_press_event', self.axQyE.onClickFunction)
+        else:
+            self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
+        
         
         try:
             maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
@@ -365,8 +378,12 @@ class Viewer3D(object):
             self.im.set_array(self.emptyData) # Set data in current im to a fully masked data set
         if axis==2:
             if self.rlu:
+                if hasattr(self.ax,'_button_press_event'):
+                    self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+                if hasattr(self.ax,'onClickFunction'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
             else:
                 self.ax.set_xlabel(self.xlabel)
                 self.ax.set_ylabel(self.ylabel)
@@ -374,8 +391,12 @@ class Viewer3D(object):
             label = self.zlabel#self.ax.get_ylabel
         elif axis==1:  # pragma: no cover
             if self.rlu:
+                if hasattr(self.ax,'_button_press_event'):
+                    self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+                if hasattr(self.ax,'onClickFunction'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
             else:
                 self.ax.set_xlabel(self.xlabel)
                 self.ax.set_ylabel(self.zlabel)
@@ -383,8 +404,12 @@ class Viewer3D(object):
             label =  self.ylabel#self.ax.get_ylabel
         elif axis==0:  # pragma: no cover
             if self.rlu:
+                if hasattr(self.ax,'_button_press_event'):
+                    self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
+                if hasattr(self.ax,'onClickFunction'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
             else:
                 self.ax.set_xlabel(self.ylabel)
                 self.ax.set_ylabel(self.zlabel)
@@ -580,7 +605,7 @@ def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
         return function(self,event.xdata,event.ydata,*args,**kwargs)
 
 
-def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
+def onclick(self,x,y,returnText=False, outputFunction=print,extra=None): # pragma: no cover
     idz = self.value
     axis = self.axis
 
@@ -613,7 +638,8 @@ def onclick(self,x,y,returnText=False, outputFunction=print): # pragma: no cover
         Mon = self.Monitor[ID[0],ID[1],ID[2]]
         NC = self.NormCounts[ID[0],ID[1],ID[2]]
         printString+=', Cts = {:}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-
+    if not extra is None:
+        printString+=extra
     if returnText:
         return printString
     else:

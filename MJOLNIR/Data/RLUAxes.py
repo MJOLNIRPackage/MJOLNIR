@@ -16,7 +16,10 @@ import matplotlib.ticker as mticker
 
 import numpy as np
 from MJOLNIR import _tools
+from matplotlib.patches import Ellipse
 from mpl_toolkits.axisartist import SubplotHost
+from MJOLNIR._interactiveSettings import States
+import warnings
 try:
     from mpl_toolkits.axisartist.grid_helper_curvelinear import \
         GridHelperCurveLinear
@@ -74,7 +77,7 @@ class MaxNLocator(mticker.MaxNLocator):
                 symmetric=False,
                 prune=None):
         # trim argument has no effect. It has been left for API compatibility
-        mticker.MaxNLocator.__init__(self, nbins, steps=steps,
+        super(MaxNLocator,self).__init__(nbins, steps=steps,
                                     integer=integer,
                                     symmetric=symmetric, prune=prune)
         self.create_dummy_axis()
@@ -98,7 +101,7 @@ class MultipleLocator(mticker.MultipleLocator):
     def __init__(self,base=None):
         if base is None:
             base = 0.25
-        mticker.MultipleLocator.__init__(self, base)
+        super(MultipleLocator,self).__init__(base)
         self.create_dummy_axis()
         self._factor = 1#0.0
         self._multiplerVals = np.array([1,2,4,5,10])
@@ -203,7 +206,7 @@ def axisChanged(axis,forceUpdate=False,direction='both'):
 
 
 
-def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
+def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 1],basex=None,basey=None):
     """Create a reciprocal lattice plot for a given DataSet object.
     
     Args:
@@ -211,6 +214,10 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
         - Dataset (DataSet): DataSet object for which the RLU plot is to be made.
 
     Kwargs:
+
+        - rlu (bool): If true, plot in reciprocal lattice units, else in Qx, Qy (default True)
+
+        - withoutOnClick (bool): If False, utilize the updated onClick method (default False)
 
         - figure: Matplotlib figure in which the axis is to be put (default None)
 
@@ -235,29 +242,31 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
         number is found and will update when zooming.
         
     """
-
+    
     sample = copy.deepcopy(self.sample)
-    for samp in sample:
-        samp.convert = np.einsum('ij,j...->i...',samp.RotMat,samp.convert)
-        #sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
-        samp.convertinv = np.linalg.inv(samp.convert) # Convert from Qx, Qy to projX, projY
+    if rlu:
+        for samp in sample:
+            samp.convert = np.einsum('ij,j...->i...',samp.RotMat,samp.convert)
+            #sample.convert = np.einsum('ij,j...->i...',sample.RotMat,sample.convert)
+            samp.convertinv = np.linalg.inv(samp.convert) # Convert from Qx, Qy to projX, projY
 
-        samp.orientationMatrix = np.dot(samp.RotMat3D,samp.orientationMatrix)
-        samp.orientationMatrixINV = np.linalg.inv(samp.orientationMatrix)
-        samp.theta = 0.0
+            samp.orientationMatrix = np.dot(samp.RotMat3D,samp.orientationMatrix)
+            samp.orientationMatrixINV = np.linalg.inv(samp.orientationMatrix)
+            samp.theta = 0.0
 
     if figure is None:
         fig = plt.figure(figsize=(7, 4))
     else:
         fig = figure
-    def calculateTicks(ticks,angle,round=True):
-        val = ticks/np.tan(angle/2.0)
-        if round:
-            return np.array(np.round(val),dtype=int)
-        else:
-            return val
+    if rlu:
+        def calculateTicks(ticks,angle,round=True):
+            val = ticks/np.tan(angle/2.0)
+            if round:
+                return np.array(np.round(val),dtype=int)
+            else:
+                return val
 
-    if pythonVersion==3: # Only for python 3
+        
         if  not basex is None or not basey is None: # Either basex or basey is provided (or both)
             if basex is None:
                 basex = calculateTicks(basey,sample[0].projectionAngle,round=False)
@@ -274,50 +283,108 @@ def createRLUAxes(self,figure=None,ids=[1, 1, 1],basex=None,basey=None):
             grid_locator2 = MultipleLocator(base=basey)
             
         grid_helper = GridHelperCurveLinear((sample[0].inv_tr, sample[0].tr),grid_locator1=grid_locator1,grid_locator2=grid_locator2)
-    else: # Python 2
-        grid_helper = GridHelperCurveLinear((sample[0].inv_tr, sample[0].tr))
-    ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
+        
+        ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
+    else:
+        ax = fig.add_subplot(111)
     ax.sample = sample[0]
+    ax.rlu = rlu
     
-    if pythonVersion==3: # Only for python 3
-
+    
+    if ax.rlu:
+        
         ax.basex = basex
         ax.basey = basey
 
-    def set_axis(ax,v1,v2,*args):
-        if args != ():
-            points = np.concatenate([[v1,v2],[x for x in args]],axis=0)
-        else:
-            points = np.array([v1,v2])
-            
-        if points.shape[1] == 3:
-            points = ax.sample.calculateHKLtoProjection(points[:,0],points[:,1],points[:,2]).T
-        boundaries = np.array([ax.sample.inv_tr(x[0],x[1]) for x in points])
-        ax.set_xlim(boundaries[:,0].min(),boundaries[:,0].max())
-        ax.set_ylim(boundaries[:,1].min(),boundaries[:,1].max())
-        if pythonVersion == 3: # Only possible in python 3
-            ax.forceGridUpdate()
+        def set_axis(ax,v1,v2,*args):
+            if args != ():
+                points = np.concatenate([[v1,v2],[x for x in args]],axis=0)
+            else:
+                points = np.array([v1,v2])
+                
+            if points.shape[1] == 3:
+                points = ax.sample.calculateHKLtoProjection(points[:,0],points[:,1],points[:,2]).T
+            boundaries = np.array([ax.sample.inv_tr(x[0],x[1]) for x in points])
+            ax.set_xlim(boundaries[:,0].min(),boundaries[:,0].max())
+            ax.set_ylim(boundaries[:,1].min(),boundaries[:,1].max())
+            if pythonVersion == 3: # Only possible in python 3
+                ax.forceGridUpdate()
 
 
-    fig.add_subplot(ax)
-    ax.set_aspect(1.)
+        fig.add_subplot(ax)
+        ax.set_aspect(1.)
     ax.grid(True, zorder=0)
     
-    if not np.isclose(ax.sample.projectionAngle,np.pi/2.0,atol=0.001):
-        ax.axis["top"].major_ticklabels.set_visible(True)
-        ax.axis["right"].major_ticklabels.set_visible(True)
+    if ax.rlu:
+        if not np.isclose(ax.sample.projectionAngle,np.pi/2.0,atol=0.001):
+            ax.axis["top"].major_ticklabels.set_visible(True)
+            ax.axis["right"].major_ticklabels.set_visible(True)
 
+    
     ax.format_coord = ax.sample.format_coord
-    ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
+    
+    
+    if ax.rlu:
+        ax.set_axis = lambda v1,v2,*args: set_axis(ax,v1,v2,*args)
 
-    def beautifyLabel(vec):
-        Vec = [x.astype(int) if np.isclose(x.astype(float)-x.astype(int),0.0) else x.astype(float) for x in vec]
-        return '{} [RLU]'.format(', '.join([str(x) for x in Vec]))
+        def beautifyLabel(vec):
+            Vec = [x.astype(int) if np.isclose(x.astype(float)-x.astype(int),0.0) else x.astype(float) for x in vec]
+            return '{} [RLU]'.format(', '.join([str(x) for x in Vec]))
 
-    ax.set_xlabel(beautifyLabel(ax.sample.projectionVector1))
-    ax.set_ylabel(beautifyLabel(ax.sample.projectionVector2))
+        ax.set_xlabel(beautifyLabel(ax.sample.projectionVector1))
+        ax.set_ylabel(beautifyLabel(ax.sample.projectionVector2))
 
-    if pythonVersion==3: # Only for python 3
+    else:
+        ax.set_xlabel('Qx [1/AA')
+        ax.set_xlabel('Qy [1/AA')
+    
+    def onclick(ax, event,Qx,Qy,data,outputFunction): # pragma: no cover
+        if event.xdata is not None and ax.in_axes(event):
+            try:
+                C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
+            except:
+                pass
+            else:
+                if C != 0:# or ax.drawState != States.INACTIVE:
+                    return
+        if not ax.in_axes(event):
+            return
+        printString = ''
+        printString+=ax.format_coord(event.xdata, event.ydata)+', '
+        QX = np.array(Qx[0])
+        QY = np.array(Qy[0])
+        
+        Qx = 0.25*(QX[1:,1:]+QX[:-1,:-1]+QX[1:,:-1]+QX[:-1,1:])
+        Qy = 0.25*(QY[1:,1:]+QY[:-1,:-1]+QY[1:,:-1]+QY[:-1,1:])
+
+        arg = np.argmin(np.linalg.norm(np.array([Qx,Qy])-np.array([event.xdata,event.ydata]).reshape(2,1,1),axis=0))
+        arg2D = np.unravel_index(arg,Qx.shape)
+        
+        cts = data[0][0][arg2D[0],arg2D[1]]
+        Norm = data[1][0][arg2D[0],arg2D[1]]
+        Mon = data[2][0][arg2D[0],arg2D[1]]
+        NC = data[3][0][arg2D[0],arg2D[1]]
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            Intensity = np.divide(cts*NC,Norm*Mon)
+
+        localSize = np.linalg.norm(np.array([QX[arg2D[0],arg2D[1]]-Qx[arg2D[0],arg2D[1]],QY[arg2D[0],arg2D[1]]-Qy[arg2D[0],arg2D[1]]]))
+
+        if not np.isfinite(Intensity) or np.linalg.norm(np.array([Qx[arg2D[0],arg2D[1]]-event.xdata,Qy[arg2D[0],arg2D[1]]-event.ydata]))>localSize:
+            printString+='I = NaN'
+        else:
+            printString+='I = {:.4E}'.format(Intensity)
+            printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+        if not ax.suppressPrint:
+            outputFunction(printString)
+
+    if not withoutOnClick:
+        ax.onClick = lambda x: onclick(ax,x,ax.Qx,ax.Qy,[ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount],outputFunction=ax.outputFunction)
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event', ax.onClick)
+    
+
+
+    if ax.rlu: # 
         ax.calculateTicks = lambda value:calculateTicks(value,ax.sample.projectionAngle)
         ax.forceGridUpdate = lambda:forceGridUpdate(ax)
         ax._oldXlimDiff = np.diff(ax.get_xlim())

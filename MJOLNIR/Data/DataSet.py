@@ -13,7 +13,7 @@ from matplotlib.collections import PatchCollection,PolyCollection
 import matplotlib.ticker as ticker
 from matplotlib.patches import Polygon
 from MJOLNIR.Data import Viewer3D,RLUAxes
-from MJOLNIR.Data import Mask
+from MJOLNIR import _interactiveSettings
 import MJOLNIR.Data.DataFile
 import MJOLNIR.Data.Sample
 from MJOLNIR import _tools
@@ -28,9 +28,9 @@ import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
 from scipy.ndimage import gaussian_filter
 from MJOLNIR._interactiveSettings import States, cut1DHolder
-from MJOLNIR.Data.DraggableShapes import prepareInteractiveCutting, DraggableCircle, DraggableRectangle, \
-    extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle, DraggableRectanglePerpendicular,extractCut1DPropertiesRectanglePerpendicular,\
-        DraggableRectangleHorizontal,extractCut1DPropertiesRectangleHorizontal,DraggableRectangleVertical, extractCut1DPropertiesRectangleVertical
+# from MJOLNIR.Data.DraggableShapes import prepareInteractiveCutting, DraggableCircle, DraggableRectangle, \
+#     extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle, DraggableRectanglePerpendicular,extractCut1DPropertiesRectanglePerpendicular,\
+#         DraggableRectangleHorizontal,extractCut1DPropertiesRectangleHorizontal,DraggableRectangleVertical, extractCut1DPropertiesRectangleVertical
 #from MJOLNIR.Data.DraggableShapes import extractCut1DProperties, clearBoxes
 
 # from shapely.geometry import Polygon as PolygonS
@@ -38,6 +38,7 @@ from MJOLNIR.Data.DraggableShapes import prepareInteractiveCutting, DraggableCir
 # from shapely.vectorized import contains
 import time
 from MJOLNIR.Data import Viewer3DPyQtGraph
+from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
 from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import warnings
 from ufit import Dataset
@@ -645,7 +646,7 @@ class DataSet(object):
         
         
         if ax is None:
-            ax = generate1DAxis(q1, q2,rlu=rlu,showEnergy=showEnergy)
+            ax = generate1DAxis(q1, q2,ds=self ,rlu=rlu,showEnergy=showEnergy)
             ax.Data = Data
             if showEnergy:
                 ax.energy = np.mean(Data['Energy'])
@@ -996,7 +997,7 @@ class DataSet(object):
         
 
         if ax is None:
-            ax = generate1DAxis(q1,q2,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction)
+            ax = generate1DAxis(q1,q2,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction)
         
         # Add orthogonal positions to axes
         ax.width = width
@@ -1032,7 +1033,24 @@ class DataSet(object):
 
         ax.set_ylabel('E [mev]')
         ax.ds = self
-        
+        ax.width = width
+        ax.minPixel = minPixel
+
+        if not cut1DFunctionRectanglePerpendicular is None:
+            ax.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectanglePerpendicular(ax,dr)
+        else:
+            ax.cut1DFunctionRectanglePerpendicular = None
+
+        if not cut1DFunctionRectangleHorizontal is None:
+            ax.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontal(ax,dr)
+        else:
+            ax.cut1DFunctionRectangleHorizontal = None
+
+        if not cut1DFunctionRectangleVertical is None:
+            ax.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(ax,dr)
+        else:
+            ax.cut1DFunctionRectangleVertical = None
+
         if colorbar:
             ax.get_figure().colorbar(ax.pmeshs[0])
 
@@ -1047,83 +1065,10 @@ class DataSet(object):
         
         ax.to_csv = lambda fileName: to_csv(fileName,ax)
 
-        Draggables = [DraggableRectanglePerpendicular,DraggableRectangleHorizontal,DraggableRectangleVertical]
-
-        
-        def cut1DFunctionRectangleDefault(self,dr):
-            global cut1DHolder
-            parameters = extractCut1DPropertiesRectanglePerpendicular(dr.rect,self.ds.sample[0])
-            
-            # Convert center point into actual position in Q
-            middlePoint = ax.calculatePosition(parameters['center'][0]).T
-            
-            del parameters['center'] # remove the 'center' as it is not allowed in plotCut1D
-
-            # transform the orthogonal vector if needed 
-            
-            if rlu:
-                orthogonalVector = np.cross(self.ds.sample[0].planeNormal,ax.plotDirection.flatten())
-                orthogonalVector*=1/np.linalg.norm(orthogonalVector)
-            else:
-                orthogonalVector = np.array([ax.plotDirection[1],-ax.plotDirection[0]])
-            
-            
-            parameters['q1'] = middlePoint
-            parameters['q2'] = middlePoint+orthogonalVector
-
-            parameters['minPixel'] = minPixel
-            cut1DHolder.append([self.ds.plotCut1D(**parameters,extend=True)])
-        
-        def cut1DFunctionRectangleHorizontalDefault(self,dr):
-            global cut1DHolder
-            parameters = extractCut1DPropertiesRectangleHorizontal(dr.rect,self.ds.sample[0])
-            
-            # Convert center point into actual position in Q
-            parameters['q1'] = ax.calculatePosition(parameters['q1'][0]).T
-            parameters['q2'] = ax.calculatePosition(parameters['q2'][0]).T
-            
-            parameters['minPixel'] = minPixel
-            parameters['width'] = width
-
-            cut1DHolder.append([self.ds.plotCut1D(**parameters)])
-
-        def cut1DFunctionRectangleVerticalDefault(self,dr):
-            global cut1DHolder
-            parameters = extractCut1DPropertiesRectangleVertical(dr.rect,self.ds.sample[0])
-            
-            # Convert center point into actual position in Q
-            parameters['q'] = ax.calculatePosition(parameters['q']).T
-            
-            
-            parameters['minPixel'] = ax.dE
-            parameters['width'] = width
-            cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
         
 
-            
-
-        if cut1DFunctionRectanglePerpendicular is None:
-
-            ax.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectangleDefault(ax,dr)
-        else:
-            ax.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectanglePerpendicular(ax,dr)
-
-        if cut1DFunctionRectangleHorizontal is None:
-
-            ax.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontalDefault(ax,dr)
-        else:
-            ax.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontal(ax,dr)
-
-        if cut1DFunctionRectangleVertical is None:
-            ax.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVerticalDefault(ax,dr)
-        else:
-            ax.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(ax,dr)
-
-        DraggableFunctions = [ax.cut1DFunctionRectanglePerpendicular,ax.cut1DFunctionRectangleHorizontal,ax.cut1DFunctionRectangleVertical]
-
-        prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
-
-
+        ax.type = 'QE'
+        #ax = _interactiveSettings.setupModes(ax)
 
         
         return ax,data,bins
@@ -1291,16 +1236,17 @@ class DataSet(object):
             
             ax.set_clim(minVal,maxVal)
         ax.pmeshs = pmeshs
-        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,Data,outputFunction=outputFunction))
+        ax.onClick = lambda event:onclick(event,ax,Data,outputFunction=outputFunction)
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
         if colorbar:
             ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
 
         return ax,Data,qbins
 
     @_tools.KwargChecker()
-    @_tools.overWritingFunctionDecorator(RLUAxes.createRLUAxes)
-    def createRLUAxes(*args,**kwargs): # pragma: no cover
-        raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createRLUAxes))
+    @_tools.overWritingFunctionDecorator(RLUAxes.createQAxis)
+    def createQAxis(*args,**kwargs): # pragma: no cover
+        raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQAxis))
 
     @_tools.KwargChecker()
     @_tools.overWritingFunctionDecorator(RLUAxes.createQEAxes)
@@ -1400,10 +1346,7 @@ class DataSet(object):
             I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor,DS.sample,DS.maskIndices
             self = DS
         if ax is None:
-            if rlu is True:
-                ax = self.createRLUAxes()
-            else:
-                fig,ax = plt.subplots()
+            ax = self.createQAxis(rlu=rlu)
 
             _3D = False
         else:
@@ -1429,15 +1372,15 @@ class DataSet(object):
         else:
             cmap = None
 
-        intensity = []
-        monitorCount = []
-        Normalization = []
-        NormCount = []
-        Int = []
-        xBins = []
-        yBins = []
-        offset = [] # Only used for binning in polar
-        pmeshs = []
+        ax.intensity = []
+        ax.monitorCount = []
+        ax.Normalization = []
+        ax.NormCount = []
+        ax.Int = []
+        ax.xBins = []
+        ax.yBins = []
+        ax.offset = [] # Only used for binning in polar
+        ax.pmeshs = []
 
         binnings = ['xy','polar']
         if not binning in binnings:
@@ -1462,64 +1405,64 @@ class DataSet(object):
                         if bins > 200:
                             break
                     if bins > 200: # If everything has been covered, do nothing.
-                        offset.append(0.0)
+                        ax.offset.append(0.0)
                     else:
-                        offset.append(2*np.pi-h[1][np.argmax(h[0]==0)]) # Move highest value of lump to fit 2pi
-                        x = np.mod(x+offset[-1],2*np.pi)-np.pi # moves part above 2pi to lower than 2pi and make data fit in range -pi,pi
-                        offset[-1]-=np.pi # As x is moved by pi, so should the offset
+                        ax.offset.append(2*np.pi-h[1][np.argmax(h[0]==0)]) # Move highest value of lump to fit 2pi
+                        x = np.mod(x+ax.offset[-1],2*np.pi)-np.pi # moves part above 2pi to lower than 2pi and make data fit in range -pi,pi
+                        ax.offset[-1]-=np.pi # As x is moved by pi, so should the offset
                 else:
-                    offset.append(0.0)
+                    ax.offset.append(0.0)
 
                 y = np.linalg.norm([qx[e_inside],qy[e_inside]],axis=0)  
                 if not enlargen:
-                    xBins.append(np.arange(-np.pi,np.pi+xBinTolerance*0.999,xBinTolerance)) # Add tolerance as to ensure full coverage of parameter
-                    yBins.append(np.arange(0,np.max(y)+yBinTolerance*0.999,yBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                    ax.xBins.append(np.arange(-np.pi,np.pi+xBinTolerance*0.999,xBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                    ax.yBins.append(np.arange(0,np.max(y)+yBinTolerance*0.999,yBinTolerance)) # Add tolerance as to ensure full coverage of parameter
                 else:
-                    xBins.append(_tools.binEdges(x,tolrance=xBinTolerance))
-                    yBins.append(_tools.binEdges(y,tolerance=yBinTolerance))
+                    ax.xBins.append(_tools.binEdges(x,tolrance=xBinTolerance))
+                    ax.yBins.append(_tools.binEdges(y,tolerance=yBinTolerance))
 
             elif binning == 'xy':
                 x = qx[e_inside]
                 y = qy[e_inside]
                 if not enlargen:
-                    xBins.append(np.arange(np.min(x),np.max(x)+0.999*xBinTolerance,xBinTolerance)) # Add tolerance as to ensure full coverage of parameter
-                    yBins.append(np.arange(np.min(y),np.max(y)+0.999*yBinTolerance,yBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                    ax.xBins.append(np.arange(np.min(x),np.max(x)+0.999*xBinTolerance,xBinTolerance)) # Add tolerance as to ensure full coverage of parameter
+                    ax.yBins.append(np.arange(np.min(y),np.max(y)+0.999*yBinTolerance,yBinTolerance)) # Add tolerance as to ensure full coverage of parameter
                 else:
-                    xBins.append(_tools.binEdges(x,tolerance=xBinTolerance))
-                    yBins.append(_tools.binEdges(y,tolerance=yBinTolerance))
+                    ax.xBins.append(_tools.binEdges(x,tolerance=xBinTolerance))
+                    ax.yBins.append(_tools.binEdges(y,tolerance=yBinTolerance))
             
             X = x.flatten()
             Y = y.flatten()
             
-            intensity.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=I[e_inside])[0].astype(I.dtype))
-            monitorCount.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=Monitor[e_inside])[0].astype(Monitor.dtype))
-            Normalization.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=Norm[e_inside])[0].astype(Norm.dtype))
-            NormCount.append(np.histogram2d(X,Y,bins=(xBins[i],yBins[i]),weights=np.ones_like(I[e_inside]))[0].astype(I.dtype))
+            ax.intensity.append(np.histogram2d(X,Y,bins=(ax.xBins[i],ax.yBins[i]),weights=I[e_inside])[0].astype(I.dtype))
+            ax.monitorCount.append(np.histogram2d(X,Y,bins=(ax.xBins[i],ax.yBins[i]),weights=Monitor[e_inside])[0].astype(Monitor.dtype))
+            ax.Normalization.append(np.histogram2d(X,Y,bins=(ax.xBins[i],ax.yBins[i]),weights=Norm[e_inside])[0].astype(Norm.dtype))
+            ax.NormCount.append(np.histogram2d(X,Y,bins=(ax.xBins[i],ax.yBins[i]),weights=np.ones_like(I[e_inside]))[0].astype(I.dtype))
                 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                Int.append(np.divide(intensity[-1]*NormCount[-1],monitorCount[-1]*Normalization[-1]))
+                ax.Int.append(np.divide(ax.intensity[-1]*ax.NormCount[-1],ax.monitorCount[-1]*ax.Normalization[-1]))
 
         if binning == 'polar':
-            Qx = [np.outer(np.cos(xBins[i]-offset[i]),yBins[i]) for i in range(len(intensity))]
-            Qy = [np.outer(np.sin(xBins[i]-offset[i]),yBins[i]) for i in range(len(intensity))]
+            ax.Qx = [np.outer(np.cos(ax.xBins[i]-ax.offset[i]),ax.yBins[i]) for i in range(len(ax.intensity))]
+            ax.Qy = [np.outer(np.sin(ax.xBins[i]-ax.offset[i]),ax.yBins[i]) for i in range(len(ax.intensity))]
 
         elif binning == 'xy':
-            Qx =[np.outer(xBins[i],np.ones_like(yBins[i])) for i in range(len(intensity))]
-            Qy =[np.outer(np.ones_like(xBins[i]),yBins[i]) for i in range(len(intensity))]
+            ax.Qx =[np.outer(ax.xBins[i],np.ones_like(ax.yBins[i])) for i in range(len(ax.intensity))]
+            ax.Qy =[np.outer(np.ones_like(ax.xBins[i]),ax.yBins[i]) for i in range(len(ax.intensity))]
             
         
         if 'vmin' in kwargs:
             vmin = kwargs['vmin']
             kwargs = _tools.without_keys(dictionary=kwargs,keys='vmin')
         else:
-            vmin = np.min([np.nanmin(intens) for intens in Int])
+            vmin = np.min([np.nanmin(intens) for intens in ax.Int])
 
         if 'vmax' in kwargs:
             vmax = kwargs['vmax']
             kwargs = _tools.without_keys(dictionary=kwargs,keys='vmax')
         else:
-            vmax = np.max([np.nanmax(intens) for intens in Int])
+            vmax = np.max([np.nanmax(intens) for intens in ax.Int])
 
         if 'colorbar' in kwargs:
             colorbar = kwargs['colorbar']
@@ -1528,19 +1471,21 @@ class DataSet(object):
             colorbar = False
         pmeshs = []
         if log:
-            Int = [np.log10(1e-20+np.array(intens)) for intens in Int]
+            Int = [np.log10(1e-20+np.array(intens)) for intens in ax.Int]
+        else:
+            Int = [np.array(intens) for intens in ax.Int]
 
         for i in range(len(EBins)-1):
             if _3D:
-                QX = 0.25*np.array(np.array(Qx[i])[1:,1:]+np.array(Qx[i])[:-1,1:]+np.array(Qx[i])[1:,:-1]+np.array(Qx[i])[:-1,:-1])/xScale
-                QY = 0.25*np.array(np.array(Qy[i])[1:,1:]+np.array(Qy[i])[:-1,1:]+np.array(Qy[i])[1:,:-1]+np.array(Qy[i])[:-1,:-1])/yScale
+                QX = 0.25*np.array(np.array(ax.Qx[i])[1:,1:]+np.array(ax.Qx[i])[:-1,1:]+np.array(ax.Qx[i])[1:,:-1]+np.array(ax.Qx[i])[:-1,:-1])/xScale
+                QY = 0.25*np.array(np.array(ax.Qy[i])[1:,1:]+np.array(ax.Qy[i])[:-1,1:]+np.array(ax.Qy[i])[1:,:-1]+np.array(ax.Qy[i])[:-1,:-1])/yScale
                 #QY = np.array(np.array(Qy[i])[1:,1:])
                 I = np.array(Int[i])
                 levels = np.linspace(vmin,vmax,50)
                 pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
             else:
                 ax.grid(False)
-                pmeshs.append(ax.pcolormesh(Qx[i],Qy[i],Int[i],zorder=zorder,cmap=cmap,**kwargs))
+                pmeshs.append(ax.pcolormesh(ax.Qx[i],ax.Qy[i],ax.Int[i],zorder=zorder,cmap=cmap,**kwargs))
         if not _3D:
             ax.set_aspect('equal')
             ax.grid(True, zorder=0)
@@ -1579,94 +1524,24 @@ class DataSet(object):
             ax.drs = []
             ax.EMin = EMin
             ax.EMax = EMax
-
-            # The two possible draggables:
-            Draggables = [DraggableCircle,DraggableRectangle]
-
-            ## Define the cut functions to be called
-            def cut1DFunctionRectangleDefault(self,dr):
-                global cut1DHolder
-                parameters = extractCut1DPropertiesRectangle(dr.rect,self.sample)
-                
-                EMin = self.EMin
-                EMax = self.EMax
-                cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
-
-
-            def cut1DFunctionCircleDefault(self,dr):
-                global cut1DHolder
-                parameters = extractCut1DPropertiesCircle(dr.circ,self.sample)
-                parameters['E1'] = self.ds.energy.min()
-                parameters['E2'] = self.ds.energy.max()
-                parameters['minPixel'] = self.EMax-self.EMin
-                
-                cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
-
-            if cut1DFunctionRectangle is None:
-                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangleDefault(ax,dr)
-            else:
-                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(ax,dr)
-            
-            if cut1DFunctionCircle is None:
-                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircleDefault(ax,dr)
-            else:
-                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(ax,dr)
+            ax.outputFunction = outputFunction
             
 
-            DraggableFunctions = [ax.cut1DFunctionCircle,ax.cut1DFunctionRectangle]
+            ax.cut1DFunctionRectangle = cut1DFunctionRectangle
 
-            prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
+            ax.cut1DFunctionCircle = cut1DFunctionCircle
+
+            #ax.type = 'QPlane'
+            #ax = _interactiveSettings.setupModes(ax)
             
-
-            def onclick(ax, event,Qx,Qy,data,outputFunction): # pragma: no cover
-                if event.xdata is not None and ax.in_axes(event):
-                    try:
-                        C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
-                    except:
-                        pass
-                    else:
-                        if C != 0 or ax.drawState != States.INACTIVE:
-                            return
-                if not ax.in_axes(event):
-                    return
-                printString = ''
-                printString+=ax.format_coord(event.xdata, event.ydata)+', '
-                QX = np.array(Qx[0])
-                QY = np.array(Qy[0])
-                
-                Qx = 0.25*(QX[1:,1:]+QX[:-1,:-1]+QX[1:,:-1]+QX[:-1,1:])
-                Qy = 0.25*(QY[1:,1:]+QY[:-1,:-1]+QY[1:,:-1]+QY[:-1,1:])
-
-                arg = np.argmin(np.linalg.norm(np.array([Qx,Qy])-np.array([event.xdata,event.ydata]).reshape(2,1,1),axis=0))
-                arg2D = np.unravel_index(arg,Qx.shape)
-                
-                cts = data[0][0][arg2D[0],arg2D[1]]
-                Norm = data[1][0][arg2D[0],arg2D[1]]
-                Mon = data[2][0][arg2D[0],arg2D[1]]
-                NC = data[3][0][arg2D[0],arg2D[1]]
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    Intensity = np.divide(cts*NC,Norm*Mon)
-
-                localSize = np.linalg.norm(np.array([QX[arg2D[0],arg2D[1]]-Qx[arg2D[0],arg2D[1]],QY[arg2D[0],arg2D[1]]-Qy[arg2D[0],arg2D[1]]]))
-
-                if not np.isfinite(Intensity) or np.linalg.norm(np.array([Qx[arg2D[0],arg2D[1]]-event.xdata,Qy[arg2D[0],arg2D[1]]-event.ydata]))>localSize:
-                    printString+='I = NaN'
-                else:
-                    printString+='I = {:.4E}'.format(Intensity)
-                    printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-                if not ax.suppressPrint:
-                    outputFunction(printString)
-            ax.cid = ax.figure.canvas.mpl_connect('button_press_event', lambda x: onclick(ax,x,Qx,Qy,[intensity,monitorCount,Normalization,NormCount],outputFunction=outputFunction))
-            
-        if len(Qx)!=0:
-            xmin = np.min([np.min(qx) for qx in Qx])
-            xmax = np.max([np.max(qx) for qx in Qx])
+        if len(ax.Qx)!=0:
+            xmin = np.min([np.min(qx) for qx in ax.Qx])
+            xmax = np.max([np.max(qx) for qx in ax.Qx])
             ax.set_xlim(xmin,xmax)#np.min(Qx),np.max(Qx))
         
-        if len(Qy)!=0:
-            ymin = np.min([np.min(qy) for qy in Qy])
-            ymax = np.max([np.max(qy) for qy in Qy])
+        if len(ax.Qy)!=0:
+            ymin = np.min([np.min(qy) for qy in ax.Qy])
+            ymax = np.max([np.max(qy) for qy in ax.Qy])
             ax.set_ylim(ymin,ymax)#np.min(Qy),np.max(Qy))
 
         if not _3D:
@@ -1692,9 +1567,9 @@ class DataSet(object):
 
                 ax.d.to_csv(fileName,mode='a')
             ax.to_csv = lambda fileName: to_csv(fileName,ax)
-            ax.bins = [Qx,Qy]
-            ax.data = [intensity,monitorCount,Normalization,NormCount]
-        return [intensity,monitorCount,Normalization,NormCount],[Qx,Qy],ax
+            ax.bins = [ax.Qx,ax.Qy]
+            ax.data = [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount]
+        return [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount],[ax.Qx,ax.Qy],ax
 
     @_tools.KwargChecker()
     def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
@@ -2171,10 +2046,13 @@ class DataSet(object):
                 index = ax.calculateIndex(x)[0] # index of dataset
                 dataIndex = ax.calculateDataIndex(x,y)
                 Int = ax.Data[index]['Int'].iloc[dataIndex]
-                return  ", ".join([label+" = "+ax.fmtPrecisionString.format(x) for x,label in zip([*pos,y],labels)])+', {:.3e}'.format(Int)
+                returnString = ", ".join([label+" = "+ax.fmtPrecisionString.format(x) for x,label in zip([*pos,y],labels)])+', I = {:.3e}'.format(Int)
+                
+                return  returnString
                 
 
-
+            ax.outputFunction = outputFunction
+            ax.ds = self
             ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
             ax.format_coord = lambda x,y: format_coord(x,y,ax)
 
@@ -2276,9 +2154,12 @@ class DataSet(object):
                 ax.xaxis.set_ticks(positions)
 
 
+            #ax.type = 'QELine'
+            #ax = _interactiveSettings.setupModes(ax)
+
             ax.get_figure().tight_layout()
 
-            def onclick(event,ax,outputFunction):# pragma: no cover
+            def onclick(event,ax):# pragma: no cover
                 if ax.in_axes(event):
                     try:
                         C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -2290,7 +2171,7 @@ class DataSet(object):
 
                     x = event.xdata
                     y = event.ydata
-                    printString = ax.format_coord(x,y)
+                    printString = ax.format_coord(x,y).replace(' [resolution]','')
                     
                     index = ax.calculateIndex(x)[0] # index of dataset
                     dataIndex = ax.calculateDataIndex(x,y)
@@ -2300,10 +2181,16 @@ class DataSet(object):
                     Norm = float(ax.Data[index]['Normalization'].iloc[dataIndex])
                     NC = int(ax.Data[index]['BinCount'].iloc[dataIndex])
                     printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
-                    outputFunction(printString)
 
-            ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,outputFunction=print))
+                    
+                    ax.outputFunction(printString)
 
+            # def onkeypress(event,ax):
+            #     if event.key in ['r']:
+            #         ax.resolutionMode = not ax.resolutionMode    
+            ax.onClick = lambda event:onclick(event,ax)
+            ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
+            # ax._key_press_event    = ax.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, ax) )
             return ax,DataList, BinList
             
         else: 
@@ -2907,8 +2794,10 @@ class DataSet(object):
         return ax, Data, Bins
 
 
-    @_tools.KwargChecker(function=createRLUAxes)
-    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
+    @_tools.KwargChecker(function=createQAxis)
+    def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
+               instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
+               cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2940,12 +2829,14 @@ class DataSet(object):
             - outputFunction (func): Function to print the format_coord when the user clicks the axis (default print)
 
             - CurratAxeBraggList (list): List of Bragg reflections used to calulcate Currat-Axe spurions (default None)
+            
+            - plotCurratAxe (bool): Flag to determine whether or not to plot the Currat-Axe spurions
 
             - cut1DFunctionRectangle (function): Function to be called when generating interactive rectangle cut (default None)
 
             - cut1DFunctionCircle (function): Function to be called when generating interactive circle cut (default None)
 
-            - kwargs: The remaining kwargs are given to the createRLUAxes method, intended for tick mark positioning (see createRLUAxes)
+            - kwargs: The remaining kwargs are given to the createQAxis method, intended for tick mark positioning (see createQAxis)
 
         If one plots not using RLU, everything is plotted in real units (1/AA), and the Qx and QY is not rotated. That is, the
         x axis in energy is not along the projection vector. The cuts of constant Qx and Qy does not represent any symmetry directions in
@@ -2957,13 +2848,33 @@ class DataSet(object):
         """
 
         if rlu:
-            rluax = self.createRLUAxes(**kwargs)
+            rluax = self.createQAxis(**kwargs)
             figure = rluax.get_figure()
             figure.delaxes(rluax)
             qxEax = self.createQEAxes(axis=1,figure=figure)
             figure.delaxes(qxEax)
+
+            # qxEax.outputFunction = outputFunction
+            # qxEax.ds = self
+            # qxEax.dE = dE
+
+            # qxEax.onClick = lambda *args,**kwargs: print(*args,**kwargs)
+            # qxEax.type = 'QELineView3D'
+            # qxEax.rlu = True
+            
+            # qxEax = _interactiveSettings.setupModes(qxEax)
+
+
             qyEax = self.createQEAxes(axis=0,figure=figure)
             figure.delaxes(qyEax)
+
+            # qyEax.outputFunction = outputFunction
+            # qyEax.ds = self
+            # qyEax.dE = dE
+
+            # qyEax.type = 'QELineView3D'
+            # qyEax = _interactiveSettings.setupModes(qyEax)
+
             if instrumentAngles:
                 from MJOLNIR import TasUBlibDEG as TasUBlib
             
@@ -3247,7 +3158,9 @@ class DataSet(object):
         
         ax.__format_coord__ = lambda x,y: format_coord(x,y,X=np.concatenate(ax.X,axis=0),labels=ax.__labels__)
         ax.format_coord = lambda x,y: ax.__format_coord__(x,y)
-        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,outputFunction=outputFunction))
+
+        ax.onClick = lambda event: onclick(event,ax,outputFunction=outputFunction)
+        ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
         #        ax.format_xdata = lambda x: format_xdata(x,ax)#ax.X,ax.xlabels)
         ax.set_xlabel(ax.xlabels[0])
         if legend:
@@ -3593,7 +3506,87 @@ class DataSet(object):
         if not self._maskingObject is None:
             self.mask = [np.zeros_like(df.I,dtype=bool) for df in self]
             self._maskingObject = None
+
+    def FindEi(self,deltaE):
+        Eis = np.array([df.Ei[0] for df in self])
+        Efs = [np.array([df.instrumentCalibrationEf[:,1].min(),df.instrumentCalibrationEf[:,1].max()]) for df in self]
             
+        EiRange = [deltaE+Ef for Ef in Efs]
+        
+        inside = [np.all([Ei>EiR[0],Ei<EiR[1]]) for Ei,EiR in zip(Eis,EiRange)]
+        
+        correctEi = np.unique(np.round(Eis[inside],2))
+        return correctEi
+
+    def calculateResolutionMatrix(self,position,Ei,Ef,rlu=True):
+        """Calculate the resolution ellipsoid matrix at a specific point in reciprocal space
+        
+        Args:
+
+            - position (list): Position in either HKL or Qx,Qy
+            
+            - Ei (float): Incoming energy in meV
+
+            - Ef (float): Outgoing energy in meV
+
+        Kwargs:
+
+            - rlu (bool): If true, position is calculated in reciprocal lattice units, otherwise in QxQy (default True)
+
+
+        Method is based on thew updated calculation from "Analytiucal approach to the 4D-resolution functiuon of three axes neutron spectrometers
+        with focussing monochromators ananalysers" - C. Eckold, O. Sobolev doi: 10.1016/j.nima.2014.03.019
+
+        
+        """
+        return calculateResoultionMatrix(sample=self[0].sample,position=position,Ei=Ei,Ef=Ef,rlu=rlu,binning=self[0].binning,A3Off=self[0].sample.theta)
+
+    def calculateResolutionMatrixAndVectors(self,position,projectionVector1,projectionVector2,Ei,Ef,rlu=True,rluAxis=False):
+        """Calculate the resolution ellipsoid matrix at a specific point in reciprocal space and project to plane
+        
+        Args:
+
+            - position (list): Position in either HKL or Qx,Qy
+
+            - projectionVector1 (HKLE or QxQyQzE): Projection vector in 4D of unit length
+            
+            - Ei (float): Incoming energy in meV
+
+            - Ef (float): Outgoing energy in meV
+
+        Kwargs:
+
+            - rlu (bool): If true, position is calculated in reciprocal lattice units, otherwise in QxQy (default True)
+
+            - rluAxis (bool): If plotting on rluAxis counter rotate eigen vectors with RotMat (default False)
+
+
+        Projection matrix is given by two projections vectors with unit length.
+        
+        """
+        M = self.calculateResolutionMatrix(position,Ei,Ef,rlu=rlu)
+        
+        P = np.zeros((3,5))
+        P[0,:-1] = projectionVector1
+        P[1,:-1] = projectionVector2
+        P[-1,-1] = -1
+
+        Q = np.diag([0,0,0,0.0,-1.0])
+        Q[:4,:4] = M#
+        
+        # Calculate projection onto orthogonal directions
+        C = np.linalg.inv(np.dot(P,np.dot(np.linalg.inv(Q),P.T)))
+        
+        eigenValues,eigenVectors = np.linalg.eig(C[:2,:2])
+    
+        sigma = np.power(eigenValues,-0.5)
+        
+        
+        if rluAxis:
+            eigenVectors[:,0] = np.dot(eigenVectors[:,0],self[0].sample.RotMat.T)
+            eigenVectors[:,1] = np.dot(eigenVectors[:,1],self[0].sample.RotMat.T)
+        
+        return M,eigenVectors,sigma
 
 
 
@@ -3930,7 +3923,7 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False
 #    
 #    if ax is None:
 #    #        if RLUPlot:
-#    #            ax = self.createRLUAxes()
+#    #            ax = self.createQAxis()
 #    #        else:
 #        plt.figure()
 #        ax = plt.gca()
@@ -5335,7 +5328,7 @@ def convertToHKL(sample,QxQy):
     return np.array([H,K,L]).T
 
 
-def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print):
+def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print):
     fig,ax = plt.subplots()
     ax = plt.gca()
     q1 = np.array(q1,dtype=float)
@@ -5352,6 +5345,9 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
     ax.startPoint = q1
     ax.endPoint = q2
     
+    ax.rlu = rlu
+    ax.ds = ds
+
     # Energy defined from cut but needs to be overwritten later
     ax.energy = -1000.0
     
@@ -5407,7 +5403,8 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
     
     # Add methods to the axis
     
-    
+    ax.outputFunction = outputFunction
+    ax.suppressPrint = False
 
     ax._x_precision = 2
     ax.fmtPrecisionString = '{:.'+str(2)+'f}'
@@ -5431,7 +5428,7 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
     ax.calculateXPrecision(ax)
     
     # Format the x label as well as the format_coord
-    if rlu==False:
+    if ax.rlu  is False:
         xlabel = r'[$Q_x [\AA^{-1}]$, $Q_y [\AA^{-1}]$'
         if showEnergy:
             xlabel = xlabel +', E [meV]]'
@@ -5459,14 +5456,16 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
         def format_coord(x,y,ax):# pragma: no cover
             h,k,l = ax.calculatePosition(x)
             if ax._2D:
-                return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}".format(h,k,l,y)
+                returnString = "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}".format(h,k,l,y)
+                
             else:
                 E = ax.energy
                 if showEnergy:
-                    return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}, I = {4:0.4e}".format(h,k,l,E,y)
+                    returnString = "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, E = {3:.3f}, I = {4:0.4e}".format(h,k,l,E,y)
                 else:
-                    return  "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, I = {3:0.4e}".format(h,k,l,y)
-        
+                    returnString = "H = {0:.3e}, K = {1:.3e}, L = {2:.3e}, I = {3:0.4e}".format(h,k,l,y)
+
+            return returnString
     
     # Create a custom major formatter to show the multi-D position on the x-axis
     def major_formatter(ax,tickPosition,tickNumber):
@@ -5478,7 +5477,7 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
     
     # Create the onclick behaviour
-    def onclick(event,ax,Data,outputFunction):# pragma: no cover
+    def onclick(event,ax,Data):# pragma: no cover
         if ax.in_axes(event):
             try:
                 C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -5501,6 +5500,10 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
                 Mon = int(d['Monitor'][index[0]])
                 Norm = float(d['Normalization'][index[0]])
                 NC = int(d['BinCount'][index[0]])
+
+
+                printString+=',Int Point = {:.3e}, Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(Int,cts,Norm,int(Mon),NC)
+                
             else:
                 index = ax.calculateIndex(x)
                 Int = Data['Int'][index]
@@ -5508,8 +5511,10 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
                 Mon = int(Data['Monitor'][index])
                 Norm = float(Data['Normalization'][index])
                 NC = int(Data['BinCount'][index])
-            printString+=',Int Point = {:.3e}, Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(Int,cts,Norm,int(Mon),NC)
-            outputFunction(printString)
+                printString+=',Int Point = {:.3e}, Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(Int,cts,Norm,int(Mon),NC)
+            
+            if not ax.suppressPrint:
+                ax.outputFunction(printString)
     
     # Moce the x label slightly due to its size
     #ax.xaxis.set_label_coords(1.075, -0.025)
@@ -5519,7 +5524,8 @@ def generate1DAxis(q1,q2,rlu=True,showEnergy=True,dimensionality=1,outputFunctio
     
     # connect methods
     ax.format_coord = lambda x,y: format_coord(x,y,ax)
-    ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,ax.Data,outputFunction=outputFunction))
+    ax.onClick = lambda event:onclick(event,ax,ax.Data)
+    ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
     
     ax.callbacks.connect('xlim_changed',ax.calculateXPrecision)
     # Make the layouyt fit
@@ -5562,6 +5568,9 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
         idx = np.argmin(np.abs(binDistance-x))
         return idx
     
+
+    ax.outputFunction = outputFunction
+    ax.supressPrint = False
 
     ax._x_precision = 2
     ax.fmtPrecisionString = '{:.'+str(2)+'f}'
@@ -5616,7 +5625,7 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
     ax.xaxis.set_major_formatter(FuncFormatter(lambda x,i: major_formatter(ax,x,i)))
     
     # Create the onclick behaviour
-    def onclick(event,ax,Data,outputFunction):# pragma: no cover
+    def onclick(event,ax,Data):# pragma: no cover
         if ax.in_axes(event):
             try:
                 C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
@@ -5637,12 +5646,15 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
             Norm = float(Data['Normalization'][index])
             NC = int(Data['BinCount'][index])
             printString+=',Int Point = {:.3e}, Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(Int,cts,Norm,int(Mon),NC)
-            outputFunction(printString)
+
+            if not ax.supressPrint:
+                ax.outputFunction(printString)
     
     
     # connect methods
     ax.format_coord = lambda x,y: format_coord(x,y,ax)
-    ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',lambda event:onclick(event,ax,ax.Data,outputFunction=outputFunction))
+    ax.onClick = lambda event:onclick(event,ax,ax.Data)
+    ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
     
     ax.callbacks.connect('xlim_changed',ax.calculateXPrecision)
     # Make the layouyt fit

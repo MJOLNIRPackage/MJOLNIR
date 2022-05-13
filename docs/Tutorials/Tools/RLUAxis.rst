@@ -21,7 +21,7 @@ This axis is created to easily plot data in RLU for all crystals in the scatteri
    ds.mask = mask
    
    # Create RLU axis
-   ax = ds.createRLUAxes()
+   ax = ds.createQAxis()
    # Get the figure corresponding to the returned axis
    fig = ax.get_figure()
    
@@ -62,7 +62,7 @@ This axis is created to easily plot data in RLU for all crystals in the scatteri
    ds = DataSet.DataSet(fileList)
    ds.convertDataFile(saveFile=False)
    
-   ax = ds.createRLUAxes()
+   ax = ds.createQAxis()
    fig = ax.get_figure()
    
    # The axis should contain v1 and v2
