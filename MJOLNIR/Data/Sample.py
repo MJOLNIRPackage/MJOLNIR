@@ -36,10 +36,9 @@ def camelCase(string,split='_'):
 class Sample(object):
     """Sample object to store all information of the sample from the experiment"""
     @_tools.KwargChecker()
-    def __init__(self,a=1.0,b=1.0,c=1.0,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None):
+    def __init__(self,a=1.0,b=1.0,c=1.0,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None,recalculateUB=False):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0].decode())
-            self.orientationMatrix = np.array(sample.get('orientation_matrix'))*2*np.pi
 
             self.planeNormal = np.array(sample.get('plane_normal'))
             
@@ -49,6 +48,15 @@ class Sample(object):
             self.plane_vector1 = np.array(sample.get('plane_vector_1'))
             self.plane_vector2 = np.array(sample.get('plane_vector_2'))
             crossProduct = np.cross(self.plane_vector1[:3],self.plane_vector2[:3])
+            if recalculateUB: # Recalculate the ub from the given peaks (ignoring sgu and sgl!)
+                self.plane_vector1 = np.delete(self.plane_vector1,3)
+                self.plane_vector1[5:7] = 0.0
+                self.plane_vector2 = np.delete(self.plane_vector2,3)
+                self.plane_vector2[5:7] = 0.0
+                self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell, self.plane_vector1, self.plane_vector2)
+                
+            else:
+                self.orientationMatrix = np.array(sample.get('orientation_matrix'))*2*np.pi
             if not np.all(np.isclose(crossProduct,[0,0,0])):
                 self.planeNormal = crossProduct
             self.A3Off = np.array([0.0])#
