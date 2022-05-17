@@ -303,6 +303,9 @@ class Viewer3D(object):
             # self.axQyE._button_press_event = self.axQyE.get_figure().canvas.mpl_connect('button_press_event', self.axQyE.onClickFunction)
         else:
             self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
+            self.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction)
+            self.button_press_event = self.figure.canvas.mpl_connect('button_press_event', self.onClickFunction)
+            
         
         
         try:
