@@ -18,7 +18,6 @@ import numpy as np
 from MJOLNIR import _tools
 from matplotlib.patches import Ellipse
 from mpl_toolkits.axisartist import SubplotHost
-from MJOLNIR._interactiveSettings import States
 import warnings
 try:
     from mpl_toolkits.axisartist.grid_helper_curvelinear import \
