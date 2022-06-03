@@ -4,7 +4,12 @@ import numpy as np
 from enum import Enum
 from matplotlib.patches import Ellipse,Rectangle,Circle
 from matplotlib.backend_bases import MouseButton
-import matplotlib.backends.backend_qt5 as mpl_qt5
+try:
+    import matplotlib.backends.backend_qt5.cursors as cursors
+    mplVersion = None
+except ImportError:
+    from  matplotlib.backend_tools import Cursors as cursors
+    mplVersion = 3.5
 import MJOLNIR
 import os
 import PyQt5.QtCore
@@ -31,14 +36,20 @@ Viewer3DSettings = {'upwards':         ['+','up'  ,'right'],
 # 1D rectangular cuts
 
 interactive1DKeys = {
-                 'cutting':  ['n'],
+                 'cutting':  ['c'],
                  'resolution': ['r']
 }
 
+resolutionSettings = {
+                        'return': ['b'],
+                        'clear':['c'],
+                     }
+
 cut1DSettings = {
                  'new':  ['n'],
-                 'move': ['m'],
+                 'manage': ['m'],
                  'cut':  ['c'],
+                 'return': ['b'],
                 }
 
 
@@ -48,6 +59,9 @@ def setupModes(ax):
     ax._mode = None#_interactiveSettings.Modes.INACTIVE
     
     def setMode(ax,modeName):
+        if hasattr(ax,'isActive'):
+            if not ax.isActive:
+                return
         if not ax._mode is None: # A previous mode was set, deactivate it
             if ax._mode.upper() == modeName.upper(): # if new mode is the same as old, return
                 return
@@ -60,19 +74,24 @@ def setupModes(ax):
         ax._mode = modeName.upper()
         setCursor(ax,pointerType[modeName.upper()])
         ax.get_figure().canvas.draw_idle()
+        
+
     ax.setMode = lambda stateName: setMode(ax,stateName)
-    
     ax.setMode('inactive')
+    
     return ax
 
 
 
 
 def setCursor(ax,cursor):
-    if isinstance(cursor,type(mpl_qt5.cursors.HAND)): # Standard Matplotlib cursor
-        ax.get_figure().canvas.toolbar.set_cursor(cursor)
+    if mplVersion == 3.5:
+        ax.get_figure().canvas.set_cursor(cursor)
     else:
-        ax.get_figure().canvas.setCursor(cursor)
+        if isinstance(cursor,type(cursors.HAND)): # Standard Matplotlib cursor
+            ax.get_figure().canvas.toolbar.set_cursor(cursor)
+        else:
+            ax.get_figure().canvas.setCursor(cursor)
     
 
 interactive1DKeysReversed = {}
@@ -117,11 +136,11 @@ Modes= Enum('Modes', modes)
 
 
 ## Cursor type mode
-pointerType = defaultdict(lambda: mpl_qt5.cursors.POINTER)
+pointerType = defaultdict(lambda: cursors.POINTER)
 # pointerType['RESOLUTION'] = resolutionCursor
 
-#pointerType['CUTTING_INACTIVE'] = CutCursor
-pointerType['CUTTING_EMPTY'] = PyQt5.QtCore.Qt.ForbiddenCursor
+#pointerType['CUTTING_INACTIVE'] = cursors.SELECT_REGION#CutCursor
+#pointerType['CUTTING_EMPTY'] = cursors.SELECT_REGION#PyQt5.QtCore.Qt.ForbiddenCursor
 
 pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
 pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
@@ -169,12 +188,13 @@ def deactivateINACTIVE(ax):
 
 
 def initializeRESOLUTION(ax):
+    
     #print('initializeRESOLUTION')
 
     # Change cursor to signify new mode
     
     # Reset using same key as activated it
-    resetUsingKey(ax,interactive1DKeys['resolution'])
+    resetUsingKey(ax,resolutionSettings['return'])
     # Setup colours needed for plotting
     if not hasattr(ax,'EiColors'):
         colors = np.array(['#ff7f0e',
@@ -200,14 +220,15 @@ def initializeRESOLUTION(ax):
 
     ax.old_format_coord = ax.format_coord
     def format_coord(ax,x,y):
+        if hasattr(ax,'isActive'):
+            if not ax.isActive:
+                return
         returnString = ax.old_format_coord(x,y)
-
         if ax.type in ['QE','QELine','QELineView3D']:
             Eis = ax.ds.FindEi(y)
         elif ax.type == 'QPlane':
             deltaE = np.mean([ax.EMin,ax.EMax])
             Eis = ax.ds.FindEi(deltaE)
-
             
 
         if ax.type in ['QE','QELine','QELineView3D','QPlane']:
@@ -216,9 +237,7 @@ def initializeRESOLUTION(ax):
                 ax.autoscale(False)
             if ax.type in ['QE','QELine','QELineView3D']:
                 if ax.type == 'QELineView3D': # Currently only done with rlu
-                    if not hasattr(ax,'dirVector'):
-                        ax.dirVector = ax.calculateRLU(1,0)[0]-ax.calculateRLU(0,0)[0]
-                    dirVector = ax.dirVector
+                    dirVector = ax.sample.calculateHKLToQxQy(*ax.calculateRLU(1,0)[0])-ax.sample.calculateHKLToQxQy(*ax.calculateRLU(0,0)[0])#ax.calculateRLU(0,0)[0]
 
                 elif ax.type == 'QE':
                     if ax.rlu:
@@ -232,14 +251,14 @@ def initializeRESOLUTION(ax):
                     pos = ax.calculateRLU(x,0)[0]
                 else:
                     pos = ax.calculatePosition(x).flatten()
-            else:
+            else: # QPlane
                 if ax.rlu:
                     pos = ax.sample.calculateQxQyToHKL(x,y).flatten()
                 else:
                     pos = np.array([x, y])
             
             returnString+= ' [resolution]'
-           # If the number of ellipses in ax.resolutionEllipses does not match needed for this energy, fix it!
+            # If the number of ellipses in ax.resolutionEllipses does not match needed for this energy, fix it!
             if len(Eis)>len(ax.resolutionEllipses):
                 for _ in range(len(Eis)-len(ax.resolutionEllipses)):
                         ax.resolutionEllipses.append(Ellipse(xy=np.array([0,0]),width=0.0,height=0.0,edgecolor=[0.0,0.0,0.0,0.0],
@@ -249,24 +268,22 @@ def initializeRESOLUTION(ax):
                 for E in ax.resolutionEllipses[-len(Eis):]:
                     E.remove()
                     del ax.resolutionEllipses[-1]
-
-
-            if ax.type in ['QE','QELine','QELineView3D']:
-
-                P1 = np.array([*dirVector/np.linalg.norm(dirVector),0.0,0.0])
+                
+            if ax.type in ['QELine','QELineView3D','QE']:
+                if ax.type == 'QE':
+                    P1 = np.array([*dirVector/np.linalg.norm(dirVector)**2,0.0,0.0])
+                else:
+                    P1 = np.array([*dirVector/np.linalg.norm(dirVector),0.0,0.0])
                 # Energy direction
                 P2 = np.array([0.0,0.0,0.0,1.0])
-                
+               
 
-                P = np.zeros((3,5))
+                P = np.zeros((3,5),dtype='float')
                 P[0,:-1] = P1
                 P[1,:-1] = P2
                 P[-1,-1] = 1
-
-                
                 for Ei,E in zip(Eis,ax.resolutionEllipses):
                     Ef = Ei-y
-
                     M = ax.ds.calculateResolutionMatrix(pos,Ei,Ef,rlu=ax.rlu)
                     Q = np.diag([0,0,0,0.0,-1.0])
                     Q[:4,:4] = M
@@ -315,15 +332,20 @@ def initializeRESOLUTION(ax):
                 #    E.draw(renderer)
                 ax.get_figure().canvas.draw_idle()
                 
-
         return returnString
     
     ax.format_coord = lambda x,y: format_coord(ax,x,y)
 
-    
+    #if not hasattr(ax,'_button_press_event'): # View3D
+    #    ax.
+    #else:
     ax.old_onClick = ax.onClick
-    ax.figure.canvas.mpl_disconnect(ax._button_press_event)
-    
+    if not hasattr(ax,'_ellipseHolder'):
+        ax._ellipseHolder = []
+
+    if hasattr(ax,'_button_press_event'):
+        ax.figure.canvas.mpl_disconnect(ax._button_press_event)
+        
     if ax.rlu:
         ax.labels = ['H','K','L','E']
     else:
@@ -331,6 +353,15 @@ def initializeRESOLUTION(ax):
 
     ### Generate the onClick function
     def onClick(ax,event):
+        #if not event.inaxes == ax or ax.isActive:
+        #    print('Not in axis',ax,'but rather',event.inaxes)
+        #    return
+        if hasattr(ax,'isActive'):
+            if not ax.isActive:
+                print('Ignoring',ax.type)
+                return
+        
+
         x,y = event.xdata,event.ydata
         printString = ax.old_format_coord(x,y)
 
@@ -338,8 +369,11 @@ def initializeRESOLUTION(ax):
 
             Eis = ax.ds.FindEi(y)
             
-            
-            if ax.type == 'QE':
+            if ax.type == 'QELineView3D': # Currently only done with rlu
+                #if not hasattr(ax,'dirVector'):
+                dirVector = ax.sample.calculateHKLToQxQy(*ax.calculateRLU(1,0)[0])-ax.sample.calculateHKLToQxQy(*ax.calculateRLU(0,0)[0])#ax.calculateRLU(0,0)[0]
+
+            elif ax.type == 'QE':
                 if ax.rlu:
                     dirVector = ax.ds[0].sample.calculateHKLToQxQy(*ax.endPoint)-ax.ds[0].sample.calculateHKLToQxQy(*ax.startPoint)
                 else:
@@ -347,11 +381,17 @@ def initializeRESOLUTION(ax):
             else:
                 dirVector = np.diff(ax.QPoints,axis=0)[ax.calculateIndex(x)[0]]
 
-            pos = ax.calculatePosition(x).flatten()
+            if ax.type == 'QELineView3D':
+                pos = ax.calculateRLU(x,0)[0]
+            else:
+                pos = ax.calculatePosition(x).flatten()
             P = np.zeros((3,5))
             P[-1,-1] = 1
             ## Along cut
-            P[0,:2] = dirVector/np.linalg.norm(dirVector)
+            if ax.type == 'QE': # In the QE axis, x is rescaled with np.linalg.norm(dirVector). Following takes that into account
+                P[0,:2] = dirVector/np.linalg.norm(dirVector)**2
+            else:
+                P[0,:2] = dirVector/np.linalg.norm(dirVector)
             # Energy direction
             P[1,:-1] = np.array([0.0,0.0,0.0,1.0])
             
@@ -374,28 +414,28 @@ def initializeRESOLUTION(ax):
                 
                 ellipseColor = ax.EiColors[Ei]
 
-                M = ax.ds.calculateResolutionMatrix(pos,Ei,Ef,rlu=ax.rlu)
-                Q = np.diag([0,0,0,0.0,-1.0])
-                Q[:4,:4] = M
-                
+
                 # Calculate projection onto orthogonal directions
                 C = np.linalg.inv(np.dot(P,np.dot(np.linalg.inv(Q),P.T)))
                 
                 
-                # if ax.type == 'QE':
-                #     C[0]/=np.linalg.norm(dirVector)**2
+                #if ax.type == 'QE':
+                #    C[0]/=np.linalg.norm(dirVector)
                 eigenValues,eigenVectors = np.linalg.eig(C[:2,:2])
                 sigma = np.power(eigenValues,-0.5)
                     
                 ellipsePoints = eigenVectors[:,0].reshape(2,1)*sigma[0]*np.cos(theta).reshape(1,-1)+eigenVectors[:,1].reshape(2,1)*sigma[1]*np.sin(theta).reshape(1,-1)+np.array([x,y]).reshape(2,1)
                 
-                # if ax.type == 'QE':
-                #     C[0]*=np.linalg.norm(dirVector)**2
-                #     eigenValues,eigenVectors = np.linalg.eig(C[:2,:2])
-                #     sigma = np.power(eigenValues,-0.5)
 
-                ax.plot(*ellipsePoints,zorder=21,color=ellipseColor,label=', '.join([l+' = {:.2f}'.format(x) for l,x in zip(ax.labels,[*pos,y])])+'(Ei={:.2f})'.format(Ei))
+                ax._ellipseHolder.append(ax.plot(*ellipsePoints,zorder=21,color=ellipseColor,label=', '.join([l+' = {:.2f}'.format(x) for l,x in zip(ax.labels,[*pos,y])])+'(Ei={:.2f})'.format(Ei))[0])
                 ax.get_figure().canvas.draw()
+
+
+                if ax.type == 'QE':  # Recalculate the projection due to plotting method of the QE axis
+                    P[0,:2] = dirVector/np.linalg.norm(dirVector)
+                    C = np.linalg.inv(np.dot(P,np.dot(np.linalg.inv(Q),P.T)))
+                    eigenValues,eigenVectors = np.linalg.eig(C[:2,:2])
+                    sigma = np.power(eigenValues,-0.5)
                 printString+='\nReso (Ei={:.2f}):\nM = '.format(Ei)+str(M)+'\nIn projection (In units of 1/AA and meV):\nV1 with sigma={:.4f}, V1 = '.format(sigma[0])+str(eigenVectors[:,0].flatten())+\
                 '\nV2 with sigma={:.4f}, V2 = '.format(sigma[1])+str(eigenVectors[:,1].flatten())
 
@@ -426,12 +466,28 @@ def initializeRESOLUTION(ax):
                 ellipseColor = ax.EiColors[Ei]
                 
                 ellipsePoints = eigenVectors[:,0].reshape(2,1)*sigma[0]*np.cos(theta).reshape(1,-1)+eigenVectors[:,1].reshape(2,1)*sigma[1]*np.sin(theta).reshape(1,-1)+np.array([event.xdata,event.ydata]).reshape(2,1)
-                ax.plot(*ellipsePoints,zorder=21,color=ellipseColor,label=', '.join([l+' = {:.2f}'.format(x) for l,x in zip(ax.labels,[*pos,deltaE])])+'(Ei={:.2f})'.format(Ei))
+                ax._ellipseHolder.append(ax.plot(*ellipsePoints,zorder=21,color=ellipseColor,label=', '.join([l+' = {:.2f}'.format(x) for l,x in zip(ax.labels,[*pos,deltaE])])+'(Ei={:.2f})'.format(Ei))[0])
                 ax.get_figure().canvas.draw()
-                printString+='\nReso (Ei={:.2f}):\nM = '.format(Ei)+str(M)+'\nIn projection (In units of 1/AA and meV):\nV1 with sigma={:.4f}, V1 = '.format(sigma[0])+str(eigenVectors[:,0].flatten())+\
+                printString+='\nReso (Ei={:.2f}, Ef={:.2f}, deltaE={:.2f}):\nM = '.format(Ei,Ef,deltaE)+str(M)+'\nIn projection (In units of 1/AA and meV):\nV1 with sigma={:.4f}, V1 = '.format(sigma[0])+str(eigenVectors[:,0].flatten())+\
                 '\nV2 with sigma={:.4f}, V2 = '.format(sigma[1])+str(eigenVectors[:,1].flatten())
         if not ax.suppressPrint:
             ax.outputFunction(printString)
+
+    
+    def on_key_press(self,event):# pragma: no cover
+        if hasattr(self,'isActive'):
+            if not self.isActive:
+                return
+        if event.key in resolutionSettings['clear']: # clear the ellipses
+            if hasattr(ax,'_ellipseHolder'):
+                for p in ax._ellipseHolder:
+                    p.set_visible(False)
+                    p.remove()
+                else:
+                    ax._ellipseHolder = []
+
+    ax.ellipse_reset_cid = ax.figure.canvas.mpl_connect(
+        'key_press_event', lambda event:on_key_press(ax,event))
 
     ax.onClick = lambda event: onClick(ax,event)
     ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
@@ -439,25 +495,39 @@ def initializeRESOLUTION(ax):
 
 
 def deactivateRESOLUTION(ax):
-    #print('deactivateRESOLUTION')
+    
     ax.format_coord = ax.old_format_coord
     for E in ax.resolutionEllipses:
+        E.set_visible(False)
         E.remove()
-        del ax.resolutionEllipses[-1]
+        #del ax.resolutionEllipses[ax.resolutionEllipses.index(E)]
+        del ax.resolutionEllipses[ax.resolutionEllipses.index(E)]
+        
 
     ax.figure.canvas.mpl_disconnect(ax._button_press_event)
+    ax.get_figure().canvas.draw_idle()
+    
+
+    if hasattr(ax,'ellipse_reset_cid'):
+        ax.figure.canvas.mpl_disconnect(ax.ellipse_reset_cid)
     ax.onClick = ax.old_onClick
     ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
+    
+
 
     ax.get_figure().canvas.draw_idle()
 
 
 
 def CuttingModeCursorManagerHover(axes,event):
+    if hasattr(axes,'isActive'):
+        if not axes.isActive:
+            return
     if not hasattr(axes,'drawState'):
         setCursor(axes,pointerType['CUTTING_EMPTY'])
         return
     state = 'CUTTING_'+axes.drawState.name
+    
     if state == 'CUTTING_INACTIVE' and axes.new>0:
         setCursor(axes,pointerType['CUTTING_WIDTH'])
     else:
@@ -467,11 +537,10 @@ def CuttingModeCursorManagerHover(axes,event):
 
 def initializeCUTTING(ax):
         
-
-    resetUsingKey(ax,['b'])
+    resetUsingKey(ax,cut1DSettings['return'])
     
 
-    if ax.type == 'QE':
+    if ax.type in ['QE']: # QELineView3D
         Draggables = [DraggableRectanglePerpendicular,DraggableRectangleHorizontal,DraggableRectangleVertical]
 
         
@@ -709,6 +778,10 @@ def cancel(self,axes):# pragma: no cover
 
 
 def on_key_press(self,event):# pragma: no cover
+    if hasattr(self,'isActive'):
+        if not self.isActive:
+            return
+    
     if not hasattr(self,'drawState'):
         return
     if hasattr(self,'ax'):
@@ -720,7 +793,7 @@ def on_key_press(self,event):# pragma: no cover
         self.suppressPrint = False
 
         return
-    if event.key in cut1DSettings['move']:
+    if event.key in cut1DSettings['manage']:
         if hasattr(self,'ax'):
             axes = self.ax
         else:
@@ -781,6 +854,9 @@ def on_key_press(self,event):# pragma: no cover
 
 
 def on_press(self,event):# pragma: no cover
+    if hasattr(self,'isActive'):
+        if not self.isActive:
+            return
     if not hasattr(self,'drawState'):
         return
     if hasattr(self,'ax'):
