@@ -1,7 +1,7 @@
 FAQ
 ===
 
-A collection of questions and answers ment to guide the user(s) of the MJOLNIR package through some of the most common pitfalls.
+A collection of questions and answers meant to guide the user(s) of the MJOLNIR package through some of the most common pitfalls.
 
 
 My RLU-axis has its tick marks positions stupidly
@@ -13,10 +13,10 @@ one can specify the number of tick marks on the x and y axis. This number stays 
 different number if needed. Further, specifying only the number of y-axis tick marks the program calculates a suitable number along the x-axis.
 
 
-Everytime I run my script, I am bombarded with 'The file xx exists alread. Old file will be renamed to xx.'-warnings
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Every time I run my script, I am bombarded with 'The file xx exists already. Old file will be renamed to xx.'-warnings
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The warning originates from the fact that a data file with the same name has been converted priviously in the sampe directory, 
+The warning originates from the fact that a data file with the same name has been converted previously in the same directory, 
 and the program then tells you that the old conversion will be moved to a new file with the new name. It only serves as to try 
 to prevent you from saving a conversion on top of another involuntarily. To  silence this annoyance, convert the data files only 
 once or use the 'saveFile=False' flag in the DataSet.convertDataFile() method to not save the converted data.
@@ -25,7 +25,7 @@ once or use the 'saveFile=False' flag in the DataSet.convertDataFile() method to
 I do not want to make use of the features in MJOLNIR but only convert and extract my data. How do I do this?
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-It is definitely possible to convert and extract the data from MJOLNIR without many trouples. Below is a code example:
+It is definitely possible to convert and extract the data from MJOLNIR without many troubles. Below is a code example:
 
 .. code-block:: python
    :linenos:
@@ -151,7 +151,7 @@ I want to created a mask for my data to exclude specific points in Q
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 When dealing with multiple data files at once in a DataSet object, one needs to keep in mind that MJOLNIR does not expect these to be of equal size. That is, there is no requirement for the number of step points to be equal
- (and further, that the instrument is the same for all files). This then results in the mask of at DataSet being a list of np arrays with the same size as the data. Most easily, this is takne care of by looping through the DataFiles in the DataSet as:
+ (and further, that the instrument is the same for all files). This then results in the mask of at DataSet being a list of np arrays with the same size as the data. Most easily, this is taken care of by looping through the DataFiles in the DataSet as:
 
 .. code-block:: python
 
@@ -164,7 +164,7 @@ When dealing with multiple data files at once in a DataSet object, one needs to 
 
     ds.mask = mask
 
-The above code ensures that all points with a value of H larger than 0.0 are masked out. Usually multiple conditions are required for the mask to be corretly created. As an example below is code that creates masks removing all data points within a radius of 0.1 1/A from the provided QPoints.
+The above code ensures that all points with a value of H larger than 0.0 are masked out. Usually multiple conditions are required for the mask to be correctly created. As an example below is code that creates masks removing all data points within a radius of 0.1 1/A from the provided QPoints.
 
 
 .. code-block:: python
@@ -215,3 +215,15 @@ when wanting to perform numeric calculations, on can format the DataFrame to be 
     >>> Intensity.dtypes
     dtype('int64')
 
+
+Is it possible to calculate the resolution of the instrument at a given position in reciprocal space?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Indeed it is through the tools in the Geometry.Instrument settings, but if you want to overplot the resolution ellipsoid directly on your data
+this can be done as explain in `Interactivity <InDepthDocumentation/Interactivity.html>`_.
+
+
+I want to make a cut directly on the 2D data that I have plotted. How can I do this?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Just as for the question above, this is possible as explained in `Interactivity <InDepthDocumentation/Interactivity.html>`_.

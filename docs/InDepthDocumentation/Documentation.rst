@@ -11,3 +11,4 @@ Below is a list of links to the documentation for individual core functionalitie
    FileConversion
    VoronoiTessellation
    Visualization
+   Interactivity
