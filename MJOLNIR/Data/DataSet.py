@@ -37,9 +37,9 @@ from MJOLNIR._interactiveSettings import States, cut1DHolder
 # from shapely.geometry import Point as PointS
 # from shapely.vectorized import contains
 import time
-from MJOLNIR.Data import Viewer3DPyQtGraph
+#from MJOLNIR.Data import Viewer3DPyQtGraph
 from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+#from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import warnings
 from ufit import Dataset
 
@@ -1068,7 +1068,7 @@ class DataSet(object):
         
 
         ax.type = 'QE'
-        #ax = _interactiveSettings.setupModes(ax)
+        ax = _interactiveSettings.setupModes(ax)
 
         
         return ax,data,bins
@@ -1535,8 +1535,8 @@ class DataSet(object):
 
             ax.cut1DFunctionCircle = cut1DFunctionCircle
 
-            #ax.type = 'QPlane'
-            #ax = _interactiveSettings.setupModes(ax)
+            ax.type = 'QPlane'
+            ax = _interactiveSettings.setupModes(ax)
             
         if len(ax.Qx)!=0:
             xmin = np.min([np.min(qx) for qx in ax.Qx])
@@ -2158,8 +2158,8 @@ class DataSet(object):
                 ax.xaxis.set_ticks(positions)
 
 
-            #ax.type = 'QELine'
-            #ax = _interactiveSettings.setupModes(ax)
+            ax.type = 'QELine'
+            ax = _interactiveSettings.setupModes(ax)
 
             ax.get_figure().tight_layout()
 
@@ -2852,33 +2852,88 @@ class DataSet(object):
         """
 
         if rlu:
-            rluax = self.createQAxis(**kwargs)
+            rluax = self.createQAxis(withoutOnClick=True,**kwargs)
+
+            rluax.new = False
+            rluax.line = None
+            rluax.cidmove = None
+            rluax.drawState = States.INACTIVE
+            rluax.ds = self
+            rluax.rects = []
+            rluax.drs = []
+            rluax.EMin = 0
+            rluax.EMax = 10
+            rluax.type = 'QPlane'
+            rluax.rlu = rlu
             rluax.outputFunction = outputFunction
+
+            rluax.cut1DFunctionRectangle = None
+            rluax.cut1DFunctionCircle = None
+
+            rluax = _interactiveSettings.setupModes(rluax)
+            
             figure = rluax.get_figure()
             figure.delaxes(rluax)
+
+            
+
+            
             qxEax = self.createQEAxes(axis=1,figure=figure)
             figure.delaxes(qxEax)
 
-            qxEax.outputFunction = outputFunction
-            # qxEax.ds = self
-            # qxEax.dE = dE
-
-            # qxEax.onClick = lambda *args,**kwargs: print(*args,**kwargs)
-            # qxEax.type = 'QELineView3D'
-            # qxEax.rlu = True
+            qxEax.new = False
+            qxEax.line = None
+            qxEax.cidmove = None
+            qxEax.drawState = States.INACTIVE
+            qxEax.ds = self
+            qxEax.rects = []
+            qxEax.drs = []
+            qxEax.minPixel = dQy
+            qxEax.width = dQx
+            qxEax.dE = dE
             
-            # qxEax = _interactiveSettings.setupModes(qxEax)
+
+            qxEax.outputFunction = outputFunction
+
+            qxEax.drawState = States.INACTIVE
+            
+            qxEax.type = 'QELineView3D'
+            qxEax.rlu = rlu
+            qxEax.ds = self
+            
+            
+            qxEax.cut1DFunctionRectanglePerpendicular=qxEax.cut1DFunctionRectangleHorizontal=qxEax.cut1DFunctionRectangleVertical = None
+            qxEax = _interactiveSettings.setupModes(qxEax)
+            
 
 
             qyEax = self.createQEAxes(axis=0,figure=figure)
             figure.delaxes(qyEax)
 
-            qyEax.outputFunction = outputFunction
-            # qyEax.ds = self
-            # qyEax.dE = dE
+            qyEax.new = False
+            qyEax.line = None
+            qyEax.cidmove = None
+            qyEax.drawState = States.INACTIVE
+            qyEax.ds = self
+            qyEax.rects = []
+            qyEax.drs = []
 
-            # qyEax.type = 'QELineView3D'
-            # qyEax = _interactiveSettings.setupModes(qyEax)
+            qyEax.outputFunction = outputFunction
+
+            qyEax.drawState = States.INACTIVE
+            
+            qyEax.type = 'QELineView3D'
+            qyEax.rlu = rlu
+            qyEax.ds = self
+            
+
+            qyEax.minPixel = dQx
+            qyEax.width = dQy
+            qyEax.dE = dE
+            
+            qyEax.cut1DFunctionRectanglePerpendicular=qyEax.cut1DFunctionRectangleHorizontal=qyEax.cut1DFunctionRectangleVertical = None
+            qyEax = _interactiveSettings.setupModes(qyEax)
+            
 
             if instrumentAngles:
                 from MJOLNIR import TasUBlibDEG as TasUBlib
