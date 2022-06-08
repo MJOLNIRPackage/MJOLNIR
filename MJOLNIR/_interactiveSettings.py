@@ -1,15 +1,17 @@
 """Settings for the interactive plotting used in the MJOLNIR package. Collected here for a common reference and easier adaptability and future-proofing."""
 
+import matplotlib as mpl
 import numpy as np
 from enum import Enum
 from matplotlib.patches import Ellipse,Rectangle,Circle
 from matplotlib.backend_bases import MouseButton
-try:
-    import matplotlib.backends.backend_qt5.cursors as cursors
-    mplVersion = None
-except ImportError:
-    from  matplotlib.backend_tools import Cursors as cursors
-    mplVersion = 3.5
+#try:
+#    import matplotlib.backends.backend_qt5.cursors as cursors
+#    mplVersion = None
+#except ImportError:
+from  matplotlib.backend_tools import Cursors as cursors
+#    mplVersion = 3.5
+mplVersion = float('.'.join(mpl.__version__.split('.')[:2]))
 import MJOLNIR
 import os
 import PyQt5.QtCore
@@ -85,8 +87,8 @@ def setupModes(ax):
 
 
 def setCursor(ax,cursor):
-    if mplVersion == 3.5:
-        ax.get_figure().canvas.set_cursor(cursor)
+    if mplVersion >= 3.5:
+        pass#ax.get_figure().canvas.set_cursor(cursor)
     else:
         if isinstance(cursor,type(cursors.HAND)): # Standard Matplotlib cursor
             ax.get_figure().canvas.toolbar.set_cursor(cursor)
@@ -139,13 +141,19 @@ Modes= Enum('Modes', modes)
 pointerType = defaultdict(lambda: cursors.POINTER)
 # pointerType['RESOLUTION'] = resolutionCursor
 
-#pointerType['CUTTING_INACTIVE'] = cursors.SELECT_REGION#CutCursor
-#pointerType['CUTTING_EMPTY'] = cursors.SELECT_REGION#PyQt5.QtCore.Qt.ForbiddenCursor
+pointerType['CUTTING_INACTIVE'] = cursors.SELECT_REGION#CutCursor
+pointerType['CUTTING_EMPTY'] = cursors.SELECT_REGION#PyQt5.QtCore.Qt.ForbiddenCursor
 
-pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.SizeAllCursor
+if mplVersion >= 3.5:
+    pointerType['CUTTING_INITIAL'] = cursors.SELECT_REGION
+    pointerType['CUTTING_WIDTH'] = cursors.SELECT_REGION
+    pointerType['CUTTING_DIRECTION'] = cursors.SELECT_REGION
+    pointerType['CUTTING_MOVE'] = cursors.HAND
+else:
+    pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
+    pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
+    pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
+    pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.SizeAllCursor
 
 
 
@@ -163,8 +171,6 @@ def resetUsingKey(ax,keys):
 
 
 def initializeINACTIVE(ax):
-#    print('Initializing inactive mode')
-
     if hasattr(ax,'_key_press_event'):
         ax.figure.canvas.mpl_disconnect(ax._key_press_event)
 
@@ -183,13 +189,11 @@ def initializeINACTIVE(ax):
     return
 
 def deactivateINACTIVE(ax):
-    #print('deactivating inactive mode')
     return
 
 
 def initializeRESOLUTION(ax):
     
-    #print('initializeRESOLUTION')
 
     # Change cursor to signify new mode
     
@@ -353,12 +357,8 @@ def initializeRESOLUTION(ax):
 
     ### Generate the onClick function
     def onClick(ax,event):
-        #if not event.inaxes == ax or ax.isActive:
-        #    print('Not in axis',ax,'but rather',event.inaxes)
-        #    return
         if hasattr(ax,'isActive'):
             if not ax.isActive:
-                print('Ignoring',ax.type)
                 return
         
 
@@ -540,7 +540,7 @@ def initializeCUTTING(ax):
     resetUsingKey(ax,cut1DSettings['return'])
     
 
-    if ax.type in ['QE']: # QELineView3D
+    if ax.type in ['QE','QELineView3D']:
         Draggables = [DraggableRectanglePerpendicular,DraggableRectangleHorizontal,DraggableRectangleVertical]
 
         
@@ -549,17 +549,26 @@ def initializeCUTTING(ax):
             parameters = extractCut1DPropertiesRectanglePerpendicular(dr.rect,self.ds.sample[0])
             
             # Convert center point into actual position in Q
-            middlePoint = ax.calculatePosition(parameters['center'][0]).T
+            if ax.type == 'QELineView3D':
+                middlePoint = ax.calculateRLU(*parameters['center'])[0]
+                if ax.rlu:
+                    dirVector = ax.calculateRLU(1,0)[0]-ax.calculateRLU(0,0)[0]
+                    orthogonalVector = np.cross(self.ds.sample[0].planeNormal,dirVector)
+                    orthogonalVector*=1/np.linalg.norm(orthogonalVector)
+                else:
+                    # TODO: fix
+                    orthogonalVector = np.array([ax.plotDirection[1],-ax.plotDirection[0]])
+            else:
+                middlePoint = ax.calculatePosition(parameters['center'][0]).T
+                if ax.rlu:
+                    orthogonalVector = np.cross(self.ds.sample[0].planeNormal,ax.plotDirection.flatten())
+                    orthogonalVector*=1/np.linalg.norm(orthogonalVector)
+                else:
+                    orthogonalVector = np.array([ax.plotDirection[1],-ax.plotDirection[0]])
             
             del parameters['center'] # remove the 'center' as it is not allowed in plotCut1D
 
             # transform the orthogonal vector if needed 
-            
-            if ax.rlu:
-                orthogonalVector = np.cross(self.ds.sample[0].planeNormal,ax.plotDirection.flatten())
-                orthogonalVector*=1/np.linalg.norm(orthogonalVector)
-            else:
-                orthogonalVector = np.array([ax.plotDirection[1],-ax.plotDirection[0]])
             
             
             parameters['q1'] = middlePoint
@@ -571,13 +580,18 @@ def initializeCUTTING(ax):
         def cut1DFunctionRectangleHorizontalDefault(self,dr):
             global cut1DHolder
             parameters = extractCut1DPropertiesRectangleHorizontal(dr.rect,self.ds.sample[0])
-            
-            # Convert center point into actual position in Q
-            parameters['q1'] = ax.calculatePosition(parameters['q1'][0]).T
-            parameters['q2'] = ax.calculatePosition(parameters['q2'][0]).T
-            
+
+            if ax.type == 'QELineView3D':
+                parameters['q1'] = ax.calculateRLU(*parameters['q1'])[0]
+                parameters['q2'] = ax.calculateRLU(*parameters['q2'])[0]
+            else:
+                # Convert center point into actual position in Q
+                parameters['q1'] = ax.calculatePosition(parameters['q1'][0]).T
+                parameters['q2'] = ax.calculatePosition(parameters['q2'][0]).T
+                
             parameters['minPixel'] = ax.minPixel
             parameters['width'] = ax.width
+
 
             cut1DHolder.append([self.ds.plotCut1D(**parameters)])
 
@@ -585,8 +599,13 @@ def initializeCUTTING(ax):
             global cut1DHolder
             parameters = extractCut1DPropertiesRectangleVertical(dr.rect,self.ds.sample[0])
             
+            
             # Convert center point into actual position in Q
-            parameters['q'] = ax.calculatePosition(parameters['q']).T
+            if ax.type == 'QELineView3D':
+                parameters['q'] = ax.calculateRLU(parameters['q'],0.0)[0]
+            else:
+                # Convert center point into actual position in Q
+                parameters['q'] = ax.calculatePosition(parameters['q']).T
             
             
             parameters['minPixel'] = ax.dE
@@ -705,7 +724,6 @@ def initializeCUTTING(ax):
 
 
 def deactivateCUTTING(ax):
-    #print('deactivateCUTTING')
     # ax.get_figure().canvas.mpl_disconnect(ax.onMoveAnnotateID)
     # ax.annotateBox.set_visible(False)
     
@@ -1122,11 +1140,7 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
             axes.format_coord = lambda x,y: axes.format_coord_old(x,y) + ' [rect]'
 
     def inactive(figure,axes,event):
-        # TODO: check for 3DViewer#print('here')
-        #if hasattr(figure,'axes'): # only Viewer3D
-        #    if figure.axis != 2:
-        #        return figure,axes,event):
-
+        
         width = 0.0
         height = 0.05
         center = corner2center(event.xdata,event.ydata, width, -180.0)
