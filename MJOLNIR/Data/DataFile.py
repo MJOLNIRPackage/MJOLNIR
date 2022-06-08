@@ -309,7 +309,7 @@ class DataFile(object):
                     self.A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=self.fromNICOS)).reshape(-1)
                     self.A4Off = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=self.fromNICOS))
                     if self.fromNICOS:
-                        self.twotheta = self.A4
+                        self.twotheta = copy.deepcopy(self.A4)# - self.A4Off
                         self.A4 += self.A4Off
                     else:
                         self.twotheta = self.A4-self.A4Off
