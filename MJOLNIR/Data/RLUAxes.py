@@ -319,8 +319,13 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
             ax.axis["top"].major_ticklabels.set_visible(True)
             ax.axis["right"].major_ticklabels.set_visible(True)
 
-    
-    ax.format_coord = ax.sample.format_coord
+    if rlu:
+        ax.format_coord = ax.sample.format_coord
+    else:
+        def format_coord(x,y):
+            return ', '.join([label+' = {:.3f}'.format(val) for val,label in zip([x,y],['qx','qy'])])
+
+        ax.format_coord = format_coord
     
     
     if ax.rlu:
@@ -334,8 +339,8 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
         ax.set_ylabel(beautifyLabel(ax.sample.projectionVector2))
 
     else:
-        ax.set_xlabel('Qx [1/AA')
-        ax.set_xlabel('Qy [1/AA')
+        ax.set_xlabel('Qx [1/AA]')
+        ax.set_ylabel('Qy [1/AA]')
     
     def onclick(ax, event,Qx,Qy,data,outputFunction): # pragma: no cover
         if event.xdata is not None and ax.in_axes(event):
@@ -463,7 +468,7 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
 
 
 
-def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, projectionVector2 = None):
+def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, projectionVector2 = None, rlu = True):
     """Function to create Q E plot
 
     Kwargs:
@@ -477,33 +482,44 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
         - projectionVector1 (vec): Projection vector along which data is plotted. If not provided sample vector is used (default None)
 
         - projectionVector2 (vec): Projection vector orthogonal to data. If not provided sample vector is used (default None)
+        
+        - rlu (Bool): Boolean to control if rlu or qxqy (default True)
 
 
     """
-    
+        
     if projectionVector1 is None or projectionVector2 is None:
-        v1 = DataSet.sample[0].projectionVector1
-        v2 = DataSet.sample[0].projectionVector2
-        angle = DataSet.sample[0].projectionAngle
-        orientationMatrix = DataSet.sample[0].orientationMatrix
+        if rlu is True:
+            v1 = DataSet.sample[0].projectionVector1
+            v2 = DataSet.sample[0].projectionVector2
+            angle = DataSet.sample[0].projectionAngle
+            orientationMatrix = DataSet.sample[0].orientationMatrix
+        else:
+            v1 = np.array([1.0,0.0])
+            v2 = np.array([0.0,1.0])
+            angle = np.pi/2.0
+            orientationMatrix = np.ones(2)
     else:
         v1 = np.array(projectionVector1)
         v2 = np.array(projectionVector2)
-        
-        if not np.all([x.shape==(3,) for x in [v1,v2]]) or not np.all([len(x.shape)==1 for x in [v1,v2]]):
-            raise AttributeError('Provided vector(s) is not 3D: projectionVector1.shape={} or projectionVector2.shape={}'.format(v1.shape,v2.shape))
+
+        if not np.all([x.shape==(3,) for x in [v1,v2]])\
+        or not np.all([len(x.shape)==1 for x in [v1,v2]])\
+        or np.all([x.shape==(2,) for x in [v1,v2]]):
+            raise AttributeError('Provided vector(s) is not 3D/2D: projectionVector1.shape={} or projectionVector2.shape={}'.format(v1.shape,v2.shape))
         angle = np.arccos(np.dot(v1,v2)/(np.linalg.norm(v1)*np.linalg.norm(v2)))
-        orientationMatrix = np.ones(3)
+        if rlu is True:
+            orientationMatrix = np.ones(3)
+        else:
+            orientationMatrix = np.ones(2)
+
 
     sample = copy.deepcopy(DataSet.sample)
-    
-    
-    #v1,v2 = sample[0].projectionVector1,sample[0].projectionVector2
-    #angle = np.sign(np.dot(np.cross(v1,v2),sample[0].planeNormal))*sample[0].projectionAngle
-    
+
+
     v2Length = np.linalg.norm(v2)/np.linalg.norm(v1)
     projectionMatrix = np.linalg.inv(np.array([[1,0],[np.cos(angle)*v2Length,np.sin(angle)*v2Length]]).T)
-    
+
     projectionVectorQX = np.dot(np.dot(projectionMatrix,[1,0]),np.array([v1,v2]))
     projectionVectorQY = np.dot(np.dot(projectionMatrix,[0,1]),np.array([v1,v2]))
     projectionVectorQX = _tools.LengthOrder(projectionVectorQX)
@@ -512,7 +528,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     projectionVectorQYLength = np.linalg.norm(np.dot(orientationMatrix,projectionVectorQX))
     projectionVectorQXFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQX])
     projectionVectorQYFormated = ', '.join(['{:.3f}'.format(x) for x in projectionVectorQY])
-    
+
     if axis == 0:
         projectionVectorLength = projectionVectorQYLength
         projectionVectorLengthORthogonal = projectionVectorQXLength
@@ -529,42 +545,46 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
         raise AttributeError('Provided axis of {} is not allowed. Should be either 0 or 1.'.format(axis))
 
     if figure is None:
-        
+
         figure = plt.figure(figsize=(7, 4))
     else:
         figure.clf()
     def inv_tr(l,x,y):
         return x*l,y
-    
+
     def tr(l,x,y):
         return x/l,y
-    
-    if pythonVersion == 3:
-        grid_locator1 = MultipleLocator(base=1.0) # Standard X ticks is multiple locator
-        grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
-                                        lambda x,y:tr(projectionVectorLength,x,y)),grid_locator1=grid_locator1)
-    
+
+
+    grid_locator1 = MultipleLocator(base=1.0) # Standard X ticks is multiple locator
+    grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
+                                    lambda x,y:tr(projectionVectorLength,x,y)),grid_locator1=grid_locator1)
+
+    if rlu:
+        labels = ['h','k','l']
     else:
-        grid_helper = GridHelperCurveLinear((lambda x,y:inv_tr(projectionVectorLength,x,y), 
-                                        lambda x,y:tr(projectionVectorLength,x,y)))
-    
+        labels = ['qx','qy']
+
     ax = SubplotHost(figure, 1, 1, 1, grid_helper=grid_helper)
     ax.sample = sample[0]
 
     figure.add_subplot(ax)
     #ax.set_aspect(1.)
     ax.grid(True, zorder=0)
-    
+
     def calculateRLU(l,v1,x,y,v,step):
         return np.asarray(x)/l*v1+v*step, np.asarray(y)
 
-    def format_coord(x,y): # pragma: no cover # x is H,K,L and y is  energy
-        xformated = ', '.join(['{} = {}'.format(Y[0],Y[1]) for Y in zip(['h','k','l'],['{:.4f}'.format(X) for X in x])])
+    def format_coord(x,y,rlu=rlu,labels=labels): # pragma: no cover # x is H,K,L and y is  energy
+        xformated = ', '.join(['{} = {}'.format(Y[0],Y[1]) for Y in zip(labels,['{:.4f}'.format(X) for X in x])])
         return '{}, E={:.4f}'.format(xformated,y)
-    
-    
-    ax.set_xlabel('{} [RLU]'.format(projectionVectorFormated))
-    
+
+
+    if rlu:
+        ax.set_xlabel('{} [RLU]'.format(projectionVectorFormated))
+    else:
+        ax.set_xlabel('{} [1/A]'.format(projectionVectorFormated))
+
     ax.set_ylabel('E [meV]')
     ax._length = projectionVectorLengthORthogonal
     ax._projectionVector = projectionVector 
@@ -574,79 +594,78 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     ax.format_coord = lambda x,y: format_coord(*ax.calculateRLU(x,y))
 
 
-    if pythonVersion == 3:
-        ax.forceGridUpdate = lambda:forceGridUpdate(ax)
-        ax.xticks = 7
 
-        def xAxisChanged(axis, forceUpdate=False):
-            locator = axis._grid_helper.grid_finder.grid_locator1
-            xlim = axis.get_xlim()
-            xlimDiff = np.diff(xlim)
-            if isinstance(locator,MultipleLocator):
-                if hasattr(axis,'xBase'):
-                    base = axis.xBase
-                else:
-                    base = calculateBase(locator,xlimDiff,axis.xticks)
-                locator.set_params(base=base)
-                
-            elif isinstance(locator,MaxNLocator):
-                if hasattr(axis,'xTicks'):
-                    ticks = getattr(axis,'xTicks')
-                else:
-                    ticks = 7
-                locator.set_params(nbins = ticks)
+    ax.forceGridUpdate = lambda:forceGridUpdate(ax)
+    ax.xticks = 7
+
+    def xAxisChanged(axis, forceUpdate=False):
+        locator = axis._grid_helper.grid_finder.grid_locator1
+        xlim = axis.get_xlim()
+        xlimDiff = np.diff(xlim)
+        if isinstance(locator,MultipleLocator):
+            if hasattr(axis,'xBase'):
+                base = axis.xBase
             else:
-                return
-            axis.forceGridUpdate()
+                base = calculateBase(locator,xlimDiff,axis.xticks)
+            locator.set_params(base=base)
 
-        ax.callbacks.connect('xlim_changed', xAxisChanged)
-
-        ax.callbacks.connect('draw_event',lambda ax: xAxisChanged(ax,forceUpdate=True))
-        ax.xAxisChanged = lambda: xAxisChanged(ax,forceUpdate=True)
-
-
-        @updateXAxisDecorator(ax=ax)
-        def set_xticks_base(xBase=None,ax=ax):
-            """Setter of the base x ticks to be used for plotting
-
-            Kwargs:
-
-                - xBase (float): Base of the tick marks (default automatic)
-
-            """
-            
-                
-            if not isinstance(ax._grid_helper.grid_finder.grid_locator1,MultipleLocator):
-                l1 = MultipleLocator(base=xBase)
-                ax._grid_helper.update_grid_finder(grid_locator1=l1)
-
-            if xBase is None:
-                if hasattr(ax,'xBase'):
-                    delattr(ax,'xBase')
+        elif isinstance(locator,MaxNLocator):
+            if hasattr(axis,'xTicks'):
+                ticks = getattr(axis,'xTicks')
             else:
-                ax.xBase = xBase
+                ticks = 7
+            locator.set_params(nbins = ticks)
+        else:
+            return
+        axis.forceGridUpdate()
 
-        @updateXAxisDecorator(ax=ax)
-        def set_xticks_number(xNumber = None,ax=ax):
-            """Setter of the number of x ticks to be used for plotting
+    ax.callbacks.connect('xlim_changed', xAxisChanged)
 
-            Kwargs:
-
-                - xNumber (int): Number of x tick marks (default 7)
-
-            """
-            if xNumber is None:
-                xNumber = 7
-
-            if not isinstance(ax._grid_helper.grid_finder.grid_locator1,MaxNLocator):
-                l1 = MaxNLocator(nbins=xNumber)
-                ax._grid_helper.update_grid_finder(grid_locator1=l1)
-            ax.xTicks = xNumber
+    ax.callbacks.connect('draw_event',lambda ax: xAxisChanged(ax,forceUpdate=True))
+    ax.xAxisChanged = lambda: xAxisChanged(ax,forceUpdate=True)
 
 
-        ax.set_xticks_base = set_xticks_base
-        ax.set_xticks_number = set_xticks_number
+    @updateXAxisDecorator(ax=ax)
+    def set_xticks_base(xBase=None,ax=ax):
+        """Setter of the base x ticks to be used for plotting
 
+        Kwargs:
+
+            - xBase (float): Base of the tick marks (default automatic)
+
+        """
+
+
+        if not isinstance(ax._grid_helper.grid_finder.grid_locator1,MultipleLocator):
+            l1 = MultipleLocator(base=xBase)
+            ax._grid_helper.update_grid_finder(grid_locator1=l1)
+
+        if xBase is None:
+            if hasattr(ax,'xBase'):
+                delattr(ax,'xBase')
+        else:
+            ax.xBase = xBase
+
+    @updateXAxisDecorator(ax=ax)
+    def set_xticks_number(xNumber = None,ax=ax):
+        """Setter of the number of x ticks to be used for plotting
+
+        Kwargs:
+
+            - xNumber (int): Number of x tick marks (default 7)
+
+        """
+        if xNumber is None:
+            xNumber = 7
+
+        if not isinstance(ax._grid_helper.grid_finder.grid_locator1,MaxNLocator):
+            l1 = MaxNLocator(nbins=xNumber)
+            ax._grid_helper.update_grid_finder(grid_locator1=l1)
+        ax.xTicks = xNumber
+
+
+    ax.set_xticks_base = set_xticks_base
+    ax.set_xticks_number = set_xticks_number
 
     return ax
 
