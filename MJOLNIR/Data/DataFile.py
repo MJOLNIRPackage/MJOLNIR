@@ -81,8 +81,8 @@ HDFTranslation = {'sample':'/entry/sample',
 }
 
 HDFTranslationNICOSAlternative = {
-                   'temperature':'entry/sample/Ts/value',
-                   'magneticField':'entry/sample/B/value',
+                   'temperature':['entry/sample/Ts','entry/sample/Ts/value'],
+                   'magneticField':['entry/sample/B','entry/sample/B/value'],
                    'ei':'entry/CAMEA/monochromator/energy',
                    'hdfMonitor':'entry/monitor_2/data'
 }
@@ -133,21 +133,28 @@ possibleAttributes = list(HDFTranslation.keys())+list(HDFInstrumentTranslation.k
 possibleAttributes.sort(key=lambda v: v.lower())
 
 
-def getHDFEntry(f,property,fromNICOS=False):
+def getHDFEntry(f,prop,fromNICOS=False):
     if fromNICOS:
-        if property in HDFTranslationNICOSAlternative:
-            value = f.get(HDFTranslationNICOSAlternative[property]) 
+        if prop in HDFTranslationNICOSAlternative:
+            proplist = HDFTranslationNICOSAlternative[prop]
+            if isinstance(proplist,list):
+                for subprop in proplist:
+                    value = f.get(subprop)
+                    if not value is None:
+                        break
+            else:
+                value = f.get(HDFTranslationNICOSAlternative[prop])
             return value
 
-    return f.get(HDFTranslation[property])
+    return f.get(HDFTranslation[prop])
 
-def getHDFInstrumentEntry(instr,property,fromNICOS=False):
+def getHDFInstrumentEntry(instr,prop,fromNICOS=False):
     if fromNICOS:
-        if property in HDFInstrumentTranslationNICOSAlternative:
-            value = instr.get(HDFInstrumentTranslationNICOSAlternative[property]) 
+        if prop in HDFInstrumentTranslationNICOSAlternative:
+            value = instr.get(HDFInstrumentTranslationNICOSAlternative[prop]) 
             return value
     
-    return instr.get(HDFInstrumentTranslation[property])
+    return instr.get(HDFInstrumentTranslation[prop])
 
 analyzerLimits = {'CAMEA':7,
                   'Bambus': 4,
