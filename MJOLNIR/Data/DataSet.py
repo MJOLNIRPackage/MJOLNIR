@@ -5498,7 +5498,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
         def format_coord(x,y,ax):# pragma: no cover
             qx,qy = ax.calculatePosition(x)
             if ax._2D:
-                "qx = {0:.3e}, qy = {1:.3e}, I = {2:0.4e}".format(qx,qy,y)
+                return "qx = {0:.3e}, qy = {1:.3e}, I = {2:0.4e}".format(qx,qy,y)
             else:
                 E = ax.energy
                 if showEnergy:
