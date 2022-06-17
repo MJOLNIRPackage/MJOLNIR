@@ -2198,6 +2198,12 @@ class DataFile(object):
             #------------ Instrument
             inst = entry.create_group(b'CAMEA')
             inst.attrs['NX_class'] = np.string_('NXinstrument')
+
+            if hasattr(self,'singleDetector1'): # If the single detectors have been loaded
+                for idx in ['1','8']:
+                    segment = inst.create_group('segment_'+idx)
+                    dset = segment.create_dataset('data',data=getattr(self,'singleDetector'+idx),dtype='int32')
+                    dset.attrs['units']=np.string_('counts')
             
             
         
@@ -2496,7 +2502,11 @@ def shallowRead(files,parameters):
                     else:
                         raise AttributeError('Parameter "{}" not found'.format(p))
                     for func,args in TrF[p]:
-                        v = getattr(v,func)(*args)
+                        try:
+                            v = getattr(v,func)(*args)
+                        except IndexError as e:
+                            v = 'Not In File'
+                            break
                     
                     vals.append(v)
                 values.append(vals)
