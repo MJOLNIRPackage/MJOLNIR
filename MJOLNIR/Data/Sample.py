@@ -217,7 +217,7 @@ class Sample(object):
     def __eq__(self,other):
         if not isinstance(other,type(self)):
             return False
-        return np.all(self.unitCell==other.unitCell)#,\
+        return np.all(np.isclose(self.unitCell,other.unitCell))#,\
         #np.all(self.orientationMatrix==other.orientationMatrix)])
 
     def initialize(self):
