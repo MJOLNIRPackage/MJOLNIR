@@ -128,11 +128,11 @@ elif args.task.lower() == 'version':
                 ]
     os.system("git add {}".format(' '.join(addFiles)))
     os.system('git commit -m "Update version"')
-    os.system('git tag -a {:} -m "{:}"'.format(version))
+    os.system('git tag -a {0} -m "{0}"'.format(version))
     makeWheel()
     os.system("git push")
     os.system("git push --tags")
 
 else:
-    print('Provided argument not understood. Recieved',args.task,'\n\n')
+    print('Provided argument not understood. Received',args.task,'\n\n')
     callHelp()
