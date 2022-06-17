@@ -37,9 +37,9 @@ from MJOLNIR._interactiveSettings import States, cut1DHolder
 # from shapely.geometry import Point as PointS
 # from shapely.vectorized import contains
 import time
-from MJOLNIR.Data import Viewer3DPyQtGraph
+#from MJOLNIR.Data import Viewer3DPyQtGraph
 from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
-from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+#from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
 import warnings
 from ufit import Dataset
 
@@ -1068,7 +1068,7 @@ class DataSet(object):
         
 
         ax.type = 'QE'
-        #ax = _interactiveSettings.setupModes(ax)
+        ax = _interactiveSettings.setupModes(ax)
 
         
         return ax,data,bins
@@ -1120,7 +1120,7 @@ class DataSet(object):
 
     
     @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','edgecolors']]))
-    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True,outputFunction=print,**kwargs):
+    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True, vmin=None, vmax=None,outputFunction=print,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
         .. note::
@@ -1144,6 +1144,10 @@ class DataSet(object):
 
             - colorbar (bool): If True a colorbar is added to the figure (default True)
 
+            - vmin (float): Minimum value for color scale
+
+            - vmax (float): Maximum value for color scale
+
             - outputFunction (function): Function called on output strung (default print)
 
             - kwargs: All other keywords will be passed on to the ax.pcolormesh method.
@@ -1163,8 +1167,8 @@ class DataSet(object):
         if ax is None:
             plt.figure()
             ax = plt.gca()
-        pmeshs = []
-        
+        ax.pmeshs = []
+
         eMean = 0.5*(EBinEdges[:-1]+EBinEdges[1:])
         for i,dat in Data[['Int','EnergyCut']].groupby('EnergyCut'):
             if len(dat)==0:
@@ -1174,7 +1178,7 @@ class DataSet(object):
                 
             else:
                 ints = dat['Int'].values.reshape((len(qbins[i])-1,1)).T
-            pmeshs.append(ax.pcolormesh(qbins[i],[EBinEdges[i],EBinEdges[i+1]],ints,**kwargs))
+            ax.pmeshs.append(ax.pcolormesh(qbins[i],[EBinEdges[i],EBinEdges[i+1]],ints,vmin=vmin,vmax=vmax,**kwargs))
         
         def calculateIndex(x,y,eMean,qBin,EBinEdges):# pragma: no cover
             if y>EBinEdges[-1] or y<EBinEdges[0]:
@@ -1197,11 +1201,11 @@ class DataSet(object):
         ax.set_xlabel(r'$|q| [\AA^{-1}]$')
         ax.set_ylabel('E [meV]')
         
-        def set_clim(VMin,VMax,pmesh):
-            for pm in pmeshs:
+        def set_clim(ax,VMin,VMax):
+            for pm in ax.pmeshs:
                 pm.set_clim(VMin,VMax)
 
-        ax.set_clim = lambda VMin,VMax: set_clim(VMin,VMax,pmeshs)
+        ax.set_clim = lambda VMin,VMax: set_clim(ax,VMin,VMax)
         
         def onclick(event,ax,dat,outputFunction):# pragma: no cover
             if ax.in_axes(event):
@@ -1226,7 +1230,7 @@ class DataSet(object):
                 printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
                 outputFunction(printString)
 
-        if not 'vmin' in kwargs or not 'vmax' in kwargs:
+        if not vmin is None or not vmax is None:
             if log:
                 minVal = np.log10(Data['Int'].min()+1e-20)
                 maxVal = np.log10(Data['Int'].max()+1e-20)
@@ -1235,7 +1239,7 @@ class DataSet(object):
                 maxVal = Data['Int'].max()
             
             ax.set_clim(minVal,maxVal)
-        ax.pmeshs = pmeshs
+        
         ax.onClick = lambda event:onclick(event,ax,Data,outputFunction=outputFunction)
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
         if colorbar:
@@ -1531,8 +1535,8 @@ class DataSet(object):
 
             ax.cut1DFunctionCircle = cut1DFunctionCircle
 
-            #ax.type = 'QPlane'
-            #ax = _interactiveSettings.setupModes(ax)
+            ax.type = 'QPlane'
+            ax = _interactiveSettings.setupModes(ax)
             
         if len(ax.Qx)!=0:
             xmin = np.min([np.min(qx) for qx in ax.Qx])
@@ -2154,8 +2158,8 @@ class DataSet(object):
                 ax.xaxis.set_ticks(positions)
 
 
-            #ax.type = 'QELine'
-            #ax = _interactiveSettings.setupModes(ax)
+            ax.type = 'QELine'
+            ax = _interactiveSettings.setupModes(ax)
 
             ax.get_figure().tight_layout()
 
@@ -2848,32 +2852,88 @@ class DataSet(object):
         """
 
         if rlu:
-            rluax = self.createQAxis(**kwargs)
+            rluax = self.createQAxis(withoutOnClick=True,**kwargs)
+
+            rluax.new = False
+            rluax.line = None
+            rluax.cidmove = None
+            rluax.drawState = States.INACTIVE
+            rluax.ds = self
+            rluax.rects = []
+            rluax.drs = []
+            rluax.EMin = 0
+            rluax.EMax = 10
+            rluax.type = 'QPlane'
+            rluax.rlu = rlu
+            rluax.outputFunction = outputFunction
+
+            rluax.cut1DFunctionRectangle = None
+            rluax.cut1DFunctionCircle = None
+
+            rluax = _interactiveSettings.setupModes(rluax)
+            
             figure = rluax.get_figure()
             figure.delaxes(rluax)
+
+            
+
+            
             qxEax = self.createQEAxes(axis=1,figure=figure)
             figure.delaxes(qxEax)
 
-            # qxEax.outputFunction = outputFunction
-            # qxEax.ds = self
-            # qxEax.dE = dE
-
-            # qxEax.onClick = lambda *args,**kwargs: print(*args,**kwargs)
-            # qxEax.type = 'QELineView3D'
-            # qxEax.rlu = True
+            qxEax.new = False
+            qxEax.line = None
+            qxEax.cidmove = None
+            qxEax.drawState = States.INACTIVE
+            qxEax.ds = self
+            qxEax.rects = []
+            qxEax.drs = []
+            qxEax.minPixel = dQy
+            qxEax.width = dQx
+            qxEax.dE = dE
             
-            # qxEax = _interactiveSettings.setupModes(qxEax)
+
+            qxEax.outputFunction = outputFunction
+
+            qxEax.drawState = States.INACTIVE
+            
+            qxEax.type = 'QELineView3D'
+            qxEax.rlu = rlu
+            qxEax.ds = self
+            
+            
+            qxEax.cut1DFunctionRectanglePerpendicular=qxEax.cut1DFunctionRectangleHorizontal=qxEax.cut1DFunctionRectangleVertical = None
+            qxEax = _interactiveSettings.setupModes(qxEax)
+            
 
 
             qyEax = self.createQEAxes(axis=0,figure=figure)
             figure.delaxes(qyEax)
 
-            # qyEax.outputFunction = outputFunction
-            # qyEax.ds = self
-            # qyEax.dE = dE
+            qyEax.new = False
+            qyEax.line = None
+            qyEax.cidmove = None
+            qyEax.drawState = States.INACTIVE
+            qyEax.ds = self
+            qyEax.rects = []
+            qyEax.drs = []
 
-            # qyEax.type = 'QELineView3D'
-            # qyEax = _interactiveSettings.setupModes(qyEax)
+            qyEax.outputFunction = outputFunction
+
+            qyEax.drawState = States.INACTIVE
+            
+            qyEax.type = 'QELineView3D'
+            qyEax.rlu = rlu
+            qyEax.ds = self
+            
+
+            qyEax.minPixel = dQx
+            qyEax.width = dQy
+            qyEax.dE = dE
+            
+            qyEax.cut1DFunctionRectanglePerpendicular=qyEax.cut1DFunctionRectangleHorizontal=qyEax.cut1DFunctionRectangleVertical = None
+            qyEax = _interactiveSettings.setupModes(qyEax)
+            
 
             if instrumentAngles:
                 from MJOLNIR import TasUBlibDEG as TasUBlib
@@ -5438,7 +5498,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
         def format_coord(x,y,ax):# pragma: no cover
             qx,qy = ax.calculatePosition(x)
             if ax._2D:
-                "qx = {0:.3e}, qy = {1:.3e}, I = {2:0.4e}".format(qx,qy,y)
+                return "qx = {0:.3e}, qy = {1:.3e}, I = {2:0.4e}".format(qx,qy,y)
             else:
                 E = ax.energy
                 if showEnergy:

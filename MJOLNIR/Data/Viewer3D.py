@@ -15,8 +15,6 @@ import numpy as np
 from matplotlib.widgets import Slider
 from MJOLNIR import _tools
 from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
-from MJOLNIR._interactiveSettings import clearBoxes, DraggableCircle,DraggableRectangle, prepareInteractiveCuttingView3D,\
-    extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle
 import functools
 
 pythonVersion = sys.version_info[0]
@@ -73,15 +71,6 @@ class Viewer3D(object):
 
         self.outputFunction = outputFunction
 
-        # Settings needed for interactive 1D cutting
-        self.new=False
-        self.line = None
-        self.cidmove = None
-        self.drawState = States.INACTIVE
-        self.ds = dataset
-        self.rects = []
-        self.drs = []
-        self.clearBoxes = lambda: clearBoxes(self)
 
         self.currentData = None
         
@@ -177,8 +166,6 @@ class Viewer3D(object):
                 raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
 
         self.figure.set_size_inches(11,7)
-        for ax in self._axes:
-            ax.set_navigate(True)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
         self.cmap = cmap # Update to accommodate deprecation warning
@@ -186,42 +173,6 @@ class Viewer3D(object):
         self.setAxis(2)
         # Set up interactive generation of 1DCuts
 
-        def cut1DFunctionRectangleDefault(self,dr):# pragma: no cover
-            global cut1DHolder
-            parameters = extractCut1DPropertiesRectangle(dr.rect,self.ax.sample)
-            step = self.dQE[self.axis]
-            pos = np.zeros(3,dtype=int)
-            pos[self.axis]=self.Energy_slider.val
-            
-            EMin = self.bins[self.axis][pos[0],pos[1],pos[2]]
-            EMax = EMin+step
-            cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
-
-
-        def cut1DFunctionCircleDefault(self,dr):# pragma: no cover
-            global cut1DHolder
-            parameters = extractCut1DPropertiesCircle(dr.circ,self.ax.sample)
-            parameters['E1'] = self.ds.energy.min()
-            parameters['E2'] = self.ds.energy.max()
-            step = self.dQE[self.axis]
-            parameters['minPixel'] = step
-                
-            cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
-
-        if cut1DFunctionRectangle is None:
-            self.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangleDefault(self,dr)
-        else:
-            self.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(self,dr)
-        
-        if cut1DFunctionCircle is None:
-            self.cut1DFunctionCircle = lambda dr: cut1DFunctionCircleDefault(self,dr)
-        else:
-            self.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(self,dr)
-        
-        Draggables = [DraggableCircle,DraggableRectangle]
-        DraggableFunctions = [self.cut1DFunctionCircle,self.cut1DFunctionRectangle]
-
-        prepareInteractiveCuttingView3D(self,Draggables,DraggableFunctions)
 
         viewAxis = axis
         axis_color='white'
@@ -288,21 +239,44 @@ class Viewer3D(object):
 
         self.resolution = [0.05,0.05]
         
-                
 
         self.Energy_slider.set_val(self.value)
         if self.rlu:
-            #self.cid = self.figure.canvas.mpl_connect('button_press_event', lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction))
-            self.axRLU.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axRLU')
-            # self.axRLU._button_press_event = self.axRLU.get_figure().canvas.mpl_connect('button_press_event', self.axRLU.onClickFunction)
 
-            self.axQxE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQxE')
-            # self.axQxE._button_press_event = self.axQxE.get_figure().canvas.mpl_connect('button_press_event', self.axQxE.onClickFunction)
+            self.axRLU.onClick = lambda event: eventdecorator(onclick,self,self.axRLU,event,outputFunction=outputFunction)#,extra=' axRLU')
+            self.axRLU._button_press_event = self.figure.canvas.mpl_connect('button_press_event', self.axRLU.onClick)
 
-            self.axQyE.onClickFunction = lambda event: eventdecorator(onclick,self,event,outputFunction=outputFunction,extra='axQyE')
-            # self.axQyE._button_press_event = self.axQyE.get_figure().canvas.mpl_connect('button_press_event', self.axQyE.onClickFunction)
+            def updateLimitsAxRLU(self,lower,upper):
+                self.EMin = lower
+                self.EMax = upper
+            self.axRLU.updateLimits = lambda lower,upper: updateLimitsAxRLU(self.axRLU,lower,upper)
+            
+            self.axQxE.onClick = lambda event: eventdecorator(onclick,self,self.axQxE,event,outputFunction=outputFunction)#,extra=' axQxE')
+            self.axQxE._button_press_event = self.figure.canvas.mpl_connect('button_press_event', self.axQxE.onClick)
+
+            def updateLimitsAxQ(self,lower,upper):
+                self.QPoints = [self.sample.calculateHKLToQxQy(*x) for x in np.array([self.calculateRLU(-1,0)[0],self.calculateRLU(1,0)[0]])]
+                
+            self.axQxE.updateLimits = lambda lower,upper: updateLimitsAxQ(self.axQxE,lower,upper)
+            self.axQyE.updateLimits = lambda lower,upper: updateLimitsAxQ(self.axQyE,lower,upper)
+            self.axQyE.onClick = lambda event: eventdecorator(onclick,self,self.axQyE,event,outputFunction=outputFunction)#,extra=' axQyE')
+            self.axQyE._button_press_event = self.figure.canvas.mpl_connect('button_press_event', self.axQyE.onClick)
+
+            self.axRLU.rlu =  self.axQxE.rlu = self.axQyE.rlu = True
+            
+            # Set up initial active axes
+            self.axRLU.isActive = True
+            self.axQxE.isActive = False
+            self.axQyE.isActive = False
+
+
         else:
-            self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
+            self.ax._button_press_event = self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
+            self.onClick = lambda event: eventdecorator(onclick,self,self.ax,event,outputFunction=outputFunction)
+            self.button_press_event = self.figure.canvas.mpl_connect('button_press_event', self.onClick)
+
+            self.ax.rlu =  False
+            
         
         
         try:
@@ -380,10 +354,12 @@ class Viewer3D(object):
             if self.rlu:
                 if hasattr(self.ax,'_button_press_event'):
                     self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
+                self.ax.isActive = False
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
-                if hasattr(self.ax,'onClickFunction'):
-                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
+                self.ax.isActive = True
+                if hasattr(self.ax,'onClick'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClick)
             else:
                 self.ax.set_xlabel(self.xlabel)
                 self.ax.set_ylabel(self.ylabel)
@@ -393,10 +369,12 @@ class Viewer3D(object):
             if self.rlu:
                 if hasattr(self.ax,'_button_press_event'):
                     self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
+                self.ax.isActive = False
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
-                if hasattr(self.ax,'onClickFunction'):
-                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
+                self.ax.isActive = True
+                if hasattr(self.ax,'onClick'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClick)
             else:
                 self.ax.set_xlabel(self.xlabel)
                 self.ax.set_ylabel(self.zlabel)
@@ -406,10 +384,12 @@ class Viewer3D(object):
             if self.rlu:
                 if hasattr(self.ax,'_button_press_event'):
                     self.ax.get_figure().canvas.mpl_disconnect(self.ax._button_press_event)
+                self.ax.isActive = False
                 self.figure.delaxes(self.ax)
                 self.ax = self.figure.add_axes(self._axes[axis])
-                if hasattr(self.ax,'onClickFunction'):
-                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClickFunction)
+                self.ax.isActive = True
+                if hasattr(self.ax,'onClick'):
+                    self.ax._button_press_event = self.ax.get_figure().canvas.mpl_connect('button_press_event', self.ax.onClick)
             else:
                 self.ax.set_xlabel(self.ylabel)
                 self.ax.set_ylabel(self.zlabel)
@@ -424,8 +404,8 @@ class Viewer3D(object):
         X=self.bins[axes[0]].transpose(axes)
         Y=self.bins[axes[1]].transpose(axes)
         Z=self.bins[axes[2]].transpose(axes)
-        
 
+        
         masked_array = np.ma.array (self.Data, mask=np.isnan(self.Data)).transpose(axes)
         self.emptyData = masked_array[:,:,0].T.flatten().copy()
         self.emptyData.mask = np.ones_like(self.emptyData,dtype=bool)
@@ -441,11 +421,13 @@ class Viewer3D(object):
         self.lowerLim = 0
         self.axis = axis
 
-    def calculateValue(self):
+    def calculateValue(self,index=None):
+        if index is None:
+            index = int(self.value)
         try:
-            val = 0.5*(self.Z[0,0,int(self.value)+1]+self.Z[0,0,int(self.value)])
+            val = 0.5*(self.Z[0,0,index+1]+self.Z[0,0,index])
         except:
-            val = 0.5*(2*self.Z[0,0,int(self.value)]-self.Z[0,0,int(self.value)-1])
+            val = 0.5*(2*self.Z[0,0,index]-self.Z[0,0,index-1])
         if hasattr(self,'EnergySliderTransform'):
             val/=self.EnergySliderTransform[self.axis]
         return val
@@ -593,14 +575,14 @@ class Viewer3D(object):
         self.ax.set_title(title)
 
 
-def eventdecorator(function,self,event,*args,**kwargs):# pragma: no cover
-    if event.xdata is not None and self.ax.in_axes(event):
+def eventdecorator(function,self,ax,event,*args,**kwargs):# pragma: no cover
+    if event.xdata is not None and ax.in_axes(event) and ax.isActive:
         try:
-            C = self.ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
+            C = ax.get_figure().canvas.cursor().shape() # Only works for pyQt5 backend
         except:
             pass
         else:
-            if C != 0 or self.drawState != States.INACTIVE:
+            if C != 0 or ax.drawState != States.INACTIVE:
                 return
         return function(self,event.xdata,event.ydata,*args,**kwargs)
 
@@ -768,6 +750,10 @@ def sliders_on_changed(self,val): # pragma: no cover
         self.Energy_slider.set_val(self.Energy_slider.valmin)
     
     if value<=self.Energy_slider.valmax and value>=self.Energy_slider.valmin:
+       
+        if hasattr(self.ax,'updateLimits'):
+            self.ax.updateLimits(self.Z[0,0,value],self.Z[0,0,value+1])
+
         if value!=val:
             self.value = val
             self.Energy_slider.set_val(value)
