@@ -8,7 +8,7 @@ MJOLNIR Module
 import sys,os
 sys.path.append('.')
 
-__version__ = '1.1.25.post7'
+__version__ = 'version=1.2.0'
 __author__ = 'Jakob Lass'
 
 __multiFLEXXNormalization__ = os.path.join(os.path.dirname(__file__),'CalibrationMultiFLEXX.csv') 
