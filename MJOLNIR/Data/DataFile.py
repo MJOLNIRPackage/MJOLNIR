@@ -1671,70 +1671,78 @@ class DataFile(object):
             if os.path.exists(saveFileName+'_old'):
                 os.remove(saveFileName+'_old')
             os.rename(saveFileName,saveFileName+'_old')
-        fd = hdf.File(saveFileName,'w')
-        fs = hdf.File(datafile.fileLocation,'r')
-        group_path = fs['/entry'].parent.name
-        
-        group_id = fd.require_group(group_path)
-        
-        
-        fs.copy('/entry', group_id, name="/entry")
-        
-        definition = fd.create_dataset('entry/definition',(1,),dtype='S70',data=np.string_('NXsqom'))
-        definition.attrs['NX_class'] = 'NX_CHAR'
-        
-        process = fd.create_group('entry/reduction')
-        process.attrs['NX_class']=b'NXprocess'
-        proc = process.create_group('MJOLNIR_algorithm_convert')
-        proc.attrs['NX_class']=b'NXprocess'
-        author= proc.create_dataset('author',shape=(1,),dtype='S70',data=np.string_('Jakob Lass'))
-        author.attrs['NX_class']=b'NX_CHAR'
-        
-        date= proc.create_dataset('date',shape=(1,),dtype='S70',data=np.string_(datetime.datetime.now()))
-        date.attrs['NX_class']=b'NX_CHAR'
-        
-        description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.string_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
-        description.attrs['NX_class']=b'NX_CHAR'
-        
-        rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(os.path.realpath(datafile.fileLocation)))
-        rawdata.attrs['NX_class']=b'NX_CHAR'
+        with hdf.File(saveFileName,'w') as fd:
+            with hdf.File(datafile.fileLocation,'r') as fs:
+                group_path = fs['/entry'].parent.name
+                
+                group_id = fd.require_group(group_path)
+                
+                
+                fs.copy('/entry', group_id, name="/entry")
+                
+                definition = fd.create_dataset('entry/definition',(1,),dtype='S70',data=np.string_('NXsqom'))
+                definition.attrs['NX_class'] = 'NX_CHAR'
+                
+                process = fd.create_group('entry/reduction')
+                process.attrs['NX_class']=b'NXprocess'
+                proc = process.create_group('MJOLNIR_algorithm_convert')
+                proc.attrs['NX_class']=b'NXprocess'
+                author= proc.create_dataset('author',shape=(1,),dtype='S70',data=np.string_('Jakob Lass'))
+                author.attrs['NX_class']=b'NX_CHAR'
+                
+                date= proc.create_dataset('date',shape=(1,),dtype='S70',data=np.string_(datetime.datetime.now()))
+                date.attrs['NX_class']=b'NX_CHAR'
+                
+                description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.string_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
+                description.attrs['NX_class']=b'NX_CHAR'
+                
+                rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(os.path.realpath(datafile.fileLocation)))
+                rawdata.attrs['NX_class']=b'NX_CHAR'
 
-        normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
-        normalizationString.attrs['NX_class']=b'NX_INT'
-        
-        data = fd.get('entry/data')
-        
-        fileLength = Intensity.shape
-        
-        Int = data.create_dataset('intensity',shape=(fileLength),dtype='int32',data=Intensity)
-        Int.attrs['NX_class']='NX_INT'
-        
-        monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
-        monitor.attrs['NX_class']=b'NX_INT'
+                normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
+                normalizationString.attrs['NX_class']=b'NX_INT'
+                
+                data = fd.get('entry/data')
+                
+                fileLength = Intensity.shape
+                
+                Int = data.create_dataset('intensity',shape=(fileLength),dtype='int32',data=Intensity)
+                Int.attrs['NX_class']='NX_INT'
 
-        normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
-        normalization.attrs['NX_class']=b'NX_FLOAT'
-        
-        qx = data.create_dataset('qx',shape=(fileLength),dtype='float32',data=QX)
-        qx.attrs['NX_class']=b'NX_FLOAT'
-        qx.attrs['units']=b'1/angstrom'
-        
-        qy = data.create_dataset('qy',shape=(fileLength),dtype='float32',data=QY)
-        qy.attrs['NX_class']=b'NX_FLOAT'
-        qy.attrs['units']=b'1/angstrom'
+                if self.fromNICOS:
+                    counts = np.array(fd.get('entry/data/data'))
+                    Int = data.create_dataset('counts',dtype='int32',data=counts)
+                    Int.attrs['NX_class']='NX_INT'
+                    instr = getInstrument(fd)
+                    Int = instr.create_dataset('detector/counts',dtype='int32',data=counts)
+                    Int.attrs['NX_class']='NX_INT'
+                
+                monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
+                monitor.attrs['NX_class']=b'NX_INT'
 
-        en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
-        en.attrs['NX_class']=b'NX_FLOAT'
-        en.attrs['units']=b'mev'
+                normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
+                normalization.attrs['NX_class']=b'NX_FLOAT'
+                
+                qx = data.create_dataset('qx',shape=(fileLength),dtype='float32',data=QX)
+                qx.attrs['NX_class']=b'NX_FLOAT'
+                qx.attrs['units']=b'1/angstrom'
+                
+                qy = data.create_dataset('qy',shape=(fileLength),dtype='float32',data=QY)
+                qy.attrs['NX_class']=b'NX_FLOAT'
+                qy.attrs['units']=b'1/angstrom'
 
-        h = data.create_dataset('h',shape=(fileLength),dtype='float32',data=H)
-        k = data.create_dataset('k',shape=(fileLength),dtype='float32',data=K)
-        l = data.create_dataset('l',shape=(fileLength),dtype='float32',data=L)
-        for x in [h,k,l]:
-            x.attrs['NX_class']=b'NX_FLOAT'
-            x.attrs['units']=b'rlu'
+                en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
+                en.attrs['NX_class']=b'NX_FLOAT'
+                en.attrs['units']=b'mev'
 
-        fd.close()
+                h = data.create_dataset('h',shape=(fileLength),dtype='float32',data=H)
+                k = data.create_dataset('k',shape=(fileLength),dtype='float32',data=K)
+                l = data.create_dataset('l',shape=(fileLength),dtype='float32',data=L)
+                for x in [h,k,l]:
+                    x.attrs['NX_class']=b'NX_FLOAT'
+                    x.attrs['units']=b'rlu'
+
+                #fd.close()
 
     def updateCalibration(self,calibrationFile,overwrite=False):
         """Update calibrations for the data file. Does not save the changes.
