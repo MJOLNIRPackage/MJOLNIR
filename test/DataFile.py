@@ -23,8 +23,7 @@ def test_DataFile():
     except:
         assert True
 
-    files = [os.path.join(dataPath,'camea2018n000137.hdf'),
-             os.path.join(dataPath,'camea2018n000137.nxs')]
+    files = [os.path.join(dataPath,f) for f in ['camea2018n000137.hdf','camea2018n000137.nxs','camea2022n000894.hdf','camea2022n000894.nxs']]
     DF1 = DataFile(files[0])
 
     size = DF1.size
@@ -67,13 +66,18 @@ def test_DataFile_equility():
     f3 = DataFile(os.path.join(dataPath,'camea2018n000136.nxs'))
     assert(f1==f3)
     print('----------')
+    f6 = DataFile(os.path.join(dataPath,'camea2022n000894.hdf'))
+    f6b = f6.convert(binning=8)
+    f6b.saveNXsqom(os.path.join(dataPath,'camea2022n000894.nxs'))
+    f7 = DataFile(os.path.join(dataPath,'camea2022n000894.nxs'))
+    assert(f6==f7)
 
 def test_DataFile_plotA4():
     plt.ioff()
     import matplotlib
     #matplotlib.use('Agg')
-    fileName = os.path.join(dataPath,'camea2018n000136.hdf')
-    fileName2= os.path.join(dataPath,'camea2018n000136.nxs')
+    fileName = os.path.join(dataPath,'camea2022n000894.hdf')
+    fileName2= os.path.join(dataPath,'camea2022n000894.nxs')
     file = DataFile(fileName)
     
 
@@ -101,8 +105,8 @@ def test_DataFile_plotEf():
     plt.ioff()
     import matplotlib
     #matplotlib.use('Agg')
-    fileName = os.path.join(dataPath,'camea2018n000136.hdf')
-    fileName2= os.path.join(dataPath,'camea2018n000136.nxs')
+    fileName = os.path.join(dataPath,'camea2022n000894.hdf')
+    fileName2= os.path.join(dataPath,'camea2022n000894.nxs')
     assertFile(fileName2)
     file = DataFile(fileName)
 
@@ -129,8 +133,8 @@ def test_DataFile_plotEfOverview():
     plt.ioff()
     import matplotlib
     #matplotlib.use('Agg')
-    fileName = os.path.join(dataPath,'camea2018n000136.hdf')
-    fileName2= os.path.join(dataPath,'camea2018n000136.nxs')
+    fileName = os.path.join(dataPath,'camea2022n000894.hdf')
+    fileName2= os.path.join(dataPath,'camea2022n000894.nxs')
     assertFile(fileName2)
 
     file = DataFile(fileName)
@@ -158,8 +162,8 @@ def test_DataFile_plotNormalization():
     plt.ioff()
     import matplotlib
     #matplotlib.use('Agg')
-    fileName = os.path.join(dataPath,'camea2018n000136.hdf')
-    fileName2= os.path.join(dataPath,'camea2018n000136.nxs')
+    fileName = os.path.join(dataPath,'camea2022n000894.hdf')
+    fileName2= os.path.join(dataPath,'camea2022n000894.nxs')
     file = DataFile(fileName)
     assertFile(fileName2)
 
@@ -193,11 +197,11 @@ def test_DataFile_decodeString():
 
 def test_DataFile_ScanParameter():
 
-    files = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000136.nxs')]
+    files = [os.path.join(dataPath,'camea2022n000894.hdf'),os.path.join(dataPath,'camea2022n000894.nxs')]
     assertFile(files[1])
     for file in files:
         dfile = DataFile(file)
-        assert(dfile.scanParameters[0]=='rotation_angle')
+        assert(dfile.scanParameters[0]=='A3')
         assert(len(dfile.scanParameters)==len(dfile.scanUnits))
         assert(len(dfile.scanParameters)==len(dfile.scanValues))
         assert(len(dfile.scanParameters)==1)
@@ -206,7 +210,7 @@ def test_DataFile_ScanParameter():
 
 
 def test_DataFile_Error():
-    df = DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
+    df = DataFile(os.path.join(dataPath,'camea2022n000894.hdf'))
 
     # Not implimented
     try:
@@ -222,7 +226,7 @@ def test_DataFile_Error():
     except AttributeError:
         assert True
     
-    df2 = DataFile(os.path.join(dataPath,'camea2018n000136.nxs'))
+    df2 = DataFile(os.path.join(dataPath,'camea2022n000894.nxs'))
     try:
         df.saveNXsqom(os.path.join(dataPath,'saving.nxs'))
         assert False
@@ -238,13 +242,13 @@ def test_DataFile_Error():
 
 
 def test_DataFile_SaveLoad():
-    df = DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
-    df.saveHDF(os.path.join(dataPath,'camea2018n000136_2.hdf'))
-    df2= DataFile(os.path.join(dataPath,'camea2018n000136_2.hdf'))
+    df = DataFile(os.path.join(dataPath,'camea2022n000894.hdf'))
+    df.saveHDF(os.path.join(dataPath,'camea2022n000894_2.hdf'))
+    df2= DataFile(os.path.join(dataPath,'camea2022n000894_2.hdf'))
     failed = []
 
     for att,val in df.__dict__.items():
-        if att in ['name','fileLocation']: # Name and location are to be different
+        if att in ['name','fileLocation','fromNICOS']: # Name and location are to be different
             continue
         if isinstance(val,np.ndarray):
             if val.dtype == 'O':
@@ -302,7 +306,7 @@ def test_updateCalibration():
                     os.path.join('Data','Normalization80_5.calib')]
 
 
-    df = DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
+    df = DataFile(os.path.join(dataPath,'camea2022n000894.hdf'))
     print(df.I)
     print('----------------------')
     df.loadBinning(1)
@@ -315,15 +319,16 @@ def test_updateCalibration():
     df.loadBinning(1)
     newBinnings = df.possibleBinnings # is 1,3,8,5
     newEdges = df.instrumentCalibrationEdges
-    assert(len(newBinnings)!=len(binnings)) # Addition of binning 5
-    assert(not np.any(newEdges!=edges)) # Check if all elemenst are equal
+    
+    assert(not np.any(newEdges!=edges)) # Check if all elements are equal
 
 
     df.updateCalibration(calibFiles,overwrite=True)
     df.loadBinning(1)
 
     newEdges = df.instrumentCalibrationEdges
-    assert(np.any(newEdges!=edges)) # Check if all elemenst are equal
+    
+    assert(np.any(newEdges!=edges)) # Check if all elements are equal
 
 #
 #def test_DataFile_BoundaryCalculation(quick):
@@ -345,7 +350,8 @@ def test_shallowRead():
     # read out all possible things
     parameters = possibleAttributes
     files = [os.path.join(dataPath,'camea2018n000136.hdf'),
-             os.path.join(dataPath,'camea2018n000137.hdf')]
+             os.path.join(dataPath,'camea2018n000137.hdf'),
+             os.path.join(dataPath,'camea2022n000894.hdf')]
     result = shallowRead(files,parameters)
 
     assert(len(result) == len(files))
