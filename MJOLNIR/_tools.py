@@ -1154,3 +1154,20 @@ def rescale(x,f=0.5):
     return f*x*x*np.sign(x)
 def scale(x,f=0.5):
     return np.sqrt(np.abs(x)/f)*np.sign(x)
+
+def getNext(l,delete=True):
+    """get elements in itterator and delete list depending on flag
+    
+    Args:
+        - l (itterable): List or liste-like to loop over
+
+    Kwargs: delete (bool): If true, itteratively delete elements in list, else keep elements (default True)
+    
+    """
+    if delete:
+        while len(l)>0:
+            yield l[0]
+            del l[0]
+    else:
+        for entry in l:
+            yield entry
