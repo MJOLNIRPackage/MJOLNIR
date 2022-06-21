@@ -329,7 +329,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None,deleteOnConvert=False):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -345,6 +345,8 @@ class DataSet(object):
 
             - printFunction (function): Function called if a message is to be printed (default None, uses warning)
 
+            - deleteOnConvert (bool): If true, delete raw data files when a conversion has been done (default False)
+
         Raises:
 
             - IOError
@@ -356,7 +358,7 @@ class DataSet(object):
 
         if dataFiles is None:
             if len(self.dataFiles)==0:
-                raise AttributeError('No data files file provided either through input of in the DataSet object.')
+                raise AttributeError('No data files file provided either through input or in the DataSet object, or low-memory mode is used.')
         else:
             dataFiles = isListOfDataFiles(dataFiles)
         
@@ -364,23 +366,23 @@ class DataSet(object):
         
         dataFiles = self.dataFiles
         convertedFiles = []
-        for rawfile in dataFiles:
-            convFile = rawfile.convert(binning,printFunction=printFunction)
+        
+        for rawFile in _tools.getNext(dataFiles,delete=deleteOnConvert):
 
+            convFile = rawFile.convert(binning,printFunction=printFunction)
+            
             if saveFile: # TODO:
                 if not saveLocation is None:
                     directory,file = os.path.split(saveLocation)
                     directory = os.path.abspath(directory)
                     if file == '':
-                        file = os.path.split(rawfile.fileLocation)[1]
+                        file = os.path.split(rawFile.fileLocation)[1]
                     fileName = os.path.splitext(file)[0]
                     saveloc = os.path.join(directory,fileName+'.nxs')
                 else:
-                    saveloc = rawfile.fileLocation.replace('.hdf','.nxs')
+                    saveloc = rawFile.fileLocation.replace('.hdf','.nxs')
                 
                 convFile.saveNXsqom(saveloc)
-            
-            #file.close()
             
             convertedFiles.append(convFile)
         self._convertedFiles = []
