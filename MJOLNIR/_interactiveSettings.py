@@ -229,10 +229,10 @@ def initializeRESOLUTION(ax):
                 return
         returnString = ax.old_format_coord(x,y)
         if ax.type in ['QE','QELine','QELineView3D']:
-            Eis = ax.ds.FindEi(y)
+            Eis = ax.ds.findEi(y)
         elif ax.type == 'QPlane':
             deltaE = np.mean([ax.EMin,ax.EMax])
-            Eis = ax.ds.FindEi(deltaE)
+            Eis = ax.ds.findEi(deltaE)
             
 
         if ax.type in ['QE','QELine','QELineView3D','QPlane']:
@@ -367,7 +367,7 @@ def initializeRESOLUTION(ax):
 
         if ax.type in ['QE','QELine','QELineView3D']:
 
-            Eis = ax.ds.FindEi(y)
+            Eis = ax.ds.findEi(y)
             
             if ax.type == 'QELineView3D': # Currently only done with rlu
                 #if not hasattr(ax,'dirVector'):
@@ -456,7 +456,7 @@ def initializeRESOLUTION(ax):
                 P2 = np.array([0.0,1.0,0.0,0.0])
             
             deltaE = np.mean([ax.EMin,ax.EMax])
-            Eis = ax.ds.FindEi(deltaE)
+            Eis = ax.ds.findEi(deltaE)
             for Ei in Eis:
                 Ef = Ei-deltaE
                 M,eigenVectors,sigma = ax.ds.calculateResolutionMatrixAndVectors(pos,P1,P2,Ei,Ef,rlu=ax.rlu,rluAxis=True)

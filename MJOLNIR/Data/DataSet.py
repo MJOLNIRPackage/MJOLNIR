@@ -3569,7 +3569,7 @@ class DataSet(object):
             self.mask = [np.zeros_like(df.I,dtype=bool) for df in self]
             self._maskingObject = None
 
-    def FindEi(self,deltaE):
+    def findEi(self,deltaE):
         Eis = np.array([df.Ei[0] for df in self])
         Efs = [np.array([df.instrumentCalibrationEf[:,1].min(),df.instrumentCalibrationEf[:,1].max()]) for df in self]
             
