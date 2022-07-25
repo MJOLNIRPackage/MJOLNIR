@@ -1802,7 +1802,7 @@ class DataSet(object):
         return DataList,np.array(BinList,dtype=object)
 
     
-    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','plotSeperator','cmap','colorbar']]))
+    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','plotSeperator','seperatorColor','cmap','colorbar']]))
     def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=True,outputFunction=print,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
@@ -1833,6 +1833,8 @@ class DataSet(object):
             - plotSeperator (bool): If true, vertical lines are plotted at Q points (default True).
             
             - seperatorWidth (float): Width of seperator line (default 2).
+
+            - seperatorColor (str or list): Color of the seperator line (default k)
             
             - log (bool): If true the plotted intensity is the logarithm of the intensity (default False)
 
@@ -1950,6 +1952,13 @@ class DataSet(object):
                 del kwargs['plotSeperator']
             else:
                 plotSeperator = False
+
+            if 'seperatorColor' in kwargs:
+                seperatorColor = kwargs['seperatorColor']
+                del kwargs['seperatorColor']
+            else:
+                seperatorColor = 'k'
+            
 
             if 'colorbar' in kwargs:
                 colorbar = kwargs['colorbar']
@@ -2110,7 +2119,7 @@ class DataSet(object):
 
 
             if plotSeperator:
-                [ax.vlines(offset-offsetWidth,*ax.get_ylim(),'k',linewidth=seperatorWidth) for offset,offsetWidth in zip(ax.OffSets[1:],ax.OffSetWidth[1:])]
+                [ax.vlines(offset-offsetWidth,*ax.get_ylim(),color=seperatorColor,linewidth=seperatorWidth) for offset,offsetWidth in zip(ax.OffSets[1:],ax.OffSetWidth[1:])]
 
             if colorbar:
                 ax.get_figure().colorbar(ax.pmeshs[0])
