@@ -222,7 +222,8 @@ class DataFile(object):
                     self.MonitorPreset=np.array(getHDFEntry(f,'preset',fromNICOS=self.fromNICOS))
                     if len(self.MonitorPreset)>1:
                         self.MonitorPreset = self.MonitorPreset[0]             
-                    self.startTime = np.array(getHDFEntry(f,'startTime',fromNICOS=self.fromNICOS))[0]
+                    self.startTime = np.array(getHDFEntry(f,'startTime',fromNICOS=self.fromNICOS))[0].decode()
+                    
                     if self.type == 'hdf':
                         self.Monitor = np.array(getHDFEntry(f,'hdfMonitor',fromNICOS=self.fromNICOS))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
@@ -321,7 +322,14 @@ class DataFile(object):
                     else:
                         self.twotheta = self.A4-self.A4Off
                     
-                    self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
+                    try:
+                        self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
+                    except KeyError:
+                        warnings.warn("Couldn't load scan parameters")
+                        self.scanParameters = []
+                        self.scanValues= np.array([[None]])
+                        self.scanUnits =''
+                        self.scanDataPosition = ''
                     if len(self.scanParameters) == 1 and self.scanParameters[0] == 'rotation_angle' and len(self.A4)>1 and np.all(np.isclose(self.A4,self.A4[0],atol=0.01)): 
                         # If all A4 values are the same, out 2t has been written on instrument computer
                         # and because of this, six saves 2t and not a4. Solution: set A4Offset to 0 and
