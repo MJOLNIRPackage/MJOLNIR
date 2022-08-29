@@ -107,9 +107,18 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
         if X is None:
             return self.call()
         elif isinstance(X,(DataSet.DataSet)):
-            return [self.call(x,*args,**kwargs) for x in X]
+            result = []
+            for x in X:
+                temp = self.call(x,*args,**kwargs)
+                if not len(temp.shape) == len(x.I.shape):
+                    temp = np.outer(temp,np.ones_like(x.I[0],dtype=bool)).reshape(*x.I.shape)
+                result.append(temp)
+            return result
         else:
-            return self.call(X,*args,**kwargs)
+            temp = self.call(X,*args,**kwargs)
+            if not len(temp.shape) == len(X.I.shape):
+                temp = np.outer(temp,np.ones_like(X.I[0],dtype=bool)).reshape(*X.I.shape)
+            return temp#self.call(X,*args,**kwargs)
     
     def __add__(self,other):
         return MultiMask(masks=[self,other],operation=np.logical_or)
