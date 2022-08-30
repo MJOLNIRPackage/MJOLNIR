@@ -1654,7 +1654,10 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,sample,PillarSizes=None,Pil
                     outputFunction(ax.format_coord(x,y))
                 break
     fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event,Ax,outputFunction=outputFunction))
-
+    try:
+        Ax[0].get_figure().tight_layout()
+    except:
+        pass
     return Ax
 
 def plotSetup(A3,SEAlignmentPeak,A4Position,sample,Ei,Ef,PillarSizes=None,PillarOffsets=None,SEA3OffsetWanted=0,instrument = 'CAMEA', ax=None):
