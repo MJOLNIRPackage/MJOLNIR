@@ -1381,7 +1381,55 @@ def converterToQxQy(A3,A4,Ei,Ef):
     Qx,Qy = (QV*q.reshape(-1,1))[:,:2].T
     return (Qx,Qy)
 
-def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,outputFunction=None, instrument='CAMEA'):
+
+# Mock-up data set
+class simpleDataSet():
+    def __init__(self,sample,Ei):
+        self.sample = [sample]
+        self.Ei = np.array([Ei])
+
+    def __len__(self):
+        return 1
+
+    def FindEi(self,deltaE):
+        return self.Ei
+ 
+
+
+
+
+def getInstrumentInfo(name):
+    if name == 'CAMEA':
+        calib = np.loadtxt(MJOLNIR.__CAMEANormalizationBinning1__,delimiter=',',skiprows=3)
+        detectors = 104
+        wedges = 8
+        energies = 8
+        axes = 9
+        A4Width = 0
+        
+    elif name == 'MultiFLEXX':
+        calib = np.loadtxt(MJOLNIR.__multiFLEXXNormalization__,delimiter=',',skiprows=1)
+        detectors = 31
+        wedges = 31
+        energies = 5
+        A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
+        axes = 6
+        #Ax = [RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(2,3,i+1)) for i in range(6)]
+
+    elif name == 'Bambus':
+        calib = np.loadtxt(MJOLNIR.__bambusNormalization__,delimiter=',',skiprows=1)
+        detectors = 20 
+        wedges = 20
+        energies = 5
+        A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
+        axes = 6
+        #Ax = [RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(2,3,i+1)) for i in range(6)]
+    else:
+        raise AttributeError('Provided instrument "{}" not understood'.format(name))
+    
+    return detectors,wedges,energies,calib,A4Width,axes
+
+def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,sample,PillarSizes=None,PillarOffsets=None,SEAlignmentPeak=None,SEA3OffsetWanted=0,points=False,outputFunction=None,instrument = 'CAMEA'):
     """Generate an overview of coverage for points between A3Start and Stop for given A4, Ei, and cell
 
     Args:
@@ -1396,13 +1444,17 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
 
         - Ei (float): Incoming energy (meV)
 
-        - Cell (list): Cell parameters [a,b,c,a*,b*,c*,alpha,beta,gamma,alha*,beta*,gamma*]
-
-        - r1 (alingment point): First alignment point
-
-        - r2 (alingment point): Second alignment point
+        - sample (Sample): Sample used for setup
 
     Kwargs:
+        
+        - PillarSizes (list): List of angular width of pilars in sample environment (default None)
+        
+        - PillarOffsets (list): List of angular offsets of pilars in sample environment (default None)
+        
+        - SEAlignmentPeak ([HKL]): Alingment point of sample environment (default None)
+        
+        - SEA3OffsetWanted (float): Offset in A3 of sample environment relative to SEAlignmentPeak (default 0)
 
         - points (bool): If true, overplot actual points measured (default False)
 
@@ -1411,76 +1463,67 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
         - instrument (string): Instrument for which the prediction is to be made (default CAMEA)
 
     """
-    from MJOLNIR.Data import Sample
-    s = Sample.Sample(*Cell,projectionVector1=r1,projectionVector2=r2)
- 
-    class simpleDataSet():
-        def __init__(self,sample,Ei):
-            self.sample = [sample]
-            self.Ei = np.array([Ei])
+    
+    
+    
+    
+    if np.any([x is None for x in [SEAlignmentPeak,PillarSizes,PillarOffsets]]):
+        PillarSizes = []
+        PillarOffsets = []
+        offset = 0
+    else:
+        ## Start of calculation of sample environment offset
+        r1 = sample.plane_vector1
+        
+        _, SEA4BaseR1= converterToA3A4(*sample.calculateHKLToQxQy(*SEAlignmentPeak),Ei,Ei)
+        
+        AlingmentPeakAngles = TasUBlibDEG.calcTasQAngles(sample.UB,sample.planeNormal,1.0,0.0,np.array([*SEAlignmentPeak,Ei,Ei]))
+        
+        offset = TasUBlibDEG.tasAngleBetweenReflections(sample.B,r1,np.array([*SEAlignmentPeak,*AlingmentPeakAngles,Ei,Ei]))-r1[3]
+        
+    # Offset is equal to calculated offset with respect to SEAlignmentPeak plus wanted A3 offset
+    EnvironmentA3Offset = offset+SEA3OffsetWanted
+    
+    t = simpleDataSet(sample,Ei)
+    fig = plt.figure(figsize=(16,11))
 
-        def __len__(self):
-            return 1
-
-        def FindEi(self,deltaE):
-            return self.Ei
-     
+    
     if outputFunction is None:
         outputFunction = print
-
-    t = simpleDataSet(s,Ei)
-    fig = plt.figure(figsize=(16,11))
-    
-    if instrument == 'CAMEA':
-        calib = np.loadtxt(MJOLNIR.__CAMEANormalizationBinning1__,delimiter=',',skiprows=3)
-        detectors = 104
-        wedges = 8
-        energies = 8
-        Ax = []
-        for i in range(9):
-            ax = RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(3,3,i+1))
-
-            #ax.type = 'QPlane'
-            ax.ds = t
-            #ax = _interactiveSettings.setupModes(ax)
-            Ax.append(ax)
         
-
-    elif instrument == 'MultiFLEXX':
-        calib = np.loadtxt(MJOLNIR.__multiFLEXXNormalization__,delimiter=',',skiprows=1)
-        detectors = 31
-        wedges = 31
-        energies = 5
-        A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
-        Ax = [RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(2,3,i+1)) for i in range(6)]
-
-    elif instrument == 'Bambus':
-        calib = np.loadtxt(MJOLNIR.__bambusNormalization__,delimiter=',',skiprows=1)
-        detectors = 20 
-        wedges = 20
-        energies = 5
-        A4Width = 0.5 # Pad the prediction in A4 with this value (otherwise only lines will be shown)
-        Ax = [RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(2,3,i+1)) for i in range(6)]
-
-    else:
-        raise AttributeError('Provided instrument "{}" not understood'.format(instrument))
+    if PillarSizes is None:
+        PillarSizes = []
+    
+    if PillarOffsets is None:
+        PillarOffsets = []
+        
+    if not len(PillarOffsets) == len(PillarSizes):
+        raise AttributeError('Number of provided pillars ({:}) does not match number of pillar offsets ({:}).'.format(len(PillarOffsets),len(PillarSizes)))
+        
+    detectors,wedges,energies,calib,A4Width,axes = getInstrumentInfo(instrument)
+    Ax = []
+    rows = int(axes/3.0)
+    for i in range(axes):
+        ax = RLUAxes.createQAxis(t,withoutOnClick=True,figure=fig,ids=(rows,3,i+1))
+        ax.grid(True, zorder=0,color='k')
+        ax.ds = t
+        Ax.append(ax)
+        
+        
     
     A4Instrument = calib[:,-1].reshape(detectors,energies)
-    
+        
     EfInstrument = calib[:,4].reshape(detectors,energies)
     EfInstrument[np.isclose(EfInstrument,0.0)]=np.nan
-
-    A3PointValues = np.linspace(A3Start,A3Stop,A3Steps)-s.theta
-    steps = A3Steps
-    if steps>30:
-        steps = 30
-    A3Values = np.linspace(A3Start,A3Stop,steps)-s.theta
-
-    endColor = np.array([0.12156863, 0.46666667, 0.70588235, 0.5])
-    startColor = np.array([0.83921569, 0.15294118, 0.15686275, 0.5])
+    
+    
+    A3Values = np.linspace(A3Start,A3Stop,A3Steps)-sample.theta
+    
+    endColor = np.array([0.12156863, 0.46666667, 0.70588235, 0.35])
+    startColor = np.array([0.83921569, 0.15294118, 0.15686275, 0.35])
     diff = (endColor-startColor)/float(energies-1)
-
-    def format_axes_func(self,x,y,Ei,Ef,A3Off=s.theta,A4Sign=-1.0):# pragma: no cover
+    
+    def format_axes_func(self,x,y,Ei,Ef,A3Off=sample.theta,A4Sign=-1.0):# pragma: no cover
         A3,A4 = converterToA3A4(x,y,Ei,Ef,-A3Off,A4Sign=A4Sign)
         return ax.sample.format_coord(x,y)+', A3 = {:.2f} deg, A4 = {:.2f} deg, Ef = {:.2f}'.format(A3,A4,Ef)
     
@@ -1491,56 +1534,107 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
         
         for A4Position in A4Positions:
             if points:
-                for A3 in A3PointValues:
+                for A3 in A3Values:
                     H,L = converterToQxQy(A3=A3, A4=A4+A4Position,Ei = Ei, Ef = Ef)
                     ax.scatter(H,L,color=startColor[:-1]+diff[:-1]*i)
-
+                    
             detPrWedge = int(detectors/wedges)
             if instrument == 'CAMEA':
                 
-                A4Edge = np.array([np.concatenate([a4,[a4[-1]]*steps,a4[::-1],[a4[0]]*steps]) for a4 in A4.reshape(wedges,detPrWedge)])
-                EfEdge = np.array([np.concatenate([ef,[ef[-1]]*steps,ef[::-1],[ef[0]]*steps]) for ef in Ef.reshape(wedges,detPrWedge)])
+                A4Edge = np.array([np.concatenate([a4,[a4[-1]]*A3Steps,a4[::-1],[a4[0]]*A3Steps]) for a4 in A4.reshape(wedges,detPrWedge)])
+                EfEdge = np.array([np.concatenate([ef,[ef[-1]]*A3Steps,ef[::-1],[ef[0]]*A3Steps]) for ef in Ef.reshape(wedges,detPrWedge)])
                 A3Edge = np.array(list(np.concatenate([[A3Values[0]]*detPrWedge,A3Values,[A3Values[-1]]*detPrWedge,A3Values[::-1]]))*wedges).reshape(wedges,-1)
             else:
                 
-                ### Generate points for plotting. Traces out the shape by first chaning A4, then A3, then -A4, and then -A3
-                A4Edge = np.array([np.concatenate([a4-A4Width,np.array([a4[-1]]*steps)-A4Width,a4[::-1]+A4Width,np.array([a4[0]]*steps)+A4Width,[a4[0]-A4Width]]) for a4 in A4.reshape(wedges,detPrWedge)])#.reshape(energies,detPrWedge)])
-                EfEdge = np.array([np.concatenate([ef,[ef[-1]]*steps,ef[::-1],[ef[0]]*(steps+1)]) for ef in Ef.reshape(wedges,detPrWedge)])#.reshape(energies,detPrWedge)])
+                ### Generate points for plotting. Traces out the shape by first changing A4, then A3, then -A4, and then -A3
+                A4Edge = np.array([np.concatenate([a4-A4Width,np.array([a4[-1]]*A3Steps)-A4Width,a4[::-1]+A4Width,np.array([a4[0]]*A3Steps)+A4Width,[a4[0]-A4Width]]) for a4 in A4.reshape(wedges,detPrWedge)])#.reshape(energies,detPrWedge)])
+                EfEdge = np.array([np.concatenate([ef,[ef[-1]]*A3Steps,ef[::-1],[ef[0]]*(A3Steps+1)]) for ef in Ef.reshape(wedges,detPrWedge)])#.reshape(energies,detPrWedge)])
                 A3Edge = np.array(list(np.concatenate([[A3Values[0]]*detPrWedge,A3Values,[A3Values[-1]]*detPrWedge,A3Values[::-1],[A3Values[0]]]))*wedges).reshape(wedges,-1)
             
             
             
             Hedge,Ledge = np.array([converterToQxQy(A3=a3, A4=a4+A4Position,Ei = Ei, Ef = ef) for a3,a4,ef in zip(A3Edge,A4Edge,EfEdge)]).transpose([1,0,2])
             [a.plot(hedge,ledge,color=startColor+diff*i) for hedge,ledge in zip(Hedge,Ledge) for a in [Ax[-1],ax]]
-
-            
-        ax.set_xlabel(_tools.generateLabelDirection(s.projectionVector1) + ' RLU')
-        ax.set_ylabel(_tools.generateLabelDirection(s.projectionVector2) + ' RLU')
-        ax.set_title(r'$\Delta $E {:.2f}'.format(Ei-np.nanmean(Ef))+' meV, E$_f$ {:.2f} meV'.format(np.nanmean(Ef)))
+    
         
+        def colorGenerator():
+            colors = ['tab:blue','tab:orange','tab:green','tab:red','tab:purple','tab:brown','tab:pink','tab:gray','tab:olive','tab:cyan']
+            i=0
+            while True:
+               yield colors[i]
+               i = (i+1)%len(colors)
+        
+        
+        ## Plot windows of sample environment on top
+        for offset,PillarWidth,color in zip(PillarOffsets,PillarSizes,colorGenerator()):
+            A3BlockStart = -180-offset-EnvironmentA3Offset-0.5*PillarWidth-sample.theta
+            A3BlockSttop = -180-offset-EnvironmentA3Offset+0.5*PillarWidth-sample.theta
+            BA3 = np.linspace(A3BlockStart,A3BlockSttop,int(PillarWidth))
+            
+            A4Minimum = np.min(A4+np.min(A4Positions))
+            A4Maximum = np.max(A4+np.max(A4Positions))
+            A4XX = np.linspace(A4Minimum,A4Maximum,61)
+            A4Steps = len(A4XX)
+            A4Plot = np.concatenate([[A4XX[0]]*len(BA3),A4XX,[A4XX[-1]]*len(BA3),A4XX[::-1]])
+            A3Plot = np.concatenate([BA3,[BA3[-1]]*A4Steps,BA3[::-1],[BA3[0]]*(A4Steps)])
+            Qx,Qy = np.array([converterToQxQy(A3plot, A4plot, Ei, np.mean(Ef)) for A3plot,A4plot in zip(A3Plot,A4Plot)])[:,:,0].T
+            ax.plot(Qx,Qy,c=color)
 
-    Ax[-1].set_xlabel(_tools.generateLabelDirection(s.projectionVector1) + ' RLU')
-    Ax[-1].set_ylabel(_tools.generateLabelDirection(s.projectionVector2) + ' RLU')
-    Ax[-1].set_title('All Planes')
-
+    
+            OutGoingA3Start = -PillarWidth/2.0+EnvironmentA3Offset-sample.theta+offset
+            OutGoingA3Stop = PillarWidth/2.0+EnvironmentA3Offset-sample.theta+offset
+            OutGoingA3Start,OutGoingA3Stop = [f([OutGoingA3Start,OutGoingA3Stop]) for f in [np.min,np.max]]
+            
+            
+            A4MaxValue = np.max(A4Positions)+np.max(A4)
+            A4MinValue = np.min(A4Positions)+np.min(A4)
+            
+            A3BlockMaxA4Start = A4MaxValue-(offset+EnvironmentA3Offset-0.5*PillarWidth)
+            #A3BlockMaxA4Stop = A4MaxValue-(offset+EnvironmentA3Offset+0.5*PillarWidth)
+            
+            #A3BlockMinA4Start = A4MinValue-(offset+EnvironmentA3Offset-0.5*PillarWidth)
+            A3BlockMinA4Stop = A4MinValue-(offset+EnvironmentA3Offset+0.5*PillarWidth)
+            
+            
+            def blockedA4(a3):
+                return [np.min([(offset+EnvironmentA3Offset+0.5*PillarWidth)+a3,A4MaxValue]),np.max([(offset+EnvironmentA3Offset-0.5*PillarWidth)+a3,A4MinValue])]
+            
+            A3BlockingOutgoing = np.arange(A3BlockMinA4Stop,A3BlockMaxA4Start)
+            
+            A3Plot = np.concatenate([A3BlockingOutgoing,A3BlockingOutgoing[::-1]])
+            aA4 = np.array([blockedA4(a3) for a3 in A3BlockingOutgoing])
+            A4Plot = np.concatenate([aA4[:,0],aA4[::-1,1]])
+            Qx,Qy = np.array([converterToQxQy(A3plot-sample.theta, A4plot, Ei, np.mean(Ef)) for A3plot,A4plot in zip(A3Plot,A4Plot)])[:,:,0].T
+            ax.plot(Qx,Qy,c=color,linestyle='dashed')
+        
+            
+        ax.set_xlabel(_tools.generateLabelDirection(sample.projectionVector1) + ' RLU')
+        ax.set_ylabel(_tools.generateLabelDirection(sample.projectionVector2) + ' RLU')
+        ax.set_title(r'$\Delta $E {:.2f}'.format(Ei-np.nanmean(Ef))+' meV, E$_f$ {:.2f} meV'.format(np.nanmean(Ef)),pad=10+10*(not np.isclose(ax.sample.projectionAngle,np.pi/2.0)))
+        
+    
+    Ax[-1].set_xlabel(_tools.generateLabelDirection(sample.projectionVector1) + ' RLU')
+    Ax[-1].set_ylabel(_tools.generateLabelDirection(sample.projectionVector2) + ' RLU')
+    Ax[-1].set_title('All Planes',pad=10+10*(not np.isclose(ax.sample.projectionAngle,np.pi/2.0)))
+    
     #fig.tight_layout()
     if instrument == 'CAMEA':
-        Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-s.theta,A4Sign=A4Positions[0])
-        Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-s.theta,A4Sign=A4Positions[0])
-        Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-s.theta,A4Sign=A4Positions[0])
-        Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-s.theta,A4Sign=A4Positions[0])
-        Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta,A4Sign=A4Positions[0])
-        Ax[5].format_coord = lambda x,y: format_axes_func(Ax[5],x,y,Ei,np.nanmean(EfInstrument,axis=0)[5],-s.theta,A4Sign=A4Positions[0])
-        Ax[6].format_coord = lambda x,y: format_axes_func(Ax[6],x,y,Ei,np.nanmean(EfInstrument,axis=0)[6],-s.theta,A4Sign=A4Positions[0])
-        Ax[7].format_coord = lambda x,y: format_axes_func(Ax[7],x,y,Ei,np.nanmean(EfInstrument,axis=0)[7],-s.theta,A4Sign=A4Positions[0])
+        Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-sample.theta,A4Sign=A4Positions[0])
+        Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-sample.theta,A4Sign=A4Positions[0])
+        Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-sample.theta,A4Sign=A4Positions[0])
+        Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-sample.theta,A4Sign=A4Positions[0])
+        Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-sample.theta,A4Sign=A4Positions[0])
+        Ax[5].format_coord = lambda x,y: format_axes_func(Ax[5],x,y,Ei,np.nanmean(EfInstrument,axis=0)[5],-sample.theta,A4Sign=A4Positions[0])
+        Ax[6].format_coord = lambda x,y: format_axes_func(Ax[6],x,y,Ei,np.nanmean(EfInstrument,axis=0)[6],-sample.theta,A4Sign=A4Positions[0])
+        Ax[7].format_coord = lambda x,y: format_axes_func(Ax[7],x,y,Ei,np.nanmean(EfInstrument,axis=0)[7],-sample.theta,A4Sign=A4Positions[0])
+        
     else:
-        Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-s.theta,A4Sign=A4Positions[0])
-        Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-s.theta,A4Sign=A4Positions[0])
-        Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-s.theta,A4Sign=A4Positions[0])
-        Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-s.theta,A4Sign=A4Positions[0])
-        Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-s.theta,A4Sign=A4Positions[0])
-    
-
+        Ax[0].format_coord = lambda x,y: format_axes_func(Ax[0],x,y,Ei,np.nanmean(EfInstrument,axis=0)[0],-sample.theta,A4Sign=A4Positions[0])
+        Ax[1].format_coord = lambda x,y: format_axes_func(Ax[1],x,y,Ei,np.nanmean(EfInstrument,axis=0)[1],-sample.theta,A4Sign=A4Positions[0])
+        Ax[2].format_coord = lambda x,y: format_axes_func(Ax[2],x,y,Ei,np.nanmean(EfInstrument,axis=0)[2],-sample.theta,A4Sign=A4Positions[0])
+        Ax[3].format_coord = lambda x,y: format_axes_func(Ax[3],x,y,Ei,np.nanmean(EfInstrument,axis=0)[3],-sample.theta,A4Sign=A4Positions[0])
+        Ax[4].format_coord = lambda x,y: format_axes_func(Ax[4],x,y,Ei,np.nanmean(EfInstrument,axis=0)[4],-sample.theta,A4Sign=A4Positions[0])
+        
     def onclick(event,axes,outputFunction):# pragma: no cover
         for ax in axes:
             if ax.in_axes(event):
@@ -1560,8 +1654,143 @@ def prediction(A3Start,A3Stop,A3Steps,A4Positions,Ei,Cell,r1,r2,points=False,out
                     outputFunction(ax.format_coord(x,y))
                 break
     fig.canvas.mpl_connect('button_press_event', lambda event: onclick(event,Ax,outputFunction=outputFunction))
-    fig.tight_layout()
+
     return Ax
+
+def plotSetup(A3,SEAlignmentPeak,A4Position,sample,Ei,Ef,PillarSizes=None,PillarOffsets=None,SEA3OffsetWanted=0,instrument = 'CAMEA', ax=None):
+    """
+    Plot of instrumental setup usefull to check angles for sample environments.
+    
+    Args: 
+        - A3 (float): Sample rotation (deg)
+        
+        - SEAlignmentPeak ([HKL]): Alingment point of sample environment
+        
+        - A4Position (float) Position of tank (deg)
+        
+        - sample (Sample): Sample used for setup
+        
+        - Ei (float): Incoming energy (meV)
+        
+        - Ef (float): Nominal outgoing energy (meV)
+        
+    Kwargs:
+        
+        - PillarSizes (list): List of angular width of pilars in sample environment (default None) (deg)
+        
+        - PillarOffsets (list): List of angular offsets of pilars in sample environment (default None) (deg)
+        
+        - SEA3OffsetWanted (float): Offset in A3 of sample environment relative to SEAlignmentPeak (default 0) (deg)
+    
+        - instrument (str): Instrument name (default CAMEA)
+        
+        - ax (plt.axis): Axis in which to plot. If None, a new will be created (default None)
+        
+
+    Returns:
+    
+        - ax (plt.axis): Axis in which plot was made.
+        
+
+    """
+    if ax is None:
+        fig, ax = plt.subplots()
+        
+    
+    detectors,wedges,energies,calib,A4Width,axes = getInstrumentInfo(instrument)
+        
+    EfInstrument = calib[:,4].reshape(detectors,energies)
+    EfInstrument[np.isclose(EfInstrument,0.0)]=np.nan
+    
+    EfIndex = np.argmin(np.abs(Ef-EfInstrument.mean(axis=0)))
+    
+    A4Instrument = calib[:,-1].reshape(detectors,energies)
+    A4Instrument = A4Instrument[:,EfIndex]
+    
+    
+    A4Values = A4Instrument+A4Position
+    
+    EfMean = np.asarray(Ef).mean()
+    
+    QScaling = 0.25
+    
+    b1 = np.linalg.norm(np.dot(sample.B,sample.projectionVector1))*QScaling
+    b2 = np.linalg.norm(np.dot(sample.B,sample.projectionVector2))*QScaling
+
+    proj1A3 = converterToA3A4(*sample.calculateHKLToQxQy(*sample.projectionVector1),Ei,EfMean)[0]
+    proj2A3 = converterToA3A4(*sample.calculateHKLToQxQy(*sample.projectionVector2),Ei,EfMean)[0]
+    
+    
+    proj1A3 = np.deg2rad(proj1A3+A3-sample.theta)
+    proj2A3 = np.deg2rad(proj2A3+A3-sample.theta)
+    
+    B1 = -np.array([np.cos(proj1A3),np.sin(proj1A3)])*b1
+    B2 = np.array([np.cos(proj2A3),np.sin(proj2A3)])*b2
+    
+    
+    ## Start of calculation of sample environment offset
+    r1 = sample.plane_vector1#
+    
+    _, SEA4BaseR1= converterToA3A4(*sample.calculateHKLToQxQy(*SEAlignmentPeak),Ei,Ei)
+    
+    AlingmentPeakAngles = TasUBlibDEG.calcTasQAngles(sample.UB,sample.planeNormal,1.0,0.0,np.array([*SEAlignmentPeak,Ei,Ei]))
+    
+    offset = TasUBlibDEG.tasAngleBetweenReflections(sample.B,r1,np.array([*SEAlignmentPeak,*AlingmentPeakAngles,Ei,Ei]))-r1[3]
+    
+    # Offset is equal to calculated offset with respect to SEAlignmentPeak plus wanted A3 offset
+    EnvironmentA3Offset = offset+SEA3OffsetWanted
+    
+    
+    
+    for i in range(3):
+        X = np.array([0.0,B1[0]*3])+i*B2[0]
+        Y = np.array([0.0,B1[1]*3])+i*B2[1]
+        ax.plot(X,Y,'k-',zorder=22)#
+        
+        X = np.array([0.0,B2[0]*3])+i*B1[0]
+        Y = np.array([0.0,B2[1]*3])+i*B1[1]
+        ax.plot(X,Y,'k--',zorder=22)#
+        
+        
+    # Draw the pilars
+    distance = 0.3
+    for idx,(offset,width) in enumerate(zip(PillarOffsets,PillarSizes)):
+        pillarCenter = offset+A3+EnvironmentA3Offset+90#+s.theta
+        x = np.concatenate([np.cos(np.deg2rad(pillarCenter-0.5*width))*distance*np.array([1,1.1]),
+                            np.cos(np.deg2rad(pillarCenter+np.linspace(-0.5*width,0.5*width,np.round(width))))*distance*1.1,
+                            np.cos(np.deg2rad(pillarCenter+0.5*width))*distance*np.array([1.1,1]),
+                            np.cos(np.deg2rad(pillarCenter+np.linspace(0.5*width,-0.5*width,np.round(width))))*distance*1,
+                            [np.cos(np.deg2rad(pillarCenter-0.5*width))*distance]
+                            ])
+        y = np.concatenate([np.sin(np.deg2rad(pillarCenter-0.5*width))*distance*np.array([1,1.1]),
+                            np.sin(np.deg2rad(pillarCenter+np.linspace(-0.5*width,0.5*width,np.round(width))))*distance*1.1,
+                            np.sin(np.deg2rad(pillarCenter+0.5*width))*distance*np.array([1.1,1]),
+                            np.sin(np.deg2rad(pillarCenter+np.linspace(0.5*width,-0.5*width,np.round(width))))*distance*1,
+                             [np.sin(np.deg2rad(pillarCenter-0.5*width))*distance]
+                            ])
+        ax.plot(x,y,zorder=20, label='Pillar '+str(idx)) # color='k',
+        
+
+    
+    # Plot Ki along Qx = 0
+    ki = np.sqrt(Ei)*_tools.factorsqrtEK
+    Ki = np.array([0.0,ki])
+    
+    kf = np.sqrt(EfMean)*_tools.factorsqrtEK
+    ax.plot([0,-Ki[0]],[0,-Ki[1]],color='r',zorder=21, label='Incoming Ray')
+    
+    for idxA4,a4 in enumerate(A4Values):
+        Kf = kf*np.array([np.cos(np.deg2rad(a4+90)),np.sin(np.deg2rad(a4+90))])
+        q = QScaling*(Ki-Kf)
+
+        
+        ax.plot([0,Kf[0]],[0,Kf[1]],color='b',zorder=10, label='_'*(idxA4>0)+'Outgoing Rays')
+    
+        ax.plot([0,q[0]],[0,q[1]],color='y', label='_'*(idxA4>0)+'Scattering Vectors')
+    
+    ax.axis('equal')
+    ax.legend()
+    return ax
 
 def calculateResoultionMatrix(position,Ei,Ef,sample = None, rlu=True,binning = 8,A3Off=0.0, instrument='CAMEA'):
     """calculate Resolution matrix at position in units if 1/AA,1/AA,1/AA,meV
