@@ -491,6 +491,38 @@ def calcProjectionVectors(R1,R2,norm=None):
     return V1,V2
 
 
+def calculateSample(cell,HKL1,HKL2,A3R1,A3R2,Ei,Ef):
+    """
+    Generate a sample from two reflections, their A3 positions, and incoming and outgoing energies
+    
+        - HKL1 ([HKL]): First alignment point
 
+        - HKL2 ([HKL]): Second alignment point
+        
+        - A3R1 (float): A3 value of reference peak 1 (deg)
+        
+        - A3R2 (float): A3 value of reference peak 2 (deg)
+        
+        - Ei (float): Incoming energy used (meV)
+        
+        - Ef (float): Outgoing energy used (meV)
+        
+    """
+    
+    if np.isclose(A3R1,A3R2):
+        raise AttributeError('A3 positions of the two peaks are identical.')
+    
+    if np.all(np.isclose(HKL1,HKL2)):
+        raise AttributeError('Provided HKL positions are identical.')
+    
+    B = TasUBlib.calculateBMatrix(TasUBlib.calcCell(cell))
+    
+    A4R1 = TasUBlib.calTwoTheta(B, [*HKL1,Ei,Ef], -1)
+    A4R2 = TasUBlib.calTwoTheta(B, [*HKL2,Ei,Ef], -1)
+    
+    r1 = np.array([*HKL1,A3R1, A4R1, 0.0,0.0, Ei,Ei]) # H K L A3 A4 SGU SGL Ei Ef
+    r2 = np.array([*HKL2,A3R2, A4R2, 0.0,0.0, Ei,Ei]) # H K L A3 A4 SGU SGL Ei Ef
+    
+    return Sample(*cell,projectionVector1=r1,projectionVector2=r2)
 
 
