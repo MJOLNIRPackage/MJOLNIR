@@ -84,7 +84,7 @@ HDFTranslationNICOSAlternative = {
                    'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts'],
                    'magneticField':['entry/sample/B','entry/sample/B/value'],
                    'ei':'entry/CAMEA/monochromator/energy',
-                   'hdfMonitor':'entry/monitor_2/data'
+                   'hdfMonitor':['entry/monitor_2/data','entry/control/data']
 }
 
 ## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
@@ -1727,6 +1727,15 @@ class DataFile(object):
                 
                 monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
                 monitor.attrs['NX_class']=b'NX_INT'
+                print(fd.get('entry/monitor_2'))
+                if fd.get('entry/monitor_2') is None:
+                    mon = fd.create_group('entry/monitor_2')
+                    monitor = mon.create_dataset('data',shape=(fileLength),dtype='int32',data=Monitor)
+                    monitor.attrs['NX_class']=b'NX_INT'
+                else:
+                    pass
+
+                
 
                 normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
                 normalization.attrs['NX_class']=b'NX_FLOAT'

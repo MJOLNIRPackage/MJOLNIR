@@ -2,6 +2,7 @@ from MJOLNIR.Geometry.Instrument import Instrument,prediction
 import MJOLNIR.Geometry.Analyser as Analyser
 import MJOLNIR.Geometry.Detector as Detector
 import MJOLNIR.Geometry.Wedge as Wedge
+from MJOLNIR.Data import Sample
 import pytest
 import numpy as np
 import warnings
@@ -341,20 +342,26 @@ def test_Prediction():
     A4 = [-36,-40]
     points = False
     # [H,K,L,A3,A4,0.0,0.0,Ei,Ef]
-    r1 = np.array([1,0,0,25.0,-24,0.0,0.0,Ei,Ei])
-    r2 = np.array([0,0,1,115.0,-24,0.0,0.0,Ei,Ei])
+    HKL1 = np.array([1,0,0])
+    HKL2 = np.array([0,0,1])
+    A3R1 = 25.0
+    A3R2 = 115.0
+    #r1 = np.array([1,0,0,25.0,-24,0.0,0.0,Ei,Ei])
+    #r2 = np.array([0,0,1,115.0,-24,0.0,0.0,Ei,Ei])
     
     cell = np.array([6.0,6.0,6.0,90.0,90.0,90.0])
 
+    sample = Sample.calculateSample(cell,HKL1,HKL2,A3R1=A3R1,A3R2=A3R2, Ei=Ei,Ef=Ei)
+
     plt.ion()
 
-    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,Cell=cell,r1=r1,r2=r2,
+    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,sample=sample,
     points=points, instrument='CAMEA')
 
-    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,Cell=cell,r1=r1,r2=r2,
+    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,sample=sample,
     points=points, instrument='MultiFLEXX')
 
-    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,Cell=cell,r1=r1,r2=r2,
+    ax = prediction(A3Start=A3Start,A3Stop=A3Stop,A3Steps=A3Steps,A4Positions=A4,Ei=Ei,sample=sample,
     points=points, instrument='Bambus')
     
 

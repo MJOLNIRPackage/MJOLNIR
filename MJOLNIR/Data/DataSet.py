@@ -373,15 +373,16 @@ class DataSet(object):
             
             if saveFile: # TODO:
                 if not saveLocation is None:
-                    directory,file = os.path.split(saveLocation)
+                    directory,_ = os.path.split(saveLocation)
                     directory = os.path.abspath(directory)
-                    if file == '':
-                        file = os.path.split(rawFile.fileLocation)[1]
+
+                    file = os.path.split(rawFile.fileLocation)[-1]
                     fileName = os.path.splitext(file)[0]
                     saveloc = os.path.join(directory,fileName+'.nxs')
+                    
                 else:
                     saveloc = rawFile.fileLocation.replace('.hdf','.nxs')
-                
+                print(saveloc)
                 convFile.saveNXsqom(saveloc)
             
             convertedFiles.append(convFile)

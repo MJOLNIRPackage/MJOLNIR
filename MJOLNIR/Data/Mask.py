@@ -116,8 +116,8 @@ class MaskingObject(with_metaclass(MaskingObjectMeta)):
             return result
         else:
             temp = self.call(X,*args,**kwargs)
-            if not len(temp.shape) == len(X.I.shape):
-                temp = np.outer(temp,np.ones_like(X.I[0],dtype=bool)).reshape(*X.I.shape)
+            #if not len(temp.shape) == len(X.I.shape):
+            #    temp = np.outer(temp,np.ones_like(X.I[0],dtype=bool)).reshape(*X.I.shape)
             return temp#self.call(X,*args,**kwargs)
     
     def __add__(self,other):
