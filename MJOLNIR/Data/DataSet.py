@@ -329,7 +329,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None,deleteOnConvert=False):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -345,6 +345,8 @@ class DataSet(object):
 
             - printFunction (function): Function called if a message is to be printed (default None, uses warning)
 
+            - deleteOnConvert (bool): If true, delete raw data files when a conversion has been done (default False)
+
         Raises:
 
             - IOError
@@ -356,7 +358,7 @@ class DataSet(object):
 
         if dataFiles is None:
             if len(self.dataFiles)==0:
-                raise AttributeError('No data files file provided either through input of in the DataSet object.')
+                raise AttributeError('No data files file provided either through input or in the DataSet object, or low-memory mode is used.')
         else:
             dataFiles = isListOfDataFiles(dataFiles)
         
@@ -364,23 +366,24 @@ class DataSet(object):
         
         dataFiles = self.dataFiles
         convertedFiles = []
-        for rawfile in dataFiles:
-            convFile = rawfile.convert(binning,printFunction=printFunction)
+        
+        for rawFile in _tools.getNext(dataFiles,delete=deleteOnConvert):
 
+            convFile = rawFile.convert(binning,printFunction=printFunction)
+            
             if saveFile: # TODO:
                 if not saveLocation is None:
-                    directory,file = os.path.split(saveLocation)
+                    directory,_ = os.path.split(saveLocation)
                     directory = os.path.abspath(directory)
-                    if file == '':
-                        file = os.path.split(rawfile.fileLocation)[1]
+
+                    file = os.path.split(rawFile.fileLocation)[-1]
                     fileName = os.path.splitext(file)[0]
                     saveloc = os.path.join(directory,fileName+'.nxs')
+                    
                 else:
-                    saveloc = rawfile.fileLocation.replace('.hdf','.nxs')
-                
+                    saveloc = rawFile.fileLocation.replace('.hdf','.nxs')
+                print(saveloc)
                 convFile.saveNXsqom(saveloc)
-            
-            #file.close()
             
             convertedFiles.append(convFile)
         self._convertedFiles = []
@@ -1800,7 +1803,7 @@ class DataSet(object):
         return DataList,np.array(BinList,dtype=object)
 
     
-    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','plotSeperator','cmap','colorbar']]))
+    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','plotSeperator','seperatorColor','cmap','colorbar']]))
     def plotCutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=True,outputFunction=print,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
         
@@ -1831,6 +1834,8 @@ class DataSet(object):
             - plotSeperator (bool): If true, vertical lines are plotted at Q points (default True).
             
             - seperatorWidth (float): Width of seperator line (default 2).
+
+            - seperatorColor (str or list): Color of the seperator line (default k)
             
             - log (bool): If true the plotted intensity is the logarithm of the intensity (default False)
 
@@ -1948,6 +1953,13 @@ class DataSet(object):
                 del kwargs['plotSeperator']
             else:
                 plotSeperator = False
+
+            if 'seperatorColor' in kwargs:
+                seperatorColor = kwargs['seperatorColor']
+                del kwargs['seperatorColor']
+            else:
+                seperatorColor = 'k'
+            
 
             if 'colorbar' in kwargs:
                 colorbar = kwargs['colorbar']
@@ -2108,7 +2120,7 @@ class DataSet(object):
 
 
             if plotSeperator:
-                [ax.vlines(offset-offsetWidth,*ax.get_ylim(),'k',linewidth=seperatorWidth) for offset,offsetWidth in zip(ax.OffSets[1:],ax.OffSetWidth[1:])]
+                [ax.vlines(offset-offsetWidth,*ax.get_ylim(),color=seperatorColor,linewidth=seperatorWidth) for offset,offsetWidth in zip(ax.OffSets[1:],ax.OffSetWidth[1:])]
 
             if colorbar:
                 ax.get_figure().colorbar(ax.pmeshs[0])
@@ -3567,7 +3579,7 @@ class DataSet(object):
             self.mask = [np.zeros_like(df.I,dtype=bool) for df in self]
             self._maskingObject = None
 
-    def FindEi(self,deltaE):
+    def findEi(self,deltaE):
         Eis = np.array([df.Ei[0] for df in self])
         Efs = [np.array([df.instrumentCalibrationEf[:,1].min(),df.instrumentCalibrationEf[:,1].max()]) for df in self]
             

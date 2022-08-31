@@ -84,7 +84,7 @@ HDFTranslationNICOSAlternative = {
                    'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts'],
                    'magneticField':['entry/sample/B','entry/sample/B/value'],
                    'ei':'entry/CAMEA/monochromator/energy',
-                   'hdfMonitor':'entry/monitor_2/data'
+                   'hdfMonitor':['entry/monitor_2/data','entry/control/data']
 }
 
 ## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
@@ -222,7 +222,8 @@ class DataFile(object):
                     self.MonitorPreset=np.array(getHDFEntry(f,'preset',fromNICOS=self.fromNICOS))
                     if len(self.MonitorPreset)>1:
                         self.MonitorPreset = self.MonitorPreset[0]             
-                    self.startTime = np.array(getHDFEntry(f,'startTime',fromNICOS=self.fromNICOS))[0]
+                    self.startTime = np.array(getHDFEntry(f,'startTime',fromNICOS=self.fromNICOS))[0].decode()
+                    
                     if self.type == 'hdf':
                         self.Monitor = np.array(getHDFEntry(f,'hdfMonitor',fromNICOS=self.fromNICOS))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
@@ -321,7 +322,14 @@ class DataFile(object):
                     else:
                         self.twotheta = self.A4-self.A4Off
                     
-                    self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
+                    try:
+                        self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
+                    except KeyError:
+                        warnings.warn("Couldn't load scan parameters")
+                        self.scanParameters = []
+                        self.scanValues= np.array([[None]])
+                        self.scanUnits =''
+                        self.scanDataPosition = ''
                     if len(self.scanParameters) == 1 and self.scanParameters[0] == 'rotation_angle' and len(self.A4)>1 and np.all(np.isclose(self.A4,self.A4[0],atol=0.01)): 
                         # If all A4 values are the same, out 2t has been written on instrument computer
                         # and because of this, six saves 2t and not a4. Solution: set A4Offset to 0 and
@@ -1719,6 +1727,15 @@ class DataFile(object):
                 
                 monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
                 monitor.attrs['NX_class']=b'NX_INT'
+                print(fd.get('entry/monitor_2'))
+                if fd.get('entry/monitor_2') is None:
+                    mon = fd.create_group('entry/monitor_2')
+                    monitor = mon.create_dataset('data',shape=(fileLength),dtype='int32',data=Monitor)
+                    monitor.attrs['NX_class']=b'NX_INT'
+                else:
+                    pass
+
+                
 
                 normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
                 normalization.attrs['NX_class']=b'NX_FLOAT'

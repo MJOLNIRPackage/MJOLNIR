@@ -343,3 +343,22 @@ def test_scaling():# Test standard scaling functions used for rescaling of energ
     x = np.random.rand(20)*20-10 # points between -10 and 10
     assert(np.all(np.isclose(x,rescale(scale(x)))))
     assert(np.all(np.isclose(x,rescale(scale(x,f=0.1),f=0.1))))
+
+def test_getNext():
+    
+    data = [1,2,3,4,5,6,7,8]
+
+    assert(len(data)==8)
+        
+        
+    for d in getNext(data,delete=True):
+        print(d)
+    assert(len(data)==0)
+    
+    data = [1,2,3,4,5,6,7,8]
+    
+    for d in getNext(data,delete=False):
+        print(d)
+    
+    assert(len(data)==8)
+    

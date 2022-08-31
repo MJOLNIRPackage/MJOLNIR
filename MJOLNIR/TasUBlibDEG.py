@@ -42,7 +42,7 @@ def calculateBMatrix(cell):
     
     B = np.array([[b1,b2*cosd(beta3),b3*cosd(beta2)],
               [0,b2*sind(beta3),-b3*sind(beta2)*cosd(alpha1)],
-              [0,0,b3]]) # 2*np.pi/a3
+              [0,0,2*np.pi/a3]]) # 2*np.pi/a3
     return B
 
 def matFromTwoVectors(v1,v2):
