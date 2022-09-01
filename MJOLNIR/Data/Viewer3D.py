@@ -58,7 +58,7 @@ class Viewer3D(object):
 
             - cut1DFunctionRectangle (function): Function to be called when performing an interactive rectangle (default None)
 
-            - cut1DFunctionCircle (function): Function to be called when performing an interactive rectangle (default None)
+            - cut1DFunctionCircle (function): Function to be called when performing an interactive circle (default None)
 
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
@@ -73,7 +73,7 @@ class Viewer3D(object):
 
 
         self.currentData = None
-        
+        self.ds = dataset
 
         self.plotCurratAxe = plotCurratAxe # Set to false but will change to True when correct list is created
         self._CurratAxeBraggList = None
@@ -269,7 +269,11 @@ class Viewer3D(object):
             self.axQxE.isActive = False
             self.axQyE.isActive = False
 
+            if not cut1DFunctionRectangle is None:
+                self.axRLU.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(viewer=self,dr=dr)
 
+            if not cut1DFunctionCircle is None:
+                self.axRLU.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(viewer=self,dr=dr)
         else:
             self.ax._button_press_event = self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
             self.onClick = lambda event: eventdecorator(onclick,self,self.ax,event,outputFunction=outputFunction)

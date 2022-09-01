@@ -836,7 +836,7 @@ def on_key_press(self,event):# pragma: no cover
         self.drawState = States.INACTIVE
         dr = self.selectedDr
         if not dr is None:
-            dr.Cut1DFunction(dr)
+            dr.Cut1DFunction(dr=dr)
 
             return
     

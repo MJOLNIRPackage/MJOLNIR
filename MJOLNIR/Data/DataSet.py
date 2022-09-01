@@ -1533,10 +1533,15 @@ class DataSet(object):
             ax.EMax = EMax
             ax.outputFunction = outputFunction
             
+            if not cut1DFunctionRectangle is None:
+                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(ax,dr=dr)
+            else:
+                ax.cut1DFunctionRectangle = cut1DFunctionRectangle
 
-            ax.cut1DFunctionRectangle = cut1DFunctionRectangle
-
-            ax.cut1DFunctionCircle = cut1DFunctionCircle
+            if not cut1DFunctionCircle is None:
+                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(ax,dr=dr)
+            else:
+                ax.cut1DFunctionCircle = cut1DFunctionCircle
 
             ax.type = 'QPlane'
             ax = _interactiveSettings.setupModes(ax)
@@ -5408,6 +5413,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     
     if rlu:
         variables = ['H','K','L']
+        ax.sample = ds.sample[0]
     else:
         variables = ['Qx','Qy']
     
@@ -5479,7 +5485,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     ax.suppressPrint = False
 
     ax._x_precision = 2
-    ax.fmtPrecisionString = '{:.'+str(2)+'f}'
+    ax.fmtPrecisionString = '{:.'+str(ax._x_precision)+'f}'
     # Dynamic add setter and getter to ax.precision
     
     def set_precision(ax,value):
