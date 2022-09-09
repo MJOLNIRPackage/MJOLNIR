@@ -656,7 +656,10 @@ class DataSet(object):
         
         
         # Calculate the bin distance as defined above
-        Data['binDistance'] = ax.calculatePositionInv(Data[variables[:-1]])
+        if hasattr(ax,'calculatePositionInv'):
+            Data['binDistance'] = ax.calculatePositionInv(Data[variables[:-1]])
+        else:
+            Data['binDistance'] = Data[variables[:-1]]
         ax.set_ylabel('$I$ [arb.u.]')
         
         if not 'label' in kwargs:
@@ -1022,7 +1025,10 @@ class DataSet(object):
         I.mask = np.isnan(I)
         HKL = np.asarray(data[variables])
         E = np.asarray(data['Energy']).reshape(shape)
-        pos = ax.calculatePositionInv(HKL)
+        if hasattr(ax,'calculatePositionInv'):
+            pos = ax.calculatePositionInv(HKL)
+        else:
+            pos = ax.HKL
         data['binDistance'] = pos
 
         pos.shape = shape
