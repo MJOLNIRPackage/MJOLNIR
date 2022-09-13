@@ -1,3 +1,4 @@
+from importlib.util import decode_source
 import numpy as np
 import MJOLNIR.Data.DataFile
 from MJOLNIR.Data.DataSet import DataSet,calculateGrid3D,binData3D,cut1DE,fmt,figureRowColumns,centeroidnp,compareNones,OxfordList, load
@@ -1353,3 +1354,92 @@ def test_absoluteNormalziation():
                                       correctVanadium=False)
 
     assert(np.isclose(factor,ds.absoluteNormalized))
+
+def test_CustomAxisInput():
+    # dset object generation
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),
+                os.path.join(dataPath,'camea2018n000136.hdf')]
+    ds = DataSet(DataFile)
+    ds.convertDataFile()
+    # parameter definition for plots
+    cutqe_params = {
+        "q1":np.array([0.75,0,0], float),
+        "q2":np.array([1,0,0], float),
+        "EMin":1.8, "EMax":3.6, "dE":0.1, "width":0.1, "minPixel":0.05,
+        "rlu":True, "smoothing":0.0, "vmin":0.0, "vmax":1e-07
+    }
+
+    # custom axes generation
+    fig, axes = plt.subplots(2,1) # two axes stacked on top of each other in same fig
+    ax_direction1, ax_direction2 = axes.flatten()
+
+    # plotting and cutting with MJOLNIR - fixed now for QE cuts
+    q2 = [1,1,0]
+    cutqe_params.update({"q2":q2, "ax":ax_direction1})
+    ax_direction1, data_dir1, bins_dir1 = ds.plotCutQE(**cutqe_params)
+
+    q2 = np.array([0.7,0.7,0],float)
+    cutqe_params.update({"q2":q2, "ax":ax_direction2})
+    ax_direction2, data_dir2, bins_dir2 = ds.plotCutQE(**cutqe_params)
+
+    ## Same for plotCutQELine
+    cutqe_params = {
+        "QPoints":np.array([[0.75,0,0],[1,0,0]], float),
+        'EnergyBins':np.arange(1.8,3.6,0.1), "width":0.1, "minPixel":0.05,
+        "rlu":True, "vmin":0.0, "vmax":1e-07
+    }
+
+    # custom axes generation
+    fig, axes = plt.subplots(2,1) # two axes stacked on top of each other in same fig
+    ax_direction1, ax_direction2 = axes.flatten()
+
+    # plotting and cutting with MJOLNIR - fixed now for QE cuts
+
+    cutqe_params.update({"ax":ax_direction1})
+    ax_direction1, data_dir1, bins_dir1 = ds.plotCutQELine(**cutqe_params)
+
+    QPoints = np.array([[1,0,0],[1,1,0]], float)
+    cutqe_params.update({'QPoints':QPoints, "ax":ax_direction2})
+    ax_direction2, data_dir2, bins_dir2 = ds.plotCutQELine(**cutqe_params)
+
+    ## cut1D
+    cutqe_params = {
+            "q1":np.array([0,0,0], float),
+            "q2":np.array([1,0,0], float),
+            "Emin":1.8, "Emax":2.0, "width":0.1, "minPixel":0.05,
+            "rlu":True, 
+        }
+
+    # custom axes generation
+    fig, axes = plt.subplots(2,1) # two axes stacked on top of each other in same fig
+    ax_direction1, ax_direction2 = axes.flatten()
+
+    # plotting and cutting with MJOLNIR - fixed now for QE cuts
+
+    cutqe_params.update({"ax":ax_direction1})
+    ax_direction1, data_dir1, bins_dir1 = ds.plotCut1D(**cutqe_params)
+
+    q2 = np.array([0.7,0.7,0],float)
+    cutqe_params.update({'q2':q2, "ax":ax_direction2})
+    ax_direction2, data_dir2, bins_dir2 = ds.plotCut1D(**cutqe_params)
+
+
+    # cut1DE
+    cut1de_params = {
+            "q":np.array([1,0,0], float),
+            "E1":1.8, "E2":3.6, "width":0.5, "minPixel":0.05,
+            "rlu":True, 
+        }
+
+    # custom axes generation
+    fig, axes = plt.subplots(2,1) # two axes stacked on top of each other in same fig
+    ax_direction1, ax_direction2 = axes.flatten()
+
+    # plotting and cutting with MJOLNIR - fixed now for QE cuts
+
+    cut1de_params.update({"ax":ax_direction1})
+    ax_direction1, data_dir1, bins_dir1 = ds.plotCut1DE(**cut1de_params)
+
+    q = np.array([0.7,0.7,0],float)
+    cut1de_params.update({'q':q, "ax":ax_direction2})
+    ax_direction2, data_dir2, bins_dir2 = ds.plotCut1DE(**cut1de_params)

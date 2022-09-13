@@ -659,7 +659,7 @@ class DataSet(object):
         if hasattr(ax,'calculatePositionInv'):
             Data['binDistance'] = ax.calculatePositionInv(Data[variables[:-1]])
         else:
-            Data['binDistance'] = Data[variables[:-1]]
+            Data['binDistance'] = np.linalg.norm(Data[variables[:-1]]-q1,axis=1)
         ax.set_ylabel('$I$ [arb.u.]')
         
         if not 'label' in kwargs:
@@ -1028,7 +1028,7 @@ class DataSet(object):
         if hasattr(ax,'calculatePositionInv'):
             pos = ax.calculatePositionInv(HKL)
         else:
-            pos = ax.HKL
+            pos = np.linalg.norm(HKL-q1,axis=1)
         data['binDistance'] = pos
 
         pos.shape = shape
