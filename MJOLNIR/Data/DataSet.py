@@ -1002,8 +1002,8 @@ class DataSet(object):
         """
         
 
-        if ax is None:
-            ax = generate1DAxis(q1,q2,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction)
+        # simply pass the given ax parameter to the generate1DAxis method
+        ax = generate1DAxis(q1,q2,ax=ax,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction)
         
         # Add orthogonal positions to axes
         ax.width = width
@@ -1025,10 +1025,10 @@ class DataSet(object):
         I.mask = np.isnan(I)
         HKL = np.asarray(data[variables])
         E = np.asarray(data['Energy']).reshape(shape)
-        if hasattr(ax,'calculatePositionInv'):
-            pos = ax.calculatePositionInv(HKL)
-        else:
-            pos = ax.HKL
+        # if hasattr(ax,'calculatePositionInv'):
+        pos = ax.calculatePositionInv(HKL)
+        # else:
+            # pos = ax.HKL
         data['binDistance'] = pos
 
         pos.shape = shape
@@ -5411,9 +5411,14 @@ def convertToHKL(sample,QxQy):
     return np.array([H,K,L]).T
 
 
-def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print):
-    fig,ax = plt.subplots()
-    ax = plt.gca()
+def generate1DAxis(q1,q2,ds,ax=None,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print):
+    # ax kwarg is a assumed to be a single matplotlib axis
+    if ax is None:
+        fig,ax = plt.subplots()
+        ax = plt.gca()
+    else:
+        fig = ax.get_figure()
+        # ax = plt.gca()
     q1 = np.array(q1,dtype=float)
     q2 = np.array(q2,dtype=float)
     
