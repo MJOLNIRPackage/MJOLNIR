@@ -578,6 +578,61 @@ class Viewer3D(object):
     def set_title(self,title):
         self.ax.set_title(title)
 
+    def saveToFile(self,folder,extension,gui=None):
+        """Save all planes to files
+        
+        Args:
+
+            - folder (path): Folder in which to save files
+
+            - extension (str): name of wanted extension. Must be accepted by matplotlib
+
+        Kwargs:
+
+            - gui (PyQt5 MainApplication): Used for MJOLNIR Gui
+        """
+        XLength,YLength,ZLength = self.Data.shape
+
+        startProjection = self.axis
+        startPosition = self.Energy_slider.val
+
+        totalFigures = XLength+YLength+ZLength
+        if not gui is None:
+            gui.setProgressBarMaximum(totalFigures)
+            progress = 0
+            gui.setProgressBarValue(progress) 
+        self.setProjection(2)
+        for zidx in range(ZLength):
+            self.setPlane(zidx)
+            Energy = self.bins[2][0,0,zidx]
+            self.figure.savefig(os.path.join(folder,'E{}.{}'.format('{:.2f}'.format(Energy).replace('.','p').replace('-','m'),extension)))
+            if not gui is None:
+                progress += 1
+                gui.setProgressBarValue(progress)
+
+        self.setProjection(0)
+
+        for xidx in range(XLength):
+            self.setPlane(xidx)
+            position = self.bins[0][xidx,0,0]
+            self.figure.savefig(os.path.join(folder,'X{}.{}'.format('{:.2f}'.format(position).replace('.','p').replace('-','m'),extension)))
+            if not gui is None:
+                progress += 1
+                gui.setProgressBarValue(progress)
+            
+        self.setProjection(1)
+
+        for yidx in range(YLength):
+            self.setPlane(yidx)
+            position = self.bins[1][0,yidx,0]
+            self.figure.savefig(os.path.join(folder,'Y{}.{}'.format('{:.2f}'.format(position).replace('.','p').replace('-','m'),extension)))
+            if not gui is None:
+                progress += 1
+                gui.setProgressBarValue(progress)
+            
+        self.setProjection(startProjection)
+        self.setPlane(startPosition)
+
 
 def eventdecorator(function,self,ax,event,*args,**kwargs):# pragma: no cover
     if event.xdata is not None and ax.in_axes(event) and ax.isActive:
