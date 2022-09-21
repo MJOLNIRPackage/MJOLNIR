@@ -466,7 +466,7 @@ def calcProjectionVectors(R1,R2,norm=None):
     
     Zeros = np.isclose(NV,0.0)
     if np.sum(Zeros)==3:
-        raise AttributeError('The two plane vectors are equivalen, {}, {}!'.format(r1,r2))
+        raise AttributeError('The two plane vectors are equivalent, {}, {}!'.format(r1,r2))
     
     
     if np.sum(Zeros) == 2 or np.sum(Zeros)==1: # Easy case where the two vectors are to be along the x, y, or z directions

@@ -521,7 +521,8 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     projectionMatrix = np.linalg.inv(np.array([[1,0],[np.cos(angle)*v2Length,np.sin(angle)*v2Length]]).T)
 
     projectionVectorQX = np.dot(np.dot(projectionMatrix,[1,0]),np.array([v1,v2]))
-    projectionVectorQY = np.dot(np.dot(projectionMatrix,[0,1]),np.array([v1,v2]))
+    projectionVectorQY = np.dot(np.dot(projectionMatrix,[0,v2Length]),np.array([v1,v2]))
+
     projectionVectorQX = _tools.LengthOrder(projectionVectorQX)
     projectionVectorQY = _tools.LengthOrder(projectionVectorQY)
     projectionVectorQXLength = np.linalg.norm(np.dot(orientationMatrix,projectionVectorQY))

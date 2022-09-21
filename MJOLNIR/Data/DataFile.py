@@ -1727,7 +1727,7 @@ class DataFile(object):
                 
                 monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
                 monitor.attrs['NX_class']=b'NX_INT'
-                print(fd.get('entry/monitor_2'))
+                
                 if fd.get('entry/monitor_2') is None:
                     mon = fd.create_group('entry/monitor_2')
                     monitor = mon.create_dataset('data',shape=(fileLength),dtype='int32',data=Monitor)
