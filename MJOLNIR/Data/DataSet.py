@@ -654,7 +654,8 @@ class DataSet(object):
             if showEnergy:
                 ax.energy = np.mean(Data['Energy'])
         
-        
+        if showEnergy:
+            ax.energy = np.mean(Data['Energy'])
         # Calculate the bin distance as defined above
         if hasattr(ax,'calculatePositionInv'):
             Data['binDistance'] = ax.calculatePositionInv(Data[variables[:-1]])
@@ -5411,9 +5412,10 @@ def convertToHKL(sample,QxQy):
     return np.array([H,K,L]).T
 
 
-def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print):
-    fig,ax = plt.subplots()
-    ax = plt.gca()
+def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print, ax=None):
+    if ax is None:
+        fig,ax = plt.subplots()
+    
     q1 = np.array(q1,dtype=float)
     q2 = np.array(q2,dtype=float)
     
