@@ -114,6 +114,8 @@ class Viewer3D(object):
         if ax is None: # TODO: REDO with actual correct axes!
             self.figure = plt.figure()
             self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
+            self.ax.isActive = lambda : True
+            self.ax.drawState = States.INACTIVE
             self.xlabel = r'Qx [$A^{-1}$]'
             self.ylabel = r'Qy [$A^{-1}$]'
             self.zlabel = r'E [meV]'
