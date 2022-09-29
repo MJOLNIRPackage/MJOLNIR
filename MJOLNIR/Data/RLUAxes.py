@@ -595,7 +595,6 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     ax.format_coord = lambda x,y: format_coord(*ax.calculateRLU(x,y))
 
 
-    print(axis,':',projectionVectorLength,ax._projectionVector,ax._projectionVectorOrthogonal)
     ax.forceGridUpdate = lambda:forceGridUpdate(ax)
     ax.xticks = 7
 
