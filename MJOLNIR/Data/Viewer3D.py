@@ -497,17 +497,18 @@ class Viewer3D(object):
     def plotCurratAxe(self,value):
         self._plotCurratAxe = value
         if hasattr(self,'_axes'):
-            for ax in self._axes:
-                for plotter in ['BraggScatterMono','BraggScatterAna']:
-                    if hasattr(ax,plotter):
-                        try:
-                            getattr(ax,plotter).remove()
-                        except ValueError:
-                            pass
+            # for ax in self._axes:
+            #     for plotter in ['BraggScatterMono','BraggScatterAna']:
+            #         if hasattr(ax,plotter):
+            #             try:
+            #                 getattr(ax,plotter).remove()
+            #             except ValueError:
+            #                 pass
             if self._plotCurratAxe:
                 self.plot()
     
     def plot(self):
+
         self.text.set_text(self.stringValue())
         try:
             self.im.set_array(self.emptyData)
@@ -521,51 +522,42 @@ class Viewer3D(object):
         else:
             self.im.set_array(self.masked_array[:,:,int(self.value)].T.flatten())
         
-            
         if not self.CurratAxeBraggList is None and not self.Ei is None and self.plotCurratAxe is True and self.rlu is True:
-            #if self.axis==2: ### QxQy plane
-            
-            #self.ax.scatter(*insidePointsMono,zorder=21,s=100, facecolors='none', edgecolors='r',label='Mono - test')
-            #self.ax.scatter(*insidePointsAna,zorder=21,s=100, facecolors='none', edgecolors='k',label='Ana - test')
 
             insidePointsMono = self.monoPoints[np.isclose(self.CurratAxeIndicesMono[self.axis],self.Energy_slider.val)]
             insidePointsAna = self.anaPoints[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
+            if not hasattr(self.ax,'BraggScatterMono'):
+                self.ax.BraggScatterMono = self.ax.plot([],[],zorder=20, linestyle="", marker="o", mfc='none', color='r',label='Currat-Axe Monochromator')[0]
+            if not hasattr(self.ax,'BraggScatterAna'):
+                self.ax.BraggScatterAna = self.ax.plot([],[],zorder=20, linestyle="", marker="o", mfc='none', color='k',label='Currat-Axe Analyzer')[0]
             
-            if hasattr(self.ax,'BraggScatterMono'):
-                try: # If points have already been plotted, remove these
-                    self.ax.BraggScatterMono.remove()
-                except ValueError:
-                    pass
-            if hasattr(self.ax,'BraggScatterAna'):
-                try: # If points have already been plotted, remove these
-                    self.ax.BraggScatterAna.remove()
-                except ValueError:
-                    pass
-
+            
+            self.ax.BraggScatterMono.set_data([],[])
+            self.ax.BraggScatterAna.set_data([],[])
+            
             if len(insidePointsMono) > 0: # Only if there are any points to plot, do it
                 insidePointsMono = insidePointsMono.T
                 
+                                
                 
                 if self.axis == 2:
                     insidePointsAna = insidePointsAna.T
-                    self.ax.BraggScatterMono = self.axRLU.scatter(*insidePointsMono,zorder=20,s=100, facecolors='none', edgecolors='r',label='Currat-Axe Monochromator')
-                    self.ax.BraggScatterAna = self.axRLU.scatter(*insidePointsAna,zorder=20,s=100, facecolors='none', edgecolors='k',label='Currat-Axe Analyzer')
+                    self.ax.BraggScatterMono.set_data(*insidePointsMono)
+                    self.ax.BraggScatterAna.set_data(*insidePointsAna)
                 else:
                     energy = self.dE[np.isclose(self.CurratAxeIndicesMono[self.axis],self.Energy_slider.val)]
                     
                     plotPointsMoni = np.array([insidePointsMono[1-self.axis],energy])
+                    self.ax.BraggScatterMono.set_data(*plotPointsMoni)
                     
-                    self.ax.BraggScatterMono = self.ax.scatter(*plotPointsMoni,zorder=20,s=100, facecolors='none', edgecolors='r',label='Currat-Axe Monochromator')
-            
             if len(insidePointsAna) > 0 and self.axis != 2: # Only if there are any points to plot, do it
                 insidePointsAna = insidePointsAna.T
-                if self.axis != 2:
-                    energy = self.dE[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
+                
+                energy = self.dE[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
 
-                    plotPointsAna = np.array([insidePointsAna[1-self.axis],energy])
-                    
-                    self.ax.BraggScatterAna = self.ax.scatter(*plotPointsAna,zorder=20,s=100, facecolors='none', edgecolors='k',label='Currat-Axe Monochromator')
-
+                plotPointsAna = np.array([insidePointsAna[1-self.axis],energy])
+                self.ax.BraggScatterAna.set_data(*plotPointsAna)
+            #self.ax.
 
         self.im.set_clim(self.caxis)
         self.ax.set_position(self.figpos)
