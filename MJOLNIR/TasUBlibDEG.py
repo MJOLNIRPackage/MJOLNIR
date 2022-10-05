@@ -109,7 +109,7 @@ def buildTVMatrix(U1V,U2V):
 def buildRMatrix(UB, planeNormal, qe):
     U1V = tasReflectionToQC(qe,UB)
     U1V/=np.linalg.norm(U1V)
-    U2V = np.cross(planeNormal.T, U1V.T).T
+    U2V = np.cross(np.dot(UB,planeNormal).T, U1V.T).T
     if np.linalg.norm(U2V)<0.001:
         raise AttributeError('Calculate length of U2V too small ({})'.format(U2V))
     
