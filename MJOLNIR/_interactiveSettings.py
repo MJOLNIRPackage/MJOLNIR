@@ -785,7 +785,7 @@ def cancel(self,axes):# pragma: no cover
         axes.get_figure().canvas.mpl_disconnect(self.cidmove)
         self.cidmove = None
         
-        del self.patches[-1]
+        self.patches[-1].remove()
         self.get_figure().canvas.draw_idle()
 
     # Reset state and return
