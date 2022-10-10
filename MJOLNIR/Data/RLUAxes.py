@@ -145,8 +145,11 @@ def get_aspect(ax):
     data_ratio = sub(*ax.get_ylim()) / sub(*ax.get_xlim())
     return (disp_ratio / data_ratio)
 
-def axisChanged(axis,forceUpdate=False,direction='both'):
+def axisChanged(event,axis=None,forceUpdate=False,direction='both'):
     """Function to recalculate the base number for RLU axis"""
+    # Two arguments are needed; event for canvas callback and axis is needed for ax.axisChanged
+    if axis is None:
+        axis = event
     s = axis.sample
     xlim = axis.get_xlim()
     ylim = axis.get_ylim()
@@ -398,8 +401,8 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
 
         ax.callbacks.connect('xlim_changed', axisChanged)
         ax.callbacks.connect('ylim_changed', axisChanged)
-        ax.callbacks.connect('draw_event',lambda ax: axisChanged(ax,forceUpdate=True))
-        ax.axisChanged = lambda direction='both': axisChanged(ax,forceUpdate=True,direction=direction)
+        ax.get_figure().canvas.mpl_connect('draw_event',lambda event: axisChanged(event,axis=ax,forceUpdate=True))
+        ax.axisChanged = lambda direction='both': axisChanged(None,ax,forceUpdate=True,direction=direction)
     
         @updateAxisDecorator(ax=ax,direction='x')
         def set_xticks_base(xBase,ax=ax):
@@ -598,7 +601,10 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     ax.forceGridUpdate = lambda:forceGridUpdate(ax)
     ax.xticks = 7
 
-    def xAxisChanged(axis, forceUpdate=False):
+    def xAxisChanged(event, axis=None, forceUpdate=False):
+        # Two arguments are needed; event for canvas callback and axis is needed for ax.xAxisChanged
+        if axis is None:
+            axis = event
         locator = axis._grid_helper.grid_finder.grid_locator1
         xlim = axis.get_xlim()
         xlimDiff = np.diff(xlim)
@@ -621,8 +627,8 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
 
     ax.callbacks.connect('xlim_changed', xAxisChanged)
 
-    ax.callbacks.connect('draw_event',lambda ax: xAxisChanged(ax,forceUpdate=True))
-    ax.xAxisChanged = lambda: xAxisChanged(ax,forceUpdate=True)
+    ax.get_figure().canvas.mpl_connect('draw_event',lambda event: xAxisChanged(event,axis=ax,forceUpdate=True))
+    ax.xAxisChanged = lambda: xAxisChanged(None,ax,forceUpdate=True)
 
 
     @updateXAxisDecorator(ax=ax)
