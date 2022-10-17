@@ -922,7 +922,7 @@ class DataSet(object):
                 pdDatas.append(pdData)
 
             pdDatas = pd.concat(pdDatas)
-            return pdDatas,[Qx,E]
+            return pdDatas,[Qx,E],[minOrthoPosition,maxOrthoPosition]
 
  
     
@@ -1010,14 +1010,22 @@ class DataSet(object):
         ax.width = width
         ax.minPixel = minPixel
         
-        data,bins = self.cutQE(q1,q2,width,minPixel,EMin=EMin,EMax=EMax,dE=dE,EnergyBins=EnergyBins,rlu=rlu,smoothing=smoothing)
+        data,bins,[minOrthoPosition,maxOrthoPosition] = self.cutQE(q1,q2,width,minPixel,EMin=EMin,EMax=EMax,dE=dE,EnergyBins=EnergyBins,rlu=rlu,smoothing=smoothing)
 
+        if rlu==True: # Recalculate H,K,L to qx
+            q1,q2 = self.convertToQxQy([q1,q2])
+        dirvec = (np.array(q2) - np.array(q1)).astype(float)
+        dirLength = np.linalg.norm(dirvec)
+        dirvec /= dirLength
+        ax.orthovec = np.array([dirvec[1],-dirvec[0]])
         if rlu:
             variables = ['H','K','L']
         else:
             variables = ['Qx','Qy']
 
         ax.dE = np.diff(bins[1][0,:]).mean()
+        ax.minOrthoPosition = minOrthoPosition
+        ax.maxOrthoPosition = maxOrthoPosition
 
         ax.Data = data
 
