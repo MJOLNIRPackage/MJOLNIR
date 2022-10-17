@@ -23,7 +23,8 @@ pythonSubVersion = sys.version_info[1]
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
-                 cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None, cut1DFunctionCircle = None, **kwargs):#pragma: no cover
+                 cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None,\
+                    cut1DFunctionCircle = None, cut1DFunctionRectanglePerp=None,cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -276,6 +277,20 @@ class Viewer3D(object):
 
             if not cut1DFunctionCircle is None:
                 self.axRLU.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(viewer=self,dr=dr)
+
+            
+            if not cut1DFunctionRectanglePerp is None:
+                self.axQxE.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectanglePerp(viewer=self,dr=dr)
+                self.axQyE.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectanglePerp(viewer=self,dr=dr)
+
+            if not cut1DFunctionRectangleHorizontal is None:
+                self.axQxE.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontal(viewer=self,dr=dr)
+                self.axQyE.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontal(viewer=self,dr=dr)
+
+            if not cut1DFunctionRectangleVertical is None:
+                self.axQxE.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(viewer=self,dr=dr)
+                self.axQyE.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(viewer=self,dr=dr)
+
         else:
             self.ax._button_press_event = self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
             self.onClick = lambda event: eventdecorator(onclick,self,self.ax,event,outputFunction=outputFunction)

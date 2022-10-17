@@ -2825,7 +2825,8 @@ class DataSet(object):
     @_tools.KwargChecker(function=createQAxis)
     def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
                instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
-               cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
+               cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut1DFunctionRectanglePerp=None,
+               cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2926,7 +2927,9 @@ class DataSet(object):
             qxEax.ds = self
             
             
-            qxEax.cut1DFunctionRectanglePerpendicular=qxEax.cut1DFunctionRectangleHorizontal=qxEax.cut1DFunctionRectangleVertical = None
+            qxEax.cut1DFunctionRectanglePerpendicular = cut1DFunctionRectanglePerp
+            qxEax.cut1DFunctionRectangleHorizontal = cut1DFunctionRectangleHorizontal
+            qxEax.cut1DFunctionRectangleVertical = cut1DFunctionRectangleVertical
             qxEax = _interactiveSettings.setupModes(qxEax)
             
 
@@ -2955,7 +2958,9 @@ class DataSet(object):
             qyEax.width = dQy
             qyEax.dE = dE
             
-            qyEax.cut1DFunctionRectanglePerpendicular=qyEax.cut1DFunctionRectangleHorizontal=qyEax.cut1DFunctionRectangleVertical = None
+            qyEax.cut1DFunctionRectanglePerpendicular = cut1DFunctionRectanglePerp
+            qyEax.cut1DFunctionRectangleHorizontal = cut1DFunctionRectangleHorizontal
+            qyEax.cut1DFunctionRectangleVertical = cut1DFunctionRectangleVertical
             qyEax = _interactiveSettings.setupModes(qyEax)
             
 
@@ -3046,7 +3051,10 @@ class DataSet(object):
             adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,
             CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits,
             dataset=self,cut1DFunctionRectangle=cut1DFunctionRectangle, 
-            cut1DFunctionCircle=cut1DFunctionCircle)
+            cut1DFunctionCircle=cut1DFunctionCircle,
+            cut1DFunctionRectanglePerp=cut1DFunctionRectanglePerp,
+            cut1DFunctionRectangleHorizontal=cut1DFunctionRectangleHorizontal,
+            cut1DFunctionRectangleVertical=cut1DFunctionRectangleVertical)
 
             def to_csv(fileName,self):
                 shape = self.Counts.shape
