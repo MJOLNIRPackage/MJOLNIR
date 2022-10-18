@@ -76,7 +76,7 @@ def setupModes(ax):
         ax._mode = modeName.upper()
         setCursor(ax,pointerType[modeName.upper()])
         ax.get_figure().canvas.draw_idle()
-        
+
 
     ax.setMode = lambda stateName: setMode(ax,stateName)
     ax.setMode('inactive')
@@ -87,16 +87,7 @@ def setupModes(ax):
 
 
 def setCursor(ax,cursor):
-    if mplVersion >= 3.5:
-        pass#ax.get_figure().canvas.set_cursor(cursor)
-    else:
-        try:
-            if isinstance(cursor,type(cursors.HAND)): # Standard Matplotlib cursor
-                ax.get_figure().canvas.toolbar.set_cursor(cursor)
-            else:
-                ax.get_figure().canvas.setCursor(cursor)
-        except AttributeError:
-            pass
+    ax.get_figure().canvas.setCursor(cursor)
     
 
 interactive1DKeysReversed = {}
@@ -141,23 +132,13 @@ Modes= Enum('Modes', modes)
 
 
 ## Cursor type mode
-pointerType = defaultdict(lambda: cursors.POINTER)
-# pointerType['RESOLUTION'] = resolutionCursor
-
-pointerType['CUTTING_INACTIVE'] = cursors.SELECT_REGION#CutCursor
-pointerType['CUTTING_EMPTY'] = cursors.SELECT_REGION#PyQt5.QtCore.Qt.ForbiddenCursor
-
-if mplVersion >= 3.5:
-    pointerType['CUTTING_INITIAL'] = cursors.SELECT_REGION
-    pointerType['CUTTING_WIDTH'] = cursors.SELECT_REGION
-    pointerType['CUTTING_DIRECTION'] = cursors.SELECT_REGION
-    pointerType['CUTTING_MOVE'] = cursors.HAND
-else:
-    pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
-    pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
-    pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
-    pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.SizeAllCursor
-
+pointerType = defaultdict(lambda: PyQt5.QtCore.Qt.ArrowCursor)
+pointerType['CUTTING_EMPTY'] = PyQt5.QtCore.Qt.ForbiddenCursor
+pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
+pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
+pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
+pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.OpenHandCursor
+pointerType['RESOLUTION'] = PyQt5.QtCore.Qt.BlankCursor
 
 
 def resetUsingKey(ax,keys):
@@ -196,10 +177,6 @@ def deactivateINACTIVE(ax):
 
 
 def initializeRESOLUTION(ax):
-    
-
-    # Change cursor to signify new mode
-    
     # Reset using same key as activated it
     resetUsingKey(ax,resolutionSettings['return'])
     # Setup colours needed for plotting
