@@ -516,7 +516,6 @@ def rotate2X(v):
     return Rotation
 
 def LengthOrder(v):
-    
     nonZeroPos = np.logical_not(np.isclose(v,0.0))
     if np.sum(nonZeroPos)==1:
         Rv = v/np.linalg.norm(v)

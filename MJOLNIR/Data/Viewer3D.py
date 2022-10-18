@@ -23,7 +23,8 @@ pythonSubVersion = sys.version_info[1]
 class Viewer3D(object):  
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
-                 cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None, cut1DFunctionCircle = None, **kwargs):#pragma: no cover
+                 cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None,\
+                    cut1DFunctionCircle = None, cut1DFunctionRectanglePerp=None,cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -58,7 +59,7 @@ class Viewer3D(object):
 
             - cut1DFunctionRectangle (function): Function to be called when performing an interactive rectangle (default None)
 
-            - cut1DFunctionCircle (function): Function to be called when performing an interactive rectangle (default None)
+            - cut1DFunctionCircle (function): Function to be called when performing an interactive circle (default None)
 
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
@@ -73,7 +74,7 @@ class Viewer3D(object):
 
 
         self.currentData = None
-        
+        self.ds = dataset
 
         self.plotCurratAxe = plotCurratAxe # Set to false but will change to True when correct list is created
         self._CurratAxeBraggList = None
@@ -114,6 +115,8 @@ class Viewer3D(object):
         if ax is None: # TODO: REDO with actual correct axes!
             self.figure = plt.figure()
             self.ax = plt.subplot(gs[0])#self.figure.add_subplot(111)
+            self.ax.isActive = lambda : True
+            self.ax.drawState = States.INACTIVE
             self.xlabel = r'Qx [$A^{-1}$]'
             self.ylabel = r'Qy [$A^{-1}$]'
             self.zlabel = r'E [meV]'
@@ -269,6 +272,24 @@ class Viewer3D(object):
             self.axQxE.isActive = False
             self.axQyE.isActive = False
 
+            if not cut1DFunctionRectangle is None:
+                self.axRLU.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(viewer=self,dr=dr)
+
+            if not cut1DFunctionCircle is None:
+                self.axRLU.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(viewer=self,dr=dr)
+
+            
+            if not cut1DFunctionRectanglePerp is None:
+                self.axQxE.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectanglePerp(viewer=self,dr=dr)
+                self.axQyE.cut1DFunctionRectanglePerpendicular = lambda dr: cut1DFunctionRectanglePerp(viewer=self,dr=dr)
+
+            if not cut1DFunctionRectangleHorizontal is None:
+                self.axQxE.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontal(viewer=self,dr=dr)
+                self.axQyE.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontal(viewer=self,dr=dr)
+
+            if not cut1DFunctionRectangleVertical is None:
+                self.axQxE.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(viewer=self,dr=dr)
+                self.axQyE.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(viewer=self,dr=dr)
 
         else:
             self.ax._button_press_event = self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
@@ -491,17 +512,18 @@ class Viewer3D(object):
     def plotCurratAxe(self,value):
         self._plotCurratAxe = value
         if hasattr(self,'_axes'):
-            for ax in self._axes:
-                for plotter in ['BraggScatterMono','BraggScatterAna']:
-                    if hasattr(ax,plotter):
-                        try:
-                            getattr(ax,plotter).remove()
-                        except ValueError:
-                            pass
+            # for ax in self._axes:
+            #     for plotter in ['BraggScatterMono','BraggScatterAna']:
+            #         if hasattr(ax,plotter):
+            #             try:
+            #                 getattr(ax,plotter).remove()
+            #             except ValueError:
+            #                 pass
             if self._plotCurratAxe:
                 self.plot()
     
     def plot(self):
+
         self.text.set_text(self.stringValue())
         try:
             self.im.set_array(self.emptyData)
@@ -515,51 +537,42 @@ class Viewer3D(object):
         else:
             self.im.set_array(self.masked_array[:,:,int(self.value)].T.flatten())
         
-            
         if not self.CurratAxeBraggList is None and not self.Ei is None and self.plotCurratAxe is True and self.rlu is True:
-            #if self.axis==2: ### QxQy plane
-            
-            #self.ax.scatter(*insidePointsMono,zorder=21,s=100, facecolors='none', edgecolors='r',label='Mono - test')
-            #self.ax.scatter(*insidePointsAna,zorder=21,s=100, facecolors='none', edgecolors='k',label='Ana - test')
 
             insidePointsMono = self.monoPoints[np.isclose(self.CurratAxeIndicesMono[self.axis],self.Energy_slider.val)]
             insidePointsAna = self.anaPoints[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
+            if not hasattr(self.ax,'BraggScatterMono'):
+                self.ax.BraggScatterMono = self.ax.plot([],[],zorder=20, linestyle="", marker="o", mfc='none', color='r',label='Currat-Axe Monochromator')[0]
+            if not hasattr(self.ax,'BraggScatterAna'):
+                self.ax.BraggScatterAna = self.ax.plot([],[],zorder=20, linestyle="", marker="o", mfc='none', color='k',label='Currat-Axe Analyzer')[0]
             
-            if hasattr(self.ax,'BraggScatterMono'):
-                try: # If points have already been plotted, remove these
-                    self.ax.BraggScatterMono.remove()
-                except ValueError:
-                    pass
-            if hasattr(self.ax,'BraggScatterAna'):
-                try: # If points have already been plotted, remove these
-                    self.ax.BraggScatterAna.remove()
-                except ValueError:
-                    pass
-
+            
+            self.ax.BraggScatterMono.set_data([],[])
+            self.ax.BraggScatterAna.set_data([],[])
+            
             if len(insidePointsMono) > 0: # Only if there are any points to plot, do it
                 insidePointsMono = insidePointsMono.T
                 
+                                
                 
                 if self.axis == 2:
                     insidePointsAna = insidePointsAna.T
-                    self.ax.BraggScatterMono = self.axRLU.scatter(*insidePointsMono,zorder=20,s=100, facecolors='none', edgecolors='r',label='Currat-Axe Monochromator')
-                    self.ax.BraggScatterAna = self.axRLU.scatter(*insidePointsAna,zorder=20,s=100, facecolors='none', edgecolors='k',label='Currat-Axe Analyzer')
+                    self.ax.BraggScatterMono.set_data(*insidePointsMono)
+                    self.ax.BraggScatterAna.set_data(*insidePointsAna)
                 else:
                     energy = self.dE[np.isclose(self.CurratAxeIndicesMono[self.axis],self.Energy_slider.val)]
                     
                     plotPointsMoni = np.array([insidePointsMono[1-self.axis],energy])
+                    self.ax.BraggScatterMono.set_data(*plotPointsMoni)
                     
-                    self.ax.BraggScatterMono = self.ax.scatter(*plotPointsMoni,zorder=20,s=100, facecolors='none', edgecolors='r',label='Currat-Axe Monochromator')
-            
             if len(insidePointsAna) > 0 and self.axis != 2: # Only if there are any points to plot, do it
                 insidePointsAna = insidePointsAna.T
-                if self.axis != 2:
-                    energy = self.dE[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
+                
+                energy = self.dE[np.isclose(self.CurratAxeIndicesAna[self.axis],self.Energy_slider.val)]
 
-                    plotPointsAna = np.array([insidePointsAna[1-self.axis],energy])
-                    
-                    self.ax.BraggScatterAna = self.ax.scatter(*plotPointsAna,zorder=20,s=100, facecolors='none', edgecolors='k',label='Currat-Axe Monochromator')
-
+                plotPointsAna = np.array([insidePointsAna[1-self.axis],energy])
+                self.ax.BraggScatterAna.set_data(*plotPointsAna)
+            #self.ax.
 
         self.im.set_clim(self.caxis)
         self.ax.set_position(self.figpos)
@@ -573,6 +586,61 @@ class Viewer3D(object):
             self.ax.grid(self.grid)
     def set_title(self,title):
         self.ax.set_title(title)
+
+    def saveToFile(self,folder,extension,gui=None):
+        """Save all planes to files
+        
+        Args:
+
+            - folder (path): Folder in which to save files
+
+            - extension (str): name of wanted extension. Must be accepted by matplotlib
+
+        Kwargs:
+
+            - gui (PyQt5 MainApplication): Used for MJOLNIR Gui
+        """
+        XLength,YLength,ZLength = self.Data.shape
+
+        startProjection = self.axis
+        startPosition = self.Energy_slider.val
+
+        totalFigures = XLength+YLength+ZLength
+        if not gui is None:
+            gui.setProgressBarMaximum(totalFigures)
+            progress = 0
+            gui.setProgressBarValue(progress) 
+        self.setProjection(2)
+        for zidx in range(ZLength):
+            self.setPlane(zidx)
+            Energy = self.bins[2][0,0,zidx]
+            self.figure.savefig(os.path.join(folder,'E{}.{}'.format('{:.2f}'.format(Energy).replace('.','p').replace('-','m'),extension)))
+            if not gui is None:
+                progress += 1
+                gui.setProgressBarValue(progress)
+
+        self.setProjection(0)
+
+        for xidx in range(XLength):
+            self.setPlane(xidx)
+            position = self.bins[0][xidx,0,0]
+            self.figure.savefig(os.path.join(folder,'X{}.{}'.format('{:.2f}'.format(position).replace('.','p').replace('-','m'),extension)))
+            if not gui is None:
+                progress += 1
+                gui.setProgressBarValue(progress)
+            
+        self.setProjection(1)
+
+        for yidx in range(YLength):
+            self.setPlane(yidx)
+            position = self.bins[1][0,yidx,0]
+            self.figure.savefig(os.path.join(folder,'Y{}.{}'.format('{:.2f}'.format(position).replace('.','p').replace('-','m'),extension)))
+            if not gui is None:
+                progress += 1
+                gui.setProgressBarValue(progress)
+            
+        self.setProjection(startProjection)
+        self.setPlane(startPosition)
 
 
 def eventdecorator(function,self,ax,event,*args,**kwargs):# pragma: no cover

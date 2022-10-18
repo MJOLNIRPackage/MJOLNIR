@@ -673,6 +673,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
         idx = self.figure.shapes.index(self)
         del self.figure.shapes[idx]
         fig.canvas.draw()        
+        fig.ax.redraw_in_frame()
 
     @property
     def selected(self):

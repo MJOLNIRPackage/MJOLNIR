@@ -1727,7 +1727,7 @@ class DataFile(object):
                 
                 monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
                 monitor.attrs['NX_class']=b'NX_INT'
-                print(fd.get('entry/monitor_2'))
+                
                 if fd.get('entry/monitor_2') is None:
                     mon = fd.create_group('entry/monitor_2')
                     monitor = mon.create_dataset('data',shape=(fileLength),dtype='int32',data=Monitor)
@@ -2460,7 +2460,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
 
 
 
-def shallowRead(files,parameters):
+def shallowRead(files,parameters,fromNICOS=False):
     """Read a list of paramters from hdf file with minimal overhead
     
     Args:
@@ -2502,10 +2502,10 @@ def shallowRead(files,parameters):
                         vals.append(v)
                         continue
                     elif p == 'twoTheta':
-                        A4 = np.array(getHDFInstrumentEntry(instr,'A4'))
+                        A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=fromNICOS))
                         for func,args in HDFInstrumentTranslationFunctions['A4']:
                             A4 = getattr(A4,func)(*args)
-                        A4Offset = np.array(getHDFInstrumentEntry(instr,'A4Offset'))
+                        A4Offset = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=fromNICOS))
                         for func,args in HDFInstrumentTranslationFunctions['A4Offset']:
                             A4Offset = getattr(A4Offset,func)(*args)
                         vals.append(A4-A4Offset)
@@ -2514,7 +2514,8 @@ def shallowRead(files,parameters):
                         v = np.array(getHDFEntry(f,p))
                         TrF= HDFTranslationFunctions
                     elif p in HDFInstrumentTranslation:
-                        v = np.array(getHDFInstrumentEntry(instr,p))
+                        v = np.array(getHDFInstrumentEntry(instr,p,fromNICOS=fromNICOS))
+                        print
                         TrF= HDFInstrumentTranslationFunctions
                     else:
                         raise AttributeError('Parameter "{}" not found'.format(p))
@@ -2522,7 +2523,7 @@ def shallowRead(files,parameters):
                         try:
                             v = getattr(v,func)(*args)
                         except IndexError as e:
-                            v = 'Not In File'
+                            v = 'Not In File'+func
                             break
                     
                     vals.append(v)

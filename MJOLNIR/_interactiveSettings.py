@@ -76,7 +76,7 @@ def setupModes(ax):
         ax._mode = modeName.upper()
         setCursor(ax,pointerType[modeName.upper()])
         ax.get_figure().canvas.draw_idle()
-        
+
 
     ax.setMode = lambda stateName: setMode(ax,stateName)
     ax.setMode('inactive')
@@ -87,13 +87,7 @@ def setupModes(ax):
 
 
 def setCursor(ax,cursor):
-    if mplVersion >= 3.5:
-        pass#ax.get_figure().canvas.set_cursor(cursor)
-    else:
-        if isinstance(cursor,type(cursors.HAND)): # Standard Matplotlib cursor
-            ax.get_figure().canvas.toolbar.set_cursor(cursor)
-        else:
-            ax.get_figure().canvas.setCursor(cursor)
+    ax.get_figure().canvas.setCursor(cursor)
     
 
 interactive1DKeysReversed = {}
@@ -138,23 +132,13 @@ Modes= Enum('Modes', modes)
 
 
 ## Cursor type mode
-pointerType = defaultdict(lambda: cursors.POINTER)
-# pointerType['RESOLUTION'] = resolutionCursor
-
-pointerType['CUTTING_INACTIVE'] = cursors.SELECT_REGION#CutCursor
-pointerType['CUTTING_EMPTY'] = cursors.SELECT_REGION#PyQt5.QtCore.Qt.ForbiddenCursor
-
-if mplVersion >= 3.5:
-    pointerType['CUTTING_INITIAL'] = cursors.SELECT_REGION
-    pointerType['CUTTING_WIDTH'] = cursors.SELECT_REGION
-    pointerType['CUTTING_DIRECTION'] = cursors.SELECT_REGION
-    pointerType['CUTTING_MOVE'] = cursors.HAND
-else:
-    pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
-    pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
-    pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
-    pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.SizeAllCursor
-
+pointerType = defaultdict(lambda: PyQt5.QtCore.Qt.ArrowCursor)
+pointerType['CUTTING_EMPTY'] = PyQt5.QtCore.Qt.ForbiddenCursor
+pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
+pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
+pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
+pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.OpenHandCursor
+pointerType['RESOLUTION'] = PyQt5.QtCore.Qt.BlankCursor
 
 
 def resetUsingKey(ax,keys):
@@ -193,10 +177,6 @@ def deactivateINACTIVE(ax):
 
 
 def initializeRESOLUTION(ax):
-    
-
-    # Change cursor to signify new mode
-    
     # Reset using same key as activated it
     resetUsingKey(ax,resolutionSettings['return'])
     # Setup colours needed for plotting
@@ -263,15 +243,24 @@ def initializeRESOLUTION(ax):
             
             returnString+= ' [resolution]'
             # If the number of ellipses in ax.resolutionEllipses does not match needed for this energy, fix it!
-            if len(Eis)>len(ax.resolutionEllipses):
-                for _ in range(len(Eis)-len(ax.resolutionEllipses)):
+            if len(Eis)!=len(ax.resolutionEllipses):
+
+                for E in ax.resolutionEllipses:
+                    E.set_visible(False)
+                    E.remove()
+
+                ax.resolutionEllipses = []
+                for _ in range(len(Eis)):
                         ax.resolutionEllipses.append(Ellipse(xy=np.array([0,0]),width=0.0,height=0.0,edgecolor=[0.0,0.0,0.0,0.0],
                         facecolor=[0.0,0.0,0.0,0.0],zorder=22))
                         ax.add_patch(ax.resolutionEllipses[-1])
-            elif len(Eis)<len(ax.resolutionEllipses): # too many ellipses, delete some
-                for E in ax.resolutionEllipses[-len(Eis):]:
-                    E.remove()
-                    del ax.resolutionEllipses[-1]
+            #elif len(Eis)<len(ax.resolutionEllipses): # too many ellipses, delete some
+            #    removeLength = len(ax.resolutionEllipses)-len(Eis)
+            #    for E in ax.resolutionEllipses[-removeLength:]:
+            #        patch = ax.patches[ax.patches.index(E)]
+            #        E.remove()
+            #        patch.remove()
+            #        del ax.resolutionEllipses[-1]
                 
             if ax.type in ['QELine','QELineView3D','QE']:
                 if ax.type == 'QE':
@@ -497,12 +486,18 @@ def initializeRESOLUTION(ax):
 def deactivateRESOLUTION(ax):
     
     ax.format_coord = ax.old_format_coord
-    for E in ax.resolutionEllipses:
+    for E in list(ax.resolutionEllipses)+[x for x in ax.patches if isinstance(x,Ellipse)]:
         E.set_visible(False)
-        E.remove()
-        #del ax.resolutionEllipses[ax.resolutionEllipses.index(E)]
-        del ax.resolutionEllipses[ax.resolutionEllipses.index(E)]
-        
+        try:
+            E.remove()
+        except (AttributeError,ValueError):
+            pass
+
+        try:
+            ax.resolutionEllipses[ax.resolutionEllipses.index(E)].remove()
+        except:
+            pass
+    
 
     ax.figure.canvas.mpl_disconnect(ax._button_press_event)
     ax.get_figure().canvas.draw_idle()
@@ -785,7 +780,7 @@ def cancel(self,axes):# pragma: no cover
         axes.get_figure().canvas.mpl_disconnect(self.cidmove)
         self.cidmove = None
         
-        del self.patches[-1]
+        self.patches[-1].remove()
         self.get_figure().canvas.draw_idle()
 
     # Reset state and return
@@ -836,7 +831,7 @@ def on_key_press(self,event):# pragma: no cover
         self.drawState = States.INACTIVE
         dr = self.selectedDr
         if not dr is None:
-            dr.Cut1DFunction(dr)
+            dr.Cut1DFunction(dr=dr)
 
             return
     
@@ -991,10 +986,16 @@ class DraggableShape(): # pragma: no cover
             'motion_notify_event', self.on_motion)
 
     def disconnect(self):
-        'disconnect all the stored connection ids'
-        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
-        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
-        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+        pass
+        #'disconnect all the stored connection ids'
+        #for idx in ['cidpress','cidrelease','cidmotion']:
+        #    try:
+        #        self.rect.figure.canvas.mpl_disconnect(getattr(self,idx))
+        #    except AttributeError:
+        #        pass
+
+        #self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
+        #self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
 
 
             
@@ -1011,7 +1012,6 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
         self.figure = figure
         
     def remove(self):
-        fig = self.rect.figure
         self.disconnect()
         fig = self.rect.figure
         self.rect.set_visible(False)
@@ -1020,9 +1020,13 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
         self.line.remove()
         if self.selected:
             self.figure.selectedDr = None
-        idx = self.figure.shapes.index(self)
-        del self.figure.shapes[idx]
-        fig.canvas.draw()
+        #idx = self.figure.shapes.index(self)
+        #self.figure.shapes[idx].remove()
+        #del self.figure.shapes[idx]
+        if not hasattr(fig,'canvas'):
+            fig.get_figure().canvas.draw()
+        else:
+            fig.canvas.draw()
 
 
     @property
@@ -1424,16 +1428,20 @@ class DraggableCircle(DraggableShape):# pragma: no cover
         self.figure = figure
         
     def remove(self):
-        fig = self.circ.figure
+        fig = self.figure
         self.disconnect()
         self.circ.set_visible(False)
         self.circ.remove()
-        del self.circ
+        #del self.circ
         if self.selected:
             self.figure.selectedDr = None
-        idx = self.figure.shapes.index(self)
-        del self.figure.shapes[idx]
-        fig.canvas.draw()        
+        #idx = self.figure.shapes.index(self)
+        #self.figure.shapes[idx].remove()
+        # #del self.figure.shapes[idx]
+        if not hasattr(fig,'canvas'): # This is an axis an not a figure!
+            fig.get_figure().canvas.draw()        
+        else:
+            fig.canvas.draw()        
 
     @property
     def selected(self):
@@ -1538,9 +1546,12 @@ class DraggableCircle(DraggableShape):# pragma: no cover
 
     def disconnect(self):
         'disconnect all the stored connection ids'
-        self.circ.figure.canvas.mpl_disconnect(self.cidpress)
-        self.circ.figure.canvas.mpl_disconnect(self.cidrelease)
-        self.circ.figure.canvas.mpl_disconnect(self.cidmotion)
+        try:
+            self.circ.figure.canvas.mpl_disconnect(self.cidpress)
+            self.circ.figure.canvas.mpl_disconnect(self.cidrelease)
+            self.circ.figure.canvas.mpl_disconnect(self.cidmotion)
+        except AttributeError:
+            pass
 
             
             
@@ -1600,9 +1611,11 @@ class DraggableCircle(DraggableShape):# pragma: no cover
         func = figure.draggableFunctions[figure.draggableShapes.index(DraggableCircle)]
         Cut1DFunction = func
         
-        axes.add_patch(circ)
+        
         dr = DraggableCircle(circ,figure,Cut1DFunction,figure)
+        axes.add_patch(circ)
         figure.new = False
+        figure.newShape.set_visible(False)
         figure.newShape.remove()
         figure.newShape = None
 
@@ -1628,12 +1641,15 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
         self.disconnect()
         self.rect.set_visible(False)
         self.rect.remove()
-        del self.rect
         if self.selected:
             self.figure.selectedDr = None
-        idx = self.figure.shapes.index(self)
-        del self.figure.shapes[idx]
-        fig.canvas.draw()        
+        #idx = self.figure.shapes.index(self)
+        #self.figure.shapes[idx].remove()
+        #del self.figure.shapes[idx]
+        if not hasattr(fig,'canvas'): # This is an axis an not a figure!
+            fig.get_figure().canvas.draw()        
+        else:
+            fig.canvas.draw()    
 
     @property
     def selected(self):
@@ -1737,10 +1753,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
         self.rect.figure.canvas.draw()
 
     def disconnect(self):
-        'disconnect all the stored connection ids'
-        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
-        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
-        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+        pass
 
             
             
@@ -1813,6 +1826,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
         axes.add_patch(rect)
         dr = DraggableRectanglePerpendicular(rect,figure,Cut1DFunction,figure)
         figure.new = False
+        figure.newShape.set_visible(False)
         figure.newShape.remove()
         figure.newShape = None
 
@@ -1845,8 +1859,12 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         self.line.remove()
         if self.selected:
             self.figure.selectedDr = None
-        idx = self.figure.shapes.index(self)
-        del self.figure.shapes[idx]
+        #idx = self.figure.shapes.index(self)
+        #try:
+        #    self.figure.shapes[idx].remove()
+        #except ValueError:
+        #    pass
+        #del self.figure.shapes[idx]
         fig.canvas.draw()     
 
     @property
@@ -1960,10 +1978,9 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         self.rect.figure.canvas.draw()
 
     def disconnect(self):
-        'disconnect all the stored connection ids'
-        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
-        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
-        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+        pass
+
+
 
             
             
@@ -2074,6 +2091,7 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         axes.add_patch(rect)
         dr = DraggableRectangleHorizontal(rect,figure.line,figure,Cut1DFunction,figure)
         figure.new = False
+        figure.newShape.set_visible(False)
         figure.newShape.remove()
         figure.newShape = None
 
@@ -2106,9 +2124,13 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         self.line.remove()
         if self.selected:
             self.figure.selectedDr = None
-        idx = self.figure.shapes.index(self)
-        del self.figure.shapes[idx]
-        fig.canvas.draw()     
+        #idx = self.figure.shapes.index(self)
+        #self.figure.shapes[idx].remove()
+        #del self.figure.shapes[idx]
+        if not hasattr(fig,'canvas'):
+            fig.get_figure().canvas.draw()     
+        else:
+            fig.canvas.draw()     
 
     @property
     def selected(self):
@@ -2221,10 +2243,7 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         self.rect.figure.canvas.draw()
 
     def disconnect(self):
-        'disconnect all the stored connection ids'
-        self.rect.figure.canvas.mpl_disconnect(self.cidpress)
-        self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
-        self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
+        pass
 
             
             
@@ -2329,6 +2348,7 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         axes.add_patch(rect)
         dr = DraggableRectangleVertical(rect,figure.line,figure,Cut1DFunction,figure)
         figure.new = False
+        figure.newShape.set_visible(False)
         figure.newShape.remove()
         figure.newShape = None
 

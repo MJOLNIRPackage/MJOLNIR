@@ -654,9 +654,13 @@ class DataSet(object):
             if showEnergy:
                 ax.energy = np.mean(Data['Energy'])
         
-        
+        if showEnergy:
+            ax.energy = np.mean(Data['Energy'])
         # Calculate the bin distance as defined above
-        Data['binDistance'] = ax.calculatePositionInv(Data[variables[:-1]])
+        if hasattr(ax,'calculatePositionInv'):
+            Data['binDistance'] = ax.calculatePositionInv(Data[variables[:-1]])
+        else:
+            Data['binDistance'] = np.linalg.norm(Data[variables[:-1]]-q1,axis=1)
         ax.set_ylabel('$I$ [arb.u.]')
         
         if not 'label' in kwargs:
@@ -918,7 +922,7 @@ class DataSet(object):
                 pdDatas.append(pdData)
 
             pdDatas = pd.concat(pdDatas)
-            return pdDatas,[Qx,E]
+            return pdDatas,[Qx,E],[minOrthoPosition,maxOrthoPosition]
 
  
     
@@ -1006,14 +1010,22 @@ class DataSet(object):
         ax.width = width
         ax.minPixel = minPixel
         
-        data,bins = self.cutQE(q1,q2,width,minPixel,EMin=EMin,EMax=EMax,dE=dE,EnergyBins=EnergyBins,rlu=rlu,smoothing=smoothing)
+        data,bins,[minOrthoPosition,maxOrthoPosition] = self.cutQE(q1,q2,width,minPixel,EMin=EMin,EMax=EMax,dE=dE,EnergyBins=EnergyBins,rlu=rlu,smoothing=smoothing)
 
+        if rlu==True: # Recalculate H,K,L to qx
+            q1,q2 = self.convertToQxQy([q1,q2])
+        dirvec = (np.array(q2) - np.array(q1)).astype(float)
+        dirLength = np.linalg.norm(dirvec)
+        dirvec /= dirLength
+        ax.orthovec = np.array([dirvec[1],-dirvec[0]])
         if rlu:
             variables = ['H','K','L']
         else:
             variables = ['Qx','Qy']
 
         ax.dE = np.diff(bins[1][0,:]).mean()
+        ax.minOrthoPosition = minOrthoPosition
+        ax.maxOrthoPosition = maxOrthoPosition
 
         ax.Data = data
 
@@ -1022,7 +1034,13 @@ class DataSet(object):
         I.mask = np.isnan(I)
         HKL = np.asarray(data[variables])
         E = np.asarray(data['Energy']).reshape(shape)
-        pos = ax.calculatePositionInv(HKL)
+        if hasattr(ax,'calculatePositionInv'):
+            pos = ax.calculatePositionInv(HKL)
+        else:
+            if rlu:
+                pos = np.linalg.norm(HKL-self.convertToHKL(q1),axis=1)
+            else:
+                pos = np.linalg.norm(HKL-q1,axis=1)
         data['binDistance'] = pos
 
         pos.shape = shape
@@ -1533,10 +1551,15 @@ class DataSet(object):
             ax.EMax = EMax
             ax.outputFunction = outputFunction
             
+            if not cut1DFunctionRectangle is None:
+                ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangle(ax,dr=dr)
+            else:
+                ax.cut1DFunctionRectangle = cut1DFunctionRectangle
 
-            ax.cut1DFunctionRectangle = cut1DFunctionRectangle
-
-            ax.cut1DFunctionCircle = cut1DFunctionCircle
+            if not cut1DFunctionCircle is None:
+                ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(ax,dr=dr)
+            else:
+                ax.cut1DFunctionCircle = cut1DFunctionCircle
 
             ax.type = 'QPlane'
             ax = _interactiveSettings.setupModes(ax)
@@ -1792,7 +1815,7 @@ class DataSet(object):
         BinList = []
 
         for cutIndex,[pStart,pStop,w,mP,EB] in enumerate(zip(QPoints,QPoints[1:],width,minPixel,EnergyBins)):
-            _DataList,_Bins = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
+            _DataList,_Bins,_minmax = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
                                                                          dataFiles=dataFiles,extend=False,constantBins=constantBins)
             _DataList['qCut']=cutIndex
             DataList.append(_DataList)
@@ -1896,7 +1919,7 @@ class DataSet(object):
         OffSetWidth = []
 
         for cutIndex,[pStart,pStop,w,mP,EB] in enumerate(zip(QPoints,QPoints[1:],width,minPixel,EnergyBins)):
-            _DataList,_Bins = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
+            _DataList,_Bins,_minmax = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
                                                                         dataFiles=dataFiles,extend=False,constantBins=constantBins)
             _DataList['qCut']=cutIndex
             
@@ -2813,7 +2836,8 @@ class DataSet(object):
     @_tools.KwargChecker(function=createQAxis)
     def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
                instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
-               cut1DFunctionRectangle=None, cut1DFunctionCircle=None,**kwargs):
+               cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut1DFunctionRectanglePerp=None,
+               cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -2914,7 +2938,9 @@ class DataSet(object):
             qxEax.ds = self
             
             
-            qxEax.cut1DFunctionRectanglePerpendicular=qxEax.cut1DFunctionRectangleHorizontal=qxEax.cut1DFunctionRectangleVertical = None
+            qxEax.cut1DFunctionRectanglePerpendicular = cut1DFunctionRectanglePerp
+            qxEax.cut1DFunctionRectangleHorizontal = cut1DFunctionRectangleHorizontal
+            qxEax.cut1DFunctionRectangleVertical = cut1DFunctionRectangleVertical
             qxEax = _interactiveSettings.setupModes(qxEax)
             
 
@@ -2943,7 +2969,9 @@ class DataSet(object):
             qyEax.width = dQy
             qyEax.dE = dE
             
-            qyEax.cut1DFunctionRectanglePerpendicular=qyEax.cut1DFunctionRectangleHorizontal=qyEax.cut1DFunctionRectangleVertical = None
+            qyEax.cut1DFunctionRectanglePerpendicular = cut1DFunctionRectanglePerp
+            qyEax.cut1DFunctionRectangleHorizontal = cut1DFunctionRectangleHorizontal
+            qyEax.cut1DFunctionRectangleVertical = cut1DFunctionRectangleVertical
             qyEax = _interactiveSettings.setupModes(qyEax)
             
 
@@ -3034,7 +3062,10 @@ class DataSet(object):
             adjustable=adjustable,outputFunction=outputFunction,cmap=cmap,
             CurratAxeBraggList=CurratAxeBraggList,Ei=Ei,EfLimits=EfLimits,
             dataset=self,cut1DFunctionRectangle=cut1DFunctionRectangle, 
-            cut1DFunctionCircle=cut1DFunctionCircle)
+            cut1DFunctionCircle=cut1DFunctionCircle,
+            cut1DFunctionRectanglePerp=cut1DFunctionRectanglePerp,
+            cut1DFunctionRectangleHorizontal=cut1DFunctionRectangleHorizontal,
+            cut1DFunctionRectangleVertical=cut1DFunctionRectangleVertical)
 
             def to_csv(fileName,self):
                 shape = self.Counts.shape
@@ -5400,14 +5431,16 @@ def convertToHKL(sample,QxQy):
     return np.array([H,K,L]).T
 
 
-def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print):
-    fig,ax = plt.subplots()
-    ax = plt.gca()
+def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunction=print, ax=None):
+    if ax is None:
+        fig,ax = plt.subplots()
+    
     q1 = np.array(q1,dtype=float)
     q2 = np.array(q2,dtype=float)
     
     if rlu:
         variables = ['H','K','L']
+        ax.sample = ds.sample[0]
     else:
         variables = ['Qx','Qy']
     
@@ -5479,7 +5512,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     ax.suppressPrint = False
 
     ax._x_precision = 2
-    ax.fmtPrecisionString = '{:.'+str(2)+'f}'
+    ax.fmtPrecisionString = '{:.'+str(ax._x_precision)+'f}'
     # Dynamic add setter and getter to ax.precision
     
     def set_precision(ax,value):
