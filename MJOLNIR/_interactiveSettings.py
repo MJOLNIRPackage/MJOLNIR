@@ -90,10 +90,13 @@ def setCursor(ax,cursor):
     if mplVersion >= 3.5:
         pass#ax.get_figure().canvas.set_cursor(cursor)
     else:
-        if isinstance(cursor,type(cursors.HAND)): # Standard Matplotlib cursor
-            ax.get_figure().canvas.toolbar.set_cursor(cursor)
-        else:
-            ax.get_figure().canvas.setCursor(cursor)
+        try:
+            if isinstance(cursor,type(cursors.HAND)): # Standard Matplotlib cursor
+                ax.get_figure().canvas.toolbar.set_cursor(cursor)
+            else:
+                ax.get_figure().canvas.setCursor(cursor)
+        except AttributeError:
+            pass
     
 
 interactive1DKeysReversed = {}
