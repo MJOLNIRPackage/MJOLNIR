@@ -1037,7 +1037,10 @@ class DataSet(object):
         if hasattr(ax,'calculatePositionInv'):
             pos = ax.calculatePositionInv(HKL)
         else:
-            pos = np.linalg.norm(HKL-q1,axis=1)
+            if rlu:
+                pos = np.linalg.norm(HKL-self.convertToHKL(q1),axis=1)
+            else:
+                pos = np.linalg.norm(HKL-q1,axis=1)
         data['binDistance'] = pos
 
         pos.shape = shape
@@ -1812,7 +1815,7 @@ class DataSet(object):
         BinList = []
 
         for cutIndex,[pStart,pStop,w,mP,EB] in enumerate(zip(QPoints,QPoints[1:],width,minPixel,EnergyBins)):
-            _DataList,_Bins = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
+            _DataList,_Bins,_minmax = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
                                                                          dataFiles=dataFiles,extend=False,constantBins=constantBins)
             _DataList['qCut']=cutIndex
             DataList.append(_DataList)
@@ -1916,7 +1919,7 @@ class DataSet(object):
         OffSetWidth = []
 
         for cutIndex,[pStart,pStop,w,mP,EB] in enumerate(zip(QPoints,QPoints[1:],width,minPixel,EnergyBins)):
-            _DataList,_Bins = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
+            _DataList,_Bins,_minmax = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
                                                                         dataFiles=dataFiles,extend=False,constantBins=constantBins)
             _DataList['qCut']=cutIndex
             
