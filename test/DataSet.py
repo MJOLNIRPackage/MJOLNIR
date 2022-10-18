@@ -574,7 +574,7 @@ def test_DataSet_2Dcut():
 
     Datset.convertDataFile(saveFile=False)
     ax,Data,bins = Datset.plotCutQE(q1,q2,width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)# Remove to improve test coverage ,vmin=0.0 , vmax= 5e-06)
-    Data2,bins2 = Datset.cutQE(q1,q2,width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)
+    Data2,bins2,_ = Datset.cutQE(q1,q2,width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)
 
     comparisons = list(Data.columns)
     del comparisons[comparisons.index('binDistance')]
@@ -586,8 +586,8 @@ def test_DataSet_2Dcut():
 
     q1,q2 = Datset.convertToQxQy([Q1,Q2])
 
-    Data1,bins = Datset.cutQE(Q1,Q2,width,minPixel,EnergyBins=EnergyBins,rlu=True)
-    Data2,bins2 = Datset.cutQE(q1,q2,width,minPixel,EnergyBins=EnergyBins,rlu=False)
+    Data1,bins,_ = Datset.cutQE(Q1,Q2,width,minPixel,EnergyBins=EnergyBins,rlu=True)
+    Data2,bins2,_ = Datset.cutQE(q1,q2,width,minPixel,EnergyBins=EnergyBins,rlu=False)
 
     comparisons = list(Data.columns)
     del comparisons[comparisons.index('binDistance')]
