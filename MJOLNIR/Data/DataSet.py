@@ -926,8 +926,8 @@ class DataSet(object):
 
  
     
-    @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
-    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,vmin=None,vmax=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log']))
+    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
@@ -969,6 +969,8 @@ class DataSet(object):
             - vmin (float): Lower value of color scale (default None, minimum of intensity)
             
             - vmax (float): Upper value of color scale (default None, maxmimum of intensity)
+
+            - log (bool): If true the plotted intensity is the logarithm of the intensity (default False)
             
             - colorbar (bool): If True, plot colorbar (default False)
             
@@ -1031,6 +1033,30 @@ class DataSet(object):
 
         shape = (np.array(bins[0].shape)-np.array([1,1]))[::-1]
         I = np.ma.array(np.asarray(data['Int']).reshape(shape))
+        if 'log' in kwargs:
+                log = kwargs['log']
+                del kwargs['log']
+            else:
+                log = False
+
+        if 'vmin' in kwargs:
+                vmin = kwargs['vmin']
+                del kwargs['vmin']
+            else:
+                vmin = None
+
+        if 'vmax' in kwargs:
+                vmax = kwargs['vmax']
+                del kwargs['vmax']
+            else:
+                vmax = None
+
+        
+
+        if log:
+
+            
+            I = np.log10(I+1e-20)
         I.mask = np.isnan(I)
         HKL = np.asarray(data[variables])
         E = np.asarray(data['Energy']).reshape(shape)
