@@ -1476,12 +1476,18 @@ class DataSet(object):
             ax.Qx =[np.outer(ax.xBins[i],np.ones_like(ax.yBins[i])) for i in range(len(ax.intensity))]
             ax.Qy =[np.outer(np.ones_like(ax.xBins[i]),ax.yBins[i]) for i in range(len(ax.intensity))]
             
-        
-        if 'vmin' in kwargs:
-            vmin = kwargs['vmin']
-            kwargs = _tools.without_keys(dictionary=kwargs,keys='vmin')
+
+        if 'colorbar' in kwargs:
+            colorbar = kwargs['colorbar']
+            kwargs = _tools.without_keys(dictionary=kwargs,keys='colorbar')
         else:
-            vmin = np.min([np.nanmin(intens) for intens in ax.Int])
+            colorbar = False
+
+        pmeshs = []
+        if log:
+            ax.Int = [np.log10(1e-20+np.array(intens)) for intens in ax.Int]
+        else:
+            ax.Int = [np.array(intens) for intens in ax.Int]
 
         if 'vmax' in kwargs:
             vmax = kwargs['vmax']
@@ -1489,23 +1495,19 @@ class DataSet(object):
         else:
             vmax = np.max([np.nanmax(intens) for intens in ax.Int])
 
-        if 'colorbar' in kwargs:
-            colorbar = kwargs['colorbar']
-            kwargs = _tools.without_keys(dictionary=kwargs,keys='colorbar')
+        if 'vmin' in kwargs:
+            vmin = kwargs['vmin']
+            kwargs = _tools.without_keys(dictionary=kwargs,keys='vmin')
         else:
-            colorbar = False
-        pmeshs = []
-        if log:
-            Int = [np.log10(1e-20+np.array(intens)) for intens in ax.Int]
-        else:
-            Int = [np.array(intens) for intens in ax.Int]
+            vmin = np.min([np.nanmin(intens) for intens in ax.Int])
+            
 
         for i in range(len(EBins)-1):
             if _3D:
                 QX = 0.25*np.array(np.array(ax.Qx[i])[1:,1:]+np.array(ax.Qx[i])[:-1,1:]+np.array(ax.Qx[i])[1:,:-1]+np.array(ax.Qx[i])[:-1,:-1])/xScale
                 QY = 0.25*np.array(np.array(ax.Qy[i])[1:,1:]+np.array(ax.Qy[i])[:-1,1:]+np.array(ax.Qy[i])[1:,:-1]+np.array(ax.Qy[i])[:-1,:-1])/yScale
                 #QY = np.array(np.array(Qy[i])[1:,1:])
-                I = np.array(Int[i])
+                I = np.array(ax.Int[i])
                 levels = np.linspace(vmin,vmax,50)
                 pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
             else:
@@ -1528,7 +1530,7 @@ class DataSet(object):
 
         if colorbar:
             ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
-            ax.colorbar.set_label('$I$ [arb.u.]', rotation=270)
+            ax.colorbar.set_label(log*'log('+'$I$'+log*')'+ '[arb.u.]', rotation=270)
 
         ax.set_clim(vmin,vmax)
         if _3D:
