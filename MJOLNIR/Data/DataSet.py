@@ -926,7 +926,7 @@ class DataSet(object):
 
  
     
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log']]))
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','edgecolors'],]))
     def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
@@ -1074,7 +1074,7 @@ class DataSet(object):
         ax.X = pos[0]
         ax.Y = E[:,0]
 
-        ax.pmeshs = [ax.pcolormesh(X,Y,I,shading='nearest',vmin=vmin,vmax=vmax,cmap=cmap)]
+        ax.pmeshs = [ax.pcolormesh(X,Y,I,shading='nearest',vmin=vmin,vmax=vmax,cmap=cmap,**kwargs)]
 
         ax.set_ylabel('E [mev]')
         ax.ds = self
@@ -1097,7 +1097,7 @@ class DataSet(object):
             ax.cut1DFunctionRectangleVertical = None
 
         if colorbar:
-            ax.get_figure().colorbar(ax.pmeshs[0])
+            ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0])
 
         ax.grid(grid)
 
