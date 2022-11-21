@@ -595,7 +595,7 @@ class DataSet(object):
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,extend=False,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,counts=False,extend=False,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
         Args:
@@ -623,6 +623,8 @@ class DataSet(object):
                 - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
 
                 - showEnergy (bool): If True plot also the energy of the current cut (default True)
+                
+                - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)  
         
                 - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
         
@@ -667,8 +669,14 @@ class DataSet(object):
             kwargs['label'] = '_Data'
             
         # Perform the actual plotting
-        ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
-        
+        if counts is True:
+            ax.errorbar(Data['binDistance'],Data['Intensity'],yerr=np.sqrt(Data['Intensity']),**kwargs)
+        elif counts is False:
+            ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+        elif counts.lower() == 'sensitivity':
+            ax.errorbar(Data['binDistance'],Data['Normalization']/Data['BinCount'],**kwargs)
+        else:
+            AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
         # Extend plot to show all the data
         ax.set_xlim(*_tools.minMax(Data['binDistance']))
 
@@ -927,7 +935,7 @@ class DataSet(object):
  
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','edgecolors'],]))
-    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
+    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,counts=False,smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
@@ -957,6 +965,8 @@ class DataSet(object):
             - width (float): Integration width in 1/A perpendicular to cut (default 0.1)
             
             - rlu (bool): If True, plot as function of HKL otherwise QxQy (default True)
+
+            - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)
             
             - smoothing (float): Gaussian smoothing applied to data after cut (default None, see scipy.ndimage.gaussian_filter)
             
@@ -1051,7 +1061,14 @@ class DataSet(object):
         else:
             vmax = None
 
-        
+        if counts is True:
+            I = _data['Intensity'].values
+        elif counts is False:
+            I = _data['Int'].values
+        elif counts.lower() == 'sensitivity':
+            I = _data['Normalization'].values/_data['BinCount'].values
+        else:
+            AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))        
 
         if log:
             I = np.log10(I+1e-20)
@@ -2522,7 +2539,7 @@ class DataSet(object):
         return ufitData
 
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, showQ= True, dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,outputFunction=print,**kwargs):
+    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, showQ= True, counts=False, dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,outputFunction=print,**kwargs):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
@@ -2544,6 +2561,8 @@ class DataSet(object):
             - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
 
             - showQ (bool): If True show the current Q point on the x-axus (default True)
+
+            - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)
             
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
 
@@ -2593,7 +2612,15 @@ class DataSet(object):
             kwargs['label'] = '_Data'
             
         # Perform the actual plotting
-        ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+        if counts is True:
+            ax.errorbar(Data['binDistance'],Data['Intensity'],yerr=np.sqrt(Data['Intensity']),**kwargs)
+        elif counts is False:
+            ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+        elif counts.lower() == 'sensitivity':
+            ax.errorbar(Data['binDistance'],Data['Normalization']/Data['BinCount'],**kwargs)
+        else:
+            AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
+        #ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
         
         
         if not ufit:
@@ -2759,7 +2786,7 @@ class DataSet(object):
         return Data,Bins
 
 
-    def plotCutELine(self, Q1, Q2, ax=None, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False, Vmin=None, Vmax = None, **kwargs):
+    def plotCutELine(self, Q1, Q2, ax=None, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, counts=False, dataFiles=None, constantBins=False, Vmin=None, Vmax = None, **kwargs):
         """Perform cut along energy in steps between two Q Point 
         
         Args:
@@ -2784,6 +2811,8 @@ class DataSet(object):
             - width (float): Full width of cut in q-plane (default 0.02).
 
             - rlu (bool): If True, provided Q point is interpreted as (h,k,l) otherwise as (qx,qy), (Default true)
+
+            - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)
             
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
 
@@ -2843,7 +2872,15 @@ class DataSet(object):
                 
             x,y = np.meshgrid(position,_bins[0])
             ax.grid(False)
-            pmesh = ax.pcolormesh(x,y,_data['Int'].values.reshape(-1,1))
+            if counts is True:
+                DATA = _data['Intensity'].values.reshape(-1,1)#/_data['BinCount'].values.reshape(-1,1)
+            elif counts is False:
+                DATA = _data['Int'].values.reshape(-1,1)
+            elif counts.lower() == 'sensitivity':
+                DATA = _data['Normalization'].values.reshape(-1,1)/_data['BinCount'].values.reshape(-1,1)
+            else:
+                AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
+            pmesh = ax.pcolormesh(x,y,DATA)
             meshs.append(pmesh)
             
         ax.meshs = meshs
@@ -3055,8 +3092,16 @@ class DataSet(object):
         Data,bins = self.binData3D(dx=dQx,dy=dQy,dz=dE,rlu=rlu)
         
         if counts:
-            Intensity = Data[0]/Data[3]
-            Data = Intensity
+            if counts is True:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Data = Data[0]/Data[3]
+                
+            elif counts.lower() == 'sensitivity':
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Data = Data[2]/Data[3]
+                
             
         if customSlicer == True:
             
