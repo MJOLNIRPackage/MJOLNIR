@@ -354,6 +354,12 @@ class lineMask(MaskingObject):
         
         mask = np.sum([np.logical_and(p>self.start,p<=self.end) for p in points],axis=0)>0
         
+        if isinstance(x,DataFile.DataFile):
+            if len(mask) == len(x.I) and len(mask.shape)==1: # We have a mask of A3
+                    mask = np.outer(mask,np.ones_like(x.I[0],dtype=bool)).reshape(*x.I.shape)
+            if len(mask) == len(x.I)+1 and len(mask.shape)==1: # For some reason A3 is 1 longer than I...
+                mask = np.outer(mask[:-1],np.ones_like(x.I[0],dtype=bool)).reshape(*x.I.shape)
+        
         if self.maskInside == False:
             mask = np.logical_not(mask)
         return mask
