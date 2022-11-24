@@ -119,7 +119,7 @@ HDFInstrumentTranslation = {
 
 HDFInstrumentTranslationNICOSAlternative = {
                     'counts':'detector/data',
-                    'A4':'analyzer/polar_angle_raw'
+                    'A4':'analyzer/polar_angle'#_raw'
 
 }
 
@@ -316,11 +316,10 @@ class DataFile(object):
                     self.A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=self.fromNICOS)).reshape(-1)
                     self.A4Off = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=self.fromNICOS))
                     if self.fromNICOS:
-                        self.twotheta = copy.deepcopy(self.A4)# - self.A4Off
-                        self.A4 += self.A4Off
+                        self.twotheta = copy.deepcopy(self.A4) - self.A4Off
                     else:
                         self.twotheta = self.A4-self.A4Off
-                    
+
                     try:
                         self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
                     except KeyError:
