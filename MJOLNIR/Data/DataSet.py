@@ -357,17 +357,20 @@ class DataSet(object):
 
 
         if dataFiles is None:
-            if len(self.dataFiles)==0:
-                raise AttributeError('No data files file provided either through input or in the DataSet object, or low-memory mode is used.')
+            if len(self) == 0:
+                raise AttributeError('No data files file provided either through input or in the DataSet object')#, or low-memory mode is used.')
+            dataFiles = list(self)
         else:
             dataFiles = isListOfDataFiles(dataFiles)
         
 
         
-        dataFiles = self.dataFiles
+        
         convertedFiles = []
         
         for rawFile in _tools.getNext(dataFiles,delete=deleteOnConvert):
+            if rawFile.type in MJOLNIR.Data.DataFile.supportedConvertedFormats:
+                rawFile = MJOLNIR.Data.DataFile.DataFile(rawFile.original_fileLocation)
 
             convFile = rawFile.convert(binning,printFunction=printFunction)
             
@@ -1062,17 +1065,21 @@ class DataSet(object):
             vmax = None
 
         if counts is True:
-            I = _data['Intensity'].values
+            I = data['Intensity'].values
         elif counts is False:
-            I = _data['Int'].values
+            I = data['Int'].values
         elif counts.lower() == 'sensitivity':
-            I = _data['Normalization'].values/_data['BinCount'].values
+            I = data['Normalization'].values/data['BinCount'].values
         else:
             AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))        
 
         if log:
             I = np.log10(I+1e-20)
+        
+        shape = (np.array(bins[0].shape)-np.array([1,1]))[::-1]
+        I = np.ma.array(np.asarray(data['Int']).reshape(shape))
         I.mask = np.isnan(I)
+        
         HKL = np.asarray(data[variables])
         E = np.asarray(data['Energy']).reshape(shape)
         if hasattr(ax,'calculatePositionInv'):
@@ -3204,7 +3211,7 @@ class DataSet(object):
             raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
         
         
-        dataFiles = [d.original_file if d.type=='nxs' else d for d in self]
+        dataFiles = [MJOLNIR.Data.DataFile.DataFile(d.original_fileLocation) if d.type=='nxs' else d for d in self]
         
         for d in dataFiles:
             d.loadBinning(1)
