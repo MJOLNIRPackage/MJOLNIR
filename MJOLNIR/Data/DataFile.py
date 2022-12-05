@@ -222,7 +222,7 @@ class DataFile(object):
                     if len(self.MonitorPreset)>1:
                         self.MonitorPreset = self.MonitorPreset[0]             
                     self.startTime = np.array(getHDFEntry(f,'startTime',fromNICOS=self.fromNICOS))[0].decode()
-                    
+                    self.totalCounts = self.I.sum(axis=(1,2))
                     if self.type == 'hdf':
                         self.Monitor = np.array(getHDFEntry(f,'hdfMonitor',fromNICOS=self.fromNICOS))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
