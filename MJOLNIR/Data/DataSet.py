@@ -1144,16 +1144,16 @@ class DataSet(object):
         
     
     @_tools.KwargChecker()
-    def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,constantBins=False):
+    def cutPowder(self,EBins,QBins,dataFiles=None,constantBins=False):
         """Cut data powder map with intensity as function of the length of q and energy. 
 
         Args:
-            
-            - EBinEdges (list): Bin edges between which the cuts are performed.
+
+            - EBins (list): Energy bin edges.
+
+            - QBins (list): Q length bin edges.
 
         Kwargs:
-
-            - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
@@ -1182,14 +1182,14 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
         
-        positions = np.array([qx,qy,energy])
+        positions = np.array([np.linalg.norm([qx,qy],axis=0),energy])
 
         return cutPowder(positions=positions,I=I,Norm=Norm,Monitor=Monitor,
-                        EBinEdges=EBinEdges,qMinBin=qMinBin,constantBins=constantBins)
+                        EBins=EBins,QBins=QBins)
 
     
     @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','edgecolors']]))
-    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True, vmin=None, vmax=None,outputFunction=print,**kwargs):
+    def plotCutPowder(self,EBins,QBins,ax=None,dataFiles=None,log=False,colorbar=True, vmin=None, vmax=None,outputFunction=print,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
         .. note::
@@ -1197,17 +1197,17 @@ class DataSet(object):
         
         Args:
 
-            - EBinEdges (list): Bin edges between which the cuts are performed.
+            - EBins (list): Energy bin edges.
+
+            - QBins (list): Q length bin edges.
 
         Kwargs:
             
-            - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
             
             - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
             
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
-            - constantBins (bool): If True only bins of size minPixel is used (default False)
 
             - log (bool): If true, logarithm to intensity is plotted (default False)
 
@@ -1226,57 +1226,66 @@ class DataSet(object):
             - ax (matplotlib axis): Matplotlib axis into which the plot was put.
             
             - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for poweder cut.
-            
-            - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
+
 
         """
 
-        Data,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins)
+        Data = self.cutPowder(QBins=QBins,EBins=EBins,dataFiles=dataFiles)
+
+        centerPointsE = 0.5*(EBins[1:]+EBins[:-1])
+        centerPointsQ = 0.5*(QBins[1:]+QBins[:-1])
+
+        XX,YY = np.meshgrid(centerPointsQ,centerPointsE,indexing='ij')
         
         if ax is None:
             plt.figure()
             ax = plt.gca()
-        ax.pmeshs = []
-
-        eMean = 0.5*(EBinEdges[:-1]+EBinEdges[1:])
-        for i,dat in Data[['Int','EnergyCut']].groupby('EnergyCut'):
-            if len(dat)==0:
-                continue
-            if log:
-                ints = np.log10(dat['Int']+1e-20).values.reshape((len(qbins[i])-1,1)).T
-                
-            else:
-                ints = dat['Int'].values.reshape((len(qbins[i])-1,1)).T
-            ax.pmeshs.append(ax.pcolormesh(qbins[i],[EBinEdges[i],EBinEdges[i+1]],ints,vmin=vmin,vmax=vmax,**kwargs))
         
-        def calculateIndex(x,y,eMean,qBin,EBinEdges):# pragma: no cover
-            if y>EBinEdges[-1] or y<EBinEdges[0]:
-                return -1,-1
-            EIndex = np.argmin(np.abs(y-eMean))
-            if x>qBin[EIndex][-1] or x<qBin[EIndex][0]:
-                return EIndex,-1
-            qIndex = np.argmin(np.abs(x-0.5*(qBin[EIndex][:-1]+qBin[EIndex][1:])))
-            return EIndex,qIndex
-        ax.calculateIndex = lambda x,y: calculateIndex(x,y,eMean,qbins,EBinEdges)
 
-        def format_coord(x,y,ax,dat,qbins):# pragma: no cover
-            EIndex,qIndex = ax.calculateIndex(x,y)
+        if log:
+            ints = np.log10(Data['Int']).values+1e-20
+            
+        else:
+            ints = Data['Int'].values
+
+        shape = XX.shape
+        ints = (ints.reshape(shape))
+        
+        ax.pmesh = ax.pcolormesh(XX,YY,ints,shading='auto',vmin=vmin,vmax=vmax,**kwargs)
+        
+        def calculateIndex(x,y,QBins,EBins,centerPointsQ,centerPointsE):# pragma: no cover
+            
+            if y>EBins[-1] or y<EBins[0]:
+                return -1,-1
+            EIndex = np.argmin(np.abs(y-centerPointsE))
+            if x>QBins[-1] or x<QBins[0]:
+                return -1,EIndex
+            qIndex = np.argmin(np.abs(x-centerPointsQ))
+            return qIndex,EIndex
+
+        ax.calculateIndex = lambda x,y: calculateIndex(x,y,QBins,EBins,centerPointsQ,centerPointsE)
+
+        def format_coord(x,y,ax,dat,centerPointsQ,centerPointsE):# pragma: no cover
+            qIndex,EIndex = ax.calculateIndex(x,y)
             if EIndex == -1 or qIndex == -1:
                 return "outside range"
-            Intensity = dat[dat['EnergyCut']==EIndex]['Int'][qIndex]
-            return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(qbins[EIndex][qIndex],eMean[EIndex],Intensity)
             
-        ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[['Int','EnergyCut']],qbins)
+            calcIndex = qIndex*len(centerPointsE)+EIndex
+            #print(qIndex,EIndex,'->',calcIndex)
+            Intensity = dat.iloc[calcIndex]['Int']
+            pos = [centerPointsQ[qIndex],centerPointsE[EIndex]]
+            return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(*pos,Intensity)
+            
+        ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[['Int']],centerPointsQ,centerPointsE)
         ax.set_xlabel(r'$|q| [\AA^{-1}]$')
         ax.set_ylabel('E [meV]')
         
         def set_clim(ax,VMin,VMax):
-            for pm in ax.pmeshs:
-                pm.set_clim(VMin,VMax)
+            ax.pmesh.set_clim(VMin,VMax)
 
         ax.set_clim = lambda VMin,VMax: set_clim(ax,VMin,VMax)
         
-        def onclick(event,ax,dat,outputFunction):# pragma: no cover
+        def onclick(event,ax,dat,centerPointsE,outputFunction):# pragma: no cover
             if ax.in_axes(event):
                 try: 
                     c = ax.get_figure().canvas.cursor().shape()
@@ -1288,33 +1297,38 @@ class DataSet(object):
                 x = event.xdata
                 y = event.ydata
                 printString = ax.format_coord(x,y)
-                EIndex,index = ax.calculateIndex(x,y)
-                if EIndex == -1 or index == -1:
+                qIndex,EIndex = ax.calculateIndex(x,y)
+                if EIndex == -1 or qIndex == -1:
                     return
-                _local = dat[dat['EnergyCut']==EIndex]
-                cts = _local['Intensity'][index]
-                Mon = _local['Monitor'][index]
-                Norm = _local['Normalization'][index]
-                NC = _local['BinCount'][index]
-                printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+                calcIndex = qIndex*len(centerPointsE)+EIndex
+                
+                cts = dat.iloc[calcIndex]['Intensity']
+                Mon = dat.iloc[calcIndex]['Monitor']
+                Norm = dat.iloc[calcIndex]['Normalization']
+                NC = dat.iloc[calcIndex]['BinCounts']
+                printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(int(cts),Norm,int(Mon),int(NC))
                 outputFunction(printString)
 
-        if not vmin is None or not vmax is None:
+        if vmin is None:
             if log:
-                minVal = np.log10(Data['Int'].min()+1e-20)
-                maxVal = np.log10(Data['Int'].max()+1e-20)
+                vmin = np.log10(Data['Int'].min()+1e-20)
             else:
-                minVal = Data['Int'].min()
-                maxVal = Data['Int'].max()
+                vmin = Data['Int'].min()
+        if vmax is None:
+            if log:
+                vmax = np.log10(Data['Int'].max()+1e-20)
+            else:
+                vmax = Data['Int'].max()
             
-            ax.set_clim(minVal,maxVal)
+        ax.set_clim(vmin,vmax)
         
-        ax.onClick = lambda event:onclick(event,ax,Data,outputFunction=outputFunction)
+        
+        ax.onClick = lambda event:onclick(event,ax,Data,outputFunction=outputFunction,centerPointsE=centerPointsE)
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
         if colorbar:
-            ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
+            ax.colorbar = ax.get_figure().colorbar(ax.pmesh,pad=0.1)
 
-        return ax,Data,qbins
+        return ax,Data,centerPointsQ,centerPointsE
 
     @_tools.KwargChecker()
     @_tools.overWritingFunctionDecorator(RLUAxes.createQAxis)
@@ -3990,7 +4004,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#
 
 
 @_tools.KwargChecker()
-def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False):
+def cutPowder(positions,I,Norm,Monitor,EBins,QBins):
     """Cut data powder map with intensity as function of the length of q and energy. 
 
     Args:
@@ -4003,54 +4017,44 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False
         
         - Monitor (array): Flatten monitor array
         
-        - EBinEdges (list): Bin edges between which the cuts are performed.
+        - EBins (list): Energy bin edges.
 
-    Kwargs:
-
-        - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
-
-        - constantBins (bool): If True only bins of size minPixel is used (default False)
+        - QBins (list): Q length bin edges.
 
     Returns:
         
         - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for powder cut.
-        
-        - qbins (n arrays): n arrays holding the bin edges along the length of q
 
     """
-    qx,qy,energy = positions
+    Qlength,energies = positions
 
-    q = np.linalg.norm([qx,qy],axis=0)
-
-    qbins = []
+    Int = np.histogram2d(Qlength, energies, bins=(QBins,EBins),weights=I)[0]
+    Mon = np.histogram2d(Qlength, energies, bins=(QBins,EBins),weights=Monitor)[0]
+    Norm = np.histogram2d(Qlength, energies, bins=(QBins,EBins),weights=Norm)[0]
+    NumCounts = np.histogram2d(Qlength, energies, bins=(QBins,EBins))[0]
     
-    data = []
-    #for i in range(len(EBinEdges)-1):
-    for energyBin,[binStart,binEnd] in enumerate(zip(EBinEdges,EBinEdges[1:])):
-        e_inside = np.logical_and(energy>binStart,energy<=binEnd)
-        q_inside = q[e_inside]
-        if constantBins==False:
-            qbins.append(np.array(_tools.binEdges(q_inside,tolerance=qMinBin)))
-        else:
-            Min,Max = _tools.minMax(q_inside)
-            qbins.append(np.arange(Min,Max+0.5*qMinBin,qMinBin))
-            
-        intensity,bins = np.histogram(q_inside,bins=qbins[-1],weights=I[e_inside].flatten())
-        monitorCount = np.histogram(q_inside,bins=qbins[-1],weights=Monitor[e_inside].flatten())[0].astype(Monitor.dtype)
-        Normalization = np.histogram(q_inside,bins=qbins[-1],weights=Norm[e_inside].flatten())[0].astype(Norm.dtype)
-        NormCount = np.histogram(q_inside,bins=qbins[-1],weights=np.ones_like(I[e_inside]).flatten())[0].astype(I.dtype)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        I = np.divide(Int*NumCounts,Mon*Norm)
+        I_err = np.divide(np.sqrt(Int)*NumCounts,Mon*Norm)
+    
+    centerPointsE = 0.5*(EBins[1:]+EBins[:-1])
+    centerPointsQ = 0.5*(QBins[1:]+QBins[:-1])
+    
+    centerPointsQ,centerPointsE = np.meshgrid(centerPointsQ,centerPointsE)
 
-        _data = pd.DataFrame(np.array([monitorCount,NormCount],dtype=int).T,
-                        columns=['Monitor','BinCount'],dtype=int)
-        _data['Intensity'] = intensity
-        _data['Normalization'] = Normalization
-        _data['q'] = 0.5*(bins[:-1]+bins[1:])
-        _data['Energy'] = np.ones_like(_data['q'])*0.5*(binStart+binEnd)
-        _data['EnergyCut'] = np.ones_like(_data['q'],dtype=int)*energyBin
-        data.append(_data)
-    data = pd.concat(data)
-    data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
-    return data,qbins
+    _data = pd.DataFrame(centerPointsQ.T.flatten(),columns=['q'])#
+    
+    _data['Energy'] = centerPointsE.T.flatten()
+    _data['Int_err'] = I_err.flatten()
+    _data['Int'] = I.flatten()
+    _data['Intensity'] = Int.flatten()
+    _data['Normalization'] = Norm.flatten()
+    _data['Monitor'] = Mon.flatten()
+    _data['BinCounts'] = NumCounts.flatten()
+
+
+    return _data
 
 
 
