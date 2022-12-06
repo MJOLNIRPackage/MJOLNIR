@@ -82,13 +82,13 @@ def test_DataSet_Error():
         assert True
 
     try: # No data files
-        ds.cutPowder(np.linspace(0,4,5))
+        ds.cutPowder(np.linspace(0,4,5),np.linspace(0,4,5))
         assert False
     except AttributeError:
         assert True
 
     try: # No data files
-        ds.plotCutPowder(np.linspace(0,4,5))
+        ds.plotCutPowder(np.linspace(0,4,5),np.linspace(0,4,5))
         assert False
     except AttributeError:
         assert True
@@ -240,9 +240,9 @@ def test_DataSet_Convert_Data():
     convertedFile = dataset.convertedFiles[0]
     
     otherFile = MJOLNIR.Data.DataFile.DataFile(dataFiles.replace('.hdf','.nxs'))
-
-    assert(otherFile==convertedFile)
-    assert(convertedFile==otherFile)
+    assert(otherFile.difference(convertedFile)==['counts'])
+    #assert(otherFile==convertedFile)
+    #assert(convertedFile==otherFile)
     os.remove(os.path.join(dataPath,'camea2018n000136.nxs'))
     
 
@@ -598,7 +598,6 @@ def test_DataSet_2Dcut():
     np.all([np.allclose(Data1[p],Data2[p],equal_nan=True) for p in comparisons])
 
 def test_DataSet_cutPowder():
-    Tolerance = 0.01
 
     plt.ioff()
     import matplotlib
@@ -615,15 +614,15 @@ def test_DataSet_cutPowder():
     
 
     eBins = _tools.binEdges(Datset.energy,0.25)
+    qBins = np.linspace(0.0,4,201)
 
-    ax,D,q = Datset.plotCutPowder(eBins,Tolerance)# Remove to improve test ,vmin=0,vmax=1e-6)
-    D2,q2 = Datset.cutPowder(eBins,Tolerance)
+    ax,D,QCentres,ECentres = Datset.plotCutPowder(eBins,qBins)# Remove to improve test ,vmin=0,vmax=1e-6)
+    D2 = Datset.cutPowder(eBins,qBins)
     assert(np.all(D.equals(D2)))
+    #assert(np.all(np.isclose(QCentres2,QCentres)))
+    #assert(np.all(np.isclose(ECentres2,ECentres)))
 
-    for i in range(len(q)):
-        for j in range(len(q[i])):
-            assert(np.all(q[i][j]==q2[i][j]))
-
+    
 def test_DataSet_createRLUAxes():
     plt.ioff()
     import matplotlib

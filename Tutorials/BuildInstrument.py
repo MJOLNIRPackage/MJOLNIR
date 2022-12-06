@@ -8,7 +8,7 @@ def Tester():
     from MJOLNIR.Geometry import Instrument,Detector,Analyser,Wedge
     import matplotlib.pyplot as plt
     import numpy as np
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits import mplot3d
 
     Instr = Instrument.Instrument()
 
@@ -20,7 +20,7 @@ def Tester():
     Instr.append(wedge)
 
     fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    ax = plt.axes(projection='3d')
 
     Instr.plot(ax)
 

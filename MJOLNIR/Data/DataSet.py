@@ -329,7 +329,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None,deleteOnConvert=False):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None,deleteOnConvert=True):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -357,17 +357,20 @@ class DataSet(object):
 
 
         if dataFiles is None:
-            if len(self.dataFiles)==0:
-                raise AttributeError('No data files file provided either through input or in the DataSet object, or low-memory mode is used.')
+            if len(self) == 0:
+                raise AttributeError('No data files file provided either through input or in the DataSet object')#, or low-memory mode is used.')
+            dataFiles = list(self)
         else:
             dataFiles = isListOfDataFiles(dataFiles)
         
 
         
-        dataFiles = self.dataFiles
+        
         convertedFiles = []
         
         for rawFile in _tools.getNext(dataFiles,delete=deleteOnConvert):
+            if rawFile.type in MJOLNIR.Data.DataFile.supportedConvertedFormats:
+                rawFile = MJOLNIR.Data.DataFile.DataFile(rawFile.original_fileLocation)
 
             convFile = rawFile.convert(binning,printFunction=printFunction)
             
@@ -595,7 +598,7 @@ class DataSet(object):
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,extend=False,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,counts=False,extend=False,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
         Args:
@@ -623,6 +626,8 @@ class DataSet(object):
                 - plotCoverage (bool): If True, generates plot of all points in the cutting plane and adds bounding box of cut (default False).
 
                 - showEnergy (bool): If True plot also the energy of the current cut (default True)
+                
+                - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)  
         
                 - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
         
@@ -667,8 +672,14 @@ class DataSet(object):
             kwargs['label'] = '_Data'
             
         # Perform the actual plotting
-        ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
-        
+        if counts is True:
+            ax.errorbar(Data['binDistance'],Data['Intensity'],yerr=np.sqrt(Data['Intensity']),**kwargs)
+        elif counts is False:
+            ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+        elif counts.lower() == 'sensitivity':
+            ax.errorbar(Data['binDistance'],Data['Normalization']/Data['BinCount'],**kwargs)
+        else:
+            AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
         # Extend plot to show all the data
         ax.set_xlim(*_tools.minMax(Data['binDistance']))
 
@@ -926,8 +937,8 @@ class DataSet(object):
 
  
     
-    @_tools.KwargChecker(function=plt.errorbar,include=_tools.MPLKwargs)
-    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,smoothing=None,ax=None,grid=False,cmap=None,vmin=None,vmax=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','edgecolors'],]))
+    def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,counts=False,smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None, cut1DFunctionRectangleVertical=None, **kwargs):
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
@@ -957,6 +968,8 @@ class DataSet(object):
             - width (float): Integration width in 1/A perpendicular to cut (default 0.1)
             
             - rlu (bool): If True, plot as function of HKL otherwise QxQy (default True)
+
+            - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)
             
             - smoothing (float): Gaussian smoothing applied to data after cut (default None, see scipy.ndimage.gaussian_filter)
             
@@ -969,6 +982,8 @@ class DataSet(object):
             - vmin (float): Lower value of color scale (default None, minimum of intensity)
             
             - vmax (float): Upper value of color scale (default None, maxmimum of intensity)
+
+            - log (bool): If true the plotted intensity is the logarithm of the intensity (default False)
             
             - colorbar (bool): If True, plot colorbar (default False)
             
@@ -1031,7 +1046,40 @@ class DataSet(object):
 
         shape = (np.array(bins[0].shape)-np.array([1,1]))[::-1]
         I = np.ma.array(np.asarray(data['Int']).reshape(shape))
+        if 'log' in kwargs:
+            log = kwargs['log']
+            del kwargs['log']
+        else:
+            log = False
+
+        if 'vmin' in kwargs:
+            vmin = kwargs['vmin']
+            del kwargs['vmin']
+        else:
+            vmin = None
+
+        if 'vmax' in kwargs:
+            vmax = kwargs['vmax']
+            del kwargs['vmax']
+        else:
+            vmax = None
+
+        if counts is True:
+            I = data['Intensity'].values
+        elif counts is False:
+            I = data['Int'].values
+        elif counts.lower() == 'sensitivity':
+            I = data['Normalization'].values/data['BinCount'].values
+        else:
+            AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))        
+
+        if log:
+            I = np.log10(I+1e-20)
+        
+        shape = (np.array(bins[0].shape)-np.array([1,1]))[::-1]
+        I = np.ma.array(np.asarray(data['Int']).reshape(shape))
         I.mask = np.isnan(I)
+        
         HKL = np.asarray(data[variables])
         E = np.asarray(data['Energy']).reshape(shape)
         if hasattr(ax,'calculatePositionInv'):
@@ -1050,7 +1098,7 @@ class DataSet(object):
         ax.X = pos[0]
         ax.Y = E[:,0]
 
-        ax.pmeshs = [ax.pcolormesh(X,Y,I,shading='nearest',vmin=vmin,vmax=vmax,cmap=cmap)]
+        ax.pmeshs = [ax.pcolormesh(X,Y,I,shading='nearest',vmin=vmin,vmax=vmax,cmap=cmap,**kwargs)]
 
         ax.set_ylabel('E [mev]')
         ax.ds = self
@@ -1073,7 +1121,7 @@ class DataSet(object):
             ax.cut1DFunctionRectangleVertical = None
 
         if colorbar:
-            ax.get_figure().colorbar(ax.pmeshs[0])
+            ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0])
 
         ax.grid(grid)
 
@@ -1096,16 +1144,16 @@ class DataSet(object):
         
     
     @_tools.KwargChecker()
-    def cutPowder(self,EBinEdges,qMinBin=0.01,dataFiles=None,constantBins=False):
+    def cutPowder(self,EBins,QBins,dataFiles=None,constantBins=False):
         """Cut data powder map with intensity as function of the length of q and energy. 
 
         Args:
-            
-            - EBinEdges (list): Bin edges between which the cuts are performed.
+
+            - EBins (list): Energy bin edges.
+
+            - QBins (list): Q length bin edges.
 
         Kwargs:
-
-            - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
 
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
@@ -1134,14 +1182,14 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor = DS.I.extractData(),DS.qx.extractData(),DS.qy.extractData(),DS.energy.extractData(),DS.Norm.extractData(),DS.Monitor.extractData()
         
-        positions = np.array([qx,qy,energy])
+        positions = np.array([np.linalg.norm([qx,qy],axis=0),energy])
 
         return cutPowder(positions=positions,I=I,Norm=Norm,Monitor=Monitor,
-                        EBinEdges=EBinEdges,qMinBin=qMinBin,constantBins=constantBins)
+                        EBins=EBins,QBins=QBins)
 
     
     @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','edgecolors']]))
-    def plotCutPowder(self,EBinEdges,qMinBin=0.01,ax=None,dataFiles=None,constantBins=False,log=False,colorbar=True, vmin=None, vmax=None,outputFunction=print,**kwargs):
+    def plotCutPowder(self,EBins,QBins,ax=None,dataFiles=None,log=False,colorbar=True, vmin=None, vmax=None,outputFunction=print,**kwargs):
         """Plotting wrapper for the cutPowder method. Generates a 2D plot of powder map with intensity as function of the length of q and energy.  
         
         .. note::
@@ -1149,17 +1197,17 @@ class DataSet(object):
         
         Args:
 
-            - EBinEdges (list): Bin edges between which the cuts are performed.
+            - EBins (list): Energy bin edges.
+
+            - QBins (list): Q length bin edges.
 
         Kwargs:
             
-            - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
             
             - ax (matplotlib axis): Figure axis into which the plots should be done (default None). If not provided, a new figure will be generated.
             
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
-            - constantBins (bool): If True only bins of size minPixel is used (default False)
 
             - log (bool): If true, logarithm to intensity is plotted (default False)
 
@@ -1178,57 +1226,66 @@ class DataSet(object):
             - ax (matplotlib axis): Matplotlib axis into which the plot was put.
             
             - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for poweder cut.
-            
-            - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
+
 
         """
 
-        Data,qbins = self.cutPowder(EBinEdges=EBinEdges,qMinBin=qMinBin,dataFiles=dataFiles,constantBins=constantBins)
+        Data = self.cutPowder(QBins=QBins,EBins=EBins,dataFiles=dataFiles)
+
+        centerPointsE = 0.5*(EBins[1:]+EBins[:-1])
+        centerPointsQ = 0.5*(QBins[1:]+QBins[:-1])
+
+        XX,YY = np.meshgrid(centerPointsQ,centerPointsE,indexing='ij')
         
         if ax is None:
             plt.figure()
             ax = plt.gca()
-        ax.pmeshs = []
-
-        eMean = 0.5*(EBinEdges[:-1]+EBinEdges[1:])
-        for i,dat in Data[['Int','EnergyCut']].groupby('EnergyCut'):
-            if len(dat)==0:
-                continue
-            if log:
-                ints = np.log10(dat['Int']+1e-20).values.reshape((len(qbins[i])-1,1)).T
-                
-            else:
-                ints = dat['Int'].values.reshape((len(qbins[i])-1,1)).T
-            ax.pmeshs.append(ax.pcolormesh(qbins[i],[EBinEdges[i],EBinEdges[i+1]],ints,vmin=vmin,vmax=vmax,**kwargs))
         
-        def calculateIndex(x,y,eMean,qBin,EBinEdges):# pragma: no cover
-            if y>EBinEdges[-1] or y<EBinEdges[0]:
-                return -1,-1
-            EIndex = np.argmin(np.abs(y-eMean))
-            if x>qBin[EIndex][-1] or x<qBin[EIndex][0]:
-                return EIndex,-1
-            qIndex = np.argmin(np.abs(x-0.5*(qBin[EIndex][:-1]+qBin[EIndex][1:])))
-            return EIndex,qIndex
-        ax.calculateIndex = lambda x,y: calculateIndex(x,y,eMean,qbins,EBinEdges)
 
-        def format_coord(x,y,ax,dat,qbins):# pragma: no cover
-            EIndex,qIndex = ax.calculateIndex(x,y)
+        if log:
+            ints = np.log10(Data['Int']).values+1e-20
+            
+        else:
+            ints = Data['Int'].values
+
+        shape = XX.shape
+        ints = (ints.reshape(shape))
+        
+        ax.pmesh = ax.pcolormesh(XX,YY,ints,shading='auto',vmin=vmin,vmax=vmax,**kwargs)
+        
+        def calculateIndex(x,y,QBins,EBins,centerPointsQ,centerPointsE):# pragma: no cover
+            
+            if y>EBins[-1] or y<EBins[0]:
+                return -1,-1
+            EIndex = np.argmin(np.abs(y-centerPointsE))
+            if x>QBins[-1] or x<QBins[0]:
+                return -1,EIndex
+            qIndex = np.argmin(np.abs(x-centerPointsQ))
+            return qIndex,EIndex
+
+        ax.calculateIndex = lambda x,y: calculateIndex(x,y,QBins,EBins,centerPointsQ,centerPointsE)
+
+        def format_coord(x,y,ax,dat,centerPointsQ,centerPointsE):# pragma: no cover
+            qIndex,EIndex = ax.calculateIndex(x,y)
             if EIndex == -1 or qIndex == -1:
                 return "outside range"
-            Intensity = dat[dat['EnergyCut']==EIndex]['Int'][qIndex]
-            return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(qbins[EIndex][qIndex],eMean[EIndex],Intensity)
             
-        ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[['Int','EnergyCut']],qbins)
+            calcIndex = qIndex*len(centerPointsE)+EIndex
+            #print(qIndex,EIndex,'->',calcIndex)
+            Intensity = dat.iloc[calcIndex]['Int']
+            pos = [centerPointsQ[qIndex],centerPointsE[EIndex]]
+            return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(*pos,Intensity)
+            
+        ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[['Int']],centerPointsQ,centerPointsE)
         ax.set_xlabel(r'$|q| [\AA^{-1}]$')
         ax.set_ylabel('E [meV]')
         
         def set_clim(ax,VMin,VMax):
-            for pm in ax.pmeshs:
-                pm.set_clim(VMin,VMax)
+            ax.pmesh.set_clim(VMin,VMax)
 
         ax.set_clim = lambda VMin,VMax: set_clim(ax,VMin,VMax)
         
-        def onclick(event,ax,dat,outputFunction):# pragma: no cover
+        def onclick(event,ax,dat,centerPointsE,outputFunction):# pragma: no cover
             if ax.in_axes(event):
                 try: 
                     c = ax.get_figure().canvas.cursor().shape()
@@ -1240,33 +1297,38 @@ class DataSet(object):
                 x = event.xdata
                 y = event.ydata
                 printString = ax.format_coord(x,y)
-                EIndex,index = ax.calculateIndex(x,y)
-                if EIndex == -1 or index == -1:
+                qIndex,EIndex = ax.calculateIndex(x,y)
+                if EIndex == -1 or qIndex == -1:
                     return
-                _local = dat[dat['EnergyCut']==EIndex]
-                cts = _local['Intensity'][index]
-                Mon = _local['Monitor'][index]
-                Norm = _local['Normalization'][index]
-                NC = _local['BinCount'][index]
-                printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+                calcIndex = qIndex*len(centerPointsE)+EIndex
+                
+                cts = dat.iloc[calcIndex]['Intensity']
+                Mon = dat.iloc[calcIndex]['Monitor']
+                Norm = dat.iloc[calcIndex]['Normalization']
+                NC = dat.iloc[calcIndex]['BinCounts']
+                printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(int(cts),Norm,int(Mon),int(NC))
                 outputFunction(printString)
 
-        if not vmin is None or not vmax is None:
+        if vmin is None:
             if log:
-                minVal = np.log10(Data['Int'].min()+1e-20)
-                maxVal = np.log10(Data['Int'].max()+1e-20)
+                vmin = np.log10(Data['Int'].min()+1e-20)
             else:
-                minVal = Data['Int'].min()
-                maxVal = Data['Int'].max()
+                vmin = Data['Int'].min()
+        if vmax is None:
+            if log:
+                vmax = np.log10(Data['Int'].max()+1e-20)
+            else:
+                vmax = Data['Int'].max()
             
-            ax.set_clim(minVal,maxVal)
+        ax.set_clim(vmin,vmax)
         
-        ax.onClick = lambda event:onclick(event,ax,Data,outputFunction=outputFunction)
+        
+        ax.onClick = lambda event:onclick(event,ax,Data,outputFunction=outputFunction,centerPointsE=centerPointsE)
         ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
         if colorbar:
-            ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
+            ax.colorbar = ax.get_figure().colorbar(ax.pmesh,pad=0.1)
 
-        return ax,Data,qbins
+        return ax,Data,centerPointsQ,centerPointsE
 
     @_tools.KwargChecker()
     @_tools.overWritingFunctionDecorator(RLUAxes.createQAxis)
@@ -1476,12 +1538,18 @@ class DataSet(object):
             ax.Qx =[np.outer(ax.xBins[i],np.ones_like(ax.yBins[i])) for i in range(len(ax.intensity))]
             ax.Qy =[np.outer(np.ones_like(ax.xBins[i]),ax.yBins[i]) for i in range(len(ax.intensity))]
             
-        
-        if 'vmin' in kwargs:
-            vmin = kwargs['vmin']
-            kwargs = _tools.without_keys(dictionary=kwargs,keys='vmin')
+
+        if 'colorbar' in kwargs:
+            colorbar = kwargs['colorbar']
+            kwargs = _tools.without_keys(dictionary=kwargs,keys='colorbar')
         else:
-            vmin = np.min([np.nanmin(intens) for intens in ax.Int])
+            colorbar = False
+
+        pmeshs = []
+        if log:
+            ax.Int = [np.log10(1e-20+np.array(intens)) for intens in ax.Int]
+        else:
+            ax.Int = [np.array(intens) for intens in ax.Int]
 
         if 'vmax' in kwargs:
             vmax = kwargs['vmax']
@@ -1489,23 +1557,19 @@ class DataSet(object):
         else:
             vmax = np.max([np.nanmax(intens) for intens in ax.Int])
 
-        if 'colorbar' in kwargs:
-            colorbar = kwargs['colorbar']
-            kwargs = _tools.without_keys(dictionary=kwargs,keys='colorbar')
+        if 'vmin' in kwargs:
+            vmin = kwargs['vmin']
+            kwargs = _tools.without_keys(dictionary=kwargs,keys='vmin')
         else:
-            colorbar = False
-        pmeshs = []
-        if log:
-            Int = [np.log10(1e-20+np.array(intens)) for intens in ax.Int]
-        else:
-            Int = [np.array(intens) for intens in ax.Int]
+            vmin = np.min([np.nanmin(intens) for intens in ax.Int])
+            
 
         for i in range(len(EBins)-1):
             if _3D:
                 QX = 0.25*np.array(np.array(ax.Qx[i])[1:,1:]+np.array(ax.Qx[i])[:-1,1:]+np.array(ax.Qx[i])[1:,:-1]+np.array(ax.Qx[i])[:-1,:-1])/xScale
                 QY = 0.25*np.array(np.array(ax.Qy[i])[1:,1:]+np.array(ax.Qy[i])[:-1,1:]+np.array(ax.Qy[i])[1:,:-1]+np.array(ax.Qy[i])[:-1,:-1])/yScale
                 #QY = np.array(np.array(Qy[i])[1:,1:])
-                I = np.array(Int[i])
+                I = np.array(ax.Int[i])
                 levels = np.linspace(vmin,vmax,50)
                 pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
             else:
@@ -1528,7 +1592,7 @@ class DataSet(object):
 
         if colorbar:
             ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
-            ax.colorbar.set_label('$I$ [arb.u.]', rotation=270)
+            ax.colorbar.set_label(log*'log('+'$I$'+log*')'+ '[arb.u.]', rotation=270)
 
         ax.set_clim(vmin,vmax)
         if _3D:
@@ -2496,7 +2560,7 @@ class DataSet(object):
         return ufitData
 
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, showQ= True, dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,outputFunction=print,**kwargs):
+    def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, showQ= True, counts=False, dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,outputFunction=print,**kwargs):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
@@ -2518,6 +2582,8 @@ class DataSet(object):
             - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel (default 0.1).
 
             - showQ (bool): If True show the current Q point on the x-axus (default True)
+
+            - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)
             
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
 
@@ -2567,7 +2633,15 @@ class DataSet(object):
             kwargs['label'] = '_Data'
             
         # Perform the actual plotting
-        ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+        if counts is True:
+            ax.errorbar(Data['binDistance'],Data['Intensity'],yerr=np.sqrt(Data['Intensity']),**kwargs)
+        elif counts is False:
+            ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+        elif counts.lower() == 'sensitivity':
+            ax.errorbar(Data['binDistance'],Data['Normalization']/Data['BinCount'],**kwargs)
+        else:
+            AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
+        #ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
         
         
         if not ufit:
@@ -2733,7 +2807,7 @@ class DataSet(object):
         return Data,Bins
 
 
-    def plotCutELine(self, Q1, Q2, ax=None, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False, Vmin=None, Vmax = None, **kwargs):
+    def plotCutELine(self, Q1, Q2, ax=None, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, counts=False, dataFiles=None, constantBins=False, Vmin=None, Vmax = None, **kwargs):
         """Perform cut along energy in steps between two Q Point 
         
         Args:
@@ -2758,6 +2832,8 @@ class DataSet(object):
             - width (float): Full width of cut in q-plane (default 0.02).
 
             - rlu (bool): If True, provided Q point is interpreted as (h,k,l) otherwise as (qx,qy), (Default true)
+
+            - counts (bool): If True, plot raw counts, if False plot intensity, if 'sensitivity' plot mean sensitivity (Default False)
             
             - dataFiles (list): Data files to be used. If none provided use the ones in self (default None)
 
@@ -2817,7 +2893,15 @@ class DataSet(object):
                 
             x,y = np.meshgrid(position,_bins[0])
             ax.grid(False)
-            pmesh = ax.pcolormesh(x,y,_data['Int'].values.reshape(-1,1))
+            if counts is True:
+                DATA = _data['Intensity'].values.reshape(-1,1)#/_data['BinCount'].values.reshape(-1,1)
+            elif counts is False:
+                DATA = _data['Int'].values.reshape(-1,1)
+            elif counts.lower() == 'sensitivity':
+                DATA = _data['Normalization'].values.reshape(-1,1)/_data['BinCount'].values.reshape(-1,1)
+            else:
+                AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
+            pmesh = ax.pcolormesh(x,y,DATA)
             meshs.append(pmesh)
             
         ax.meshs = meshs
@@ -3029,8 +3113,16 @@ class DataSet(object):
         Data,bins = self.binData3D(dx=dQx,dy=dQy,dz=dE,rlu=rlu)
         
         if counts:
-            Intensity = Data[0]/Data[3]
-            Data = Intensity
+            if counts is True:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Data = Data[0]/Data[3]
+                
+            elif counts.lower() == 'sensitivity':
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    Data = Data[2]/Data[3]
+                
             
         if customSlicer == True:
             
@@ -3133,7 +3225,7 @@ class DataSet(object):
             raise AttributeError('Provided detectorSelection list does not match length of dataset. Expected {}, but got {}'.format(len(self),len(detectorSelection)))
         
         
-        dataFiles = [d.original_file if d.type=='nxs' else d for d in self]
+        dataFiles = [MJOLNIR.Data.DataFile.DataFile(d.original_fileLocation) if d.type=='nxs' else d for d in self]
         
         for d in dataFiles:
             d.loadBinning(1)
@@ -3912,7 +4004,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False):#
 
 
 @_tools.KwargChecker()
-def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False):
+def cutPowder(positions,I,Norm,Monitor,EBins,QBins):
     """Cut data powder map with intensity as function of the length of q and energy. 
 
     Args:
@@ -3925,54 +4017,44 @@ def cutPowder(positions,I,Norm,Monitor,EBinEdges,qMinBin=0.01,constantBins=False
         
         - Monitor (array): Flatten monitor array
         
-        - EBinEdges (list): Bin edges between which the cuts are performed.
+        - EBins (list): Energy bin edges.
 
-    Kwargs:
-
-        - qMinBin (float): Minimal size of binning along q (default 0.01). Points will be binned if they are closer than qMinBin.
-
-        - constantBins (bool): If True only bins of size minPixel is used (default False)
+        - QBins (list): Q length bin edges.
 
     Returns:
         
         - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for powder cut.
-        
-        - qbins (n arrays): n arrays holding the bin edges along the length of q
 
     """
-    qx,qy,energy = positions
+    Qlength,energies = positions
 
-    q = np.linalg.norm([qx,qy],axis=0)
-
-    qbins = []
+    Int = np.histogram2d(Qlength, energies, bins=(QBins,EBins),weights=I)[0]
+    Mon = np.histogram2d(Qlength, energies, bins=(QBins,EBins),weights=Monitor)[0]
+    Norm = np.histogram2d(Qlength, energies, bins=(QBins,EBins),weights=Norm)[0]
+    NumCounts = np.histogram2d(Qlength, energies, bins=(QBins,EBins))[0]
     
-    data = []
-    #for i in range(len(EBinEdges)-1):
-    for energyBin,[binStart,binEnd] in enumerate(zip(EBinEdges,EBinEdges[1:])):
-        e_inside = np.logical_and(energy>binStart,energy<=binEnd)
-        q_inside = q[e_inside]
-        if constantBins==False:
-            qbins.append(np.array(_tools.binEdges(q_inside,tolerance=qMinBin)))
-        else:
-            Min,Max = _tools.minMax(q_inside)
-            qbins.append(np.arange(Min,Max+0.5*qMinBin,qMinBin))
-            
-        intensity,bins = np.histogram(q_inside,bins=qbins[-1],weights=I[e_inside].flatten())
-        monitorCount = np.histogram(q_inside,bins=qbins[-1],weights=Monitor[e_inside].flatten())[0].astype(Monitor.dtype)
-        Normalization = np.histogram(q_inside,bins=qbins[-1],weights=Norm[e_inside].flatten())[0].astype(Norm.dtype)
-        NormCount = np.histogram(q_inside,bins=qbins[-1],weights=np.ones_like(I[e_inside]).flatten())[0].astype(I.dtype)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        I = np.divide(Int*NumCounts,Mon*Norm)
+        I_err = np.divide(np.sqrt(Int)*NumCounts,Mon*Norm)
+    
+    centerPointsE = 0.5*(EBins[1:]+EBins[:-1])
+    centerPointsQ = 0.5*(QBins[1:]+QBins[:-1])
+    
+    centerPointsQ,centerPointsE = np.meshgrid(centerPointsQ,centerPointsE)
 
-        _data = pd.DataFrame(np.array([monitorCount,NormCount],dtype=int).T,
-                        columns=['Monitor','BinCount'],dtype=int)
-        _data['Intensity'] = intensity
-        _data['Normalization'] = Normalization
-        _data['q'] = 0.5*(bins[:-1]+bins[1:])
-        _data['Energy'] = np.ones_like(_data['q'])*0.5*(binStart+binEnd)
-        _data['EnergyCut'] = np.ones_like(_data['q'],dtype=int)*energyBin
-        data.append(_data)
-    data = pd.concat(data)
-    data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
-    return data,qbins
+    _data = pd.DataFrame(centerPointsQ.T.flatten(),columns=['q'])#
+    
+    _data['Energy'] = centerPointsE.T.flatten()
+    _data['Int_err'] = I_err.flatten()
+    _data['Int'] = I.flatten()
+    _data['Intensity'] = Int.flatten()
+    _data['Normalization'] = Norm.flatten()
+    _data['Monitor'] = Mon.flatten()
+    _data['BinCounts'] = NumCounts.flatten()
+
+
+    return _data
 
 
 

@@ -87,7 +87,10 @@ def setupModes(ax):
 
 
 def setCursor(ax,cursor):
-    ax.get_figure().canvas.setCursor(cursor)
+    try:
+        ax.get_figure().canvas.setCursor(cursor)
+    except AttributeError:
+        pass
     
 
 interactive1DKeysReversed = {}

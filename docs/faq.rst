@@ -128,7 +128,7 @@ This has to do with how Matplotlib shows figures in contrast to how the eps engi
 
 .. code-block:: python
 
-    edgecolors='face'
+    linewidth=0,rasterized=True
 
 to the plotting function. This then forces the eps back-end to draw the surrounding edges as the face colour instead of white/transparent.
 

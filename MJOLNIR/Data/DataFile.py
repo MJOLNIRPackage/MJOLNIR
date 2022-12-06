@@ -119,7 +119,7 @@ HDFInstrumentTranslation = {
 
 HDFInstrumentTranslationNICOSAlternative = {
                     'counts':'detector/data',
-                    'A4':'analyzer/polar_angle_raw'
+                    'A4':'analyzer/polar_angle'#_raw'
 
 }
 
@@ -196,11 +196,10 @@ class DataFile(object):
                 with hdf.File(fileLocation,mode='r') as f:
                     # Find out if file is a NICOS file
                     # NICOS has data saved in /entry/data/data while six has /entry/data/counts
-                    if not f.get('/entry/data/data') is None: # we have a NICOS file
-                        self.fromNICOS = True
-                    elif not f.get('/entry/data/counts') is None:
-                        self.fromNICOS = False
-                    else:
+                    
+                    self.fromNICOS = checkNICOS(f)
+
+                    if self.fromNICOS is None:
                         raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=getHDFEntry(f,'sample'),recalculateUB=self.fromNICOS)
                     instr = getInstrument(f)
@@ -223,7 +222,7 @@ class DataFile(object):
                     if len(self.MonitorPreset)>1:
                         self.MonitorPreset = self.MonitorPreset[0]             
                     self.startTime = np.array(getHDFEntry(f,'startTime',fromNICOS=self.fromNICOS))[0].decode()
-                    
+                    self.totalCounts = self.I.sum(axis=(1,2))
                     if self.type == 'hdf':
                         self.Monitor = np.array(getHDFEntry(f,'hdfMonitor',fromNICOS=self.fromNICOS))
                         if not self.MonitorMode == 't' and len(self.Monitor)>1: # If not counting on time and more than one point saved
@@ -317,11 +316,10 @@ class DataFile(object):
                     self.A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=self.fromNICOS)).reshape(-1)
                     self.A4Off = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=self.fromNICOS))
                     if self.fromNICOS:
-                        self.twotheta = copy.deepcopy(self.A4)# - self.A4Off
-                        self.A4 += self.A4Off
+                        self.twotheta = copy.deepcopy(self.A4) - self.A4Off
                     else:
                         self.twotheta = self.A4-self.A4Off
-                    
+
                     try:
                         self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
                     except KeyError:
@@ -371,7 +369,7 @@ class DataFile(object):
                     
                     self.scanCommand = np.array(getHDFEntry(f,'scanCommand',fromNICOS=self.fromNICOS))[0]
                     if self.type == 'nxs':
-                        self.original_file = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
+                        self.original_fileLocation = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
                     self.title = np.array(getHDFEntry(f,'title'))[0]
 
                     self.absoluteTime = np.array(getHDFEntry(f,'absoluteTime',fromNICOS=self.fromNICOS))
@@ -1349,8 +1347,9 @@ class DataFile(object):
 
 
         convFile = DataFile(self) # Copy everything from old file
+        del convFile.counts
         updateDict = {'I':Intensity,'Monitor':Monitor,'qx':QX,'qy':QY,'energy':DeltaE,'binning':binning,'Norm':Normalization,
-        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_file':self,'name':self.name.replace('.hdf','.nxs'),'mask':mask}
+        'h':H,'k':K,'l':L,'type':'nxs','fileLocation':None,'original_fileLocation':self.fileLocation,'name':self.name.replace('.hdf','.nxs'),'mask':mask}
         convFile.updateProperty(updateDict)
 
         if convFile.type == 'nxs' and convFile.binning == 8:
@@ -1371,7 +1370,6 @@ class DataFile(object):
                     if np.all(convFile.mask.shape==newMask.shape):
                         newMask = np.logical_or(convFile.mask,newMask)
                     convFile.mask = newMask
-
         return convFile
 
 
@@ -1657,12 +1655,12 @@ class DataFile(object):
 
         """
 
-        if not self.__hasattr__('original_file'):
+        if not self.__hasattr__('original_fileLocation'):
             raise AttributeError('Data file does not have link to the original file. This is needed to make a complete copy when creating nxs-files')
         if not self.type =='nxs':
             raise AttributeError('Only nxs typed files can be saved as nxs-files.')
 
-        datafile = self.original_file
+        datafile = self.original_fileLocation
         Intensity = self.I # Dont swap axis as they are correct!
         Monitor = self.Monitor
         QX = self.qx
@@ -1680,7 +1678,7 @@ class DataFile(object):
                 os.remove(saveFileName+'_old')
             os.rename(saveFileName,saveFileName+'_old')
         with hdf.File(saveFileName,'w') as fd:
-            with hdf.File(datafile.fileLocation,'r') as fs:
+            with hdf.File(datafile,'r') as fs:
                 group_path = fs['/entry'].parent.name
                 
                 group_id = fd.require_group(group_path)
@@ -1704,7 +1702,7 @@ class DataFile(object):
                 description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.string_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
                 description.attrs['NX_class']=b'NX_CHAR'
                 
-                rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(os.path.realpath(datafile.fileLocation)))
+                rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(os.path.realpath(datafile)))
                 rawdata.attrs['NX_class']=b'NX_CHAR'
 
                 normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
@@ -2460,7 +2458,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
 
 
 
-def shallowRead(files,parameters,fromNICOS=False):
+def shallowRead(files,parameters,fromNICOS=None):
     """Read a list of paramters from hdf file with minimal overhead
     
     Args:
@@ -2491,6 +2489,10 @@ def shallowRead(files,parameters,fromNICOS=False):
         vals = []
         if os.path.splitext(file)[-1] == '.hdf': # if an hdf file
             with hdf.File(file,mode='r') as f:
+                if fromNICOS is None:
+                    NICOS = checkNICOS(f)
+                else:
+                    NICOS = fromNICOS
                 instr = getInstrument(f)
                 for p in parameters:
                     if p == 'name':
@@ -2502,20 +2504,19 @@ def shallowRead(files,parameters,fromNICOS=False):
                         vals.append(v)
                         continue
                     elif p == 'twoTheta':
-                        A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=fromNICOS))
+                        A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=NICOS))
                         for func,args in HDFInstrumentTranslationFunctions['A4']:
                             A4 = getattr(A4,func)(*args)
-                        A4Offset = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=fromNICOS))
+                        A4Offset = np.array(getHDFInstrumentEntry(instr,'A4Offset',fromNICOS=NICOS))
                         for func,args in HDFInstrumentTranslationFunctions['A4Offset']:
                             A4Offset = getattr(A4Offset,func)(*args)
                         vals.append(A4-A4Offset)
                         continue
                     elif p in HDFTranslation:
-                        v = np.array(getHDFEntry(f,p))
+                        v = np.array(getHDFEntry(f,p,fromNICOS=NICOS))
                         TrF= HDFTranslationFunctions
                     elif p in HDFInstrumentTranslation:
-                        v = np.array(getHDFInstrumentEntry(instr,p,fromNICOS=fromNICOS))
-                        print
+                        v = np.array(getHDFInstrumentEntry(instr,p,fromNICOS=NICOS))
                         TrF= HDFInstrumentTranslationFunctions
                     else:
                         raise AttributeError('Parameter "{}" not found'.format(p))
@@ -2660,3 +2661,12 @@ def assertFile(file):
         df = DataFile(file.replace('.nxs','.hdf'))
         con = df.convert(binning=8)
         con.saveNXsqom(file)
+
+def checkNICOS(f):
+    """Check if open hdf file is NICOS"""
+    if not f.get('/entry/data/data') is None: # we have a NICOS file
+        return True
+    elif not f.get('/entry/data/counts') is None:
+        return False
+    else:
+        return None # Corresponding to an error message
