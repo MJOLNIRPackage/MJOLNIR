@@ -12,6 +12,7 @@ def Tester():
     from MJOLNIR import _tools # Usefull tools useful across MJOLNIR 
     import numpy as np
     import matplotlib.pyplot as plt
+    from mpl_toolkits import mplot3d
     
     numbers = '483-489,494-500' # String of data numbers
     fileList = _tools.fileListGenerator(numbers,'/home/lass/Dropbox/PhD/CAMEAData/',2018) # Create file list from 2018 in specified folder
@@ -20,7 +21,7 @@ def Tester():
     ds.convertDataFile(saveFile=False)
 
     fig = plt.figure(figsize=(10,11))
-    ax = fig.add_subplot(111, projection='3d')
+    ax = plt.axes(projection='3d')
     
     ### Generate own color map with transparency
     from matplotlib.colors import ListedColormap

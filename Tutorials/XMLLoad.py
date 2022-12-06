@@ -7,12 +7,13 @@ from Tutorial_Class import Tutorial
 def Tester():
     from MJOLNIR.Geometry import Instrument
     import matplotlib.pyplot as plt
+    from mpl_toolkits import mplot3d
     import numpy as np
     Instr = Instrument.Instrument(fileName='/home/lass/Dropbox/PhD/Software/MJOLNIR/Tutorials/SimpleInstrument.xml') # Load XML file
 
 
     fig = plt.figure() # Create 3D figure
-    ax = fig.gca(projection='3d')
+    ax = plt.axes(projection='3d')
 
     Instr.plot(ax) # Plot instrument
 
