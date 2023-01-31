@@ -26,6 +26,7 @@ from collections import defaultdict
 
 multiFLEXXDetectors = 31*5
 reFloat = r'-?\d*\.\d*'
+reInt   = r'-?\d'
 factorsqrtEK = 0.694692
 supportedRawFormats = ['hdf','','dat']
 supportedInstruments = ['CAMEA','MultiFLEXX','FlatCone','Bambus']
@@ -681,7 +682,11 @@ class DataFile(object):
         for line in headerString:
             splitLine = line.split(': ')
             if isinstance(splitLine,list):
-                description,value = splitLine
+                try:
+                    description,value = splitLine
+                except ValueError:
+                    description = splitLine[0].replace(':','').strip()
+                    value = 'NoValue'
             else:
                 continue
             description = description.lower()
@@ -700,8 +705,10 @@ class DataFile(object):
                 
                 keyValuePattern = re.compile(r'\w*\s*=\s*'+reFloat)
                 KVPairs = keyValuePattern.findall(value)
-                
-                for pair in KVPairs:
+                keyValuePatternINT = re.compile(r'\w*\s*=\s*'+reInt)
+                KVPairsINT = keyValuePatternINT.findall(value)
+
+                for pair in KVPairs+KVPairsINT:
                     key,val = pair.split('=')
 
                     key = key.strip()
@@ -710,7 +717,8 @@ class DataFile(object):
                         val = np.array(val.strip(),dtype=float)
                     except ValueError:
                         continue
-                    setattr(self,key,val)
+                    if not hasattr(self,key):
+                        setattr(self,key,val)
             elif description == 'zeros':
                 keyValuePattern = re.compile(r'\w+\s+=\s*'+reFloat)
                 KVPairs = keyValuePattern.findall(value)
@@ -916,7 +924,8 @@ class DataFile(object):
                 else:
                     calibrationFile = MJOLNIR.__flatConeNormalization__
                     detectors = 31
-                    self.mask = False
+                    mask = np.zeros_like(self.I,dtype=bool)
+                    self._mask = mask
                 calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
                 amplitude = calibrationData[:,3]
                 background = calibrationData[:,6] 
