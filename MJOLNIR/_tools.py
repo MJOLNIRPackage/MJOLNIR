@@ -348,6 +348,8 @@ def fileListGenerator(numberString,folder,year=2018, format = None, instrument =
             format = 'camea{:d}n{:06d}.hdf'
         elif instrument == 'MultiFLEXX':
             format = '{1:06d}'
+        elif instrument.lower() == 'flatcone':
+            format = '{1:06d}'
         else:
             raise AttributeError('Provided instrument "{}" not understood'.format(instrument))
 
