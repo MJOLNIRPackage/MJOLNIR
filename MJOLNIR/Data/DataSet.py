@@ -912,7 +912,7 @@ class DataSet(object):
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                Int_err = np.divide(np.sqrt(Int)*normcounts,MonitorCount*Normalization)
+                Int_err = np.divide(np.sqrt(intensity)*normcounts.astype(float),MonitorCount*Normalization)
             realPositions = np.outer(QBins,dirvec)+q1 # In QxQy
             realPositions = 0.5*(realPositions[:-1]+realPositions[1:])
             H,K,L = self.convertToHKL(realPositions).T
