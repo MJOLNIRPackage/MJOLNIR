@@ -3146,7 +3146,7 @@ class DataSet(object):
             
 
         else:
-            Ei = np.array(list(set(self.Ei.extractData()))) # Use a set to remove duplicates
+            Ei = np.array(list(set(self.Ei.extractData().flatten()))) # Use a set to remove duplicates
             Ef = self[0].instrumentCalibrationEf[:,1]
             Ef = Ef[np.logical_not(np.isclose(Ef,0.0))]
             EfLimits = [f(Ef) for f in [np.min,np.max]]
