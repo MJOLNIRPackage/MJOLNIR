@@ -2660,9 +2660,9 @@ def extractData(files):
     Monitor = PointerArray('Monitor',files)
     energy = PointerArray('energy',files)
     
-    #a3 = PointerArray('a3',files)
+    
     a3 = []
-    a4 = []#aarray('a4',files)
+    a4 = []
     a3Off = PointerArray('a3Off',files)
     a4Off = PointerArray('a4Off',files)
     Ei = PointerArray('Ei',files)
@@ -2676,78 +2676,31 @@ def extractData(files):
     K = PointerArray('K',files)
     L = PointerArray('L',files)
 
-    mask = []#aarray('maks',files)
+    #mask = []
     
-    # if(files[0].type=='nxs'):
-    #     #qx = []
-    #     #qy = []
-    #     #energy = []
-    #     H = []
-    #     K = []
-    #     L = []
     scanParameters = []
     scanParamValue = []
     scanParamUnit = []
-    mask = []
+    #mask = []
     for datafile in files:
-        #I.append(datafile.I)
-        #if(datafile.type=='nxs'):
-            #qx.append(datafile.qx)
-            #qy.append(datafile.qy)
-            #energy.append(datafile.energy)
-            #Norm.append(datafile.Norm)
-            #H.append(datafile.h)
-            #K.append(datafile.k)
-            #L.append(datafile.l)
-        mask.append(datafile.mask)
+        #mask.append(datafile.mask)
         scanParameters.append(datafile.scanParameters)
         scanParamValue.append(datafile.scanValues)
         scanParamUnit.append(datafile.scanUnits)
             
-        #Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape == ():
             datafile.A3Off = 0.0
         a3.append(datafile.A3-datafile.A3Off)
-        #a3Off.append(datafile.A3Off)
         if np.array(datafile.A4Off).shape == ():
             datafile.A4Off = [0.0]
         a4.append(datafile.A4-datafile.A4Off)
-        #a4Off.append(datafile.A4Off)
-        #Ei.append(datafile.Ei)
-        #instrumentCalibrationEf.append(datafile.instrumentCalibrationEf)
-        #instrumentCalibrationA4.append(datafile.instrumentCalibrationA4)
-        #instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
-        
-    #I = Marray(I)#np.concatenate(I,axis=0))
-    # if(files[0].type=='nxs'):
-    #     qx = Marray(qx)#np.concatenate(qx,axis=0))
-    #     qy = Marray(qy)#np.concatenate(qy,axis=0))
-    #     H = Marray(H)#np.concatenate(H,axis=0))
-    #     K = Marray(K)#np.concatenate(K,axis=0))
-    #     L = Marray(L)#np.concatenate(L,axis=0))
-    #     #energy = Marray(energy)#np.concatenate(energy,axis=0))
-    #     #Norm = Marray(Norm)#np.concatenate(Norm,axis=0))
-    # else:  
-    #     #print(Norm)
-    #     pass#Norm = Marray(Norm)
-        
-    #Monitor = Marray(Monitor)#np.concatenate(Monitor,axis=0))
-
     
-    
-
-    #a3Off = Marray(a3Off)
-    #a4Off = Marray(a4Off)
-    #instrumentCalibrationEf = np.array(instrumentCalibrationEf)
-    #instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
-    #instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
-    #Ei = Marray(Ei)
     if files[0].type=='nxs':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L,mask
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
     else:
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,mask
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
 
 def assertFile(file):
     """Make sure that file exists for methods to work"""

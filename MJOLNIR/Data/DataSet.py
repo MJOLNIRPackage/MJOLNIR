@@ -179,13 +179,18 @@ class DataSet(object):
         except Exception as e:
             raise(e)
 
+
+    @property
+    def maskIndices(self):
+        return np.cumsum([np.sum(np.logical_not(df.mask)) for df in self])[:-1]
+
     @property
     def mask(self):
         return self._mask
 
     @mask.getter
     def mask(self):
-        return self._mask
+        return [df.mask for df in self]#self._mask
 
     @mask.setter
     def mask(self,mask):
@@ -210,18 +215,17 @@ class DataSet(object):
             raise AttributeError('Mask not understood. Received',mask)
 
         masksum = np.sum([np.sum(x) for x  in mask])
-        self.maskIndices = np.cumsum([np.sum(1-M) for M in mask])[:-1]
         
         if masksum==0:
             pass#warnings.warn('Provided mask has no masked elements!')
         elif masksum==self.I.size:
             warnings.warn('Provided mask masks all elements!')
-        self._mask = mask
-        for _,val in self.__dict__.items():
-            if hasattr(val,'extractData'):
-                val.mask = mask
+        #self._mask = mask
+        #for _,val in self.__dict__.items():
+        #    if hasattr(val,'extractData'):
+        #        val.mask = mask
 
-        self._getData
+        #self._getData
 
     def appendMask(self,mask):
         if isinstance(mask,list):
@@ -400,11 +404,11 @@ class DataSet(object):
         if len(self.convertedFiles)!=0:
             self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l,self.mask = MJOLNIR.Data.DataFile.extractData(self.convertedFiles)
+            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l = MJOLNIR.Data.DataFile.extractData(self.convertedFiles)
         else:
             self.I,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits,self.mask = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
+            self.scanParameterValues,self.scanParameterUnits = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
 
         if len(self.convertedFiles)!=0:
             self.sample = [d.sample for d in self]
