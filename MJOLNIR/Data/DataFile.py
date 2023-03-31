@@ -2580,6 +2580,15 @@ def getInstrument(file):
 
 
 class PointerArray():
+    """Array-like object designed to facilitate data acquisition from a list of differently sized list of data files having the same attributes.    
+
+    Args:
+
+        - attribute (str): Name of wanted attribute existing on the data
+
+        - datafiles (list): List of pointers to the data files
+
+    """
     def __init__(self,attribute,datafiles):
         self._attribute = attribute
         self._datafiles = datafiles
@@ -2612,14 +2621,14 @@ class PointerArray():
     def __len__(self):
         return len(self._datafiles)
     
-    
+    @property
     def shape(self):
         return [getattr(df,self._attribute).shape for df in self._datafiles]
     
     
     @property
     def mask(self):
-        return [getattr(df,self._attribute).mask for df in self._datafiles]
+        return [df.mask for df in self._datafiles]
     
     @mask.setter
     def mask(self,mask):
