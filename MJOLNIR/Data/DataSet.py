@@ -2416,11 +2416,11 @@ class DataSet(object):
             
         """
         if raw: # Shape is (1 or 3, no Files, steps, 104, binning)
-            Data = np.array([self.I,self.Norm,self.Monitor])
+            Data = np.array([self.I.extractData(),self.Norm.extractData(),self.Monitor.extractData()])
         else:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                Data = np.divide(self.I,self.Norm*self.Monitor)
+                Data = np.divide(self.I.extractData(),self.Norm.extractData()*self.Monitor.extractData())
         
         if A4 is None and A4Id is None and Ef is None and EfId is None:
             return Data
