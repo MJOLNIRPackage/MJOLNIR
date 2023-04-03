@@ -1172,3 +1172,102 @@ def getNext(l,delete=True):
     else:
         for entry in l:
             yield entry
+
+def histogramdd(sample, bins, weights, returnCounts = False):
+    """
+    Restricted version of numpys multidimensional histogram function. 
+
+    Args:
+
+        - sample (n x m array): Position in m-dimensional space
+
+        - bins (m list): List of bins
+
+        - weights (list): List of weights where each entry has the length n
+
+    Kwargs:
+
+        - returnCounts (bool): if True return also number of entries in each bin (default False)
+
+    """
+
+    try:
+        # Sample is an ND-array.
+        N, D = sample.shape
+    except (AttributeError, ValueError):
+        # Sample is a sequence of 1D arrays.
+        sample = np.atleast_2d(sample).T
+        N, D = sample.shape
+
+
+    try:
+        M = len(bins)
+        if M != D:
+            raise ValueError(
+                'The dimension of bins must be equal to the dimension of the '
+                ' sample x.')
+    except TypeError:
+        # bins is an integer
+        bins = D*[bins]
+
+
+    nbin = np.empty(D, int)
+    edges = D*[None]
+    for i in range(D):
+        edges[i] = np.asarray(bins[i])
+        nbin[i] = len(edges[i])+1
+    
+
+    # Compute the bin number each sample falls into.
+    Ncount = tuple(
+        # avoid np.digitize to work around gh-11022
+        np.searchsorted(edges[i], sample[:, i], side='right')
+        for i in range(D)
+    )
+
+    # Using digitize, values that fall on an edge are put in the right bin.
+    # For the rightmost bin, we want values equal to the right edge to be
+    # counted in the last bin, and not as an outlier.
+    for i in range(D):
+        # Find which points are on the rightmost edge.
+        on_edge = (sample[:, i] == edges[i][-1])
+        # Shift these points one bin to the left.
+        Ncount[i][on_edge] -= 1
+
+    # Compute the sample indices in the flattened histogram matrix.
+    # This raises an error if the array is too large.
+    xy = np.ravel_multi_index(Ncount, nbin)
+
+    # Compute the number of repetitions in xy and assign it to the
+    # flattened histmat.
+
+    histograms = []
+    for w in weights:
+        hist = np.bincount(xy, w, minlength=nbin.prod())
+
+        # Shape into a proper matrix
+        hist = hist.reshape(nbin)
+
+        # This preserves the (bad) behavior observed in gh-7845, for now.
+        hist = hist.astype(w.dtype)#, casting='safe')
+
+        # Remove outliers (indices 0 and -1 for each dimension).
+        core = D*(slice(1, -1),)
+        hist = hist[core]
+        histograms.append(hist)
+
+    if returnCounts:
+        hist = np.bincount(xy, minlength=nbin.prod())
+
+        # Shape into a proper matrix
+        hist = hist.reshape(nbin)
+
+        # This preserves the (bad) behavior observed in gh-7845, for now.
+        hist = hist.astype(int)#, casting='safe')
+
+        # Remove outliers (indices 0 and -1 for each dimension).
+        core = D*(slice(1, -1),)
+        hist = hist[core]
+        histograms.append(hist)
+
+    return histograms

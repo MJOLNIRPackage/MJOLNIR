@@ -5341,23 +5341,18 @@ def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
         bins = calculateBins(dx=dx,dy=dy,dz=dz,pos=pos)
     if len(pos[0].shape)>1: # Flatten positions
         pos = np.array([x.flatten() for x in pos])
-    #NonNaNs = 1-np.isnan(data.flatten())
-
-    #pos = [np.array(x[NonNaNs]) for x in pos]
+    
     HistBins = [bins[0][:,0,0],bins[1][0,:,0],bins[2][0,0,:]]
-    intensity =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=data.flatten())[0].astype(data.dtype)
 
-    returndata = [intensity]
-    if mon is not None:
-        MonitorCount=  np.histogramdd(np.array(pos).T,bins=HistBins,weights=mon.flatten())[0].astype(mon.dtype)
-        returndata.append(MonitorCount)
-    if norm is not None:
-        Normalization= np.histogramdd(np.array(pos).T,bins=HistBins,weights=norm.flatten())[0].astype(norm.dtype)
-        
-        returndata.append(Normalization)
-        
-    NormCount =    np.histogramdd(np.array(pos).T,bins=HistBins,weights=np.ones_like(data).flatten())[0].astype(int)
-    returndata.append(NormCount)
+    
+    weights = [data.flatten()]
+    if not mon is None:
+        weights.append(mon.flatten())
+    if not norm is None:
+        weights.append(norm.flatten())
+    
+    returndata = _tools.histogramdd(np.array(pos).T,bins=HistBins,weights=weights,returnCounts=True)
+    
     return returndata,bins
 
 def calculateBins(dx,dy,dz,pos):
