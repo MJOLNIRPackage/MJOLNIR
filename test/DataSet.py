@@ -711,25 +711,22 @@ def test_DataSet_plotQPlane():
 
     EMin = np.min(Datset.energy)
     EMax = EMin+0.5
-    Data,[Qx,Qy],ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
-    Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
+    Data,ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
+    Data,ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
     fig,AX = plt.subplots()
-    Data,[Qx,Qy],ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6,zorder=10)
+    Data,ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6,zorder=10)
     
     ax1.set_clim(-20,-15)
     ax2.set_clim(0,1e-6)
-    Data,[Qx,Qy],ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05)
+    Data,ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05)
     
     cmap = plt.cm.coolwarm
 
     Dataset = DataSet(dataFiles=convertFiles)
     for d in Dataset.dataFiles:
         d.A3Off +=90 # rotate data to fall into problem of arctan2
-    Data,[Qx,Qy],ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True,cmap=cmap)
-    QxShape = np.array(Qx[0]).shape
-    QyShape = np.array(Qy[0]).shape
-    assert(QxShape==QyShape)
-    assert(np.all(np.array(Data[0][0]).shape == np.array(QxShape)-np.array([1,1])))
+    Data,ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True,cmap=cmap)
+    
     try:
         Datset.plotQPlane(EMin,EMax,binning='notABinningMethod')
         assert False
@@ -751,7 +748,7 @@ def test_DataSet_plotQPlane():
     E = np.arange(Energies.min()+0.35,Energies.max(),0.35)
 
 
-    [I,Monitor,Norm,NormCount],[xBins,yBins],ax = \
+    PandasData,ax = \
     Datset.plotQPlane(EBins=E,ax = ax,xBinTolerance=0.03,yBinTolerance=0.03,
             binning='polar',vmin=7.5e-7,vmax=7e-6,antialiased=True,cmap=cmap,rlu=True,extend='max')
     plt.close('all')
