@@ -18,9 +18,11 @@ def Tester():
     
     # With saveFile = False, converted files are not saved to disk but stays
     # only in RAM. 
-    mask = np.zeros_like(ds.I.data) # Define mask, see FAQ for explanation
-    mask[:,:,:3]=True
-    ds.mask = mask
+    for df in ds:
+        mask = np.zeros_like(df.I.data) # Define mask, see FAQ for explanation
+        mask[:,:,:3]=True
+        df.mask = np.logical_or(df.mask,mask)
+
 
     # Plotting data quickly in equi-sized voxels can be done by
     Viewer = ds.View3D(0.03,0.03,0.05)
