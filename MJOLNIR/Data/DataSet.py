@@ -1392,10 +1392,8 @@ class DataSet(object):
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
         Returns:
-            
-            - dataList (list): List of all data points in format [Intensity, Monitor, Normalization, Normcount]
 
-            - bins (list): List of bin edges as function of plane in format [xBins,yBins].
+            - ax.d (pandas dframe): Returns DataFrame holding the data of the plane
 
             - ax (matplotlib axes): Returns provided matplotlib axis
             
