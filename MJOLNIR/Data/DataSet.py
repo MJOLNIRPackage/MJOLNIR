@@ -1386,7 +1386,9 @@ class DataSet(object):
             - cut1DFunctionRectangle (function): Function to be called when a 1D rectangular cut is created (default None)
 
             - cut1DFunctionCircle (function): Function to be called when a circuar cut is created (default None)
-            
+
+            - scaleFcn (function): Function to rescale the plotted intensity (default None)
+
             - other: Other key word arguments are passed to the pcolormesh plotting algorithm.
             
         Returns:
@@ -1532,7 +1534,15 @@ class DataSet(object):
                 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                ax.Int.append(np.divide(ax.intensity[-1]*ax.NormCount[-1],ax.monitorCount[-1]*ax.Normalization[-1]))
+                if scaleFcn != None:
+                    nInt = np.divide(
+                            ax.intensity[-1]*ax.NormCount[-1],
+                            ax.monitorCount[-1]*ax.Normalization[-1]
+                            )
+                    nInt = scaleFcn(nInt)
+                    ax.Int.append(nInt)
+                else:
+                    ax.Int.append(np.divide(ax.intensity[-1]*ax.NormCount[-1],ax.monitorCount[-1]*ax.Normalization[-1]))
 
         if binning == 'polar':
             ax.Qx = [np.outer(np.cos(ax.xBins[i]-ax.offset[i]),ax.yBins[i]) for i in range(len(ax.intensity))]
@@ -1575,10 +1585,12 @@ class DataSet(object):
                 #QY = np.array(np.array(Qy[i])[1:,1:])
                 I = np.array(ax.Int[i])
                 levels = np.linspace(vmin,vmax,50)
-                pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
+                # pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap,**kwargs))
+                pmeshs.append(ax.contourf3D(QX,QY,I,zdir = 'z',offset=np.mean(EBins[i:i+2]),levels=levels,cmap=cmap))
             else:
                 ax.grid(False)
-                pmeshs.append(ax.pcolormesh(ax.Qx[i],ax.Qy[i],ax.Int[i],zorder=zorder,cmap=cmap,**kwargs))
+                # pmeshs.append(ax.pcolormesh(ax.Qx[i],ax.Qy[i],ax.Int[i],zorder=zorder,cmap=cmap,**kwargs))
+                pmeshs.append(ax.pcolormesh(ax.Qx[i],ax.Qy[i],ax.Int[i],zorder=zorder,cmap=cmap))
         if not _3D:
             ax.set_aspect('equal')
             ax.grid(True, zorder=0)
@@ -1642,32 +1654,38 @@ class DataSet(object):
             ymax = np.max([np.max(qy) for qy in ax.Qy])
             ax.set_ylim(ymin,ymax)#np.min(Qy),np.max(Qy))
 
+        @staticmethod
+        def to_pandas(ax):
+            Qx,Qy = [x[0] for x in ax.bins]
+            QxCenter = 0.25*(Qx[:-1,:-1]+Qx[:-1,1:]+Qx[1:,1:]+Qx[1:,:-1])
+            QyCenter = 0.25*(Qy[:-1,:-1]+Qy[:-1,1:]+Qy[1:,1:]+Qy[1:,:-1])
+            H,K,L = ax.sample.calculateQxQyToHKL(QxCenter,QyCenter)
+            E = np.full(H.shape,np.mean([ax.EMin,ax.EMax]))
+            intensity,monitorCount,Normalization,NormCount = [x[0] for x in ax.data]
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                Int = np.divide(intensity*NormCount,Normalization*monitorCount)
+                Int[np.isnan(Int)] = -1
+                Int_err = np.divide(np.sqrt(intensity)*NormCount,Normalization*monitorCount)
+                Int_err[np.isnan(Int_err)] = -1
+            dataToPandas = {'Qx':QxCenter.flatten(),'Qy':QyCenter.flatten(),'H':H.flatten(),'K':K.flatten(),'L':L.flatten(),'Energy':E.flatten(), 'Intensity':intensity.flatten(), 'Monitor':monitorCount.flatten(),
+                            'Normalization':Normalization.flatten(),'BinCounts':NormCount.flatten(),'Int':Int.flatten(),'Int_err':Int_err.flatten()}
+            df = pd.DataFrame(dataToPandas)
+            return df
+
         if not _3D:
             def to_csv(fileName,ax):
-                Qx,Qy = [x[0] for x in ax.bins]
-                QxCenter = 0.25*(Qx[:-1,:-1]+Qx[:-1,1:]+Qx[1:,1:]+Qx[1:,:-1])
-                QyCenter = 0.25*(Qy[:-1,:-1]+Qy[:-1,1:]+Qy[1:,1:]+Qy[1:,:-1])
-                H,K,L = ax.sample.calculateQxQyToHKL(QxCenter,QyCenter)
-                E = np.full(H.shape,np.mean([ax.EMin,ax.EMax]))
-                intensity,monitorCount,Normalization,NormCount = [x[0] for x in ax.data]
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    Int = np.divide(intensity*NormCount,Normalization*monitorCount)
-                    Int[np.isnan(Int)] = -1
-                    Int_err = np.divide(np.sqrt(intensity)*NormCount,Normalization*monitorCount)
-                    Int_err[np.isnan(Int_err)] = -1
-                dataToPandas = {'Qx':QxCenter.flatten(),'Qy':QyCenter.flatten(),'H':H.flatten(),'K':K.flatten(),'L':L.flatten(),'Energy':E.flatten(), 'Intensity':intensity.flatten(), 'Monitor':monitorCount.flatten(),
-                                'Normalization':Normalization.flatten(),'BinCounts':NormCount.flatten(),'Int':Int.flatten(),'Int_err':Int_err.flatten()}
-                ax.d = pd.DataFrame(dataToPandas)
+                df = to_pandas(ax)
 
                 with open(fileName,'w') as f:
                     f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,Int.shape))
 
-                ax.d.to_csv(fileName,mode='a')
+                df.to_csv(fileName,mode='a')
             ax.to_csv = lambda fileName: to_csv(fileName,ax)
             ax.bins = [ax.Qx,ax.Qy]
             ax.data = [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount]
-        return [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount],[ax.Qx,ax.Qy],ax
+        # return [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount],[ax.Qx,ax.Qy],ax
+        return to_pandas(ax), ax
 
     @_tools.KwargChecker()
     def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
