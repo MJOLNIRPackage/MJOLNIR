@@ -129,7 +129,7 @@ def test_LoadBambusData():
     assert(ds[0].instrument == 'Bambus')
     assert(ds[0].binning == 1)
     assert(ds[0].dasel == (0,0))
-    assert(ds.instrumentCalibrationEf.shape == (len(ds),100,4))
+    assert(ds.instrumentCalibrationEf.shape == [(100,4)])
 
     scanParameters = ds[0].scanParameters
     scanValues = ds[0].scanValues

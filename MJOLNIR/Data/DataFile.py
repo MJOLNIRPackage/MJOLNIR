@@ -26,6 +26,7 @@ from collections import defaultdict
 
 multiFLEXXDetectors = 31*5
 reFloat = r'-?\d*\.\d*'
+reInt   = r'-?\d'
 factorsqrtEK = 0.694692
 supportedRawFormats = ['hdf','','dat']
 supportedInstruments = ['CAMEA','MultiFLEXX','FlatCone','Bambus']
@@ -681,7 +682,11 @@ class DataFile(object):
         for line in headerString:
             splitLine = line.split(': ')
             if isinstance(splitLine,list):
-                description,value = splitLine
+                try:
+                    description,value = splitLine
+                except ValueError:
+                    description = splitLine[0].replace(':','').strip()
+                    value = 'NoValue'
             else:
                 continue
             description = description.lower()
@@ -700,8 +705,10 @@ class DataFile(object):
                 
                 keyValuePattern = re.compile(r'\w*\s*=\s*'+reFloat)
                 KVPairs = keyValuePattern.findall(value)
-                
-                for pair in KVPairs:
+                keyValuePatternINT = re.compile(r'\w*\s*=\s*'+reInt)
+                KVPairsINT = keyValuePatternINT.findall(value)
+
+                for pair in KVPairs+KVPairsINT:
                     key,val = pair.split('=')
 
                     key = key.strip()
@@ -710,7 +717,8 @@ class DataFile(object):
                         val = np.array(val.strip(),dtype=float)
                     except ValueError:
                         continue
-                    setattr(self,key,val)
+                    if not hasattr(self,key):
+                        setattr(self,key,val)
             elif description == 'zeros':
                 keyValuePattern = re.compile(r'\w+\s+=\s*'+reFloat)
                 KVPairs = keyValuePattern.findall(value)
@@ -916,7 +924,8 @@ class DataFile(object):
                 else:
                     calibrationFile = MJOLNIR.__flatConeNormalization__
                     detectors = 31
-                    self.mask = False
+                    mask = np.zeros_like(self.I,dtype=bool)
+                    self._mask = mask
                 calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
                 amplitude = calibrationData[:,3]
                 background = calibrationData[:,6] 
@@ -2568,92 +2577,130 @@ def getInstrument(file):
     location = file.visititems(lambda x,y: getNX_class(x,y,b'NXinstrument'))
     return file.get(location)
 
+
+
+class PointerArray():
+    """Array-like object designed to facilitate data acquisition from a list of differently sized list of data files having the same attributes.    
+
+    Args:
+
+        - attribute (str): Name of wanted attribute existing on the data
+
+        - datafiles (list): List of pointers to the data files
+
+    """
+    def __init__(self,attribute,datafiles):
+        self._attribute = attribute
+        self._datafiles = datafiles
+        self._shape = None
+        self._multiD = None
+
+    def __getitem__(self,index):
+        gotten = self._datafiles[index]
+        if isinstance(gotten,type(self._datafiles[0])):
+            
+            return getattr(gotten,self._attribute)
+        else:
+        
+            return [getattr(df,self._attribute) for df in gotten]
+    
+    def __iter__(self):
+        self._index=0
+        return self
+    
+    def __next__(self):
+        if self._index >= len(self):
+            raise StopIteration
+        result = getattr(self._datafiles[self._index],self._attribute)
+        self._index += 1
+        return result
+
+    def next(self):
+        return self.__next__()
+    
+    def __len__(self):
+        return len(self._datafiles)
+    
+    @property
+    def shape(self):
+        return [getattr(df,self._attribute).shape for df in self._datafiles]
+    
+    
+    @property
+    def mask(self):
+        return [df.mask for df in self._datafiles]
+    
+    @mask.setter
+    def mask(self,mask):
+        for m,df in zip(mask,self._datafiles):
+            df.mask = m
+    
+    @property
+    def size(self):
+        return np.sum([getattr(df,self._attribute).size for df in self._datafiles])
+    
+    def extractData(self):
+        if self._multiD is None: # State is unknown
+            self._multiD = len(getattr(self._datafiles[0],self._attribute).shape)>1 # 
+
+        if self._multiD:
+            return np.concatenate([getattr(df,self._attribute)[np.logical_not(df.mask)] for df in self._datafiles])
+        else:
+            return np.concatenate([getattr(df,self._attribute)[np.logical_not(np.all(df.mask))] for df in self._datafiles])
+        
+    @property
+    def data(self):
+        return np.concatenate([getattr(df,self._attribute) for df in self._datafiles])
+
 def extractData(files):
     if not isinstance(files,list):
         files = [files]
-    I = []
+    I = PointerArray('I',files)
+    Norm = PointerArray('Norm',files)
+    Monitor = PointerArray('Monitor',files)
+    energy = PointerArray('energy',files)
     
     
-    Norm = []
-    Monitor = []
     a3 = []
     a4 = []
-    a3Off = []
-    a4Off = []
-    Ei = []
-    instrumentCalibrationEf = []
-    instrumentCalibrationA4 = []
-    instrumentCalibrationEdges = []
-    if(files[0].type=='nxs'):
-        qx = []
-        qy = []
-        energy = []
-        H = []
-        K = []
-        L = []
+    a3Off = PointerArray('a3Off',files)
+    a4Off = PointerArray('a4Off',files)
+    Ei = PointerArray('Ei',files)
+    instrumentCalibrationEf = PointerArray('instrumentCalibrationEf',files)
+    instrumentCalibrationA4 = PointerArray('instrumentCalibrationA4',files)
+    instrumentCalibrationEdges = PointerArray('instrumentCalibrationEdges',files)
+
+    qx = PointerArray('qx',files)
+    qy = PointerArray('qy',files)
+    H = PointerArray('H',files)
+    K = PointerArray('K',files)
+    L = PointerArray('L',files)
+
+    #mask = []
+    
     scanParameters = []
     scanParamValue = []
     scanParamUnit = []
-    mask = []
+    #mask = []
     for datafile in files:
-        I.append(datafile.I)
-        if(datafile.type=='nxs'):
-            qx.append(datafile.qx)
-            qy.append(datafile.qy)
-            energy.append(datafile.energy)
-            Norm.append(datafile.Norm)
-            H.append(datafile.h)
-            K.append(datafile.k)
-            L.append(datafile.l)
-        mask.append(datafile.mask)
+        #mask.append(datafile.mask)
         scanParameters.append(datafile.scanParameters)
         scanParamValue.append(datafile.scanValues)
         scanParamUnit.append(datafile.scanUnits)
             
-        Monitor.append(datafile.Monitor)
         if np.array(datafile.A3Off).shape == ():
             datafile.A3Off = 0.0
         a3.append(datafile.A3-datafile.A3Off)
-        a3Off.append(datafile.A3Off)
         if np.array(datafile.A4Off).shape == ():
             datafile.A4Off = [0.0]
         a4.append(datafile.A4-datafile.A4Off)
-        a4Off.append(datafile.A4Off)
-        Ei.append(datafile.Ei)
-        instrumentCalibrationEf.append(datafile.instrumentCalibrationEf)
-        instrumentCalibrationA4.append(datafile.instrumentCalibrationA4)
-        instrumentCalibrationEdges.append(datafile.instrumentCalibrationEdges)
-        
-    I = Marray(I)#np.concatenate(I,axis=0))
-    if(files[0].type=='nxs'):
-        qx = Marray(qx)#np.concatenate(qx,axis=0))
-        qy = Marray(qy)#np.concatenate(qy,axis=0))
-        H = Marray(H)#np.concatenate(H,axis=0))
-        K = Marray(K)#np.concatenate(K,axis=0))
-        L = Marray(L)#np.concatenate(L,axis=0))
-        energy = Marray(energy)#np.concatenate(energy,axis=0))
-        Norm = Marray(Norm)#np.concatenate(Norm,axis=0))
-    else:  
-        #print(Norm)
-        Norm = Marray(Norm)
-        
-    Monitor = Marray(Monitor)#np.concatenate(Monitor,axis=0))
-
-    a3 = Marray(a3)#np.concatenate(a3,axis=0))
-    a4 = Marray(a4)#np.concatenate(a4,axis=0))
-
-    a3Off = Marray(a3Off)
-    a4Off = Marray(a4Off)
-    instrumentCalibrationEf = np.array(instrumentCalibrationEf)
-    instrumentCalibrationA4 = np.array(instrumentCalibrationA4)
-    instrumentCalibrationEdges = np.array(instrumentCalibrationEdges)
-    Ei = Marray(Ei)
+    
     if files[0].type=='nxs':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L,mask
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
     else:
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,mask
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
 
 def assertFile(file):
     """Make sure that file exists for methods to work"""
