@@ -2651,6 +2651,13 @@ class PointerArray():
     @property
     def data(self):
         return np.concatenate([getattr(df,self._attribute) for df in self._datafiles])
+    
+    
+    def min(self):
+        return np.min(self.extractData())
+    
+    def max(self):
+        return np.max(self.extractData())
 
 def extractData(files):
     if not isinstance(files,list):
