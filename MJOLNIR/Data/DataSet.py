@@ -196,6 +196,42 @@ class DataSet(object):
         except Exception as e:
             raise(e)
 
+    @property
+    def backgroundModel(self):
+        if not hasattr(self,'_backgroundModel'):
+            raise AttributeError('DataSet has no background model')
+        else:
+            return self._backgroundModel
+        
+    @backgroundModel.getter
+    def backgroundModel(self):
+        if not hasattr(self,'_backgroundModel'):
+            raise AttributeError('DataSet has no background model')
+        else:
+            return self._backgroundModel
+
+    @backgroundModel.setter
+    def backgroundModel(self,model):
+        self._backgroundModel = model
+
+
+    @property
+    def backgroundIntensities(self):
+        
+        return self._backgroundIntensities
+    
+    @backgroundIntensities.getter
+    def backgroundIntensities(self):
+        if not hasattr(self,'_backgroundIntensities'):
+            self.backgroundModel.generateFullBackground()
+        elif self.backgroundModel.isChanged:
+            self.backgroundModel.generateFullBackground()
+        return self._backgroundIntensities
+
+    @backgroundIntensities.setter
+    def backgroundIntensities(self,intensities):
+        self._backgroundIntensities = intensities
+
 
     @property
     def maskIndices(self):
@@ -433,7 +469,7 @@ class DataSet(object):
             self.sample = [d.sample for d in self]
 
     @_tools.KwargChecker()
-    def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None):
+    def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None,backgroundSubtraction=False):
         """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
 
         Args:
@@ -449,6 +485,8 @@ class DataSet(object):
             - rlu (bool): If True, the rotate QX,QY is used for binning (default True)
 
             - datafile (string or list of strings): Location(s) of data file to be binned (default converted file in DataSet).
+
+            - backgroundSubtraction (bool): If true, utilize the Background object on the data set to perform background subtraction (default False)
 
         Raises:
 
@@ -483,12 +521,21 @@ class DataSet(object):
         pos=[qx,qy,energy]
         returnData,bins = binData3D(dx=dx,dy=dy,dz=dz,pos=pos,data=I,norm=Norm,mon=Monitor)
 
+        if backgroundSubtraction:#
+            # Extract full intensities from the background model
+            intensities = self.backgroundIntensities.extractData()
+            
+            # Bin all data once more and subtract accordingly
+            BGReturnData,_ = binData3D(dx=None,dy=None,dz=None,bins=bins,pos=pos,data=intensities)
+            
+            returnData[0]=returnData[0]-BGReturnData[0]
+
         return returnData,bins
 
     @_tools.KwargChecker()
     def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=False,
               dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,
-              ufit=False):
+              backgroundSubtraction=False, ufit=False):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -520,6 +567,8 @@ class DataSet(object):
             - dataFiles (list): List of dataFiles to cut (default None). If none, the ones in the object will be used.
 
             - constantBins (bool): If True only bins of size minPixel is used (default False)
+
+            - backgroundSubtraction (bool): If true, utilize the Background object on the data set to perform background subtraction (default False)
 
             - ufit (bool): If True a uFit Dataset object is returned in stead of pandas data frame
         
@@ -610,9 +659,32 @@ class DataSet(object):
             for dat,col,typ in zip(DataValues,columns,dtypes):
                 pdData[col] = dat.astype(typ)
 
+            if backgroundSubtraction:
 
-        pdData[pdNaming['int']] = pdData[['intensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
-        pdData[pdNaming['intError']] = np.sqrt(pdData[pdNaming['intensity']])*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+                BGInt = self.backgroundIntensities.extractData()
+                BGData,_ = cut1D(positions=positions,I=BGInt,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
+                                                                minPixel=minPixel,Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,
+                                                                extend=extend,constantBins=constantBins)
+                
+                
+                pdData[pdNaming['BackgroundIntensity']] = BGData[0].flatten()
+                pdData[pdNaming['ForegroundIntensity']] = pdData[pdNaming['intensity']]
+                
+                pdData[pdNaming['Background']] = pdData[pdNaming['BackgroundIntensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])#BGIntensities
+                pdData[pdNaming['Foreground']] = pdData[pdNaming['ForegroundIntensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+                
+                pdData[pdNaming['int']] = pdData[pdNaming['Foreground']]-pdData[pdNaming['Background']]
+                
+                Int_err = pdData[pdNaming['ForegroundIntensity']]
+                Bg_err  = pdData[pdNaming['BackgroundIntensity']]
+
+                pdData[pdNaming['ForegroundError']] = np.sqrt(Int_err)*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+                pdData[pdNaming['BackgroundError']] = np.sqrt(Bg_err)*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+
+                pdData[pdNaming['intError']] = np.sqrt(Int_err+Bg_err)*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+            else:
+                pdData[pdNaming['int']] = pdData[['intensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+                pdData[pdNaming['intError']] = np.sqrt(pdData[pdNaming['intensity']])*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
 
         
         if not ufit:
@@ -628,7 +700,7 @@ class DataSet(object):
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
     def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,
-                  counts=False,extend=False,data=None,dataFiles=None,constantBins=False,
+                  counts=False,extend=False,data=None,dataFiles=None,constantBins=False,backgroundSubtraction=False,
                   ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
@@ -664,6 +736,8 @@ class DataSet(object):
         
                 - constantBins (bool): If True only bins of size minPixel is used (default False)
 
+                - backgroundSubtraction (bool): If true, utilize the Background object on the data set to perform background subtraction (default False)
+
                 - outputFunction (function): Function called on output string (default print)
         
         """
@@ -677,7 +751,7 @@ class DataSet(object):
         if data is None:
             Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,
                                     extend=extend,rlu=rlu,dataFiles=dataFiles,plotCoverage=plotCoverage,
-                                    constantBins=constantBins)
+                                    constantBins=constantBins, backgroundSubtraction = backgroundSubtraction)
         else:
             Data,bins = data
         
@@ -2976,7 +3050,7 @@ class DataSet(object):
 
     @_tools.KwargChecker(function=createQAxis)
     def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
-               instrumentAngles=False,outputFunction=print,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
+               instrumentAngles=False,outputFunction=print,backgroundSubtraction=False,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
                cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut1DFunctionRectanglePerp=None,
                cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,**kwargs):
         """View data in the Viewer3D object. 
@@ -3006,6 +3080,8 @@ class DataSet(object):
             - customSlicer (bool): If true, utilize the interactive viewer based on PyQtGraph (Default False)
 
             - instrumenAngles (bool): If true show also A3 and A4 calculations for HKL axis when hovering (Default False)
+
+            - backgroundSubtraction (bool): If true, utilize the Background object on the data set to perform backgorund subtraction (default False)
 
             - outputFunction (func): Function to print the format_coord when the user clicks the axis (default print)
 
@@ -3167,7 +3243,7 @@ class DataSet(object):
         else:
             axes = None
 
-        Data,bins = self.binData3D(dx=dQx,dy=dQy,dz=dE,rlu=rlu)
+        Data,bins = self.binData3D(dx=dQx,dy=dQy,dz=dE,rlu=rlu,backgroundSubtraction=backgroundSubtraction)
         
         if counts:
             if counts is True:
@@ -3216,6 +3292,7 @@ class DataSet(object):
             cut1DFunctionRectangleHorizontal=cut1DFunctionRectangleHorizontal,
             cut1DFunctionRectangleVertical=cut1DFunctionRectangleVertical)
 
+            Viewer.backgroundSubtraction = backgroundSubtraction
             def to_csv(fileName,self):
                 shape = self.Counts.shape
                 with warnings.catch_warnings():
@@ -3244,7 +3321,7 @@ class DataSet(object):
                 self.d = pd.DataFrame(dataToPandas).fillna(-1)
                 
                 with open(fileName,'w') as f:
-                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,shape))
+                    f.write("# CSV generated from MJOLNIR {}. {} Shape of data is {}\n".format(MJOLNIR.__version__,viewer.backgroundSubtraction*'Subtracted data.',shape))
                     self.d.to_csv(fileName,mode='a')
             Viewer.to_csv = lambda fileName: to_csv(fileName,Viewer)
 
