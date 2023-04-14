@@ -15,7 +15,7 @@ import math
 #import shapely
 # from shapely.geometry import Polygon as PolygonS, Point as PointS
 from MJOLNIR import TasUBlibDEG as TasUBlib
-from MJOLNIR._tools import Marray
+from MJOLNIR._tools import PointerArray
 from MJOLNIR.Data import Mask
 
 import MJOLNIR.Data.Sample
@@ -2579,85 +2579,6 @@ def getInstrument(file):
 
 
 
-class PointerArray():
-    """Array-like object designed to facilitate data acquisition from a list of differently sized list of data files having the same attributes.    
-
-    Args:
-
-        - attribute (str): Name of wanted attribute existing on the data
-
-        - datafiles (list): List of pointers to the data files
-
-    """
-    def __init__(self,attribute,datafiles):
-        self._attribute = attribute
-        self._datafiles = datafiles
-        self._shape = None
-        self._multiD = None
-
-    def __getitem__(self,index):
-        gotten = self._datafiles[index]
-        if isinstance(gotten,type(self._datafiles[0])):
-            
-            return getattr(gotten,self._attribute)
-        else:
-        
-            return [getattr(df,self._attribute) for df in gotten]
-    
-    def __iter__(self):
-        self._index=0
-        return self
-    
-    def __next__(self):
-        if self._index >= len(self):
-            raise StopIteration
-        result = getattr(self._datafiles[self._index],self._attribute)
-        self._index += 1
-        return result
-
-    def next(self):
-        return self.__next__()
-    
-    def __len__(self):
-        return len(self._datafiles)
-    
-    @property
-    def shape(self):
-        return [getattr(df,self._attribute).shape for df in self._datafiles]
-    
-    
-    @property
-    def mask(self):
-        return [df.mask for df in self._datafiles]
-    
-    @mask.setter
-    def mask(self,mask):
-        for m,df in zip(mask,self._datafiles):
-            df.mask = m
-    
-    @property
-    def size(self):
-        return np.sum([getattr(df,self._attribute).size for df in self._datafiles])
-    
-    def extractData(self):
-        if self._multiD is None: # State is unknown
-            self._multiD = len(getattr(self._datafiles[0],self._attribute).shape)>1 # 
-
-        if self._multiD:
-            return np.concatenate([getattr(df,self._attribute)[np.logical_not(df.mask)] for df in self._datafiles])
-        else:
-            return np.concatenate([getattr(df,self._attribute)[np.logical_not(np.all(df.mask))] for df in self._datafiles])
-        
-    @property
-    def data(self):
-        return np.concatenate([getattr(df,self._attribute) for df in self._datafiles])
-    
-    
-    def min(self):
-        return np.min(self.extractData())
-    
-    def max(self):
-        return np.max(self.extractData())
 
 def extractData(files):
     if not isinstance(files,list):
