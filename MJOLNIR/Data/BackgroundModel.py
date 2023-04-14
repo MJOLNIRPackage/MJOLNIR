@@ -146,9 +146,9 @@ class BackgroundObject(object):
         
         newI[inside] = self.int[xQ[inside],yE[inside]]
         if not norm is None:
-            newI*=norm.reshape(newI.shape)
+            newI[inside]*=norm.reshape(newI.shape)[inside]
         if not monitor is None:
-            newI*=monitor.reshape(newI.shape)
+            newI[inside]*=monitor.reshape(newI.shape)[inside]
         return newI
     
     def generateFullBackground(self):
