@@ -1692,7 +1692,7 @@ class DataSet(object):
             Qx,Qy = [x[0] for x in ax.bins]
             QxCenter = 0.25*(Qx[:-1,:-1]+Qx[:-1,1:]+Qx[1:,1:]+Qx[1:,:-1])
             QyCenter = 0.25*(Qy[:-1,:-1]+Qy[:-1,1:]+Qy[1:,1:]+Qy[1:,:-1])
-            H,K,L = ax.sample.calculateQxQyToHKL(QxCenter,QyCenter)
+            H,K,L = ax.ds.sample[0].calculateQxQyToHKL(QxCenter,QyCenter)
             E = np.full(H.shape,np.mean([ax.EMin,ax.EMax]))
             intensity,monitorCount,Normalization,NormCount = [x[0] for x in ax.data]
             with warnings.catch_warnings():
