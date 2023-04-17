@@ -60,6 +60,30 @@ pdNaming = {
           'plotPosition':'BinDistance'
           }
 
+pdComments = {
+            'qx':'X component of scattering vector in instrument frame of reference',
+            'qy':'Y component of scattering vector in instrument frame of reference',
+            'h': 'H component of scattering vector in sample frame of reference',
+            'k': 'H component of scattering vector in sample frame of reference',
+            'l': 'H component of scattering vector in sample frame of reference',
+            'int':'Normalized intensity proportional to S(Q,Omega)',
+            'intError': 'Error of normalized intensity',
+            'intensity': 'Accumulated neutron number - either background subtracted or true neutron count',
+            'mon':'Accumulated monitor in bin',
+            'norm':'Accumulated normalization in bin',
+            'binCount':'Number of insertions into bin',
+            'plotPosition':'If present, describes plotting position in axis',
+            '*Foreground':'Normalized foreground intensity',
+            '*Background':'Normalized background intensity',
+            '*ForegroundError':'Normalized foreground error',
+            '*BackgroundError':'Normalized background error',
+            '*ForegroundIntensity':'Accumulated foreground neutron number',
+            '*BackgroundIntensity':'Accumulated background neutron number'
+            }
+
+pdDoc = '        A Pandas data frame returns is returned with the following columns:\n\n'+'\n\n'.join(['            - '+pdNaming[key]+': ' +value for key,value in pdComments.items() if not key[0]=='*'])\
+    +'\n\n        If a background subtraction is performed, the following columns are also present:\n\n'+'\n\n'.join(['            - '+pdNaming[key[1:]]+': ' +value for key,value in pdComments.items() if key[0]=='*'])\
+
 
 _cache = []
 
@@ -592,7 +616,7 @@ class DataSet(object):
         
         Returns:
             
-            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int for 1D cut.
+            - Data list (pandas DataFrame): See below
             
             - Bin list (3 arrays): Bin edge positions in plane of size (n+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
             
@@ -760,6 +784,14 @@ class DataSet(object):
                 - plotBackground (bool): If true, and background subtraction is true, plot the corresponding background data (default False)
 
                 - outputFunction (function): Function called on output string (default print)
+
+            Returns:
+
+                - ax (matplitlib axis): Axis containing 1D plot
+
+                - data (Pandas data frame): See below
+
+                - bins (list): List of bins for cut
         
         """
         if rlu:
@@ -871,14 +903,13 @@ class DataSet(object):
 
         Returns:
             
-            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for 2D cut.
+            - Data list (pandas DataFrame): See below
             
             - Bin list (n * 3 arrays): n instances of bin edge positions in plane of size (m+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
             
             - center position (n * 3D arrays): n instances of center positions for the bins.
 
             - binDistance (n arrays): n instances of arrays holding the distance in q to q1.
-
 
         """
         Q1,Q2 = q1,q2
@@ -1183,11 +1214,9 @@ class DataSet(object):
             
             - ax (plt axes): Matplotlib axis in which data is plotted
             
-            - Int (array): Normalized scattering intensity in 2D array of size (m-1,n-1)
+            - Data (pandas DataFrame): See below
             
-            - Qx (array): HKL or QxQu array of bin edges of size (3 or 2,m,n)
-            
-            - E (array): Energy bin edges of size (m,n)
+            - Bins
             
         Raises:
             
@@ -1373,7 +1402,7 @@ class DataSet(object):
         returnValues = cutPowder(positions=positions,I=I,Norm=Norm,Monitor=Monitor,
                         EBins=EBins,QBins=QBins)
 
-        return 
+        return returnValues
 
     
     @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','edgecolors']]))
@@ -1583,7 +1612,7 @@ class DataSet(object):
             
         Returns:
             
-            - data (Pandas datafrane): Pandas data frame of data
+            - data (Pandas datafrane): See below
 
             - ax (matplotlib axes): Returns provided matplotlib axis
             
@@ -2067,13 +2096,9 @@ class DataSet(object):
         
         Returns: m = Q points, n = energy bins
                 
-            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for all 2D cuts.
+            - Data list (pandas DataFrame): See below
             
-            - Bin list (m * n * 3 arrays): n instances of bin edge positions in plane of size (m+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
-            
-            - center position (m * n * 3D arrays): n instances of center positions for the bins.
-
-            - binDistance (m * n arrays): n instances of arrays holding the distance in q to q1.
+            Bin list (m * n * 3 arrays): n instances of bin edge positions in plane of size (m+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
 
         .. note::
             If an HKL point outside of the scattering plane is given, the program will just take the projection onto the scattering plane.
@@ -2742,7 +2767,7 @@ class DataSet(object):
             
         Returns:
             
-            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for 1D cut.
+            - Data list (pandas DataFrame): See below.
             
             - Bin list (1 array): Bin edge positions in energy
 
@@ -2876,7 +2901,7 @@ class DataSet(object):
             
         Returns:
             
-            - Data list (pandas DataFrame): DataFrame containing qx,qy,H,K,L,Intensity,Normalization,Monitor,BinCount,Int,binDistance for 1D cut.
+            - Data list (pandas DataFrame): See below
             
             - Bin list (1 array): Bin edge positions in energy
 
@@ -5537,3 +5562,9 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
     ax.get_figure().tight_layout()
 
     return ax
+
+
+for func in [f for f in DataSet.__dict__.values() if hasattr(f,'__doc__') and f.__doc__!='' and hasattr(f,'__call__')]:
+    if not func.__doc__ is None:
+        if 'see below' in func.__doc__.lower():
+            func.__doc__+=pdDoc
