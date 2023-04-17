@@ -755,6 +755,10 @@ class DataSet(object):
 
                 - backgroundSubtraction (bool): If true, utilize the Background object on the data set to perform background subtraction (default False)
 
+                - plotForeground (bool): If true, and background subtraction is true, plot the unsubtracted foreground data (default False)
+
+                - plotBackground (bool): If true, and background subtraction is true, plot the corresponding background data (default False)
+
                 - outputFunction (function): Function called on output string (default print)
         
         """
@@ -2797,13 +2801,25 @@ class DataSet(object):
         data[pdNaming['binCount']] = normcounts.astype(int)
         data[pdNaming['plotPosition']] = data[pdNaming['e']]
         if backgroundSubtraction:
-            data[pdNaming['Foreground']] = rawIntensity
-            data[pdNaming['Background']] = background
         
-        data[pdNaming['int']] = data[pdNaming['intensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
-        if backgroundSubtraction:
-            data[pdNaming['intError']] = np.sqrt(data[pdNaming['Foreground']]+data[pdNaming['Background']])*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+            data[pdNaming['BackgroundIntensity']] = background.flatten()
+            data[pdNaming['ForegroundIntensity']] = data[pdNaming['intensity']]
+            
+            data[pdNaming['Background']] = data[pdNaming['BackgroundIntensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])#BGIntensities
+            data[pdNaming['Foreground']] = data[pdNaming['ForegroundIntensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+            
+            data[pdNaming['int']] = data[pdNaming['Foreground']]-data[pdNaming['Background']]
+            
+            Int_err = data[pdNaming['ForegroundIntensity']]
+            Bg_err  = data[pdNaming['BackgroundIntensity']]
+
+            data[pdNaming['ForegroundError']] = np.sqrt(Int_err)*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+            data[pdNaming['BackgroundError']] = np.sqrt(Bg_err)*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+
+            data[pdNaming['intError']] = np.sqrt(Int_err+Bg_err)*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+        
         else:
+            data[pdNaming['int']] = data[pdNaming['intensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
             data[pdNaming['intError']] = np.sqrt(data[pdNaming['intensity']])*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
         if not ufit:
             return data,bins
@@ -2815,7 +2831,7 @@ class DataSet(object):
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
     def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, showQ= True, counts=False, 
                    dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,
-                   backgroundSubtraction=False, outputFunction=print,**kwargs):
+                   backgroundSubtraction=False,plotForeground=False,plotBackground=False, outputFunction=print,**kwargs):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
         
@@ -2851,6 +2867,10 @@ class DataSet(object):
             - data ([data Pandas Dataframe, bins]): Data and bins from previously created cut (default None)
 
             - backgroundSubtraction (bool): If true, utilize the Background object on the data set to perform background subtraction (default False)
+
+            - plotForeground (bool): If true, and background subtraction is true, plot the unsubtracted foreground data (default False)
+
+            - plotBackground (bool): If true, and background subtraction is true, plot the corresponding background data (default False)
 
             - kwargs: Pass on to the ax.errorbar method used to plot
             
@@ -2893,13 +2913,22 @@ class DataSet(object):
         # Perform the actual plotting
         if counts is True:
             ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['intensity']],yerr=np.sqrt(Data[pdNaming['intensity']]),**kwargs)
+            if plotForeground:
+                ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['ForegroundIntensity']],yerr=np.sqrt(Data[pdNaming['ForegroundIntensity']]),fmt=kwargs['fmt'],label='Foreground')
+            if plotBackground:
+                ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['BackgroundIntensity']],yerr=np.sqrt(Data[pdNaming['BackgroundIntensity']]),fmt=kwargs['fmt'],label='Background')
         elif counts is False:
             ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['int']],yerr=Data[pdNaming['intError']],**kwargs)
+            if plotForeground:
+                ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['Foreground']],yerr=Data[pdNaming['ForegroundError']],fmt=kwargs['fmt'],label='Foreground')
+            if plotBackground:
+                ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['Background']],yerr=Data[pdNaming['BackgroundError']],fmt=kwargs['fmt'],label='Background')
+    
         elif counts.lower() == 'sensitivity':
             ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['norm']]/Data[pdNaming['binCount']],**kwargs)
         else:
             AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
-        #ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['int']],yerr=Data[pdNaming['intError']],**kwargs)
+        
         
         
         if not ufit:
