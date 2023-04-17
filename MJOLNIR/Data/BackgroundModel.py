@@ -138,8 +138,8 @@ class BackgroundObject(object):
         BGBins = [self.QBins,self.EnergyBins]
             
         
-        xQ = _tools.findFlattenedIndex(positions[0].reshape(-1,1), [BGBins[0]])
-        yE = _tools.findFlattenedIndex(positions[1].reshape(-1,1), [BGBins[1]])
+        xQ = _tools.findFlattenedIndex(positions[0].reshape(-1,1), [BGBins[0]])-1
+        yE = _tools.findFlattenedIndex(positions[1].reshape(-1,1), [BGBins[1]])-1
 
         inside = np.logical_and(xQ<len(self.QBins)-1,yE<len(self.EnergyBins)-1)
         newI = np.zeros_like(inside,dtype=float)
