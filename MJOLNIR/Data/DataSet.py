@@ -5212,11 +5212,11 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
         numTicks = len(ax.xaxis.get_ticklocs())
         
         # take the smallest value which is chaning (i.e. is along the plot direction)
-        minChange = np.min(np.abs(diffAlongPlot[ax.plotDirection.T.flatten()!=0])) /numTicks 
+        change = np.max(np.abs(diffAlongPlot[ax.plotDirection.T.flatten()!=0])) /numTicks 
         
         
         # find the largest integer closest to the wanted precision
-        ax.set_precision(int(-np.floor(np.log10(minChange)))+1)
+        ax.set_precision(int(-np.floor(np.log10(change)))+1)
     
 
     # 1D or 2D
