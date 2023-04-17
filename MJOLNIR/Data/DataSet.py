@@ -278,6 +278,7 @@ class DataSet(object):
 
         self.backgroundModel = BackgroundModel.BackgroundObject(self,backgroundMask = backgroundMask,
                                                                 dQ = dQ, dE = dE)
+        self.backgroundModel.generatePowderBackground()
 
 
     @property
@@ -1399,8 +1400,13 @@ class DataSet(object):
         
         positions = np.array([np.linalg.norm([qx,qy],axis=0),energy])
 
+        if backgroundSubtraction:
+            background = self.backgroundModel.sample(positions,norm=Norm,monitor=Monitor)
+
+        else:
+            background = None
         returnValues = cutPowder(positions=positions,I=I,Norm=Norm,Monitor=Monitor,
-                        EBins=EBins,QBins=QBins)
+                        EBins=EBins,QBins=QBins,background=background)
 
         return returnValues
 
@@ -1702,8 +1708,6 @@ class DataSet(object):
         for i in range(len(EBins)-1):
             EBinEdges = [EBins[i],EBins[i+1]]
             e_inside = np.logical_and(energy>EBinEdges[0],energy<=EBinEdges[1])
-
-            # TODO: IMPLEMENT Background!
 
             if np.sum(e_inside)==0:
                 continue
