@@ -1381,7 +1381,7 @@ def findFlattenedIndex(sample,bins):
     # Compute the bin number each sample falls into.
     Ncount = tuple(
         # avoid np.digitize to work around gh-11022
-        np.searchsorted(edges[i], sample[:, i], side='right')
+        np.searchsorted(edges[i], sample[:, i], side='left')
         for i in range(D)
     )
     
