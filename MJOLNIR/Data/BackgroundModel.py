@@ -129,7 +129,7 @@ class BackgroundObject(object):
             
             - norm (list): List of normalizations of shape N (default None)
             
-            - montior (list): List of montior of shape N (default None)
+            - monitor (list): List of monitor of shape N (default None)
             
             - returnAll (bool): If True, returns intensity, monitor, norm, counts
             
