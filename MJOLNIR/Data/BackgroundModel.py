@@ -112,7 +112,9 @@ class BackgroundObject(object):
         
         
         ## Calcualte the intensities
-        self._int = np.divide(self.intensity*self.counts,self.monitor*self.norm)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._int = np.divide(self.intensity*self.counts,self.monitor*self.norm)
         self.isChanged = True
         
     @reculateOnChange
