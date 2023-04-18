@@ -1675,7 +1675,7 @@ class DataSet(object):
 
             ax.type = 'QPlane'
             ax = _interactiveSettings.setupModes(ax)
-            ax.sample = self.sample[0]
+            #ax.sample = self.sample[0]
             
         if len(ax.Qx)!=0:
             xmin = np.min([np.min(qx) for qx in ax.Qx])
@@ -1692,7 +1692,7 @@ class DataSet(object):
             Qx,Qy = [x[0] for x in ax.bins]
             QxCenter = 0.25*(Qx[:-1,:-1]+Qx[:-1,1:]+Qx[1:,1:]+Qx[1:,:-1])
             QyCenter = 0.25*(Qy[:-1,:-1]+Qy[:-1,1:]+Qy[1:,1:]+Qy[1:,:-1])
-            H,K,L = ax.ds.sample[0].calculateQxQyToHKL(QxCenter,QyCenter)
+            H,K,L = ax.sample.calculateQxQyToHKL(QxCenter,QyCenter)
             E = np.full(H.shape,np.mean([ax.EMin,ax.EMax]))
             intensity,monitorCount,Normalization,NormCount = [x[0] for x in ax.data]
             with warnings.catch_warnings():
@@ -1707,16 +1707,17 @@ class DataSet(object):
             return df
 
         if not _3D:
+            
+            ax.bins = [ax.Qx,ax.Qy]
+            ax.data = [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount]
             def to_csv(fileName,ax):
                 df = to_pandas(ax)
 
                 with open(fileName,'w') as f:
-                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,Int.shape))
+                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,ax.Qx[0].shape))
 
                 df.to_csv(fileName,mode='a')
             ax.to_csv = lambda fileName: to_csv(fileName,ax)
-            ax.bins = [ax.Qx,ax.Qy]
-            ax.data = [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount]
         # return [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount],[ax.Qx,ax.Qy],ax
             return to_pandas(ax), ax
         else:
