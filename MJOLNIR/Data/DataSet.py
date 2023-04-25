@@ -28,22 +28,39 @@ import scipy.optimize
 from scipy.spatial import Voronoi,ConvexHull,KDTree
 from scipy.ndimage import gaussian_filter
 from MJOLNIR._interactiveSettings import States, cut1DHolder
-# from MJOLNIR.Data.DraggableShapes import prepareInteractiveCutting, DraggableCircle, DraggableRectangle, \
-#     extractCut1DPropertiesRectangle, extractCut1DPropertiesCircle, DraggableRectanglePerpendicular,extractCut1DPropertiesRectanglePerpendicular,\
-#         DraggableRectangleHorizontal,extractCut1DPropertiesRectangleHorizontal,DraggableRectangleVertical, extractCut1DPropertiesRectangleVertical
-#from MJOLNIR.Data.DraggableShapes import extractCut1DProperties, clearBoxes
 
-# from shapely.geometry import Polygon as PolygonS
-# from shapely.geometry import Point as PointS
-# from shapely.vectorized import contains
 import time
-#from MJOLNIR.Data import Viewer3DPyQtGraph
+
 from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
-#from pyqtgraph.Qt import QtCore, QtGui, QtWidgets
+
 import warnings
 from ufit import Dataset
 
 pythonVersion = sys.version_info[0]
+
+
+pdNaming = {
+          'qx':'Qx',
+          'qy':'Qy',
+          'h':'H',
+          'k':'K',
+          'l':'L',
+          'e':'Energy',
+          'int':'Int',
+          'intensity':'intensity',
+	      'intError':'Int_err',
+          'mon':'Monitor',
+          'norm':'Normalization',
+          'binCount':'BinCount',
+          'Foreground':'Int_Fg',
+          'ForegroundIntensity':'intensity_Fg',
+          'BackgroundIntensity':'intensity_Bg',
+          'Background':'Int_Bg',
+          'ForegroundError':'Int_Fg_err',
+          'BackgroundError':'Int_Bg_err',
+          'plotPosition':'BinDistance'
+          }
+
 
 _cache = []
 
@@ -469,7 +486,9 @@ class DataSet(object):
         return returnData,bins
 
     @_tools.KwargChecker()
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=False,dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,ufit=False):
+    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=False,
+              dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,
+              ufit=False):
         """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
         the minimum step sizes is given by minPixel.
         
@@ -556,7 +575,9 @@ class DataSet(object):
                                                                 extend=extend,constantBins=constantBins)
 
         if len(binpositionsTotal) == 0:
-            return pd.DataFrame([],columns=['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount','Int']),[binpositionsTotal,orthopos,EArray]    
+            return pd.DataFrame([],columns=[pdNaming['qx'],pdNaming['qy'],pdNaming['h'],pdNaming['k'],pdNaming['l'],\
+                                            pdNaming['e'],pdNaming['intensity'],pdNaming['mon'],pdNaming['norm'],\
+                                                pdNaming['binCount'],pdNaming['int']]),[binpositionsTotal,orthopos,EArray]    
         QxBin,QyBin = binpositionsTotal[:,:2].T
 
         if rlu:
@@ -577,17 +598,21 @@ class DataSet(object):
         Energy = meaning(EnergyBin)
 
 
-        I,Mon,Norm,BinC = Data
-        DataValues = [Qx,Qy,H,K,L,Energy,I,Mon,Norm,BinC]
-        columns = ['Qx','Qy','H','K','L','Energy','Intensity','Monitor','Normalization','BinCount']
+        I,Mon,Normalization,BinC = Data
+        DataValues = [Qx,Qy,H,K,L,Energy,I,Mon,Normalization,BinC]
+        columns = [pdNaming['qx'],pdNaming['qy'],pdNaming['h'],pdNaming['k'],pdNaming['l'],\
+                   pdNaming['e'],pdNaming['intensity'],pdNaming['mon'],pdNaming['norm'],\
+                   pdNaming['binCount']]
         dtypes = [float]*9+[float]+[int]
 
         pdData = pd.DataFrame()
         if not len(I) == 0:
             for dat,col,typ in zip(DataValues,columns,dtypes):
                 pdData[col] = dat.astype(typ)
-            pdData['Int'] = pdData['Intensity']*pdData['BinCount']/(pdData['Normalization']*pdData['Monitor'])
-            pdData['Int_err'] = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Normalization']*pdData['Monitor'])
+
+
+        pdData[pdNaming['int']] = pdData[['intensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+        pdData[pdNaming['intError']] = np.sqrt(pdData[pdNaming['intensity']])*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
 
         
         if not ufit:
@@ -602,7 +627,9 @@ class DataSet(object):
         
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,counts=False,extend=False,data=None,dataFiles=None,constantBins=False,ufit=False,outputFunction=print,**kwargs):  
+    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,
+                  counts=False,extend=False,data=None,dataFiles=None,constantBins=False,
+                  ufit=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
         
         Args:
@@ -641,14 +668,16 @@ class DataSet(object):
         
         """
         if rlu:
-            variables = ['H','K','L']
+            variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
         else:
-            variables = ['Qx','Qy']
+            variables = [pdNaming['qx'],pdNaming['qy']]
             
-        variables = variables+['Energy']
+        variables = variables+[pdNaming['e']]
         
         if data is None:
-            Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,extend=extend,rlu=rlu,dataFiles=dataFiles,plotCoverage=plotCoverage,constantBins=constantBins)
+            Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,
+                                    extend=extend,rlu=rlu,dataFiles=dataFiles,plotCoverage=plotCoverage,
+                                    constantBins=constantBins)
         else:
             Data,bins = data
         
@@ -661,15 +690,15 @@ class DataSet(object):
             ax = generate1DAxis(q1, q2,ds=self ,rlu=rlu,showEnergy=showEnergy)
             ax.Data = Data
             if showEnergy:
-                ax.energy = np.mean(Data['Energy'])
+                ax.energy = np.mean(Data[pdNaming['e']])
         
         if showEnergy:
-            ax.energy = np.mean(Data['Energy'])
+            ax.energy = np.mean(Data[pdNaming['e']])
         # Calculate the bin distance as defined above
         if hasattr(ax,'calculatePositionInv'):
-            Data['binDistance'] = ax.calculatePositionInv(Data[variables[:-1]])
+            Data[pdNaming['plotPosition']] = ax.calculatePositionInv(Data[variables[:-1]])
         else:
-            Data['binDistance'] = np.linalg.norm(Data[variables[:-1]]-q1,axis=1)
+            Data[pdNaming['plotPosition']] = np.linalg.norm(Data[variables[:-1]]-q1,axis=1)
         ax.set_ylabel('$I$ [arb.u.]')
         
         if not 'label' in kwargs:
@@ -677,15 +706,15 @@ class DataSet(object):
             
         # Perform the actual plotting
         if counts is True:
-            ax.errorbar(Data['binDistance'],Data['Intensity'],yerr=np.sqrt(Data['Intensity']),**kwargs)
+            ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['intensity']],yerr=np.sqrt(Data[pdNaming['intensity']]),**kwargs)
         elif counts is False:
-            ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+            ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['int']],yerr=Data[pdNaming['intError']],**kwargs)
         elif counts.lower() == 'sensitivity':
-            ax.errorbar(Data['binDistance'],Data['Normalization']/Data['BinCount'],**kwargs)
+            ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['norm']]/Data[pdNaming['binCount']],**kwargs)
         else:
             AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
         # Extend plot to show all the data
-        ax.set_xlim(*_tools.minMax(Data['binDistance']))
+        ax.set_xlim(*_tools.minMax(Data[pdNaming['plotPosition']]))
 
         # Generate ufit object if needed
         if ufit==True:
@@ -857,7 +886,7 @@ class DataSet(object):
             
             
             positions2D = positions[:2]
-            propos = np.concatenate([np.dot(ProjectMatrix,positions2D-q1.reshape(2,1)),[positions[2]]])
+            propos = np.asarray(np.concatenate([np.dot(ProjectMatrix,positions2D-q1.reshape(2,1)),[positions[2]]]))
             
             orthogonalMinValue = np.min(propos[1])
             orthogonalMaxValue = np.max(propos[1])
@@ -896,11 +925,16 @@ class DataSet(object):
                 propos[2] = scale(propos[2])
             
             # Perform 2D histogram
-            normcounts = np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=np.ones((propos.shape[1])).flatten())[0]
-            intensity = np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=I[inside].flatten())[0]
-            MonitorCount=  np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=Monitor[inside].flatten())[0]
-            Normalization= np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=Norm[inside].flatten())[0]
+            if False: # Empirically quicker in old setup.... interesting
+                weights = [I[inside].flatten(), Monitor[inside].flatten(), Norm[inside].flatten()]
             
+                [intensity,MonitorCount,Normalization,normcounts] = _tools.histogramdd(propos[[0,2]].T,bins=[QBins,EnergyBins],weights=weights,returnCounts=True)
+            else:
+                normcounts = np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=np.ones((propos.shape[1])).flatten())[0]
+                intensity = np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=I[inside].flatten())[0]
+                MonitorCount=  np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=Monitor[inside].flatten())[0]
+                Normalization= np.histogram2d(*propos[[0,2]],bins=np.array([QBins,EnergyBins],dtype=object),weights=Norm[inside].flatten())[0]
+                
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 Int = np.divide(intensity*normcounts,MonitorCount*Normalization)
@@ -922,7 +956,7 @@ class DataSet(object):
             H,K,L = self.convertToHKL(realPositions).T
             
 
-            columns = ['Qx','Qy','H','K','L','Energy','Int','Int_err','Intensity','Monitor','Normalization','BinCount']
+            columns = [pdNaming['qx'],pdNaming['qy'],pdNaming['h'],pdNaming['k'],pdNaming['l'],pdNaming['e'],pdNaming['int'],pdNaming['intError'],pdNaming['intensity'],pdNaming['mon'],pdNaming['norm'],pdNaming['binCount']]
             dtypes = [float]*11 + [int]
             
             pdDatas = []
@@ -1038,9 +1072,9 @@ class DataSet(object):
         dirvec /= dirLength
         ax.orthovec = np.array([dirvec[1],-dirvec[0]])
         if rlu:
-            variables = ['H','K','L']
+            variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
         else:
-            variables = ['Qx','Qy']
+            variables = [pdNaming['qx'],pdNaming['qy']]
 
         ax.dE = np.diff(bins[1][0,:]).mean()
         ax.minOrthoPosition = minOrthoPosition
@@ -1049,7 +1083,7 @@ class DataSet(object):
         ax.Data = data
 
         shape = (np.array(bins[0].shape)-np.array([1,1]))[::-1]
-        I = np.ma.array(np.asarray(data['Int']).reshape(shape))
+        I = np.ma.array(np.asarray(data[pdNaming['int']]).reshape(shape))
         if 'log' in kwargs:
             log = kwargs['log']
             del kwargs['log']
@@ -1069,11 +1103,11 @@ class DataSet(object):
             vmax = None
 
         if counts is True:
-            I = data['Intensity'].values
+            I = data[pdNaming['intensity']].values
         elif counts is False:
-            I = data['Int'].values
+            I = data[pdNaming['int']].values
         elif counts.lower() == 'sensitivity':
-            I = data['Normalization'].values/data['BinCount'].values
+            I = data[pdNaming['norm']].values/data[pdNaming['binCount']].values
         else:
             AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))        
 
@@ -1081,11 +1115,11 @@ class DataSet(object):
             I = np.log10(I+1e-20)
         
         shape = (np.array(bins[0].shape)-np.array([1,1]))[::-1]
-        I = np.ma.array(np.asarray(data['Int']).reshape(shape))
+        I = np.ma.array(np.asarray(data[pdNaming['int']]).reshape(shape))
         I.mask = np.isnan(I)
         
         HKL = np.asarray(data[variables])
-        E = np.asarray(data['Energy']).reshape(shape)
+        E = np.asarray(data[pdNaming['e']]).reshape(shape)
         if hasattr(ax,'calculatePositionInv'):
             pos = ax.calculatePositionInv(HKL)
         else:
@@ -1093,7 +1127,7 @@ class DataSet(object):
                 pos = np.linalg.norm(HKL-self.convertToHKL(q1),axis=1)
             else:
                 pos = np.linalg.norm(HKL-q1,axis=1)
-        data['binDistance'] = pos
+        data[pdNaming['plotPosition']] = pos
 
         pos.shape = shape
 
@@ -1247,10 +1281,10 @@ class DataSet(object):
         
 
         if log:
-            ints = np.log10(Data['Int']).values+1e-20
+            ints = np.log10(Data[pdNaming['int']]).values+1e-20
             
         else:
-            ints = Data['Int'].values
+            ints = Data[pdNaming['int']].values
 
         shape = XX.shape
         ints = (ints.reshape(shape))
@@ -1276,11 +1310,11 @@ class DataSet(object):
             
             calcIndex = qIndex*len(centerPointsE)+EIndex
             #print(qIndex,EIndex,'->',calcIndex)
-            Intensity = dat.iloc[calcIndex]['Int']
+            Intensity = dat.iloc[calcIndex][pdNaming['int']]
             pos = [centerPointsQ[qIndex],centerPointsE[EIndex]]
             return  "|q| = {0:.3f}, E = {1:.3f}, I = {2:0.4e}".format(*pos,Intensity)
             
-        ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[['Int']],centerPointsQ,centerPointsE)
+        ax.format_coord = lambda x,y: format_coord(x,y,ax,Data[[pdNaming['int']]],centerPointsQ,centerPointsE)
         ax.set_xlabel(r'$|q| [\AA^{-1}]$')
         ax.set_ylabel('E [meV]')
         
@@ -1306,23 +1340,23 @@ class DataSet(object):
                     return
                 calcIndex = qIndex*len(centerPointsE)+EIndex
                 
-                cts = dat.iloc[calcIndex]['Intensity']
-                Mon = dat.iloc[calcIndex]['Monitor']
-                Norm = dat.iloc[calcIndex]['Normalization']
+                cts = dat.iloc[calcIndex][pdNaming['intensity']]
+                Mon = dat.iloc[calcIndex][pdNaming['mon']]
+                Norm = dat.iloc[calcIndex][pdNaming['norm']]
                 NC = dat.iloc[calcIndex]['BinCounts']
                 printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(int(cts),Norm,int(Mon),int(NC))
                 outputFunction(printString)
 
         if vmin is None:
             if log:
-                vmin = np.log10(Data['Int'].min()+1e-20)
+                vmin = np.log10(Data[pdNaming['int']].min()+1e-20)
             else:
-                vmin = Data['Int'].min()
+                vmin = Data[pdNaming['int']].min()
         if vmax is None:
             if log:
-                vmax = np.log10(Data['Int'].max()+1e-20)
+                vmax = np.log10(Data[pdNaming['int']].max()+1e-20)
             else:
-                vmax = Data['Int'].max()
+                vmax = Data[pdNaming['int']].max()
             
         ax.set_clim(vmin,vmax)
         
@@ -1641,7 +1675,7 @@ class DataSet(object):
 
             ax.type = 'QPlane'
             ax = _interactiveSettings.setupModes(ax)
-            ax.sample = self.sample[0]
+            #ax.sample = self.sample[0]
             
         if len(ax.Qx)!=0:
             xmin = np.min([np.min(qx) for qx in ax.Qx])
@@ -1667,22 +1701,23 @@ class DataSet(object):
                 Int[np.isnan(Int)] = -1
                 Int_err = np.divide(np.sqrt(intensity)*NormCount,Normalization*monitorCount)
                 Int_err[np.isnan(Int_err)] = -1
-            dataToPandas = {'Qx':QxCenter.flatten(),'Qy':QyCenter.flatten(),'H':H.flatten(),'K':K.flatten(),'L':L.flatten(),'Energy':E.flatten(), 'Intensity':intensity.flatten(), 'Monitor':monitorCount.flatten(),
-                            'Normalization':Normalization.flatten(),'BinCounts':NormCount.flatten(),'Int':Int.flatten(),'Int_err':Int_err.flatten()}
+            dataToPandas = {pdNaming['qx']:QxCenter.flatten(),pdNaming['qy']:QyCenter.flatten(),pdNaming['h']:H.flatten(),pdNaming['k']:K.flatten(),pdNaming['l']:L.flatten(),pdNaming['e']:E.flatten(), pdNaming['intensity']:intensity.flatten(), pdNaming['mon']:monitorCount.flatten(),
+                            pdNaming['norm']:Normalization.flatten(),'BinCounts':NormCount.flatten(),pdNaming['int']:Int.flatten(),pdNaming['intError']:Int_err.flatten()}
             df = pd.DataFrame(dataToPandas)
             return df
 
         if not _3D:
+            
+            ax.bins = [ax.Qx,ax.Qy]
+            ax.data = [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount]
             def to_csv(fileName,ax):
                 df = to_pandas(ax)
 
                 with open(fileName,'w') as f:
-                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,Int.shape))
+                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,ax.Qx[0].shape))
 
                 df.to_csv(fileName,mode='a')
             ax.to_csv = lambda fileName: to_csv(fileName,ax)
-            ax.bins = [ax.Qx,ax.Qy]
-            ax.data = [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount]
         # return [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount],[ax.Qx,ax.Qy],ax
             return to_pandas(ax), ax
         else:
@@ -2017,7 +2052,7 @@ class DataSet(object):
                 pStartQxQy = pStart
                 pStopQxQy = pStop
             
-            _DataList['binDistance'] = np.linalg.norm(_DataList[['Qx','Qy']]-pStartQxQy,axis=1)
+            _DataList[pdNaming['plotPosition']] = np.linalg.norm(_DataList[[pdNaming['qx'],pdNaming['qy']]]-pStartQxQy,axis=1)
             DataList.append(_DataList)
             
             BinList.append(_Bins)
@@ -2029,8 +2064,8 @@ class DataSet(object):
                 OffSets.append(0.0)
                 OffSetWidth.append(0.0)
             
-            nextOffsetWidth = 0.5*np.diff(_DataList['binDistance'].iloc[-2:])[0]
-            nextOffset = _DataList['binDistance'].iloc[-1]+nextOffsetWidth
+            nextOffsetWidth = 0.5*np.diff(_DataList[pdNaming['plotPosition']].iloc[-2:])[0]
+            nextOffset = _DataList[pdNaming['plotPosition']].iloc[-1]+nextOffsetWidth
             
             
         # Add last offset for vertical lines
@@ -2121,7 +2156,7 @@ class DataSet(object):
                 df = ax.Data[int(index)]
                 
                 pos = ax.calculatePosition(x,rlu=False)
-                dataIndex = np.argmin(np.linalg.norm(np.asarray(df[['Qx','Qy','Energy']]-np.array([*pos,[y]]).T),axis=1))
+                dataIndex = np.argmin(np.linalg.norm(np.asarray(df[[pdNaming['qx'],pdNaming['qy'],pdNaming['e']]]-np.array([*pos,[y]]).T),axis=1))
                 
                 return dataIndex
 
@@ -2165,13 +2200,13 @@ class DataSet(object):
                 pos = ax.calculatePosition(x).flatten()
                 
                 if ax.rlu:
-                    labels = ['H','K','L','E']
+                    labels = [pdNaming['h'],pdNaming['k'],pdNaming['l'],'E']
                 else:
-                    labels = ['Qx','Qy','E']
+                    labels = [pdNaming['qx'],pdNaming['qy'],'E']
 
                 index = ax.calculateIndex(x)[0] # index of dataset
                 dataIndex = ax.calculateDataIndex(x,y)
-                Int = ax.Data[index]['Int'].iloc[dataIndex]
+                Int = ax.Data[index][pdNaming['int']].iloc[dataIndex]
                 returnString = ", ".join([label+" = "+ax.fmtPrecisionString.format(x) for x,label in zip([*pos,y],labels)])+', I = {:.3e}'.format(Int)
                 
                 return  returnString
@@ -2187,11 +2222,11 @@ class DataSet(object):
             ax.Data = DataList
             ax.rlu = rlu
             if rlu:
-                variables = ['H','K','L']
+                variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
                 ax.QPoints = np.asarray([ax.sample.calculateHKLToQxQy(*QPoint) for QPoint in QPoints])
                 ax.QPointsHKL = QPoints
             else:
-                variables = ['Qx','Qy']
+                variables = [pdNaming['qx'],pdNaming['qy']]
                 ax.QPoints = QPoints
                 ax.QPointsHKL = np.asarray([ax.sample.calculateQxQyToHKL(*QPoint) for QPoint in QPoints])
 
@@ -2199,10 +2234,10 @@ class DataSet(object):
                 
             for bl,df in zip(BinList,DataList):
                 shape = (np.array(bl[0].shape)-np.array([1,1]))[::-1]
-                I = np.ma.array(np.asarray(df['Int']).reshape(shape))
+                I = np.ma.array(np.asarray(df[pdNaming['int']]).reshape(shape))
                 I.mask = np.isnan(I)
                 HKL = np.asarray(df[variables])
-                E = np.asarray(df['Energy']).reshape(shape)
+                E = np.asarray(df[pdNaming['e']]).reshape(shape)
                 pos = ax.calculatePositionInv(HKL)
                 
                 pos.shape = shape
@@ -2302,10 +2337,10 @@ class DataSet(object):
                     index = ax.calculateIndex(x)[0] # index of dataset
                     dataIndex = ax.calculateDataIndex(x,y)
                     
-                    cts = int(ax.Data[index]['Intensity'].iloc[dataIndex])
-                    Mon = int(ax.Data[index]['Monitor'].iloc[dataIndex])
-                    Norm = float(ax.Data[index]['Normalization'].iloc[dataIndex])
-                    NC = int(ax.Data[index]['BinCount'].iloc[dataIndex])
+                    cts = int(ax.Data[index][pdNaming['intensity']].iloc[dataIndex])
+                    Mon = int(ax.Data[index][pdNaming['mon']].iloc[dataIndex])
+                    Norm = float(ax.Data[index][pdNaming['norm']].iloc[dataIndex])
+                    NC = int(ax.Data[index][pdNaming['binCount']].iloc[dataIndex])
                     printString+=', Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
 
                     
@@ -2363,7 +2398,7 @@ class DataSet(object):
                         continue
                     
                     #normColor = np.divide(INT[IntCommu[i]:IntCommu[i+1]]-vmin,vmax-vmin).reshape(-1,1).repeat(2,axis=1)
-                    normColor = datlist['Int'][IntCommu[E]:IntCommu[E+1]].values#.reshape(-1,1).repeat(2,axis=1)
+                    normColor = datlist[pdNaming['int']][IntCommu[E]:IntCommu[E+1]].values#.reshape(-1,1).repeat(2,axis=1)
                     
                     #if len(normColor)!=X.shape[0]:
                     #    continue
@@ -2551,30 +2586,30 @@ class DataSet(object):
 
         if rlu==True: # Recalculate q points into qx and qy points
             Q = self.convertToQxQy(q).flatten()
-            variables = ['H','K','L']
+            variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
         else: # Do nothing
             Q = np.array(q).flatten()
-            variables = ['Qx','Qy']
-        variables.append('Energy')
+            variables = [pdNaming['qx'],pdNaming['qy']]
+        variables.append(pdNaming['e'])
         [intensity,MonitorCount,Normalization,normcounts],bins  = cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=E1,E2=E2,q=Q,width=width,minPixel=minPixel,constantBins=constantBins)
         data = pd.DataFrame()
         
 
         HKL = self.convertToHKL(Q.flatten())
-        data['Qx'] = Q[0]*np.ones_like(intensity)
-        data['Qy'] = Q[1]*np.ones_like(intensity)
-        data['H'] = HKL[0]*np.ones_like(intensity)
-        data['K'] = HKL[1]*np.ones_like(intensity)
-        data['L'] = HKL[2]*np.ones_like(intensity)
-        data['Energy'] = 0.5*(bins[0][1:]+bins[0][:-1])
-        data['Intensity'] = intensity.astype(float)
-        data['Monitor'] = MonitorCount.astype(float)
-        data['Normalization'] = Normalization.astype(float)
-        data['BinCount'] = normcounts.astype(int)
-        data['binDistance'] = data['Energy']
+        data[pdNaming['qx']] = Q[0]*np.ones_like(intensity)
+        data[pdNaming['qy']] = Q[1]*np.ones_like(intensity)
+        data[pdNaming['h']] = HKL[0]*np.ones_like(intensity)
+        data[pdNaming['k']] = HKL[1]*np.ones_like(intensity)
+        data[pdNaming['l']] = HKL[2]*np.ones_like(intensity)
+        data[pdNaming['e']] = 0.5*(bins[0][1:]+bins[0][:-1])
+        data[pdNaming['intensity']] = intensity.astype(float)
+        data[pdNaming['mon']] = MonitorCount.astype(float)
+        data[pdNaming['norm']] = Normalization.astype(float)
+        data[pdNaming['binCount']] = normcounts.astype(int)
+        data[pdNaming['plotPosition']] = data[pdNaming['e']]
         
-        data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
-        data['Int_err'] = np.sqrt(data['Intensity'])*data['BinCount']/(data['Normalization']*data['Monitor'])
+        data[pdNaming['int']] = data[pdNaming['intensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+        data[pdNaming['intError']] = np.sqrt(data[pdNaming['intensity']])*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
         if not ufit:
             return data,bins
         
@@ -2628,11 +2663,11 @@ class DataSet(object):
 
         """
         if rlu:
-            variables = ['H','K','L']
+            variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
         else:
-            variables = ['Qx','Qy']
+            variables = [pdNaming['qx'],pdNaming['qy']]
             
-        variables = variables+['Energy']
+        variables = variables+[pdNaming['e']]
         
         if data is None:
             Data, bins = self.cut1DE(q=q,width=width,minPixel=minPixel,E1=E1,E2=E2,rlu=rlu,dataFiles=dataFiles,constantBins=constantBins)
@@ -2657,14 +2692,14 @@ class DataSet(object):
             
         # Perform the actual plotting
         if counts is True:
-            ax.errorbar(Data['binDistance'],Data['Intensity'],yerr=np.sqrt(Data['Intensity']),**kwargs)
+            ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['intensity']],yerr=np.sqrt(Data[pdNaming['intensity']]),**kwargs)
         elif counts is False:
-            ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+            ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['int']],yerr=Data[pdNaming['intError']],**kwargs)
         elif counts.lower() == 'sensitivity':
-            ax.errorbar(Data['binDistance'],Data['Normalization']/Data['BinCount'],**kwargs)
+            ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['norm']]/Data[pdNaming['binCount']],**kwargs)
         else:
             AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
-        #ax.errorbar(Data['binDistance'],Data['Int'],yerr=Data['Int_err'],**kwargs)
+        #ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['int']],yerr=Data[pdNaming['intError']],**kwargs)
         
         
         if not ufit:
@@ -2678,12 +2713,12 @@ class DataSet(object):
         meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
         meta['datafilename'] = ', '.join(d.name for d in self)
         
-        dist,Int = np.array(Data[['Energy','Int']]).T
-        err = Data['Int_err']
+        dist,Int = np.array(Data[[pdNaming['e'],pdNaming['int']]]).T
+        err = Data[pdNaming['intError']]
         data = np.array([dist,Int,err]).T
         xcol = 'E [meV]'
-        ycol = 'Intensity'
-        name = 'Intensity'
+        ycol = pdNaming['intensity']
+        name = pdNaming['intensity']
         ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
     
         return ax,ufitData
@@ -2808,19 +2843,19 @@ class DataSet(object):
             data = pd.DataFrame()
             
             HKL = self.convertToHKL(Q.flatten())
-            data['Qx'] = Q[0]*np.ones_like(intensity)
-            data['Qy'] = Q[1]*np.ones_like(intensity)
-            data['H'] = HKL[0]*np.ones_like(intensity)
-            data['K'] = HKL[1]*np.ones_like(intensity)
-            data['L'] = HKL[2]*np.ones_like(intensity)
-            data['Energy'] = 0.5*(bins[0][1:]+bins[0][:-1])
-            data['Intensity'] = intensity.astype(int)
-            data['Monitor'] = MonitorCount.astype(int)
-            data['Normalization'] = Normalization.astype(int)
-            data['BinCount'] = normcounts.astype(int)
+            data[pdNaming['qx']] = Q[0]*np.ones_like(intensity)
+            data[pdNaming['qy']] = Q[1]*np.ones_like(intensity)
+            data[pdNaming['h']] = HKL[0]*np.ones_like(intensity)
+            data[pdNaming['k']] = HKL[1]*np.ones_like(intensity)
+            data[pdNaming['l']] = HKL[2]*np.ones_like(intensity)
+            data[pdNaming['e']] = 0.5*(bins[0][1:]+bins[0][:-1])
+            data[pdNaming['intensity']] = intensity.astype(int)
+            data[pdNaming['mon']] = MonitorCount.astype(int)
+            data[pdNaming['norm']] = Normalization.astype(int)
+            data[pdNaming['binCount']] = normcounts.astype(int)
             data['QCut'] = i*np.ones_like(intensity).astype(int)
             
-            data['Int'] = data['Intensity']*data['BinCount']/(data['Normalization']*data['Monitor'])
+            data[pdNaming['int']] = data[pdNaming['intensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
             Data.append(data)
             Bins.append(bins)
 
@@ -2878,9 +2913,9 @@ class DataSet(object):
 
         
         if Vmin is None:
-            Vmin = Data['Int'].min()
+            Vmin = Data[pdNaming['int']].min()
         if Vmax is None:
-            Vmax = Data['Int'].max()
+            Vmax = Data[pdNaming['int']].max()
 
         dirvec = np.asarray(Q2)-np.asarray(Q1)
 
@@ -2889,10 +2924,10 @@ class DataSet(object):
             dirvec = -dirvec
             
         if rlu:
-            QPointColumns = ['H','K','L']
+            QPointColumns = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
             visualizationBinPosition = np.array([-1,1])*0.5*np.linalg.norm(self.convertToQxQy(dirvec))/(len(Bins)-1)
         else:
-            QPointColumns = ['Qx','Qy']
+            QPointColumns = [pdNaming['qx'],pdNaming['qy']]
             visualizationBinPosition = np.array([-1,1])*0.5*np.linalg.norm(dirvec)/(len(Bins)-1)
 
         meshs = []
@@ -2906,7 +2941,7 @@ class DataSet(object):
         else:
             fig, ax = plt.subplots()
                 
-        columns = QPointColumns+['Int','QCut']
+        columns = QPointColumns+[pdNaming['int'],'QCut']
         for (_,_data),_bins in zip(Data[columns].groupby('QCut'),Bins):
             Q = np.array(_data[QPointColumns].iloc[0])
             if rlu:
@@ -2917,11 +2952,11 @@ class DataSet(object):
             x,y = np.meshgrid(position,_bins[0])
             ax.grid(False)
             if counts is True:
-                DATA = _data['Intensity'].values.reshape(-1,1)#/_data['BinCount'].values.reshape(-1,1)
+                DATA = _data[pdNaming['intensity']].values.reshape(-1,1)#/_data[pdNaming['binCount']].values.reshape(-1,1)
             elif counts is False:
-                DATA = _data['Int'].values.reshape(-1,1)
+                DATA = _data[pdNaming['int']].values.reshape(-1,1)
             elif counts.lower() == 'sensitivity':
-                DATA = _data['Normalization'].values.reshape(-1,1)/_data['BinCount'].values.reshape(-1,1)
+                DATA = _data[pdNaming['norm']].values.reshape(-1,1)/_data[pdNaming['binCount']].values.reshape(-1,1)
             else:
                 AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))
             pmesh = ax.pcolormesh(x,y,DATA)
@@ -3205,8 +3240,8 @@ class DataSet(object):
                 E = np.repeat(E[np.newaxis],H.shape[1],axis=0)
                 E = np.repeat(E[np.newaxis],H.shape[0],axis=0)
                 
-                dataToPandas = {'Qx':Qx.flatten(),'Qy':Qy.flatten(),'H':H.flatten(),'K':K.flatten(),'L':L.flatten(),'Energy':E.flatten(), 'Intensity':self.Counts.flatten(), 'Monitor':self.Monitor.flatten(),
-                                                'Normalization':self.Normalization.flatten(),'BinCounts':self.NormCounts.flatten(),'Int':Int.flatten(),'Int_err':Int_err.flatten()}
+                dataToPandas = {pdNaming['qx']:Qx.flatten(),pdNaming['qy']:Qy.flatten(),pdNaming['h']:H.flatten(),pdNaming['k']:K.flatten(),pdNaming['l']:L.flatten(),pdNaming['e']:E.flatten(), pdNaming['intensity']:self.Counts.flatten(), pdNaming['mon']:self.Monitor.flatten(),
+                                                pdNaming['norm']:self.Normalization.flatten(),'BinCounts':self.NormCounts.flatten(),pdNaming['int']:Int.flatten(),pdNaming['intError']:Int_err.flatten()}
                 self.d = pd.DataFrame(dataToPandas).fillna(-1)
                 
                 with open(fileName,'w') as f:
@@ -3462,9 +3497,9 @@ class DataSet(object):
         """
 
         if rlu:
-            variables = ['H','K','L']
+            variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
         else:
-            variables = ['Qx','Qy']
+            variables = [pdNaming['qx'],pdNaming['qy']]
         variables = variables
 
         if QDirection:
@@ -3479,14 +3514,14 @@ class DataSet(object):
             else:
                 dirVec = _tools.Norm2D(dirVec)
 
-            pdData['binDistance'] = np.linalg.norm(pdData[variables]-np.array(pdData[variables].iloc[1]),axis=1)/np.linalg.norm(dirVec)
+            pdData[pdNaming['plotPosition']] = np.linalg.norm(pdData[variables]-np.array(pdData[variables].iloc[1]),axis=1)/np.linalg.norm(dirVec)
 
             startPos = pdData[variables].iloc[0]   
 
             if rlu:
                 xdirection = _tools.generateLabel(np.round(dirVec,QRounding))[1:-1].split(', ')
             else:
-                xdirection = _tools.generateLabel(np.round(dirVec,QRounding),labels=['Qx','Qy'])[1:-1].split(', ')
+                xdirection = _tools.generateLabel(np.round(dirVec,QRounding),labels=[pdNaming['qx'],pdNaming['qy']])[1:-1].split(', ')
             xConstantOffset = np.round(startPos,QRounding)
             xlabel = []
             for l,val in zip(xdirection,xConstantOffset):
@@ -3503,13 +3538,13 @@ class DataSet(object):
 
             ERounding = np.max([ERounding,1])
             QRounding = np.max([QRounding,1])
-            pdData['binDistance'] = pdData['Energy']
+            pdData[pdNaming['plotPosition']] = pdData[pdNaming['e']]
 
 
             xlabel = [str(x) for x in np.array(q1,dtype=float).round(QRounding)]
 
         
-        x = np.array(pdData['binDistance'])
+        x = np.array(pdData[pdNaming['plotPosition']])
 
         # Calcualte mean energy from bins (last return value)
         Energy = (Emin+Emax)*0.5
@@ -3521,8 +3556,8 @@ class DataSet(object):
         meta['title'] = self[0].title # TODO: Should be a collection of titles for all files?
         meta['datafilename'] = ', '.join(d.name for d in self)
 
-        Int = np.array(pdData['Int'])
-        err = np.sqrt(pdData['Intensity'])*pdData['BinCount']/(pdData['Monitor']*pdData['Normalization'])
+        Int = np.array(pdData[pdNaming['int']])
+        err = np.sqrt(pdData[pdNaming['intensity']])*pdData[pdNaming['binCount']]/(pdData[pdNaming['mon']]*pdData[pdNaming['norm']])
         data = np.array([x,Int,err]).T
 
         
@@ -3532,8 +3567,8 @@ class DataSet(object):
             xcol+='\n[RLU,meV]'
         else:
             xcol+='\n'+r'[$\AA^{-1}$,meV]'
-        ycol = 'Intensity'
-        name = 'Intensity'
+        ycol = pdNaming['intensity']
+        name = pdNaming['intensity']
         ufitData = Dataset(meta=meta,data=data,xcol=xcol,ycol=ycol,name=name)
         return ufitData
 
@@ -4068,12 +4103,12 @@ def cutPowder(positions,I,Norm,Monitor,EBins,QBins):
 
     _data = pd.DataFrame(centerPointsQ.T.flatten(),columns=['q'])#
     
-    _data['Energy'] = centerPointsE.T.flatten()
-    _data['Int_err'] = I_err.flatten()
-    _data['Int'] = I.flatten()
-    _data['Intensity'] = Int.flatten()
-    _data['Normalization'] = Norm.flatten()
-    _data['Monitor'] = Mon.flatten()
+    _data[pdNaming['e']] = centerPointsE.T.flatten()
+    _data[pdNaming['intError']] = I_err.flatten()
+    _data[pdNaming['int']] = I.flatten()
+    _data[pdNaming['intensity']] = Int.flatten()
+    _data[pdNaming['norm']] = Norm.flatten()
+    _data[pdNaming['mon']] = Mon.flatten()
     _data['BinCounts'] = NumCounts.flatten()
 
 
@@ -5539,12 +5574,12 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     q2 = np.array(q2,dtype=float)
     
     if rlu:
-        variables = ['H','K','L']
+        variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
         ax.sample = ds.sample[0]
     else:
-        variables = ['Qx','Qy']
+        variables = [pdNaming['qx'],pdNaming['qy']]
     
-    variables = variables+['Energy']
+    variables = variables+[pdNaming['e']]
 
     # Start points defined form cut
     ax.startPoint = q1
@@ -5627,7 +5662,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     if ax._2D:
         ax.calculateIndex = lambda x,y: calculateIndex(ax,x,y)
     else:
-        ax.calculateIndex = lambda x: calculateIndex(ax.Data['binDistance'],x)
+        ax.calculateIndex = lambda x: calculateIndex(ax.Data[pdNaming['plotPosition']],x)
     ax.calculateXPrecision = calculateXPrecision
     ax.set_precision = lambda value: set_precision(ax,value)
     ax.calculateXPrecision(ax)
@@ -5698,24 +5733,24 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
             if ax._2D == True:
                 index = ax.calculateIndex(x,y)
                 
-                d = list(Data.groupby('Energy'))[index[1]][1]
+                d = list(Data.groupby(pdNaming['e']))[index[1]][1]
                 
-                Int = d['Int'][index[0]]
-                cts = int(d['Intensity'][index[0]])
-                Mon = int(d['Monitor'][index[0]])
-                Norm = float(d['Normalization'][index[0]])
-                NC = int(d['BinCount'][index[0]])
+                Int = d[pdNaming['int']][index[0]]
+                cts = int(d[pdNaming['intensity']][index[0]])
+                Mon = int(d[pdNaming['mon']][index[0]])
+                Norm = float(d[pdNaming['norm']][index[0]])
+                NC = int(d[pdNaming['binCount']][index[0]])
 
 
                 printString+=',Int Point = {:.3e}, Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(Int,cts,Norm,int(Mon),NC)
                 
             else:
                 index = ax.calculateIndex(x)
-                Int = Data['Int'][index]
-                cts = int(Data['Intensity'][index])
-                Mon = int(Data['Monitor'][index])
-                Norm = float(Data['Normalization'][index])
-                NC = int(Data['BinCount'][index])
+                Int = Data[pdNaming['int']][index]
+                cts = int(Data[pdNaming['intensity']][index])
+                Mon = int(Data[pdNaming['mon']][index])
+                Norm = float(Data[pdNaming['norm']][index])
+                NC = int(Data[pdNaming['binCount']][index])
                 printString+=',Int Point = {:.3e}, Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(Int,cts,Norm,int(Mon),NC)
             
             if not ax.suppressPrint:
@@ -5747,11 +5782,11 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
     ax.startPoint = q1
     
     if rlu:
-        variables = ['H','K','L']
+        variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
     else:
-        variables = ['Qx','Qy']
+        variables = [pdNaming['qx'],pdNaming['qy']]
     
-    variables = variables+['Energy']
+    variables = variables+[pdNaming['e']]
 
     
     
@@ -5787,7 +5822,7 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
         ax.get_figure().tight_layout()
 
         
-    ax.calculateIndex = lambda x: calculateIndex(ax.Data['binDistance'],x)
+    ax.calculateIndex = lambda x: calculateIndex(ax.Data[pdNaming['plotPosition']],x)
     ax.calculateXPrecision = calculateXPrecision
     ax.set_precision = lambda value: set_precision(ax,value)
     ax.calculateXPrecision(ax)
@@ -5845,11 +5880,11 @@ def generate1DAxisE(q1,rlu=True,showQ=True,outputFunction=print):
             printString = ax.format_coord(x,y)
             
             index = ax.calculateIndex(x)
-            Int = Data['Int'][index]
-            cts = int(Data['Intensity'][index])
-            Mon = int(Data['Monitor'][index])
-            Norm = float(Data['Normalization'][index])
-            NC = int(Data['BinCount'][index])
+            Int = Data[pdNaming['int']][index]
+            cts = int(Data[pdNaming['intensity']][index])
+            Mon = int(Data[pdNaming['mon']][index])
+            Norm = float(Data[pdNaming['norm']][index])
+            NC = int(Data[pdNaming['binCount']][index])
             printString+=',Int Point = {:.3e}, Cts = {:d}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(Int,cts,Norm,int(Mon),NC)
 
             if not ax.supressPrint:
