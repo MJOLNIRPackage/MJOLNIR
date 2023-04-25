@@ -610,8 +610,7 @@ class DataSet(object):
             for dat,col,typ in zip(DataValues,columns,dtypes):
                 pdData[col] = dat.astype(typ)
 
-
-        pdData[pdNaming['int']] = pdData[['intensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
+        pdData[pdNaming['int']] = pdData[pdNaming['intensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
         pdData[pdNaming['intError']] = np.sqrt(pdData[pdNaming['intensity']])*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])
 
         
