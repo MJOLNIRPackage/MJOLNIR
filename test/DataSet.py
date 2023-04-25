@@ -399,8 +399,8 @@ def test_DataSet_1Dcut():
     ax,Data,bins = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
     Data2,bins2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
     
-    # Check that the two data sets have the same values (except for Data2 also having 'binDistance')
-    assert(Data2.equals(Data.loc[:, Data.columns != 'binDistance']))
+    # Check that the two data sets have the same values (except for Data2 also having 'BinDistance')
+    assert(Data2.equals(Data.loc[:, Data.columns != 'BinDistance']))
 
     Data,bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
     assert(np.all(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1))) 
@@ -422,7 +422,7 @@ def test_DataSet_1Dcut():
     ax,Data,bins = ds.plotCut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
     Data2,bins2 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
 
-    assert(Data2.equals(Data.loc[:,Data.columns!='binDistance']))
+    assert(Data2.equals(Data.loc[:,Data.columns!='BinDistance']))
     assert(np.all(np.array([np.all(np.isclose(bins[i],bins2[i])) for i in range(len(bins))]).flatten()))
 
     q1,q2 = ds.convertToQxQy([Q1,Q2])
@@ -577,7 +577,7 @@ def test_DataSet_2Dcut():
     Data2,bins2,_ = Datset.cutQE(q1,q2,width=width,minPixel=minPixel,EnergyBins=EnergyBins,rlu=False)
 
     comparisons = list(Data.columns)
-    del comparisons[comparisons.index('binDistance')]
+    del comparisons[comparisons.index('BinDistance')]
 
     np.all([np.allclose(Data[p],Data2[p],equal_nan=True) for p in comparisons])
 
@@ -590,7 +590,7 @@ def test_DataSet_2Dcut():
     Data2,bins2,_ = Datset.cutQE(q1,q2,width,minPixel,EnergyBins=EnergyBins,rlu=False)
 
     comparisons = list(Data.columns)
-    del comparisons[comparisons.index('binDistance')]
+    del comparisons[comparisons.index('BinDistance')]
     
     assert(np.all(comparisons == Data2.columns))
 
@@ -709,11 +709,11 @@ def test_DataSet_plotQPlane():
         assert True
 
 
-    EMin = np.min(Datset.energy)
+    EMin = Datset.energy.min()
     EMax = EMin+0.5
     Data,ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
     Data,ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True)
-    fig,AX = plt.subplots()
+    AX = Datset.createQAxis()
     Data,ax3 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,ax=AX,colorbar=True,vmin=0,vmax=1e-6,zorder=10)
     
     ax1.set_clim(-20,-15)
