@@ -583,6 +583,7 @@ def initializeCUTTING(ax):
             
             del parameters['center'] # remove the 'center' as it is not allowed in plotCut1D
 
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
             # transform the orthogonal vector if needed 
             
             
@@ -606,7 +607,7 @@ def initializeCUTTING(ax):
                 
             parameters['minPixel'] = ax.minPixel
             parameters['width'] = ax.width
-
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
 
             cut1DHolder.append([self.ds.plotCut1D(**parameters)])
 
@@ -622,7 +623,7 @@ def initializeCUTTING(ax):
                 # Convert center point into actual position in Q
                 parameters['q'] = ax.calculatePosition(parameters['q']).T
             
-            
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
             parameters['minPixel'] = ax.dE
             parameters['width'] = ax.width
             cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
@@ -658,6 +659,7 @@ def initializeCUTTING(ax):
             
             EMin = self.EMin
             EMax = self.EMax
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
             cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
 
 
@@ -667,7 +669,8 @@ def initializeCUTTING(ax):
             parameters['E1'] = self.ds.energy.min()
             parameters['E2'] = self.ds.energy.max()
             parameters['minPixel'] = self.EMax-self.EMin
-            
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
+            #TODO: parameters['backgroundSubtraction'] = ax.backgroundSubtraction
             cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
 
         if ax.cut1DFunctionRectangle is None:

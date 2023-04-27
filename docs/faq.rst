@@ -49,34 +49,53 @@ However, a small warning. The data file created from this can be of several hund
 My data has annoying lines for constant energy that looks like background
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The reason for this can be that the normalziation file has not converged for all prismatic pixels. Due to a spurion, the lowest energy pixels across all 
-detector tubes are wrongly fitted resulting in them being moved and normalized with a wrong value. This is, however only a temporary problem and does also 
-only apply to data sets that are converted with binning = 8. To counter this, apply a mask to the data masking out 
-the bottom 2 prismatic pixels as:
+When measuring data on CAMEA and utilizing the prismatic concept one can split the nominal eight final energies into a maximum of 64 energies. This is performed in the conversion and is encoded in the normalization
+files saved in each data file. Due to difference in sensitivity of these prismatic pixels any uniform background on the detector tube will be inflated at the points of low sensitivity resulting in lines of 
+higher scattering intensity for constant energies. These then show up as lines, both in 2D plots but more importantly especially in energy cuts. Currently. there are two solutions to be employed, one for during experiments 
+and one for post experiment data treatment if first possibility is not done:
 
-.. code-block:: python
+- When performing a measurement, interlace all A3/sample rotation scans with additional scans with an Ei slightly changed.
+
+- Perform a powder background subtraction as explained in the `Background Subtraction Tutorial <Tutorials/Advanced/backgroundSubtraction.html>`_.
+
+The amount of change needed in :math:`E_i` to counter the stripes can be difficult to figure out and depends on the question at hand. However, as a standard approach 
+one has to shift with half the mean difference in final energy. This ensures that the parts of the detectors with low sensitivity will be covered by parts of the detector tube 
+with better sensitivity. Taking this half average, one finds the value: 0.127 meV. However, if one is applying a high resolution measurement where only a subset
+of the final energies are useful (on the energy-loss side) and one would move :math:`E_i` by half the average of the final energies in use. Most often one uses
+the (approximate) 3.6, 3.4, and 3.2 meV final energies where a shift of ~0.094 meV. Lastly, one can also add multiple shifts in :math:`E_i` whith sizes of 0.064, 0.127, and 0.191 meV, 
+corresponding to 0.5, 1.0, and 1.5 times the energy shift.
 
 
-    from MJOLNIR.Data import DataSet
-    fileName = ['/Path/To/Data/camea2018n000136.hdf']
-    ds = DataSet.DataSet(dataFiles=fileName)
-    ds.convertDataFile(binning=8,saveFile=False)
 
-    # Create a masks that can be used 
-    mask = []
-    for d in ds: # loop through data files and create a mask for individual files
-        m = np.zeros_like(d.I.data,dtype=bool) # Make it boolean as well (not explicitly necessary). As default nothing will be masked
-        m[:,:,:2] = True # Remember the shape of I being (#ScanSteps,#Detectors,#Binning*#Analysers)
-                         # All maskings set to True will be removed
-        mask.append(m)
 
-    # There are 104 detectors (0-103) covering from around -30 to 30 degrees relative to 2Theta and 8 analyzers (0-7) covering from around 3.2 to 5 meV
+.. table:: Mean Final Energies (`Commissioning Report <https://aip.scitation.org/doi/10.1063/5.0128226>`_):
+   :widths: auto
+   :align: center
 
-    # Apply the mask to the DataSet object.
-    ds.mask = mask
+   +-----------+------------------+
+   | Ef [meV]  | Difference [meV] |
+   +===========+==================+
+   |  3.200    |  N/A             |
+   +-----------+------------------+
+   |  3.382    |  0.182           |
+   +-----------+------------------+
+   |  3.574    |  0.192           |
+   +-----------+------------------+
+   |  3.787    |  0.213           |
+   +-----------+------------------+
+   |  4.035    |  0.248           |
+   +-----------+------------------+
+   |  4.312    |  0.277           |
+   +-----------+------------------+
+   |  4.631    |  0.319           |
+   +-----------+------------------+
+   |  4.987    |  0.356           |
+   +-----------+------------------+
+
 
 
 I aligned my crystal slightly off when setting up the experiment. Can I correct for an offset in A3?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is definitely possible through the code below, where 10 degrees is added to the offset.
 

@@ -1271,3 +1271,130 @@ def histogramdd(sample, bins, weights, returnCounts = False):
         histograms.append(hist)
 
     return histograms
+
+
+class PointerArray():
+    """Array-like object designed to facilitate data acquisition from a list of differently sized list of data files having the same attributes.    
+
+    Args:
+
+        - attribute (str): Name of wanted attribute existing on the data
+
+        - datafiles (list): List of pointers to the data files
+
+    """
+    def __init__(self,attribute,datafiles):
+        self._attribute = attribute
+        self._datafiles = datafiles
+        self._shape = None
+        self._multiD = None
+
+    def __getitem__(self,index):
+        gotten = self._datafiles[index]
+        if isinstance(gotten,type(self._datafiles[0])):
+            
+            return getattr(gotten,self._attribute)
+        else:
+        
+            return [getattr(df,self._attribute) for df in gotten]
+    
+    def __iter__(self):
+        self._index=0
+        return self
+    
+    def __next__(self):
+        if self._index >= len(self):
+            raise StopIteration
+        result = getattr(self._datafiles[self._index],self._attribute)
+        self._index += 1
+        return result
+
+    def next(self):
+        return self.__next__()
+    
+    def __len__(self):
+        return len(self._datafiles)
+    
+    @property
+    def shape(self):
+        return [getattr(df,self._attribute).shape for df in self._datafiles]
+    
+    
+    @property
+    def mask(self):
+        return [df.mask for df in self._datafiles]
+    
+    @mask.setter
+    def mask(self,mask):
+        for m,df in zip(mask,self._datafiles):
+            df.mask = m
+    
+    @property
+    def size(self):
+        return np.sum([getattr(df,self._attribute).size for df in self._datafiles])
+    
+    def extractData(self):
+        if self._multiD is None: # State is unknown
+            self._multiD = len(getattr(self._datafiles[0],self._attribute).shape)>1 # 
+
+        if self._multiD:
+            return np.concatenate([getattr(df,self._attribute)[np.logical_not(df.mask)] for df in self._datafiles])
+        else:
+            return np.concatenate([getattr(df,self._attribute)[np.logical_not(np.all(df.mask))] for df in self._datafiles])
+        
+    @property
+    def data(self):
+        return np.concatenate([getattr(df,self._attribute) for df in self._datafiles])
+    
+    
+    def min(self):
+        return np.min(self.extractData())
+    
+    def max(self):
+        return np.max(self.extractData())
+    
+    
+
+def findFlattenedIndex(sample,bins):
+    """Rewriting of numpy binning algorithm
+    
+    Args:
+
+        - sample (list): Position to be binned, of size N x D, where D is the dimensionality
+
+        - bins (list): Bins into which to perform the binning, of length D, where D is the dimensionality
+    """
+    
+    _, D = sample.shape
+    #D = 2 # Two coordinates (|q| and E)
+    
+    nbin = np.empty(D, int)
+    edges = D*[None]
+    for i in range(D):
+        edges[i] = np.asarray(bins[i])
+        nbin[i] = len(edges[i])+1
+        
+    #for df in ds:
+    
+    
+    
+    # Compute the bin number each sample falls into.
+    Ncount = tuple(
+        # avoid np.digitize to work around gh-11022
+        np.searchsorted(edges[i], sample[:, i], side='right')
+        for i in range(D)
+    )
+    
+    # Using digitize, values that fall on an edge are put in the right bin.
+    # For the rightmost bin, we want values equal to the right edge to be
+    # counted in the last bin, and not as an outlier.
+    for i in range(D):
+        # Find which points are on the rightmost edge.
+        on_edge = (sample[:, i] == edges[i][-1])
+        # Shift these points one bin to the left.
+        Ncount[i][on_edge] -= 1
+    
+    # Compute the sample indices in the flattened histogram matrix.
+    # This raises an error if the array is too large.
+    xy = np.ravel_multi_index(Ncount, nbin)
+    return xy
