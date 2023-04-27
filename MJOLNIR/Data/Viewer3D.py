@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 from MJOLNIR import _tools
-from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
+from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder, cancel
 import functools
 
 pythonVersion = sys.version_info[0]
@@ -777,6 +777,10 @@ def onkeypress(event,self): # pragma: no cover
 
 
 def reloadslider(self,axis):
+    try:
+        cancel(self.ax,axis)
+    except:
+        pass#print('Nope')
     self.setAxis(axis)
     self.Energy_slider.set_val(0)
     self.Energy_slider.label.remove()

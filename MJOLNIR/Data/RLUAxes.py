@@ -570,6 +570,10 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
         labels = ['qx','qy']
 
     ax = SubplotHost(figure, 1, 1, 1, grid_helper=grid_helper)
+    
+    ax.inv_tr = lambda x,y:inv_tr(projectionVectorLength,x,y)
+    ax.tr = lambda x,y:tr(projectionVectorLength,x,y)
+    
     ax.sample = sample[0]
 
     figure.add_subplot(ax)

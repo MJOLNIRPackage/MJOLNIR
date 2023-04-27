@@ -54,6 +54,23 @@ cut1DSettings = {
                  'return': ['b'],
                 }
 
+snappingKeys = {
+                'cycle':['.']
+}
+
+
+possibleSnappings = [False,True,2,3,4,5]
+def snappingKeyActivated(self):
+    if not hasattr(self,'snap'):
+        self.snap = False
+    if not hasattr(self,'snapID'):
+        self.snapID = 1
+        #self.snap = possibleSnappings[self.snapID]
+    else:
+        self.snapID = np.mod(self.snapID+1,len(possibleSnappings))
+    self.snap = possibleSnappings[self.snapID]
+
+
 
 def setupModes(ax):
 
@@ -77,7 +94,7 @@ def setupModes(ax):
         setCursor(ax,pointerType[modeName.upper()])
         ax.get_figure().canvas.draw_idle()
 
-
+    ax.snap = False
     ax.setMode = lambda stateName: setMode(ax,stateName)
     ax.setMode('inactive')
     
@@ -101,7 +118,7 @@ for key,value in interactive1DKeys.items():
 
 interactive1DKeysAll = list(np.concatenate(list(interactive1DKeys.values())))
 # Concatenate all possible settings for 1D rectangular cuts
-cut1DSettingsAll = list(np.concatenate(list(cut1DSettings.values())))
+cut1DSettingsAll = list(np.concatenate(list(cut1DSettings.values())))+snappingKeys['cycle']
 
 # kwargs for plotting of the rectangles
 cut1DKkwargs = {'linewidth':1, 'edgecolor':'r', 'facecolor':'none','zorder':22}
@@ -659,10 +676,9 @@ def initializeCUTTING(ax):
         
         if ax.cut1DFunctionCircle is None:
             ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircleDefault(ax,dr)
-        
-        
 
         DraggableFunctions = [ax.cut1DFunctionCircle,ax.cut1DFunctionRectangle]
+
 
         prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
 
@@ -677,48 +693,132 @@ def initializeCUTTING(ax):
             return '[CUTTING not possible] '+ ax._old_format_coord(x,y)
         axes = ax
         setCursor(ax,pointerType['CUTTING_EMPTY'])
+        
     else:
         def format_coord(ax,x,y):
-            return '[CUTTING] '+ ax._old_format_coord(x,y)
+            snapText = ''
+            if ax.snap:
+                snapText = ' snap = '+(int(ax.snap)>1)*'1/'+str(int(ax.snap))
+            return '[CUTTING'+snapText+'] '+ ax._old_format_coord(x,y)
 
         if hasattr(ax,'ax'):
             axes = ax.ax
         else:
             axes = ax
     
-
-
+    setupAnnotation(ax)
+    
     ax.hoverID = ax.get_figure().canvas.mpl_connect('motion_notify_event', lambda event: CuttingModeCursorManagerHover(axes,event))
 
     ax.format_coord = lambda x,y: format_coord(ax,x,y)
 
 
     
-    
+def setupAnnotation(self):
 
-    # if not hasattr(ax,'annotateBox'):
-    #     ax.annotateBox = ax.annotate("Cutting", xy=(0,0), xytext=(0,3),textcoords="offset points",
-    #                     bbox=dict(boxstyle='round4', fc='linen',ec='k',lw=1),
-    #                     #arrowprops=dict(arrowstyle='-|>')
-    #                     )
-    
-    # ax.annotateBox.set_visible(True)
+    if not hasattr(self,'annotateBox'):
+        self.annotateBox = self.annotate("", xy=(0,0), xytext=(10,10), textcoords="offset points",zorder=24,#transform=trans,
+                        bbox=dict(boxstyle='round4', fc='white',ec='k',lw=1),
+                        #arrowprops=dict(arrowstyle='-|>')
+                        )
+        
+        if not hasattr(self,'snapFunction'):
+            if not hasattr(self,'pointer'):
+                
+                self.pointer = self.plot(0.0,0.0,'.',color='r',zorder=23)[0]
+                #self.pointer.set_animated(True)
+            def getTicks(self):
+                try:
+                    yticks = np.array(self.get_grid_helper().grid_info['lat']['levels'])#[0,-1]
+                    xticks = np.array(self.get_grid_helper().grid_info['lon']['levels'])#[0,-1]
+                except:
+                    yticks = np.array(self.get_yticks())
+                    xticks = np.array(self.get_xticks())
+                
+                f = int(self.snap)
+                dx = (xticks[1]-xticks[0])/f
+                dy = (yticks[1]-yticks[0])/f
 
-    # def onMove(ax,event):
-    #     if not ax.in_axes(event):
-    #         ax.annotateBox.set_visible(False)
-    #         return
-    #     ax.annotateBox.set_visible(True)
-        
-    #     x = event.xdata
-    #     y = event.ydata
-        
-    #     ax.annotateBox.xy = (x,y)
+                xlims = self.get_xlim()
+                extendXmin = int(np.ceil(abs((xlims[0]-xticks[0])/dx)))
+                extendXmax = int(np.ceil(abs((xlims[-1]-xticks[-1])/dx)))
+
+                ylims = self.get_ylim()
+                extendYmin = int(np.ceil(abs((ylims[0]-yticks[0])/dy)))
+                extendYmax = int(np.ceil(abs((ylims[-1]-yticks[-1])/dy)))
+
+                xticks = np.linspace(xticks[0]-dx*extendXmin,xticks[-1]+dx*extendXmax,f*(len(xticks)-1)+1+extendXmin+extendXmax)
+                yticks = np.linspace(yticks[0]-dy*extendYmin,yticks[-1]+dy*extendYmax,f*(len(yticks)-1)+1+extendYmin+extendYmax)
+                return xticks,yticks
+            self._getTicks = lambda: getTicks(self)
+
+            def snapper(self,xdata,ydata):
+                if not self.snap:
+                    return xdata,ydata
+                mouseX, mouseY = self.tr(xdata, ydata)
+                
+                X,Y = self._getTicks()
+                mouseX = X[np.argmin(np.abs(X-mouseX))]
+                mouseY = Y[np.argmin(np.abs(Y-mouseY))]
+                
+                return self.inv_tr(mouseX,mouseY)
+
+            self._snapper = lambda x,y: snapper(self,x,y)
+            def mouse_move(self, event):
+                if not event.inaxes: return
+
+                posX,posY= self._snapper(event.xdata,event.ydata)
+                
+                self.pointer.set_data(posX,posY)
+                axes = self
+                axes.draw_artist(self.pointer)
+                self.get_figure().canvas.draw_idle()
+
+            self.snapFunction = self.get_figure().canvas.mpl_connect('motion_notify_event',lambda event:mouse_move(self,event))
+
+
+    else:
+        return
     
-    #     ax.get_figure().canvas.draw_idle()
+    self.annotateBox.set_visible(True)
+
+    def onMove(ax,event):
+        if not ax.in_axes(event):
+            ax.annotateBox.set_visible(False)
+            return
+        ax.annotateBox.set_visible(True)
+        
+        if hasattr(ax,'_snapper'):
+            x,y= ax._snapper(event.xdata,event.ydata)
+        else:
+            x,y = event.xdata,event.ydata
+        
+        ax.annotateBox.xy = (x,y)
+        
+        ax.annotateBox.set_text(ax._old_format_coord(x,y))
     
-    # ax.onMoveAnnotate = lambda event: onMove(ax,event)
-    # ax.onMoveAnnotateID = ax.get_figure().canvas.mpl_connect('motion_notify_event', ax.onMoveAnnotate)
+        ax.get_figure().canvas.draw_idle()
+    
+    self.onMoveAnnotate = lambda event: onMove(self,event)
+    self.onMoveAnnotateID = self.get_figure().canvas.mpl_connect('motion_notify_event', self.onMoveAnnotate)
+
+def removeAnnotation(self):
+    if not hasattr(self,'annotateBox'):
+        return
+    self.annotateBox.remove()
+    del self.annotateBox
+
+    if hasattr(self,'pointer'):
+        self.pointer.remove()
+        del self.pointer
+        self.get_figure().canvas.draw_idle()
+    if hasattr(self,'snapFunction'):
+        self.get_figure().canvas.mpl_disconnect(self.snapFunction)
+        del self.snapFunction
+
+    self.get_figure().canvas.mpl_disconnect(self.onMoveAnnotateID)
+
+
 
 
 def deactivateCUTTING(ax):
@@ -726,6 +826,7 @@ def deactivateCUTTING(ax):
     # ax.annotateBox.set_visible(False)
     
     ax.get_figure().canvas.mpl_disconnect(ax.hoverID)
+    removeAnnotation(ax)
     
     if hasattr(ax,'draggableShapes'): # it was possible to perform cuts
         # if in a cutting state, revert it!
@@ -780,7 +881,7 @@ def cancel(self,axes):# pragma: no cover
     
     # Only when something has been drawn is cid set
     if not self.cidmove is None:
-        axes.get_figure().canvas.mpl_disconnect(self.cidmove)
+        self.get_figure().canvas.mpl_disconnect(self.cidmove)
         self.cidmove = None
         
         self.patches[-1].remove()
@@ -828,14 +929,18 @@ def on_key_press(self,event):# pragma: no cover
             self.drawState = States.MOVE
 
         return
-    elif event.key in cut1DSettings['cut'] and self.new is False:
+    elif event.key in cut1DSettings['cut'] and self.new is False: # +cut1DSettings['maskCut']
         self.lock=True
         self.resetFormatCoord()
         self.drawState = States.INACTIVE
         dr = self.selectedDr
         if not dr is None:
+            # if event.key in cut1DSettings['maskCut']:
+            #     dr.Mask1DFunction(dr=dr)
+            # else:
             dr.Cut1DFunction(dr=dr)
 
+            cancel(self,axes)
             return
     
     elif event.key in cut1DSettings['new']:
@@ -854,19 +959,20 @@ def on_key_press(self,event):# pragma: no cover
         # Modulus ensures that there is an overflow back to shape 0 instead of out of bounce
         self.new = np.mod(self.new+1,len(self.draggableShapes)+1)#
         
-        
-        
         if self.new>0:
             self.selectedShape = self.draggableShapes[self.new-1]
             self.selectedShape.shapeSelected(self,axes)
             self.suppressPrint = True
             setCursor(axes,pointerType['CUTTINGCUT'])
         else:
+            cancel(self,axes)
             self.resetFormatCoord()
             setCursor(axes,pointerType['CUTTING'])
             
         self.lock = True
     
+    elif event.key in snappingKeys['cycle']:
+        snappingKeyActivated(self)
 
 
 def on_press(self,event):# pragma: no cover
@@ -917,8 +1023,18 @@ def reset(self):# pragma: no cover
         del self.format_coord_old
 
 
-def prepareInteractiveCutting(ax,draggables, draggableFunctions):# pragma: no cover
+def prepareInteractiveCutting(ax,draggables, draggableFunctions):#, draggableMaskFunctions):# pragma: no cover
     fig = ax.get_figure()
+
+    if not hasattr(ax,'tr'):
+        if ax.type.lower() in ['qplane']:
+            ax.tr = ax.sample.tr
+            ax.inv_tr = ax.sample.inv_tr
+        else:
+            ax.tr = ax.tr
+            ax.inv_tr = ax.inv_tr
+
+
     ax.resetFormatCoord = lambda: reset(ax)
     ax.new=False
     ax.cidmove = None
@@ -930,6 +1046,7 @@ def prepareInteractiveCutting(ax,draggables, draggableFunctions):# pragma: no co
 
     ax.draggableShapes = draggables
     ax.draggableFunctions = draggableFunctions
+    #ax.draggableMaskFunctions = draggableMaskFunctions
     if not hasattr(ax,'ax'):
         ax.ax = ax
     
@@ -946,7 +1063,7 @@ def prepareInteractiveCutting(ax,draggables, draggableFunctions):# pragma: no co
                 'button_press_event', lambda event:on_press(ax,event))
 
 
-def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions):# pragma: no cover
+def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions, draggableMaskFunctions):# pragma: no cover
     fig = self.ax.get_figure()
     self.ax.resetFormatCoord = lambda: reset(self.ax)
     self.ax.new=False
@@ -957,10 +1074,14 @@ def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions):# pragm
     self.ax.drs = []
     self.ax.draggableShapes = draggables
     self.ax.draggableFunctions = draggableFunctions
+    self.ax.draggableMaskFunctions = draggableMaskFunctions
     self.ax.ax = self.ax
     
     self.ax.selectedDr = None
     self.ax.lock = True
+
+    if not hasattr(self.ax,'snap'):
+        self.ax.snap = False
     
     self.ax.suppressPrint = False
     
@@ -990,16 +1111,6 @@ class DraggableShape(): # pragma: no cover
 
     def disconnect(self):
         pass
-        #'disconnect all the stored connection ids'
-        #for idx in ['cidpress','cidrelease','cidmotion']:
-        #    try:
-        #        self.rect.figure.canvas.mpl_disconnect(getattr(self,idx))
-        #    except AttributeError:
-        #        pass
-
-        #self.rect.figure.canvas.mpl_disconnect(self.cidrelease)
-        #self.rect.figure.canvas.mpl_disconnect(self.cidmotion)
-
 
             
 class DraggableRectangle(DraggableShape):# pragma: no cover
@@ -1072,7 +1183,7 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
             return 
         self.selected = True
         x0, y0 = self.rect.xy
-        self.press = x0, y0, event.xdata, event.ydata
+        self.press = x0, y0, *self._snapper(event.xdata,event.ydata)
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -1095,8 +1206,9 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress = self.press
-        dx = event.xdata - xpress
-        dy = event.ydata - ypress
+        x,y = self._snapper(event.xdata,event.ydata)
+        dx = x - xpress
+        dy = y - ypress
         self.rect.set_x(x0+dx)
         self.rect.set_y(y0+dy)
 
@@ -1150,7 +1262,8 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
         
         width = 0.0
         height = 0.05
-        center = corner2center(event.xdata,event.ydata, width, -180.0)
+        x,y = axes._snapper(event.xdata,event.ydata)
+        center = corner2center(x,y, width, -180.0)
         figure.newShape = Rectangle(center,width,height,**cut1DKkwargs) # 
         
         axes.add_patch(figure.newShape)
@@ -1160,8 +1273,7 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
             if event.inaxes:
                 rectx,recty = self.newShape.xy
                 center = corner2center(rectx,recty, width, self.newShape.angle)
-                mousex = event.xdata
-                mousey = event.ydata
+                mousex,mousey = self._snapper(event.xdata,event.ydata)
                 dx,dy = center[0]-mousex, center[1]-mousey
                 angle = np.arctan2(dy,dx)+np.pi/2
                 
@@ -1216,7 +1328,8 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
                 
                 center = corner2center(rectx,recty, self.newShape.get_width(), self.newShape.angle)
                 
-                mousePoint = np.array([event.xdata-center[0],event.ydata-center[1]])
+                x,y = self._snapper(event.xdata,event.ydata)
+                mousePoint = np.array([x-center[0],y-center[1]])
                 
                 ortho = mousePoint-np.dot(dirvec,mousePoint)*dirvec
                 sign = np.sign(np.dot(ortho,np.array([dirvec[1],-dirvec[0]])))
@@ -1421,13 +1534,14 @@ def clearBoxes(self):# pragma: no cover
 
 class DraggableCircle(DraggableShape):# pragma: no cover
     
-    def __init__(self, circ,plottingObject,Cut1DFunction,figure):
+    def __init__(self, circ,plottingObject,Cut1DFunction,figure): # Mask1DFunction
         self.circ = circ
         self.press = None
         self.background = None
         self._selected = False
         self.plottingObject = plottingObject
         self.Cut1DFunction = Cut1DFunction
+        #self.Mask1DFunction = Mask1DFunction
         self.figure = figure
         
     def remove(self):
@@ -1495,7 +1609,7 @@ class DraggableCircle(DraggableShape):# pragma: no cover
 
         self.selected = True
         x0, y0 = self.circ.center
-        self.press = x0, y0, event.xdata, event.ydata
+        self.press = x0, y0, *self._snapper(event.xdata,event.ydata)#event.xdata, event.ydata
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -1517,8 +1631,9 @@ class DraggableCircle(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.circ.axes: return
         x0, y0, xpress, ypress = self.press
-        dx = event.xdata - xpress
-        dy = event.ydata - ypress
+        x,y = self._snapper(event.xdata,event.ydata)
+        dx = x - xpress
+        dy = y - ypress
         self.circ.center = [x0+dx,y0+dy]
 
         canvas = self.circ.figure.canvas
@@ -1570,8 +1685,8 @@ class DraggableCircle(DraggableShape):# pragma: no cover
     
     def inactive(figure,axes,event):
         radius = 0.01
-
-        figure.newShape = Circle([event.xdata,event.ydata],radius,**cut1DKkwargs) # 
+        x,y = axes._snapper(event.xdata,event.ydata)
+        figure.newShape = Circle([x,y],radius,**cut1DKkwargs) # 
         
         axes.add_patch(figure.newShape)
         
@@ -1585,7 +1700,8 @@ class DraggableCircle(DraggableShape):# pragma: no cover
             if event.inaxes:
                 
                 center = self.newShape.center
-                mousePoint = np.array([event.xdata-center[0],event.ydata-center[1]])
+                x,y = axes._snapper(event.xdata,event.ydata)
+                mousePoint = np.array([x-center[0],y-center[1]])
                 
                 
                 self.newShape.set_radius(np.linalg.norm(mousePoint))
@@ -1612,10 +1728,11 @@ class DraggableCircle(DraggableShape):# pragma: no cover
         
         # Find corresponding function to generated DR
         func = figure.draggableFunctions[figure.draggableShapes.index(DraggableCircle)]
+        #maskFunc = figure.draggableMaskFunctions[figure.draggableShapes.index(DraggableCircle)]
         Cut1DFunction = func
+        #Mask1DFunction = maskFunc
         
-        
-        dr = DraggableCircle(circ,figure,Cut1DFunction,figure)
+        dr = DraggableCircle(circ,figure,Cut1DFunction,figure)# Mask1DFunction
         axes.add_patch(circ)
         figure.new = False
         figure.newShape.set_visible(False)
@@ -1703,7 +1820,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
 
         self.selected = True
         x0, y0 = self.rect.xy
-        self.press = x0, y0, event.xdata, event.ydata
+        self.press = x0, y0, *self._snapper(event.xdata,event.ydata)
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -1725,8 +1842,9 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress = self.press
-        dx = event.xdata - xpress
-        dy = event.ydata - ypress
+        x,y = self._snapper(event.xdata,event.ydata)
+        dx = x - xpress
+        dy = y - ypress
         self.rect.set_xy([x0+dx,y0+dy])
 
         canvas = self.rect.figure.canvas
@@ -1773,7 +1891,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
     def inactive(figure,axes,event):
         width = height = 0.01
 
-        center = [event.xdata,event.ydata]
+        center = [*axes._snapper(event.xdata,event.ydata)]
         lowerLeft = [center[0]-0.5*width, center[1]-0.5*height]
         figure.newShape = Rectangle(lowerLeft,width=width,height=height,**cut1DKkwargs) # 
         
@@ -1791,8 +1909,8 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
                 width = self.newShape.get_width()
                 height = self.newShape.get_height()
                 center = np.asarray(self.newShape.xy)+np.array([0.5*width,0.5*height])
-                
-                mousePoint = np.array([event.xdata-center[0],event.ydata-center[1]])
+                x,y = self._snapper(event.xdata,event.ydata)
+                mousePoint = np.array([x-center[0],y-center[1]])
                 
                 
                 newWidth, newHeight = np.abs(mousePoint)*2.0
@@ -1922,7 +2040,7 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         x0, y0 = self.rect.xy
         lineXData = self.line.get_xdata()
         lineYData = self.line.get_ydata()
-        self.press = x0, y0, event.xdata, event.ydata, lineXData, lineYData
+        self.press = x0, y0, *self._snapper(event.xdata,event.ydata), lineXData, lineYData
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -1945,8 +2063,9 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress, lineXData, lineYData = self.press
-        dx = event.xdata - xpress
-        dy = event.ydata - ypress
+        x,y = self._snapper(event.xdata,event.ydata)
+        dx = x - xpress
+        dy = y - ypress
         self.rect.set_xy([x0+dx,y0+dy])
         
         self.line.set_xdata(lineXData+dx)
@@ -2000,7 +2119,7 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
     def inactive(figure,axes,event):
         width = height = 0.0
 
-        center = [event.xdata,event.ydata]
+        center = [*axes._snapper(event.xdata,event.ydata)]
         lowerLeft = [center[0]-0.5*width, center[1]-0.5*height]
         figure.newShape = Rectangle(lowerLeft,width=width,height=height,**cut1DKkwargs) # 
         
@@ -2020,7 +2139,8 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
                 
                 
                 # New width is given by distance from mouse to the left corner
-                newWidth = event.xdata-self.newShape.get_x()
+                x,y = self._snapper(event.xdata,event.ydata)
+                newWidth = x-self.newShape.get_x()
                 
 
                 self.newShape.set_width(newWidth)
@@ -2038,8 +2158,8 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         return on_move
     
     def direction(figure,axes,event):
-        
-        newWidth = event.xdata-figure.newShape.get_x()
+        x,y = axes._snapper(event.xdata,event.ydata)
+        newWidth = x-figure.newShape.get_x()
         figure.newShape.set_width(newWidth)
 
         center = figure.newShape.get_xy()+np.array([0.5*figure.newShape.get_height(),0.0])
@@ -2057,11 +2177,11 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         
         def on_move(self,event):
             if event.inaxes:
-                
+                x,y = axes._snapper(event.xdata,event.ydata)
                 lowerLeft = self.newShape.get_y()
                 center = lowerLeft+self.newShape.get_height()*0.5
                 # New width is given by distance from mouse to the left corner
-                newHeight = np.abs(event.ydata-center)*2.0
+                newHeight = np.abs(y-center)*2.0
                 
 
                 self.newShape.set_height(newHeight)
@@ -2187,7 +2307,7 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         x0, y0 = self.rect.xy
         lineXData = self.line.get_xdata()
         lineYData = self.line.get_ydata()
-        self.press = x0, y0, event.xdata, event.ydata, lineXData, lineYData
+        self.press = x0, y0, *self._snapper(event.xdata,event.ydata), lineXData, lineYData
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -2210,8 +2330,9 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress, lineXData, lineYData = self.press
-        dx = event.xdata - xpress
-        dy = event.ydata - ypress
+        x,y = self._snapper(event.xdata,event.ydata)
+        dx = x - xpress
+        dy = y - ypress
         self.rect.set_xy([x0+dx,y0+dy])
         
         self.line.set_xdata(lineXData+dx)
@@ -2263,7 +2384,7 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
     def inactive(figure,axes,event):
         width = height = 0.0
 
-        center = [event.xdata,event.ydata]
+        center = [*axes._snapper(event.xdata,event.ydata)]
         lowerLeft = [center[0]-0.5*width, center[1]-0.5*height]
         figure.newShape = Rectangle(lowerLeft,width=width,height=height,**cut1DKkwargs) # 
         
@@ -2280,7 +2401,8 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
                 
                 
                 # New width is given by distance from mouse to the left corner
-                newHeight = event.ydata-self.newShape.get_y()
+                x,y = self._snapper(event.xdata,event.ydata)
+                newHeight = y-self.newShape.get_y()
                 self.newShape.set_height(newHeight)
                 
                 canvas = axes.get_figure().canvas
@@ -2296,8 +2418,8 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         return on_move
     
     def direction(figure,axes,event):
-        
-        newHeight = event.ydata-figure.newShape.get_y()
+        x,y = axes._snapper(event.xdata,event.ydata)
+        newHeight = y-figure.newShape.get_y()
         figure.newShape.set_height(newHeight)
 
         center = figure.newShape.get_xy()+np.array([0.5*figure.newShape.get_width(),0.0])
@@ -2317,7 +2439,8 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
                 lowerLeft = self.newShape.get_x()
                 center = lowerLeft+self.newShape.get_width()*0.5
                 # New width is given by distance from mouse to the left corner
-                newWidth = np.abs(event.xdata-center)*2.0
+                x,y = self._snapper(event.xdata,event.ydata)
+                newWidth = np.abs(x-center)*2.0
                 
 
                 self.newShape.set_width(newWidth)
