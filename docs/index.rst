@@ -26,11 +26,6 @@ tutorials and guides on how to make use of MJOLNIR.
    Optimizations/Optimization
 
 
-.. .. toctree::
-..   :maxdepth: 1
-..
-..   Commissioning/Commissioning
-..
 
 .. table:: Current informations
    :widths: grid
@@ -43,14 +38,10 @@ tutorials and guides on how to make use of MJOLNIR.
    +------------+
    |   |pypi|   |
    +------------+
-   |  |travis|  |
-   +------------+
    | |coverall| |
    +------------+
 
 
-.. |travis| image:: https://travis-ci.org/MJOLNIRPackage/MJOLNIR.svg?branch=master
-    :target: https://travis-ci.org/MJOLNIRPackage/MJOLNIR
 
 .. |coverall| image:: https://coveralls.io/repos/github/MJOLNIRPackage/MJOLNIR/badge.svg?branch=master
     :target: https://coveralls.io/github/MJOLNIRPackage/MJOLNIR?branch=master
