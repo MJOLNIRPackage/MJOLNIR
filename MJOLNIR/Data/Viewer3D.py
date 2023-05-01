@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 from MJOLNIR import _tools
-from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder
+from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder, cancel
 import functools
 
 pythonVersion = sys.version_info[0]
@@ -24,7 +24,8 @@ class Viewer3D(object):
     @_tools.KwargChecker(include=[_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
                  cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None,\
-                    cut1DFunctionCircle = None, cut1DFunctionRectanglePerp=None,cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None, **kwargs):#pragma: no cover
+                    cut1DFunctionCircle = None, cut1DFunctionRectanglePerp=None,cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,
+                    backgroundSubtraction=False, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
 
@@ -60,6 +61,8 @@ class Viewer3D(object):
             - cut1DFunctionRectangle (function): Function to be called when performing an interactive rectangle (default None)
 
             - cut1DFunctionCircle (function): Function to be called when performing an interactive circle (default None)
+
+            - backgroundSubtraction (bool): Signify if a subtraction has been performed such that interactive cuts work (default False)
 
         For an example, see the `quick plotting tutorial <../Tutorials/Quick/QuickView3D.html>`_ under scripting tutorials.
 
@@ -168,6 +171,8 @@ class Viewer3D(object):
             else:
                 raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
 
+        for ax in self._axes:
+            ax.backgroundSubtraction = backgroundSubtraction
         self.figure.set_size_inches(11,7)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
@@ -777,6 +782,10 @@ def onkeypress(event,self): # pragma: no cover
 
 
 def reloadslider(self,axis):
+    try:
+        cancel(self.ax,axis)
+    except:
+        pass#print('Nope')
     self.setAxis(axis)
     self.Energy_slider.set_val(0)
     self.Energy_slider.label.remove()

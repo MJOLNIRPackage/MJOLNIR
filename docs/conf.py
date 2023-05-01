@@ -31,9 +31,9 @@ copyright = u'2020, Jakob Lass'
 author = u'Jakob Lass'
 
 # The short X.Y version
-version = u'1.2.6post1'
+version = u'1.3.0'
 # The full version, including alpha/beta/rc tags
-release = u'1.2.6post1'
+release = u'1.3.0'
 
 
 
@@ -59,7 +59,8 @@ extensions = [
     'sphinx.ext.githubpages',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'nbsphinx'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

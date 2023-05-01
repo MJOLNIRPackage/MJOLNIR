@@ -126,3 +126,10 @@ Currently there are the following open |open| and closed |closed| issues.
 
 
 .. _Issues: https://github.com/Jakob-Lass/MJOLNIR/issues
+
+
+Contribution
+^^^^^^^^^^^^
+
+.. include:: Contribution.rst
+

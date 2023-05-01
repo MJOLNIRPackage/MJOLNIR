@@ -13,7 +13,7 @@ For the QPlane, QE axis, and the QELine axis a set of interactive modes have bee
 
     +------------------+-----------+------------+
     | Interaction Mode | Activate  | Deactivate |
-    +------------------+-----------+------------+
+    +==================+===========+============+
     | Resolution       | r         | b          |
     +------------------+-----------+------------+
     | Cutting          | c         | b          |
@@ -49,7 +49,7 @@ the point, two ellipses are plotted and information is printed for both.
 
     +----------------------+------------+
     | Method               | Button     |
-    +----------------------+------------+
+    +======================+============+
     | Calcualte Resolution | Left Click |
     +----------------------+------------+
     | Clear Ellipses       | c          |
@@ -75,7 +75,7 @@ Cuts cannot be rescaled or rotated.
 
     +-------------------+------------+
     | Method            | Button     |
-    +-------------------+------------+
+    +===================+============+
     | New/Cycle Cut Type| n          |
     +-------------------+------------+
     | Define Cut        | Left Click |
@@ -84,6 +84,10 @@ Cuts cannot be rescaled or rotated.
     +-------------------+------------+
     | Perform Cut       | c          |
     +-------------------+------------+
+    | Snapping Cycle    | **.**      |
+    +-------------------+------------+
     | Return            | b          |
     +-------------------+------------+
 
+When in cutting mode, it might be advantageous to be able to snap to the underlying grid of the figure. A snapping option has been created where one can snap to the grid or a specific 
+segment size, 1/n, for n = 1, 2, 3, 4, and 5. This mode is activated by pressing '**.**' while in cutting mode. The cycle goes as follows: None, 1, 2, 3, 4, 5 and then back to None.
