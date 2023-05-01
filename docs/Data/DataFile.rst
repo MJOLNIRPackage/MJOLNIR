@@ -11,7 +11,6 @@ Data File
    :nosignatures:
 
     DataFile.DataFile
-	DataFile.DataFile.calculateEdgePolygons
 	DataFile.DataFile.difference
 	DataFile.DataFile.loadBinning
 	DataFile.DataFile.loadMultiFLEXXData
