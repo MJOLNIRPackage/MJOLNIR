@@ -125,7 +125,7 @@ The raw data from the instrument is expected to be provided in an HdF 5 format w
                  ├── email
                  └── name
 
-From this file, raw plotting and a conversion algorithm is possible. Raw plotting is further explained in  :ref:`Raw plotting and fitting<Raw-plotting-and-fitting>`. 
+From this file, raw plotting and a conversion algorithm is possible.
 
 
 

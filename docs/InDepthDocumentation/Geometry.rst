@@ -16,7 +16,7 @@
 The calculation of energies and the corresponding scattering angles is automatically calculated when the initialization
 method is called on the :doc:`Instrument<../Geometry/Geometry>` object. That is, one first of all needs to create the 
 wanted instrument with all of the detectors, analysers and wedges as described in the instrument creation tutorial 
-:doc:`Build a simple instrument<../Tutorials/Instrument/instrument>`. Having done all this, the procedure for the 
+:doc:`Build a simple instrument<../../notebooks/SimpleInstrument>`. Having done all this, the procedure for the 
 calculations is as follows. 
 
 Looping through all wedges, the concept attribute is checked. This tells whether one has a one to one correspondence
