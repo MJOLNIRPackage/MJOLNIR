@@ -19,11 +19,11 @@ tutorials and guides on how to make use of MJOLNIR.
 
    Introduction
    faq
+   tutorials
    ShortCuts
-   Tutorials/Tutorial
    MJOLNIR
    InDepthDocumentation/Documentation
-   Optimizations/Optimization
+   Optimizations/Optimization   
 
 
 

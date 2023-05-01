@@ -1,3 +1,49 @@
+Tutorials Using MJOLNIR
+^^^^^^^^^^^^^^^^^^^^^^^
+
+The following is a list of tutorials split into different categories with various complexity.
+
+For first time users and people wanting to simply convert and plot data, the following tutorials is the place to start if one is not using the `MJOLNIRGui <https://pypi.org/project/MJOLNIRGui/>`_
+
+.. toctree::
+   :maxdepth: 1
+
+   notebooks/QuickPlottingofData
+   notebooks/ConstantEnergy
+   notebooks/CuttingThroughDataInQE
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: After an initial plotting, more advanced cuts/plots can be made:
+
+   notebooks/AdvancedView3DTutorial
+   notebooks/Masking
+   notebooks/Backgroundsubtraction
+   notebooks/Fittingofsequential1Dcuts
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: A full data analysis tutorial has been made for the MnF2 compound:
+
+   notebooks/OverviewofCAMEAData
+
+Tools Tutorials
+===============
+
+In MJOLNIR a handful of tools have been created, some of which have specific tutorials
+
+.. toctree::
+   :maxdepth: 1
+
+   
+   notebooks/_toolsOverview
+   notebooks/ReciprocalLatticeUnitAxis
+   notebooks/SimpleInstrument
+   notebooks/CalculateA4Ef
+
+
 .. _Command-Line-Tutorials:
 
 Command Line Tutorials
@@ -21,7 +67,7 @@ Below is an overview of currently implemented scripts and their arguments.
 .. toctree::
    :maxdepth: 1
 
-   Commandline/MJOLNIRHistory
-   Commandline/MJOLNIRCalibrationInspector
-   Commandline/MJOLNIRConvert
-   Commandline/MJOLNIR3DView
+   Tutorials/MJOLNIRHistory
+   Tutorials/MJOLNIRCalibrationInspector
+   Tutorials/MJOLNIRConvert
+   Tutorials/MJOLNIR3DView

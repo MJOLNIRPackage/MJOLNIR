@@ -29,8 +29,7 @@ Below is a list of the general tools developed for the MJOLNIR software package.
    vectorAngle
    generateLabel
    writeToSpinWFile
-   get_default_args
-   uFitWrapper1D
+   
 
 Functions in the _tools module
 ------------------------------

@@ -26,8 +26,5 @@ _____________________
     with given priors. This is to be done by adding a subroutine to 
     the fit object.
 
-    Initial thoughts: It is believed that building upon the article [CIT2012]_, 
-    where this feature was incorporated in a C++ script.
-
-
-.. [CIT2012] Citation of relevant article or other document.
+    Initial thoughts: It is believed that building upon the XXX package 
+    where this feature was already created.

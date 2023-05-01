@@ -27,14 +27,14 @@ def callHelp(parser=parser):
 def test():
     os.system("python -m pytest -vv test")
 
-def cleanTutorialFolders():
-    folders = [f.path for f in os.scandir(os.path.join('docs','Tutorials')) if f.is_dir()]
-    print('Cleaning tutorial folders: '+OxfordList(folders))
-    for folder in folders:
-        os.system('python clean.py '+folder)
+# def cleanTutorialFolders():
+#     folders = [f.path for f in os.scandir(os.path.join('docs','Tutorials')) if f.is_dir()]
+#     print('Cleaning tutorial folders: '+OxfordList(folders))
+#     for folder in folders:
+#         os.system('python clean.py '+folder)
 
 def generateTutorials():
-    os.system('python '+str(os.path.join('Tutorials','tutorials.py')))
+    os.system('python '+str(os.path.join('docs','tutorials.py')))
     
 
 def makeHTML():
@@ -78,7 +78,7 @@ def update(version):
     os.system('python Update.py '+version)
 
 def makeTutorials():
-    cleanTutorialFolders()
+    # cleanTutorialFolders()
     generateTutorials()
     makeHTML()
 

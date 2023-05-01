@@ -15,11 +15,13 @@ DIR = str(os.path.dirname(__file__))
 files = [f.path for f in os.scandir(DIR) if f.is_file()]
 
 for f in files:
-    if not f[-2:] == 'py':
+    if not f[-2:] == 'ipynb':
+        print('NOPE: ',f)
         continue
-    if 'tutorials.py' in f:
-        continue
-    os.system('python '+f)
+    #if 'tutorials.py' in f:
+    #    continue
+    print('YES: ',f)
+    os.system('jupyter nbconvert --execute --to notebook --inplace '+f)
 
-for folder in ['.cache','.pyteste_cache','__pycache']:
-    shutil.rmtree(os.path.join(DIR,folder))
+# for folder in ['.cache','.pyteste_cache','__pycache']:
+#     shutil.rmtree(os.path.join(DIR,folder))

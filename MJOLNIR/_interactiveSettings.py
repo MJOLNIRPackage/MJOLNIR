@@ -5,13 +5,9 @@ import numpy as np
 from enum import Enum
 from matplotlib.patches import Ellipse,Rectangle,Circle
 from matplotlib.backend_bases import MouseButton
-#try:
-#    import matplotlib.backends.backend_qt5.cursors as cursors
-#    mplVersion = None
-#except ImportError:
+
 from  matplotlib.backend_tools import Cursors as cursors
-#    mplVersion = 3.5
-mplVersion = float('.'.join(mpl.__version__.split('.')[:2]))
+
 import MJOLNIR
 import os
 import PyQt5.QtCore
