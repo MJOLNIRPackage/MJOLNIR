@@ -91,5 +91,5 @@ For each detector, analyser, and software pixel the following parameters are sav
    ...
 
 The CSV file is saved and is used when converting experiment data from raw HDF files into NXqom 
-files explained in the Data file conversion documentation. For a table of the found energies, see :ref:`291018<EfTable>`
+files explained in the Data file conversion documentation. 
 

@@ -896,13 +896,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
     
     Args:
 
-        - fileName (str): File name of created file ('*.hdf')
+        - fileName (str): File name of created file ('hdf')
 
         - title (str): Title of HdF file
 
         - sample (str): Name of sample
 
-        - fname (str): Location folder of McStas Data (must end with '/')
+        - fname (str): Location folder of McStas Data (must end with '/' in linux/mac)
 
     Kwargs:
 
