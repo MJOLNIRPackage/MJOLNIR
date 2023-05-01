@@ -2,3 +2,4 @@ docutils<0.18
 ipykernel
 nbsphinx
 sphinx>5
+MJOLNIR
