@@ -1293,9 +1293,9 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
                 # blit just the redrawn area
                 canvas.blit(axes.bbox)
                 
-        figure.newShape.set_animated(True)
+        figure.newShape.set_animated(False)
         axes.get_figure().canvas.draw()
-        figure.background = figure.figure.canvas.copy_from_bbox(axes.bbox)
+        axes.background = axes.figure.canvas.copy_from_bbox(axes.bbox)
 
         # now redraw just the rectangle
         axes.draw_artist(figure.newShape)
@@ -1368,7 +1368,7 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
         dr = DraggableRectangle(rect,figure.line,figure,Cut1DFunction,figure)
         dr.connect()
         dr.selected = True
-        
+        figure.newShape.remove()
         figure.new = False
         figure.newShape = None
         figure.line = None
