@@ -3097,17 +3097,21 @@ class DataSet(object):
         
         Data = []
         Bins = []
-
+        if backgroundSubtraction:
+            background = self.backgroundIntensities.extractData()
+        else:
+            background = None
         # Perform actual binning
         for i,Q in enumerate(Qs):
             Q = Q.flatten()
-            [intensity,MonitorCount,Normalization,normcounts],bins  = \
+            returnData,bins  = \
                 cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=Emin,E2=Emax,
                        q=Q,width=width,minPixel=energyWidth,constantBins=constantBins,
-                       backgroundSubtraction=backgroundSubtraction)
+                       background=background)
             data = pd.DataFrame()
             
             HKL = self.convertToHKL(Q.flatten())
+            intensity = returnData[0]
             data[pdNaming['qx']] = Q[0]*np.ones_like(intensity)
             data[pdNaming['qy']] = Q[1]*np.ones_like(intensity)
             data[pdNaming['h']] = HKL[0]*np.ones_like(intensity)
@@ -3115,12 +3119,30 @@ class DataSet(object):
             data[pdNaming['l']] = HKL[2]*np.ones_like(intensity)
             data[pdNaming['e']] = 0.5*(bins[0][1:]+bins[0][:-1])
             data[pdNaming['intensity']] = intensity.astype(int)
-            data[pdNaming['mon']] = MonitorCount.astype(int)
-            data[pdNaming['norm']] = Normalization.astype(int)
-            data[pdNaming['binCount']] = normcounts.astype(int)
+            data[pdNaming['mon']] = returnData[1].astype(int)
+            data[pdNaming['norm']] = returnData[2].astype(int)
+            data[pdNaming['binCount']] = returnData[3].astype(int)
             data['QCut'] = i*np.ones_like(intensity).astype(int)
             
-            data[pdNaming['int']] = data[pdNaming['intensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+            if backgroundSubtraction:
+                data[pdNaming['BackgroundIntensity']] = returnData[-1].flatten()
+                data[pdNaming['ForegroundIntensity']] = data[pdNaming['intensity']]
+                
+                data[pdNaming['Background']] = data[pdNaming['BackgroundIntensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])#BGIntensities
+                data[pdNaming['Foreground']] = data[pdNaming['ForegroundIntensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+                
+                data[pdNaming['int']] = data[pdNaming['Foreground']]-data[pdNaming['Background']]
+                
+                Int_err = data[pdNaming['ForegroundIntensity']]
+                Bg_err  = data[pdNaming['BackgroundIntensity']]
+
+                data[pdNaming['ForegroundError']] = np.sqrt(Int_err)*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+                data[pdNaming['BackgroundError']] = np.sqrt(Bg_err)*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+
+                data[pdNaming['intError']] = np.sqrt(Int_err+Bg_err)*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+            else:
+                data[pdNaming['int']] = data[pdNaming['intensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
+                data[pdNaming['intError']] = np.sqrt(data[pdNaming['intensity']])*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
             Data.append(data)
             Bins.append(bins)
 
