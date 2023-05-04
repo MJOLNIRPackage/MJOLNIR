@@ -1,7 +1,7 @@
 .. :InstrumentXML:
 
 InstrumentXML
-==========
+=============
 
 .. currentmodule:: InstrumentXML
 
