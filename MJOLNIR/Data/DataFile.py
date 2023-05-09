@@ -346,7 +346,12 @@ class DataFile(object):
                     except:
                         self.A3Off = [0.0]
                     if self.type == 'hdf':
-                        self.binning=np.max(self.possibleBinnings).astype(int) # Choose standard binning max
+                        
+                        if len(self.possibleBinnings) == 0:
+                            self.possibleBinnings = [None]
+                            self.binning = None
+                        else:
+                            self.binning=np.max(self.possibleBinnings).astype(int) # Choose standard binning max
                     else:
                         self.binning = int(np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0])
                     calibrations = []
