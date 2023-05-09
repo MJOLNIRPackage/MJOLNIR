@@ -1145,8 +1145,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         dset = sam.create_dataset('plane_vector_2',data=plane_vector_2)
 
         if plane_normal is None:
-            normal = np.zeros((3,),dtype='float32')
-            normal[2] = 1.0
+            plane_normal = np.zeros((3,),dtype='float32')
+            plane_normal[2] = 1.0
 
         dset = sam.create_dataset('plane_normal',data=plane_normal)
 
