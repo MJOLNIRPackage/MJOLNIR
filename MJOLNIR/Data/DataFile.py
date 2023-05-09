@@ -272,9 +272,17 @@ class DataFile(object):
                     else:
                         self.userAffiliation = 'UNKNOWN'
                     
-                    self.singleDetector1 = np.array(getHDFEntry(f,'singleDetector1',fromNICOS=self.fromNICOS))
-                    self.singleDetector8 = np.array(getHDFEntry(f,'singleDetector8',fromNICOS=self.fromNICOS))
+                    
+                    
+                    try:
+                        self.singleDetector1 = np.array(getHDFEntry(f,'singleDetector1',fromNICOS=self.fromNICOS))[0]
+                    except:
+                        pass
 
+                    try:
+                        self.singleDetector8 = np.array(getHDFEntry(f,'singleDetector8',fromNICOS=self.fromNICOS))[0]
+                    except:
+                        pass
                     # Monochromator
 
                     attributes = ['type','d_spacing','horizontal_curvature','vertical_curvature',
@@ -1659,6 +1667,8 @@ class DataFile(object):
         newBinnings = []
         
         for binning in self.possibleBinnings:
+            if binning is None:
+                continue
             self.loadBinning(binning)
             calibrations[binning] = [self.instrumentCalibrationEf,self.instrumentCalibrationA4,self.instrumentCalibrationEdges]
         
@@ -1914,6 +1924,10 @@ class DataFile(object):
 
             for value,att in zip(['monochromatorSlitXGap','monochromatorSlitYGap'],['x_gap','y_gap']):
                 dset = monoSlit.create_dataset(att,(3,),'float32')
+                val = getattr(self,value)
+                if val[0] == np.array(None):
+                    continue
+                print(value,att,val)
                 dset[:] = getattr(self,value) # Might not work
                 dset.attrs['units'] = 'mm'
         
@@ -2034,7 +2048,11 @@ class DataFile(object):
 
             dset = mono.create_dataset('rotation_angle',data=self.monochromatorRotationAngle,dtype='float32')
             dset.attrs['units'] = np.string_('degree')
-            dset = mono.create_dataset('rotation_angle_zero',data=self.monochromatorRotationAngleZero,dtype='float32')
+            if hasattr(self,'monochromatorRotationAngleZero'):
+                v = self.monochromatorRotationAngleZero
+            else:
+                v = 0.0
+            dset = mono.create_dataset('rotation_angle_zero',data=v,dtype='float32')
             dset.attrs['units'] = np.string_('degree')
 
 
@@ -2062,6 +2080,8 @@ class DataFile(object):
             dset.attrs['units'] = np.string_('seconds')
 
             time =  self.absoluteTime
+            if time[0] == np.array(None):
+                time = [0.0]
             dset = control.create_dataset('absolute_time',data=time,dtype='float32')
             dset.attrs['units'] = np.string_('seconds')
             
