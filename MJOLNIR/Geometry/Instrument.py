@@ -8,6 +8,7 @@ from MJOLNIR import _tools
 import MJOLNIR
 from MJOLNIR import TasUBlibDEG
 from MJOLNIR.Data import RLUAxes
+from MJOLNIR.TasUBlibDEG import factorsqrtEK
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -917,10 +918,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
     """
     def addMetaData(entry,title):
         dset = entry.create_dataset('start_time',(1,),dtype='<S70')
-        dset[0] = b'2018-03-22T16:44:02+01:00'
+        now = datetime.datetime.now()
+        dset[0] = np.string_(now.strftime('%Y-%m-%dT%H:%M:%S%z'))
+        #dset[0] = b'2018-03-22T16:44:02+01:00'
 
         dset = entry.create_dataset('end_time',(1,),dtype='<S70')
-        dset[0] = b"2018-03-22T18:44:02+01:00"
+        dset[0] = np.string_(now.strftime('%Y-%m-%dT%H:%M:%S%z'))
+        #dset[0] = b"2018-03-22T18:44:02+01:00"
 
         dset = entry.create_dataset('experiment_identifier',(1,),dtype='<S70')
         dset[0] = b"UNKNOWN"
@@ -1257,19 +1261,35 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         #dset.attrs['units'] = np.string_('counts')
         
         
-        makeMonitor(entry,Numpoints,dir)
+        makeMonitor(entry,Numpoints,dir,ei)
         entry.create_dataset('scancommand',data=[np.string_(scanType)])
         entry.create_dataset('scanvars',data=scanvars)
-    def makeMonitor(entry,Numpoints,dir):
+    def makeMonitor(entry,Numpoints,dir,ei):
         
         ## read monitor if slit monitor exists
-
+        def isVaried(data):
+            if len(data)>1 and data[0]!=data[1]:
+                return True
+            else:
+                return False
         # Check if slit monitor exists
         if os.path.exists(os.path.join(dir,'0','SlitMonitor.dat')):
             mons = []
-            for  i in range(Numpoints):
+            
+            if isVaried(ei):
+                looper = enumerate(ei)
+                varied = True
+            else:
+                looper = range(Numpoints)
+                isVaried = False
+                e = ei[0]
+            for i in looper:#range(Numpoints):
+                if isVaried:
+                    i,e = i 
                 dat = np.loadtxt(os.path.join(dir,str(i),'SlitMonitor.dat'))
                 totalCount = dat[:int(len(dat)/3)].sum()
+                
+                totalCount/=np.sqrt(e)*factorsqrtEK
                 mons.append(totalCount)
         else:
             mons = [10000]*Numpoints
