@@ -328,7 +328,7 @@ class DataFile(object):
                         self.twotheta = copy.deepcopy(self.A4) - self.A4Off
                     else:
                         self.twotheta = self.A4-self.A4Off
-
+                    self.scanCommand = np.array(getHDFEntry(f,'scanCommand',fromNICOS=self.fromNICOS))[0]
                     try:
                         self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
                     except KeyError:
@@ -381,7 +381,7 @@ class DataFile(object):
                     self.magneticField = np.array(getHDFEntry(f,'magneticField',fromNICOS=self.fromNICOS))
                     self.electricField = np.array(getHDFEntry(f,'electricField',fromNICOS=self.fromNICOS))
                     
-                    self.scanCommand = np.array(getHDFEntry(f,'scanCommand',fromNICOS=self.fromNICOS))[0]
+                    
                     if self.type == 'nxs':
                         self.original_fileLocation = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
                     self.title = np.array(getHDFEntry(f,'title'))[0]
@@ -2118,6 +2118,7 @@ class DataFile(object):
         
             attribute = ['a4offset','amplitude','background','boundaries','final_energy','width']
             for calibration,binning in zip(self.instrumentCalibrations,self.possibleBinnings):
+                if binning is None: continue
                 pixelCalib = inst.create_group('calib{}'.format(binning))
                 Etable, A4, bound = calibration
                 amp,Ef,width,bg = Etable.T
@@ -2213,20 +2214,47 @@ def getScanParameter(self,f):
                 if item == 's2t':
                     item = 'A4'
                 
+
                 if item == 'A4':
                     fItem = getHDFInstrumentEntry(getInstrument(f),item,self.fromNICOS)
-                else:
+                elif item != 'CAMEA':
                     fItem = getHDFEntry(f,item,self.fromNICOS)
                     #fItem = f.get(position)    
-                scanParameters.append(item)
                 
-                scanUnits.append(decodeStr(fItem.attrs['units']))
-                scanValues.append(np.array(fItem))
-                try:
-                    scanDataPosition.append(decodeStr(fItem.attrs['target']))
-                except:
-                    pass
+                if item == 'CAMEA':
+                    # We are doing a QScan
+                    scanCommand = self.scanCommand.decode()
 
+                    t = scanCommand.split('(')[0]
+                    if not t.lower() == 'qcscan': continue
+                    start = scanCommand.split('(')[2].split(')')[0]
+                    step = scanCommand.split('(')[3].split(')')[0]
+                    _,steps,monitor = scanCommand.split(')')[2].split(',')
+
+                    centre = np.asarray([float(x) for x in start.split(',')])
+                    step = np.asarray([float(x) for x in step.split(',')])
+                    dist =np.linalg.norm(step)
+                    step = _tools.LengthOrder(step)
+                    dist*=1.0/np.linalg.norm(step)
+                    steps = int(steps)
+                    monitor = int(monitor.split('=')[1])
+                    #constant = np.isclose(step,0)
+                    textCentre = '['+', '.join([str(x) for x in centre])+'] '
+                    textStep = _tools.generateLabelDirection(step,labels=['H','K','L','E'])
+                    
+                    scanParameters.append(textCentre+' + '+textStep)
+                    scanUnits.append('RLU, meV')
+                    scanValues.append(np.linspace(-dist*steps,dist*steps,steps*2+1))
+                    
+                else:
+                    scanParameters.append(item)
+                
+                    scanUnits.append(decodeStr(fItem.attrs['units']))
+                    scanValues.append(np.array(fItem))
+                    try:
+                        scanDataPosition.append(decodeStr(fItem.attrs['target']))
+                    except:
+                        pass
     return scanParameters,np.array(scanValues),scanUnits,scanDataPosition
 
 
