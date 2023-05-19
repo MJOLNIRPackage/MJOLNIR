@@ -169,7 +169,7 @@ detectorLimits = {'CAMEA':103,
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
-    def __init__(self,fileLocation=None):
+    def __init__(self,fileLocation=None,McStas=False):
         # Check if file exists
         if isinstance(fileLocation,DataFile): # Copy everything in provided file
             self.updateProperty(fileLocation.__dict__)
@@ -197,8 +197,10 @@ class DataFile(object):
                 with hdf.File(fileLocation,mode='r') as f:
                     # Find out if file is a NICOS file
                     # NICOS has data saved in /entry/data/data while six has /entry/data/counts
-                    
-                    self.fromNICOS = checkNICOS(f)
+                    if McStas:
+                        self.fromNICOS = 0
+                    else:
+                        self.fromNICOS = checkNICOS(f)
 
                     if self.fromNICOS is None:
                         raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
