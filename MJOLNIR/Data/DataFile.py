@@ -311,7 +311,7 @@ class DataFile(object):
 
                     # Analyzer
                     # analyzer_selection
-                    attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']
+                    attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset','polar_angle_raw']
                     values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
                     for att,value in zip(attributes,values):
                         setattr(self,value,np.array(f.get('entry/CAMEA/analyzer/{}'.format(att))))
