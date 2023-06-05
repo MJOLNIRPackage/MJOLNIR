@@ -82,8 +82,8 @@ HDFTranslation = {'sample':'/entry/sample',
 }
 
 HDFTranslationNICOSAlternative = {
-                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts'],
-                   'magneticField':['entry/sample/B','entry/sample/B/value'],
+                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T'],
+                   'magneticField':['entry/sample/B','entry/sample/B/value','entry/sample/magnetic_field'],
                    'ei':'entry/CAMEA/monochromator/energy',
                    'hdfMonitor':['entry/monitor_2/data','entry/control/data']
 }
