@@ -398,8 +398,10 @@ class DataFile(object):
                         self.temperature_time_log = np.array(getHDFEntry(f,'temperature_time_log',fromNICOS=self.fromNICOS))
                         if not self.temperature_log is None:
                             timeSteps = self.absoluteTime-self.absoluteTime[0]
-                            self.temperature = np.array([np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])])
-
+                            self.temperature =[np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])]
+                            ## Above adds all but last temperature interval 
+                            self.temperature.append(np.mean(self.temperature_log[self.temperature_time_log>timeSteps[-1]]))
+                            self.temperature = np.array(self.temperature)
 
                     if self.type == 'hdf':
                         ###################
