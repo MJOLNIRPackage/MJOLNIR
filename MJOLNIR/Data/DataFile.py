@@ -83,6 +83,8 @@ HDFTranslation = {'sample':'/entry/sample',
 
 HDFTranslationNICOSAlternative = {
                    'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T'],
+                   'temperature_log':['entry/sample/temperature_log/value'],
+                   'temperature_time_log':['entry/sample/temperature_log/time'],
                    'magneticField':['entry/sample/B','entry/sample/B/value','entry/sample/magnetic_field'],
                    'ei':'entry/CAMEA/monochromator/energy',
                    'hdfMonitor':['entry/monitor_2/data','entry/control/data']
@@ -390,6 +392,14 @@ class DataFile(object):
 
                     self.absoluteTime = np.array(getHDFEntry(f,'absoluteTime',fromNICOS=self.fromNICOS))
                     self.protonBeam = np.array(getHDFEntry(f,'protonBeam',fromNICOS=self.fromNICOS))
+
+                    if self.fromNICOS:
+                        self.temperature_log = np.array(getHDFEntry(f,'temperature_log',fromNICOS=self.fromNICOS))
+                        self.temperature_time_log = np.array(getHDFEntry(f,'temperature_time_log',fromNICOS=self.fromNICOS))
+                        if not self.temperature_log is None:
+                            timeSteps = self.absoluteTime-self.absoluteTime[0]
+                            self.temperature = np.array([np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])])
+
 
                     if self.type == 'hdf':
                         ###################
