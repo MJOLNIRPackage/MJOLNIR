@@ -398,12 +398,16 @@ class DataFile(object):
                         self.temperature_time_log = np.array(getHDFEntry(f,'temperature_time_log',fromNICOS=self.fromNICOS))
                         if not self.temperature_log is None:
                             timeSteps = self.absoluteTime-self.absoluteTime[0]
-                            self.temperature_log = self.temperature_log[:len(self.temperature_time_log)]
+                            try:
+                                self.temperature_log = self.temperature_log[:len(self.temperature_time_log)]
 
-                            self.temperature =[np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])]
-                            ## Above adds all but last temperature interval 
-                            self.temperature.append(np.mean(self.temperature_log[self.temperature_time_log>timeSteps[-1]]))
-                            self.temperature = np.array(self.temperature)
+                                self.temperature =[np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])]
+                                ## Above adds all but last temperature interval 
+                                self.temperature.append(np.mean(self.temperature_log[self.temperature_time_log>timeSteps[-1]]))
+                                self.temperature = np.array(self.temperature)
+                            except TypeError: # no length of temperature_time_log, i.e. the log is not present
+                                self.temperature = np.asarray(len(self.absoluteTime)*[None])
+
 
                     if self.type == 'hdf':
                         ###################
@@ -2532,7 +2536,9 @@ def extractData(files):
     H = PointerArray('H',files)
     K = PointerArray('K',files)
     L = PointerArray('L',files)
+    temperature = PointerArray('temperature',files)
 
+    
     #mask = []
     
     scanParameters = []
@@ -2554,10 +2560,10 @@ def extractData(files):
     
     if files[0].type=='nxs':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,temperature,H,K,L
     else:
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,temperature
 
 def assertFile(file):
     """Make sure that file exists for methods to work"""
