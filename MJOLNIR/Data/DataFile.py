@@ -83,8 +83,8 @@ HDFTranslation = {'sample':'/entry/sample',
 
 HDFTranslationNICOSAlternative = {
                    'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T'],
-                   'temperature_log':['entry/sample/temperature_log/value'],
-                   'temperature_time_log':['entry/sample/temperature_log/time'],
+                   'temperature_log':['entry/sample/temperature_log/value','entry/sample/T_log/value'],
+                   'temperature_time_log':['entry/sample/temperature_log/time','entry/sample/temperature_log/time','entry/sample/T_log/time'],
                    'magneticField':['entry/sample/B','entry/sample/B/value','entry/sample/magnetic_field'],
                    'ei':'entry/CAMEA/monochromator/energy',
                    'hdfMonitor':['entry/monitor_2/data','entry/control/data']
@@ -393,7 +393,7 @@ class DataFile(object):
                     self.absoluteTime = np.array(getHDFEntry(f,'absoluteTime',fromNICOS=self.fromNICOS))
                     self.protonBeam = np.array(getHDFEntry(f,'protonBeam',fromNICOS=self.fromNICOS))
 
-                    if self.fromNICOS:
+                    if self.fromNICOS and self.temperature is None: # Only use interpolated temperature if no temperature was found
                         self.temperature_log = np.array(getHDFEntry(f,'temperature_log',fromNICOS=self.fromNICOS))
                         self.temperature_time_log = np.array(getHDFEntry(f,'temperature_time_log',fromNICOS=self.fromNICOS))
                         if not self.temperature_log is None:
