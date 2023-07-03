@@ -30,7 +30,7 @@ from MJOLNIR._interactiveSettings import States, cut1DHolder
 
 import time
 
-from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
+
 
 import warnings
 from ufit import Dataset
@@ -4089,6 +4089,7 @@ class DataSet(object):
 
         
         """
+        from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
         return calculateResoultionMatrix(sample=self[0].sample,position=position,Ei=Ei,Ef=Ef,rlu=rlu,binning=self[0].binning,A3Off=self[0].sample.theta)
 
     def calculateResolutionMatrixAndVectors(self,position,projectionVector1,projectionVector2,Ei,Ef,rlu=True,rluAxis=False):
@@ -4114,6 +4115,7 @@ class DataSet(object):
         Projection matrix is given by two projections vectors with unit length.
         
         """
+        from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
         M = self.calculateResolutionMatrix(position,Ei,Ef,rlu=rlu)
         
         P = np.zeros((3,5))

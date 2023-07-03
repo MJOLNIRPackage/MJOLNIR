@@ -394,12 +394,13 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if savelocation[-1]!='/':
                     savelocation+='/'
                 
-                #monitor = np.array(VanFile.get('entry/control/data')) # Extract monitor count
-                monitor = VanFileLoaded.Monitor
+                monitor = np.array(VanFile.get('entry/monitor_2/data')) # Extract monitor count
+                #monitor = VanFileLoaded.Monitor
                 # Divide data with corresponding monitor by reshaping it correctly
-                intensities = VanFileInstrument.get('detector/counts')
+                intensities = VanFileInstrument.get('data/data')
                 if intensities is None:
                     intensities = VanFileInstrument.get('detector/data')
+                #print(monitor.shape)
                 Data = np.array(intensities).transpose(2,0,1).astype(float)/monitor[np.newaxis,:,np.newaxis]
                 if sampleMass != None: # A sample mass has been proivided
 
