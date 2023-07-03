@@ -79,7 +79,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 self._wedges.append(ana)
         else:
             if not issubclass(type(wedges),Wedge.Wedge):
-                raise AttributeError('Object is not an analyser or a simple list of these')
+                raise AttributeError('Object is not an analyzer or a simple list of these')
             self._wedges.append(wedges)
     
     def append(self,wedge):
@@ -346,7 +346,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - mask (boolean): If True the lower 100 pixels are set to 0
 
-            - adaptiveBinning (boolean): If true pixel bins are asigned to give same Gaussian area of intensity for all pixels (default False)
+            - adaptiveBinning (boolean): If true pixel bins are assigned to give same Gaussian area of intensity for all pixels (default False)
 
             - ignoreTubes (list of ints): List containing tubes to be ignored in fitting (default [])
 
@@ -356,7 +356,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - sampleDebyeWallerFactor (float): Correction of normalization data with Debye-Waller factor (default 1.0)
 
-            - formulaUnitsPerUnitCell (float): Numer of formalunits in normalization sample per unit cell (default 1.0) 
+            - formulaUnitsPerUnitCell (float): Numer of formal units in normalization sample per unit cell (default 1.0) 
             
             - sampleIncoherent (float): Incoherent strength of sample (default 5.08)
 
