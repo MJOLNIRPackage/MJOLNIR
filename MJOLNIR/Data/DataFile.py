@@ -1934,6 +1934,9 @@ class DataFile(object):
 
             attributes = [x+zero for x in ['bottom','left','right','top'] for zero in ['','_zero']]
             values = ['monochromatorSlit'+x+zero for x in ['Bottom','Left','Right','Top'] for zero in ['','Zero']]
+            if self.fromNICOS: 
+                attributes += ['x_gap','y_gap']
+                values += ['monochromatorSlit'+x+'Gap' for x in ['X','Y']]
             
             for att,value in zip(attributes,values):
                 val =  getattr(self,value)
@@ -1942,22 +1945,16 @@ class DataFile(object):
                     dset[0] = val
                     dset.attrs['units'] = np.string_('mm')
 
-            for value,att in zip(['monochromatorSlitXGap','monochromatorSlitYGap'],['x_gap','y_gap']):
-                dset = monoSlit.create_dataset(att,(3,),'float32')
-                val = getattr(self,value)
-                if val[0] == np.array(None):
-                    continue
-                print(value,att,val)
-                dset[:] = getattr(self,value) # Might not work
-                dset.attrs['units'] = 'mm'
         
         def addAna(self,inst):
             ana = inst.create_group('analyzer')
             ana.attrs['NX_class'] = np.string_('NXcrystal')
             
-            attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']
+            attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']+self.fromNICOS*['polar_angle_raw']
             values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
-            units = ['anstrom','mev','degree','degree']
+            units = ['anstrom','mev','degree','degree']+self.fromNICOS*['degree']
+
+
             for att,value,unit in zip(attributes,values,units):
                 data = getattr(self,value)
                 dset = ana.create_dataset(att,(len(data),),'float32')
