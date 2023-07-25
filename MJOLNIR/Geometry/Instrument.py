@@ -394,6 +394,15 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if savelocation[-1]!='/':
                     savelocation+='/'
                 
+                bins = []
+                for table in tables:
+                    if isinstance(table,int):
+                        bins.append(table)
+                    else:
+                        raise AttributeError("Provided table attribute ({}) not recognized an integer.".format(table))
+                if len(bins)==0:
+                    raise AttributeError("No binning has been chosen for normalization routine.")
+
                 monitor = np.array(VanFile.get('entry/monitor_2/data')) # Extract monitor count
                 #monitor = VanFileLoaded.Monitor
                 # Divide data with corresponding monitor by reshaping it correctly
@@ -401,6 +410,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if intensities is None:
                     intensities = VanFileInstrument.get('detector/data')
                 #print(monitor.shape)
+                
                 Data = np.array(intensities).transpose(2,0,1).astype(float)/monitor[np.newaxis,:,np.newaxis]
                 if sampleMass != None: # A sample mass has been proivided
 
@@ -432,14 +442,6 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if pixels!=Data.shape[2]:
                     raise ValueError('The number of pixels ({}) in the data file does not match instrument description ({})!'.format(pixels,Data.shape[2]))
 
-                bins = []
-                for table in tables:
-                    if isinstance(table,int):
-                        bins.append(table)
-                    else:
-                        raise AttributeError("Provided table attribute ({}) not recognized an integer.".format(table))
-                if len(bins)==0:
-                    raise AttributeError("No binning has been chosen for normalization routine.")
                 # Initial finding of peaks
                 peakPos = np.ones((detectors,analysers),dtype=float)*(-1)
                 peakVal = np.zeros_like(peakPos,dtype=float)
