@@ -4176,6 +4176,26 @@ class DataSet(object):
             badEis.append(np.mean(EiInside[elasticLines]))
         return badEis
 
+    @_tools.KwargChecker()
+    def symmetrize(self,function):
+        """Symmetrize data by providing a custom function
+
+        Args:
+        
+            function (function): Function to symmetrize
+
+        The signature of the function must be func(H,K,L) and must return (H,K,L). An example is
+
+        >>> def symmetrize(H,K,L):
+        >>>     return np.abs(H),np.abs(K),np.abs(L)
+            
+        """
+        for df in self:
+            df.qx,df.qy = df.sample.calculateHKLToQxQy(*function(df.h, df.k, df.l))
+            df.h,df.k,df.l = df.sample.calculateQxQyToHKL(df.qx,df.qy)
+
+        
+
 
 def load(filename):
     """Function to load an object from a pickled file.

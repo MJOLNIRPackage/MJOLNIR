@@ -1439,3 +1439,34 @@ def test_CustomAxisInput():
     q = np.array([0.7,0.7,0],float)
     cut1de_params.update({'q':q, "ax":ax_direction2})
     ax_direction2, data_dir2, bins_dir2 = ds.plotCut1DE(**cut1de_params)
+
+
+def test_symmetrize():
+
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),]
+    ds = DataSet(DataFile)
+    ds.convertDataFile()
+
+    qxOriginal = ds[0].qx
+    qyOriginal = ds[0].qy
+
+    def identity(H,K,L):
+        return H,K,L
+
+    ds.symmetrize(identity)
+
+    qx = ds[0].qx
+    qy = ds[0].qy
+
+
+    assert(np.all(np.isclose(qx,qxOriginal,atol=1e-6)))
+    assert(np.all(np.isclose(qy,qyOriginal,atol=1e-6)))
+
+    def absolute(H,K,L):
+        return np.abs(H),np.abs(K),np.abs(L)
+
+    ds.symmetrize(absolute)
+
+    assert(np.all(ds[0].h.min()>=0))
+    assert(np.all(ds[0].k.min()>=0))
+    assert(np.all(ds[0].l.min()>=0))
