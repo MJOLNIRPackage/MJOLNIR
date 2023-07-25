@@ -11,7 +11,7 @@ software package tries to both introduce an easy-to-use scripting interface to v
 
 Table of contents
 -----------------
-Below is an overview of the provided documentation containing everything from physical/mathematical explanations of different concets through code specific references to 
+Below is an overview of the provided documentation containing everything from physical/mathematical explanations of different concepts through code specific references to 
 tutorials and guides on how to make use of MJOLNIR.
 
 .. toctree::
@@ -25,7 +25,7 @@ tutorials and guides on how to make use of MJOLNIR.
    InDepthDocumentation/Documentation
    Optimizations/Optimization   
 
-
+Sample data can be downloaded `here <https://www.psi.ch/en/media/70468/download?attachment>`_ 
 
 .. table:: Current informations
    :widths: grid

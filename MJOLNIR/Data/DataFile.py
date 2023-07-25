@@ -82,8 +82,10 @@ HDFTranslation = {'sample':'/entry/sample',
 }
 
 HDFTranslationNICOSAlternative = {
-                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts'],
-                   'magneticField':['entry/sample/B','entry/sample/B/value'],
+                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T'],
+                   'temperature_log':['entry/sample/temperature_log/value','entry/sample/T_log/value'],
+                   'temperature_time_log':['entry/sample/temperature_log/time','entry/sample/temperature_log/time','entry/sample/T_log/time'],
+                   'magneticField':['entry/sample/B','entry/sample/B/value','entry/sample/magnetic_field'],
                    'ei':'entry/CAMEA/monochromator/energy',
                    'hdfMonitor':['entry/monitor_2/data','entry/control/data']
 }
@@ -169,7 +171,7 @@ detectorLimits = {'CAMEA':103,
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
-    def __init__(self,fileLocation=None):
+    def __init__(self,fileLocation=None,McStas=False):
         # Check if file exists
         if isinstance(fileLocation,DataFile): # Copy everything in provided file
             self.updateProperty(fileLocation.__dict__)
@@ -197,8 +199,10 @@ class DataFile(object):
                 with hdf.File(fileLocation,mode='r') as f:
                     # Find out if file is a NICOS file
                     # NICOS has data saved in /entry/data/data while six has /entry/data/counts
-                    
-                    self.fromNICOS = checkNICOS(f)
+                    if McStas:
+                        self.fromNICOS = 0
+                    else:
+                        self.fromNICOS = checkNICOS(f)
 
                     if self.fromNICOS is None:
                         raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
@@ -272,9 +276,17 @@ class DataFile(object):
                     else:
                         self.userAffiliation = 'UNKNOWN'
                     
-                    self.singleDetector1 = np.array(getHDFEntry(f,'singleDetector1',fromNICOS=self.fromNICOS))
-                    self.singleDetector8 = np.array(getHDFEntry(f,'singleDetector8',fromNICOS=self.fromNICOS))
+                    
+                    
+                    try:
+                        self.singleDetector1 = np.array(getHDFEntry(f,'singleDetector1',fromNICOS=self.fromNICOS))[0]
+                    except:
+                        pass
 
+                    try:
+                        self.singleDetector8 = np.array(getHDFEntry(f,'singleDetector8',fromNICOS=self.fromNICOS))[0]
+                    except:
+                        pass
                     # Monochromator
 
                     attributes = ['type','d_spacing','horizontal_curvature','vertical_curvature',
@@ -301,7 +313,7 @@ class DataFile(object):
 
                     # Analyzer
                     # analyzer_selection
-                    attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']
+                    attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset','polar_angle_raw']
                     values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
                     for att,value in zip(attributes,values):
                         setattr(self,value,np.array(f.get('entry/CAMEA/analyzer/{}'.format(att))))
@@ -320,7 +332,7 @@ class DataFile(object):
                         self.twotheta = copy.deepcopy(self.A4) - self.A4Off
                     else:
                         self.twotheta = self.A4-self.A4Off
-
+                    self.scanCommand = np.array(getHDFEntry(f,'scanCommand',fromNICOS=self.fromNICOS))[0]
                     try:
                         self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
                     except KeyError:
@@ -346,7 +358,12 @@ class DataFile(object):
                     except:
                         self.A3Off = [0.0]
                     if self.type == 'hdf':
-                        self.binning=np.max(self.possibleBinnings).astype(int) # Choose standard binning max
+                        
+                        if len(self.possibleBinnings) == 0:
+                            self.possibleBinnings = [None]
+                            self.binning = None
+                        else:
+                            self.binning=np.max(self.possibleBinnings).astype(int) # Choose standard binning max
                     else:
                         self.binning = int(np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/binning'))[0])
                     calibrations = []
@@ -368,13 +385,29 @@ class DataFile(object):
                     self.magneticField = np.array(getHDFEntry(f,'magneticField',fromNICOS=self.fromNICOS))
                     self.electricField = np.array(getHDFEntry(f,'electricField',fromNICOS=self.fromNICOS))
                     
-                    self.scanCommand = np.array(getHDFEntry(f,'scanCommand',fromNICOS=self.fromNICOS))[0]
+                    
                     if self.type == 'nxs':
                         self.original_fileLocation = np.array(f.get('entry/reduction/MJOLNIR_algorithm_convert/rawdata'))[0].decode()
                     self.title = np.array(getHDFEntry(f,'title'))[0]
 
                     self.absoluteTime = np.array(getHDFEntry(f,'absoluteTime',fromNICOS=self.fromNICOS))
                     self.protonBeam = np.array(getHDFEntry(f,'protonBeam',fromNICOS=self.fromNICOS))
+
+                    if self.fromNICOS and self.temperature is None: # Only use interpolated temperature if no temperature was found
+                        self.temperature_log = np.array(getHDFEntry(f,'temperature_log',fromNICOS=self.fromNICOS))
+                        self.temperature_time_log = np.array(getHDFEntry(f,'temperature_time_log',fromNICOS=self.fromNICOS))
+                        if not self.temperature_log is None:
+                            timeSteps = self.absoluteTime-self.absoluteTime[0]
+                            try:
+                                self.temperature_log = self.temperature_log[:len(self.temperature_time_log)]
+
+                                self.temperature =[np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])]
+                                ## Above adds all but last temperature interval 
+                                self.temperature.append(np.mean(self.temperature_log[self.temperature_time_log>timeSteps[-1]]))
+                                self.temperature = np.array(self.temperature)
+                            except TypeError: # no length of temperature_time_log, i.e. the log is not present
+                                self.temperature = np.asarray(len(self.absoluteTime)*[None])
+
 
                     if self.type == 'hdf':
                         ###################
@@ -1654,6 +1687,8 @@ class DataFile(object):
         newBinnings = []
         
         for binning in self.possibleBinnings:
+            if binning is None:
+                continue
             self.loadBinning(binning)
             calibrations[binning] = [self.instrumentCalibrationEf,self.instrumentCalibrationA4,self.instrumentCalibrationEdges]
         
@@ -1899,6 +1934,9 @@ class DataFile(object):
 
             attributes = [x+zero for x in ['bottom','left','right','top'] for zero in ['','_zero']]
             values = ['monochromatorSlit'+x+zero for x in ['Bottom','Left','Right','Top'] for zero in ['','Zero']]
+            if self.fromNICOS: 
+                attributes += ['x_gap','y_gap']
+                values += ['monochromatorSlit'+x+'Gap' for x in ['X','Y']]
             
             for att,value in zip(attributes,values):
                 val =  getattr(self,value)
@@ -1907,18 +1945,16 @@ class DataFile(object):
                     dset[0] = val
                     dset.attrs['units'] = np.string_('mm')
 
-            for value,att in zip(['monochromatorSlitXGap','monochromatorSlitYGap'],['x_gap','y_gap']):
-                dset = monoSlit.create_dataset(att,(3,),'float32')
-                dset[:] = getattr(self,value) # Might not work
-                dset.attrs['units'] = 'mm'
         
         def addAna(self,inst):
             ana = inst.create_group('analyzer')
             ana.attrs['NX_class'] = np.string_('NXcrystal')
             
-            attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']
+            attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']+self.fromNICOS*['polar_angle_raw']
             values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
-            units = ['anstrom','mev','degree','degree']
+            units = ['anstrom','mev','degree','degree']+self.fromNICOS*['degree']
+
+
             for att,value,unit in zip(attributes,values,units):
                 data = getattr(self,value)
                 dset = ana.create_dataset(att,(len(data),),'float32')
@@ -2029,7 +2065,11 @@ class DataFile(object):
 
             dset = mono.create_dataset('rotation_angle',data=self.monochromatorRotationAngle,dtype='float32')
             dset.attrs['units'] = np.string_('degree')
-            dset = mono.create_dataset('rotation_angle_zero',data=self.monochromatorRotationAngleZero,dtype='float32')
+            if hasattr(self,'monochromatorRotationAngleZero'):
+                v = self.monochromatorRotationAngleZero
+            else:
+                v = 0.0
+            dset = mono.create_dataset('rotation_angle_zero',data=v,dtype='float32')
             dset.attrs['units'] = np.string_('degree')
 
 
@@ -2057,6 +2097,8 @@ class DataFile(object):
             dset.attrs['units'] = np.string_('seconds')
 
             time =  self.absoluteTime
+            if time[0] == np.array(None):
+                time = [0.0]
             dset = control.create_dataset('absolute_time',data=time,dtype='float32')
             dset.attrs['units'] = np.string_('seconds')
             
@@ -2093,6 +2135,7 @@ class DataFile(object):
         
             attribute = ['a4offset','amplitude','background','boundaries','final_energy','width']
             for calibration,binning in zip(self.instrumentCalibrations,self.possibleBinnings):
+                if binning is None: continue
                 pixelCalib = inst.create_group('calib{}'.format(binning))
                 Etable, A4, bound = calibration
                 amp,Ef,width,bg = Etable.T
@@ -2188,20 +2231,47 @@ def getScanParameter(self,f):
                 if item == 's2t':
                     item = 'A4'
                 
+
                 if item == 'A4':
                     fItem = getHDFInstrumentEntry(getInstrument(f),item,self.fromNICOS)
-                else:
+                elif item != 'CAMEA':
                     fItem = getHDFEntry(f,item,self.fromNICOS)
                     #fItem = f.get(position)    
-                scanParameters.append(item)
                 
-                scanUnits.append(decodeStr(fItem.attrs['units']))
-                scanValues.append(np.array(fItem))
-                try:
-                    scanDataPosition.append(decodeStr(fItem.attrs['target']))
-                except:
-                    pass
+                if item == 'CAMEA':
+                    # We are doing a QScan
+                    scanCommand = self.scanCommand.decode()
 
+                    t = scanCommand.split('(')[0]
+                    if not t.lower() == 'qcscan': continue
+                    start = scanCommand.split('(')[2].split(')')[0]
+                    step = scanCommand.split('(')[3].split(')')[0]
+                    _,steps,monitor = scanCommand.split(')')[2].split(',')
+
+                    centre = np.asarray([float(x) for x in start.split(',')])
+                    step = np.asarray([float(x) for x in step.split(',')])
+                    dist =np.linalg.norm(step)
+                    step = _tools.LengthOrder(step)
+                    dist*=1.0/np.linalg.norm(step)
+                    steps = int(steps)
+                    monitor = int(monitor.split('=')[1])
+                    #constant = np.isclose(step,0)
+                    textCentre = '['+', '.join([str(x) for x in centre])+'] '
+                    textStep = _tools.generateLabelDirection(step,labels=['H','K','L','E'])
+                    
+                    scanParameters.append(textCentre+' + '+textStep)
+                    scanUnits.append('RLU, meV')
+                    scanValues.append(np.linspace(-dist*steps,dist*steps,steps*2+1))
+                    
+                else:
+                    scanParameters.append(item)
+                
+                    scanUnits.append(decodeStr(fItem.attrs['units']))
+                    scanValues.append(np.array(fItem))
+                    try:
+                        scanDataPosition.append(decodeStr(fItem.attrs['target']))
+                    except:
+                        pass
     return scanParameters,np.array(scanValues),scanUnits,scanDataPosition
 
 
@@ -2463,7 +2533,9 @@ def extractData(files):
     H = PointerArray('H',files)
     K = PointerArray('K',files)
     L = PointerArray('L',files)
+    temperature = PointerArray('temperature',files)
 
+    
     #mask = []
     
     scanParameters = []
@@ -2485,10 +2557,10 @@ def extractData(files):
     
     if files[0].type=='nxs':
         return I,qx,qy,energy,Norm,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,H,K,L
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,temperature,H,K,L
     else:
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
-        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit
+        instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,temperature
 
 def assertFile(file):
     """Make sure that file exists for methods to work"""

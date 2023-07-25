@@ -907,7 +907,7 @@ def calculateMolarMass(sampleChemicalFormula,formulaUnitsPerUnitCell=1,returnEle
     # Combination of https://stackoverflow.com/questions/26385984/recursive-pattern-in-regex
     # and (\d*\.\d+|\d+) made to find integers or floats.
     # Finds outer most parentheses 
-    recursiveParenthesis = re.compile('\(((?>[^\(\)]+|(?R))*)\)(\d*\.\d+|\d+)?')
+    recursiveParenthesis = re.compile(r'\(((?>[^\(\)]+|(?R))*)\)(\d*\.\d+|\d+)?')
     
     
     
@@ -1263,7 +1263,7 @@ def histogramdd(sample, bins, weights, returnCounts = False):
         hist = hist.reshape(nbin)
 
         # This preserves the (bad) behavior observed in gh-7845, for now.
-        hist = hist.astype(int)#, casting='safe')
+        hist = hist.astype(float)#, casting='safe')
 
         # Remove outliers (indices 0 and -1 for each dimension).
         core = D*(slice(1, -1),)

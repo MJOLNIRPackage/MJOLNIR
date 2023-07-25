@@ -5,8 +5,6 @@ The following is a list of tutorials split into different categories with variou
 
 For first time users and people wanting to simply convert and plot data, the following tutorials is the place to start if one is not using the `MJOLNIRGui <https://pypi.org/project/MJOLNIRGui/>`_
 
-:download:`Download ConstantEnergy <notebooks/ConstantEnergy.ipynb>`
-
 
 .. toctree::
    :maxdepth: 1
@@ -78,26 +76,16 @@ Below is an overview of currently implemented scripts and their arguments.
    
 Download Tutorial Notebooks
 ===========================
-:download:`QuickPlottingofData<notebooks/QuickPlottingofData.ipynb>`
 
-:download:`ConstantEnergy<notebooks/ConstantEnergy.ipynb>`
-
-:download:`CuttingThroughDataInQE<notebooks/CuttingThroughDataInQE.ipynb>`
-
-:download:`AdvancedView3DTutorial<notebooks/AdvancedView3DTutorial.ipynb>`
-
-:download:`Masking<notebooks/Masking.ipynb>`
-
-:download:`Backgroundsubtraction<notebooks/Backgroundsubtraction.ipynb>`
-
-:download:`Fittingofsequential1Dcuts<notebooks/Fittingofsequential1Dcuts.ipynb>`
-
-:download:`OverviewofCAMEAData<notebooks/OverviewofCAMEAData.ipynb>`
-
-:download:`_toolsOverview<notebooks/_toolsOverview.ipynb>`
-
-:download:`ReciprocalLatticeUnitAxis<notebooks/ReciprocalLatticeUnitAxis.ipynb>`
-
-:download:`SimpleInstrument<notebooks/SimpleInstrument.ipynb>`
-
-:download:`CalculateA4Ef<notebooks/CalculateA4Ef.ipynb>`
++ :download:`QuickPlottingofData<notebooks/QuickPlottingofData.ipynb>`
++ :download:`ConstantEnergy<notebooks/ConstantEnergy.ipynb>`
++ :download:`CuttingThroughDataInQE<notebooks/CuttingThroughDataInQE.ipynb>`
++ :download:`AdvancedView3DTutorial<notebooks/AdvancedView3DTutorial.ipynb>`
++ :download:`Masking<notebooks/Masking.ipynb>`
++ :download:`Backgroundsubtraction<notebooks/Backgroundsubtraction.ipynb>`
++ :download:`Fittingofsequential1Dcuts<notebooks/Fittingofsequential1Dcuts.ipynb>`
++ :download:`OverviewofCAMEAData<notebooks/OverviewofCAMEAData.ipynb>`
++ :download:`_toolsOverview<notebooks/_toolsOverview.ipynb>`
++ :download:`ReciprocalLatticeUnitAxis<notebooks/ReciprocalLatticeUnitAxis.ipynb>`
++ :download:`SimpleInstrument<notebooks/SimpleInstrument.ipynb>`
++ :download:`CalculateA4Ef<notebooks/CalculateA4Ef.ipynb>`

@@ -432,7 +432,7 @@ class Viewer3D(object):
         Z=self.bins[axes[2]].transpose(axes)
 
         
-        masked_array = np.ma.array (self.Data, mask=np.isnan(self.Data)).transpose(axes)
+        masked_array = np.ma.array(self.Data, mask=np.isnan(self.Data)).transpose(axes)
         self.emptyData = masked_array[:,:,0].T.flatten().copy()
         self.emptyData.mask = np.ones_like(self.emptyData,dtype=bool)
         self._axesChanged = True
@@ -531,7 +531,8 @@ class Viewer3D(object):
 
         self.text.set_text(self.stringValue())
         try:
-            self.im.set_array(self.emptyData)
+            #self.im.set_array(self.emptyData)
+            pass
         except TypeError:
             pass
         if self._axesChanged:
@@ -692,7 +693,7 @@ def onclick(self,x,y,returnText=False, outputFunction=print,extra=None): # pragm
         Norm = self.Normalization[ID[0],ID[1],ID[2]]
         Mon = self.Monitor[ID[0],ID[1],ID[2]]
         NC = self.NormCounts[ID[0],ID[1],ID[2]]
-        printString+=', Cts = {:}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),NC)
+        printString+=', Cts = {:}, Norm = {:.3f}, Mon = {:d}, NormCount = {:d}'.format(cts,Norm,int(Mon),int(NC))
     if not extra is None:
         printString+=extra
     if returnText:

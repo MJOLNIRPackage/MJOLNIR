@@ -7,7 +7,8 @@ from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 from MJOLNIR import _tools
 import MJOLNIR
 from MJOLNIR import TasUBlibDEG
-from MJOLNIR.Data import RLUAxes
+from MJOLNIR.Data import RLUAxes,DataFile
+from MJOLNIR.TasUBlibDEG import factorsqrtEK
 import warnings
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -78,7 +79,7 @@ class Instrument(GeometryConcept.GeometryConcept):
                 self._wedges.append(ana)
         else:
             if not issubclass(type(wedges),Wedge.Wedge):
-                raise AttributeError('Object is not an analyser or a simple list of these')
+                raise AttributeError('Object is not an analyzer or a simple list of these')
             self._wedges.append(wedges)
     
     def append(self,wedge):
@@ -345,7 +346,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - mask (boolean): If True the lower 100 pixels are set to 0
 
-            - adaptiveBinning (boolean): If true pixel bins are asigned to give same Gaussian area of intensity for all pixels (default False)
+            - adaptiveBinning (boolean): If true pixel bins are assigned to give same Gaussian area of intensity for all pixels (default False)
 
             - ignoreTubes (list of ints): List containing tubes to be ignored in fitting (default [])
 
@@ -355,7 +356,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
             - sampleDebyeWallerFactor (float): Correction of normalization data with Debye-Waller factor (default 1.0)
 
-            - formulaUnitsPerUnitCell (float): Numer of formalunits in normalization sample per unit cell (default 1.0) 
+            - formulaUnitsPerUnitCell (float): Numer of formal units in normalization sample per unit cell (default 1.0) 
             
             - sampleIncoherent (float): Incoherent strength of sample (default 5.08)
 
@@ -378,7 +379,7 @@ class Instrument(GeometryConcept.GeometryConcept):
 
 
             VanFileInstrument = getInstrument(VanFile) # Get the HDF object of the instrument (CAMEA)
-            
+            VanFileLoaded = DataFile.DataFile(VanFile)
 
             VanFileInstrumentType = VanFileInstrument.name.split('/')[-1]
             
@@ -393,11 +394,23 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if savelocation[-1]!='/':
                     savelocation+='/'
                 
-                monitor = np.array(VanFile.get('entry/control/data')) # Extract monitor count
+                bins = []
+                for table in tables:
+                    if isinstance(table,int):
+                        bins.append(table)
+                    else:
+                        raise AttributeError("Provided table attribute ({}) not recognized an integer.".format(table))
+                if len(bins)==0:
+                    raise AttributeError("No binning has been chosen for normalization routine.")
+
+                monitor = np.array(VanFile.get('entry/monitor_2/data')) # Extract monitor count
+                #monitor = VanFileLoaded.Monitor
                 # Divide data with corresponding monitor by reshaping it correctly
-                intensities = VanFileInstrument.get('detector/counts')
+                intensities = VanFileInstrument.get('data/data')
                 if intensities is None:
                     intensities = VanFileInstrument.get('detector/data')
+                #print(monitor.shape)
+                
                 Data = np.array(intensities).transpose(2,0,1).astype(float)/monitor[np.newaxis,:,np.newaxis]
                 if sampleMass != None: # A sample mass has been proivided
 
@@ -429,14 +442,6 @@ class Instrument(GeometryConcept.GeometryConcept):
                 if pixels!=Data.shape[2]:
                     raise ValueError('The number of pixels ({}) in the data file does not match instrument description ({})!'.format(pixels,Data.shape[2]))
 
-                bins = []
-                for table in tables:
-                    if isinstance(table,int):
-                        bins.append(table)
-                    else:
-                        raise AttributeError("Provided table attribute ({}) not recognized an integer.".format(table))
-                if len(bins)==0:
-                    raise AttributeError("No binning has been chosen for normalization routine.")
                 # Initial finding of peaks
                 peakPos = np.ones((detectors,analysers),dtype=float)*(-1)
                 peakVal = np.zeros_like(peakPos,dtype=float)
@@ -917,10 +922,13 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
     """
     def addMetaData(entry,title):
         dset = entry.create_dataset('start_time',(1,),dtype='<S70')
-        dset[0] = b'2018-03-22T16:44:02+01:00'
+        now = datetime.datetime.now()
+        dset[0] = np.string_(now.strftime('%Y-%m-%dT%H:%M:%S%z'))
+        #dset[0] = b'2018-03-22T16:44:02+01:00'
 
         dset = entry.create_dataset('end_time',(1,),dtype='<S70')
-        dset[0] = b"2018-03-22T18:44:02+01:00"
+        dset[0] = np.string_(now.strftime('%Y-%m-%dT%H:%M:%S%z'))
+        #dset[0] = b"2018-03-22T18:44:02+01:00"
 
         dset = entry.create_dataset('experiment_identifier',(1,),dtype='<S70')
         dset[0] = b"UNKNOWN"
@@ -1145,8 +1153,8 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         dset = sam.create_dataset('plane_vector_2',data=plane_vector_2)
 
         if plane_normal is None:
-            normal = np.zeros((3,),dtype='float32')
-            normal[2] = 1.0
+            plane_normal = np.zeros((3,),dtype='float32')
+            plane_normal[2] = 1.0
 
         dset = sam.create_dataset('plane_normal',data=plane_normal)
 
@@ -1257,19 +1265,35 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         #dset.attrs['units'] = np.string_('counts')
         
         
-        makeMonitor(entry,Numpoints,dir)
+        makeMonitor(entry,Numpoints,dir,ei)
         entry.create_dataset('scancommand',data=[np.string_(scanType)])
         entry.create_dataset('scanvars',data=scanvars)
-    def makeMonitor(entry,Numpoints,dir):
+    def makeMonitor(entry,Numpoints,dir,ei):
         
         ## read monitor if slit monitor exists
-
+        def isVaried(data):
+            if len(data)>1 and data[0]!=data[1]:
+                return True
+            else:
+                return False
         # Check if slit monitor exists
         if os.path.exists(os.path.join(dir,'0','SlitMonitor.dat')):
             mons = []
-            for  i in range(Numpoints):
+            
+            if isVaried(ei):
+                looper = enumerate(ei)
+                varied = True
+            else:
+                looper = range(Numpoints)
+                isVaried = False
+                e = ei[0]
+            for i in looper:#range(Numpoints):
+                if isVaried:
+                    i,e = i 
                 dat = np.loadtxt(os.path.join(dir,str(i),'SlitMonitor.dat'))
                 totalCount = dat[:int(len(dat)/3)].sum()
+                
+                totalCount/=np.sqrt(e)*factorsqrtEK
                 mons.append(totalCount)
         else:
             mons = [10000]*Numpoints

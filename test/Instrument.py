@@ -313,7 +313,7 @@ def test_Normalization_tables(quick):
     Instr = Instrument(fileName=os.path.join('Data','CAMEA_Updated.xml'))
     Instr.initialize()
 
-    NF = os.path.join(dataPath,'camea2018n000038.hdf')
+    NF = os.path.join(dataPath,'camea2023n000083.hdf')
     #AF = 'TestData/1024/A4Normalization.h5'
 
     try:

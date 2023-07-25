@@ -48,15 +48,16 @@ class Sample(object):
             self.plane_vector1 = np.array(sample.get('plane_vector_1'))
             self.plane_vector2 = np.array(sample.get('plane_vector_2'))
             crossProduct = np.cross(self.plane_vector1[:3],self.plane_vector2[:3])
-            if recalculateUB: # Recalculate the ub from the given peaks (ignoring sgu and sgl!)
+            if recalculateUB is True: # Recalculate the ub from the given peaks (ignoring sgu and sgl!)
                 self.plane_vector1 = np.delete(self.plane_vector1,3)
                 self.plane_vector1[5:7] = 0.0
                 self.plane_vector2 = np.delete(self.plane_vector2,3)
                 self.plane_vector2[5:7] = 0.0
                 self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell, self.plane_vector1, self.plane_vector2)
-                
-            else:
+            elif recalculateUB == 0 and type(recalculateUB) == bool:
                 self.orientationMatrix = np.array(sample.get('orientation_matrix'))*2*np.pi
+            else:
+                self.orientationMatrix = np.array(sample.get('orientation_matrix'))
             if not np.all(np.isclose(crossProduct,[0,0,0])):
                 self.planeNormal = crossProduct
             self.A3Off = np.array([0.0])#

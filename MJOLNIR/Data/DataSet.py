@@ -30,7 +30,7 @@ from MJOLNIR._interactiveSettings import States, cut1DHolder
 
 import time
 
-from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
+
 
 import warnings
 from ufit import Dataset
@@ -499,11 +499,11 @@ class DataSet(object):
         if len(self.convertedFiles)!=0:
             self.I,self.qx,self.qy,self.energy,self.Norm,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits,self.h,self.k,self.l = MJOLNIR.Data.DataFile.extractData(self.convertedFiles)
+            self.scanParameterValues,self.scanParameterUnits,self.temperature,self.h,self.k,self.l = MJOLNIR.Data.DataFile.extractData(self.convertedFiles)
         else:
             self.I,self.Monitor,self.a3,self.a3Off,self.a4,self.a4Off,self.instrumentCalibrationEf, \
             self.instrumentCalibrationA4,self.instrumentCalibrationEdges,self.Ei,self.scanParameters,\
-            self.scanParameterValues,self.scanParameterUnits = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
+            self.scanParameterValues,self.scanParameterUnits,self.temperature = MJOLNIR.Data.DataFile.extractData(self.dataFiles)
 
         if len(self.convertedFiles)!=0:
             self.sample = [d.sample for d in self]
@@ -4089,6 +4089,7 @@ class DataSet(object):
 
         
         """
+        from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
         return calculateResoultionMatrix(sample=self[0].sample,position=position,Ei=Ei,Ef=Ef,rlu=rlu,binning=self[0].binning,A3Off=self[0].sample.theta)
 
     def calculateResolutionMatrixAndVectors(self,position,projectionVector1,projectionVector2,Ei,Ef,rlu=True,rluAxis=False):
@@ -4114,6 +4115,7 @@ class DataSet(object):
         Projection matrix is given by two projections vectors with unit length.
         
         """
+        from MJOLNIR.Geometry.Instrument import calculateResoultionMatrix
         M = self.calculateResolutionMatrix(position,Ei,Ef,rlu=rlu)
         
         P = np.zeros((3,5))
@@ -4139,6 +4141,60 @@ class DataSet(object):
         return M,eigenVectors,sigma
 
 
+    
+    def checkSecondOrderElastic(self,EPeaks,atol=0.2,printing=True):
+        """Check if peaks at certain energies corresponds with second order elastic scattering in data set
+
+        Args:
+
+            - EPeaks (list): List of peaks to check
+
+        Kwargs:
+
+            - atol (float): Tolerance of Ei calculation (default 0.2 meV)
+
+            - printing (bool): Boolean flag to control printing (default True)
+
+        Returns:
+
+            - Eis (list): List of Ei's corresponding to second order elastic for all peaks. If no Ei is found nan is returned
+        
+        """
+        badEis = []
+        for EPeak in EPeaks:
+        
+            inside = [np.all([df.energy.min()<EPeak,df.energy.max()>EPeak]) for df in self]
+            EiInside = np.asarray(self.Ei)[inside]
+            
+            Ef = EiInside-EPeak
+            difference = Ef*4-EiInside
+            elasticLines = np.isclose(difference,0,atol=atol)
+            if np.any(elasticLines):
+                if printing:
+                    print('Peak at {:.2f} meV might very well be second order elastic from Ei = {:.2f} meV'.format(EPeak,np.mean(EiInside[elasticLines])))
+                
+            badEis.append(np.mean(EiInside[elasticLines]))
+        return badEis
+
+    @_tools.KwargChecker()
+    def symmetrize(self,function):
+        """Symmetrize data by providing a custom function
+
+        Args:
+        
+            function (function): Function to symmetrize
+
+        The signature of the function must be func(H,K,L) and must return (H,K,L). An example is
+
+        >>> def symmetrize(H,K,L):
+        >>>     return np.abs(H),np.abs(K),np.abs(L)
+            
+        """
+        for df in self:
+            df.qx,df.qy = df.sample.calculateHKLToQxQy(*function(df.h, df.k, df.l))
+            df.h,df.k,df.l = df.sample.calculateQxQyToHKL(df.qx,df.qy)
+
+        
 
 
 def load(filename):
