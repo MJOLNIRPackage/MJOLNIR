@@ -55,9 +55,9 @@ class Sample(object):
                 self.plane_vector2[5:7] = 0.0
                 self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell, self.plane_vector1, self.plane_vector2)
             elif recalculateUB == 0 and type(recalculateUB) == bool:
-                self.orientationMatrix = np.array(sample.get('orientation_matrix'))
-            else:
                 self.orientationMatrix = np.array(sample.get('orientation_matrix'))*2*np.pi
+            else:
+                self.orientationMatrix = np.array(sample.get('orientation_matrix'))
             if not np.all(np.isclose(crossProduct,[0,0,0])):
                 self.planeNormal = crossProduct
             self.A3Off = np.array([0.0])#
