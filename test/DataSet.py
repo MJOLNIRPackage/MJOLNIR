@@ -285,7 +285,7 @@ def test_DataSet_BinData():
     #assert(np.all(bins[0].shape=(4,6,6)))
     assert(RebinnedNorm.shape==ReBinnedI.shape)
     assert(RebinnedNormCount.shape==ReBinnedI.shape)
-    assert(RebinnedNormCount.dtype==int)
+    assert(RebinnedNormCount.dtype==float)
     assert(RebinnedNorm.dtype==Norm.dtype)
     assert(ReBinnedI.dtype==I.dtype)
 
