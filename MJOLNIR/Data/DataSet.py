@@ -321,12 +321,14 @@ class DataSet(object):
             pass#warnings.warn('Provided mask has no masked elements!')
         elif masksum==self.I.size:
             warnings.warn('Provided mask masks all elements!')
+        self._getData()
         
     def appendMask(self,mask):
         if isinstance(mask,list):
             self.mask = [np.logical_or(oM,m) for oM,m in zip(self.mask,mask)]
         else:
             self.mask = np.logical_or(self.mask,mask)
+        self._getData()
 
     @property
     def settings(self):
@@ -1145,12 +1147,12 @@ class DataSet(object):
 
  
     
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','edgecolors'],]))
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','edgecolors'],])) # ,'axisRedraw'
     def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,counts=False,
                   smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,
                   backgroundSubtraction = False, scaledEnergy=False,scaleFunction=_tools.scale,
                   rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None,
-                  cut1DFunctionRectangleVertical=None, **kwargs):
+                  cut1DFunctionRectangleVertical=None, **kwargs): #  axisRedraw=False,
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
@@ -1232,7 +1234,8 @@ class DataSet(object):
 
         if ax is None:
             ax = generate1DAxis(q1,q2,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction)
-        
+        #else:
+        #    ax = generate1DAxis(q1,q2,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction, ax=ax)
         # Add orthogonal positions to axes
         ax.width = width
         ax.minPixel = minPixel
@@ -1287,13 +1290,13 @@ class DataSet(object):
         else:
             AttributeError('Provided counts attribute not understood. Received "{}"'.format(counts))        
 
-        if log:
-            I = np.log10(I+1e-20)
         
         shape = (np.array(bins[0].shape)-np.array([1,1]))[::-1]
         I = np.ma.array(np.asarray(data[pdNaming['int']]).reshape(shape))
         I.mask = np.isnan(I)
-        
+
+        if log:
+            I = np.log10(I+1e-20)        
         HKL = np.asarray(data[variables])
         E = np.asarray(data[pdNaming['e']]).reshape(shape)
         if hasattr(ax,'calculatePositionInv'):
@@ -1569,7 +1572,8 @@ class DataSet(object):
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
     def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,
     dataFiles=None,xScale=1.0,yScale=1.0, backgroundSubtraction=False,
-    outputFunction=print,cut1DFunctionRectangle=None, cut1DFunctionCircle=None, scaleFunction = None,**kwargs):
+    outputFunction=print,cut1DFunctionRectangle=None, cut1DFunctionCircle=None, scaleFunction = None,
+    **kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
             
         Kwargs:
@@ -1661,9 +1665,8 @@ class DataSet(object):
             DS = DataSet(convertedFiles = dataFiles)
             I,qx,qy,energy,Norm,Monitor,samples,maskIndices = DS.I,DS.qx,DS.qy,DS.energy,DS.Norm,DS.Monitor,DS.sample,DS.maskIndices
             self = DS
-        if ax is None:
-            ax = self.createQAxis(rlu=rlu)
-
+        if ax is None:# or not (hasattr(ax,'name') and ax.name=='3d'):
+            ax = self.createQAxis(rlu=rlu) # ax=ax
             _3D = False
         else:
             if ax.name =='3d':
@@ -4193,6 +4196,7 @@ class DataSet(object):
         for df in self:
             df.qx,df.qy = df.sample.calculateHKLToQxQy(*function(df.h, df.k, df.l))
             df.h,df.k,df.l = df.sample.calculateQxQyToHKL(df.qx,df.qy)
+        self._getData()
 
         
 
