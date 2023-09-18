@@ -256,7 +256,7 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
             samp.orientationMatrixINV = np.linalg.inv(samp.orientationMatrix)
             samp.theta = 0.0
 
-    #if figure is None and ax is None:
+    if figure is None:# and ax is None:
         fig = plt.figure(figsize=(7, 4))
     else:
         fig = figure#ax.get_figure()
