@@ -1234,8 +1234,8 @@ class DataSet(object):
 
         if ax is None:
             ax = generate1DAxis(q1,q2,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction)
-        #else:
-        #    ax = generate1DAxis(q1,q2,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction, ax=ax)
+        else:
+            ax = generate1DAxis(q1,q2,ds=self,rlu=rlu,showEnergy=False,dimensionality=2,outputFunction=outputFunction, ax=ax)
         # Add orthogonal positions to axes
         ax.width = width
         ax.minPixel = minPixel
@@ -1922,9 +1922,10 @@ class DataSet(object):
             ax.data = [ax.intensity,ax.monitorCount,ax.Normalization,ax.NormCount]
             def to_csv(fileName,ax):
                 df = to_pandas(ax)
-
+                xshape = len(df.groupby('Qx'))
+                shape = xshape,int(df.shape[0]/xshape)
                 with open(fileName,'w') as f:
-                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,ax.Qx[0].shape))
+                    f.write("# CSV generated from MJOLNIR {}. Shape of data is {}\n".format(MJOLNIR.__version__,shape))
 
                 df.to_csv(fileName,mode='a')
             ax.to_csv = lambda fileName: to_csv(fileName,ax)
