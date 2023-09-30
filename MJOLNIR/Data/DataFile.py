@@ -82,7 +82,7 @@ HDFTranslation = {'sample':'/entry/sample',
 }
 
 HDFTranslationNICOSAlternative = {
-                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T'],
+                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T','entry/sample/temperature'],
                    'temperature_log':['entry/sample/temperature_log/value','entry/sample/T_log/value'],
                    'temperature_time_log':['entry/sample/temperature_log/time','entry/sample/temperature_log/time','entry/sample/T_log/time'],
                    'magneticField':['entry/sample/B','entry/sample/B/value','entry/sample/magnetic_field'],
