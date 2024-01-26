@@ -82,7 +82,7 @@ HDFTranslation = {'sample':'/entry/sample',
 }
 
 HDFTranslationNICOSAlternative = {
-                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T'],
+                   'temperature':['entry/sample/Ts','entry/sample/Ts/value','entry/sample/se_ts','entry/sample/T','entry/sample/temperature'],
                    'temperature_log':['entry/sample/temperature_log/value','entry/sample/T_log/value'],
                    'temperature_time_log':['entry/sample/temperature_log/time','entry/sample/temperature_log/time','entry/sample/T_log/time'],
                    'magneticField':['entry/sample/B','entry/sample/B/value','entry/sample/magnetic_field'],
@@ -203,11 +203,11 @@ class DataFile(object):
                         self.fromNICOS = 0
                     else:
                         self.fromNICOS = checkNICOS(f)
-
+                    instr = getInstrument(f)
                     if self.fromNICOS is None:
                         raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=getHDFEntry(f,'sample'),recalculateUB=self.fromNICOS)
-                    instr = getInstrument(f)
+                    
                     if self.type == 'hdf':
                         if np.shape(np.array(getHDFInstrumentEntry(instr,'counts',fromNICOS=self.fromNICOS))) == ():
                             raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
@@ -332,6 +332,27 @@ class DataFile(object):
                         self.twotheta = copy.deepcopy(self.A4) - self.A4Off
                     else:
                         self.twotheta = self.A4-self.A4Off
+
+                    # As of 2022 and implementation of NICOS temperature and magnetic field is saved
+                    # in another subfolder in the data file (e.g. entry/sample/B/value)
+                    self.temperature = np.array(getHDFEntry(f,'temperature',fromNICOS=self.fromNICOS))
+                    self.magneticField = np.array(getHDFEntry(f,'magneticField',fromNICOS=self.fromNICOS))
+                    self.electricField = np.array(getHDFEntry(f,'electricField',fromNICOS=self.fromNICOS))
+                    if self.fromNICOS and self.temperature is None: # Only use interpolated temperature if no temperature was found
+                        self.temperature_log = np.array(getHDFEntry(f,'temperature_log',fromNICOS=self.fromNICOS))
+                        self.temperature_time_log = np.array(getHDFEntry(f,'temperature_time_log',fromNICOS=self.fromNICOS))
+                        if not self.temperature_log is None:
+                            timeSteps = self.absoluteTime-self.absoluteTime[0]
+                            try:
+                                self.temperature_log = self.temperature_log[:len(self.temperature_time_log)]
+
+                                self.temperature =[np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])]
+                                ## Above adds all but last temperature interval 
+                                self.temperature.append(np.mean(self.temperature_log[self.temperature_time_log>timeSteps[-1]]))
+                                self.temperature = np.array(self.temperature)
+                            except TypeError: # no length of temperature_time_log, i.e. the log is not present
+                                self.temperature = np.asarray(len(self.absoluteTime)*[None])
+
                     self.scanCommand = np.array(getHDFEntry(f,'scanCommand',fromNICOS=self.fromNICOS))[0]
                     try:
                         self.scanParameters,self.scanValues,self.scanUnits,self.scanDataPosition = getScanParameter(self,f)
@@ -379,11 +400,7 @@ class DataFile(object):
                     self.instrumentCalibrations = np.array(calibrations,dtype=object)
                     self.loadBinning(self.binning)
 
-                    # As of 2022 and implementation of NICOS temperature and magnetic field is saved
-                    # in another subfolder in the data file (e.g. entry/sample/B/value)
-                    self.temperature = np.array(getHDFEntry(f,'temperature',fromNICOS=self.fromNICOS))
-                    self.magneticField = np.array(getHDFEntry(f,'magneticField',fromNICOS=self.fromNICOS))
-                    self.electricField = np.array(getHDFEntry(f,'electricField',fromNICOS=self.fromNICOS))
+                    
                     
                     
                     if self.type == 'nxs':
@@ -392,21 +409,7 @@ class DataFile(object):
 
                     self.absoluteTime = np.array(getHDFEntry(f,'absoluteTime',fromNICOS=self.fromNICOS))
                     self.protonBeam = np.array(getHDFEntry(f,'protonBeam',fromNICOS=self.fromNICOS))
-
-                    if self.fromNICOS and self.temperature is None: # Only use interpolated temperature if no temperature was found
-                        self.temperature_log = np.array(getHDFEntry(f,'temperature_log',fromNICOS=self.fromNICOS))
-                        self.temperature_time_log = np.array(getHDFEntry(f,'temperature_time_log',fromNICOS=self.fromNICOS))
-                        if not self.temperature_log is None:
-                            timeSteps = self.absoluteTime-self.absoluteTime[0]
-                            try:
-                                self.temperature_log = self.temperature_log[:len(self.temperature_time_log)]
-
-                                self.temperature =[np.mean(self.temperature_log[np.logical_and(self.temperature_time_log>tStart,self.temperature_time_log<tStop)]) for tStart,tStop in zip(timeSteps,timeSteps[1:])]
-                                ## Above adds all but last temperature interval 
-                                self.temperature.append(np.mean(self.temperature_log[self.temperature_time_log>timeSteps[-1]]))
-                                self.temperature = np.array(self.temperature)
-                            except TypeError: # no length of temperature_time_log, i.e. the log is not present
-                                self.temperature = np.asarray(len(self.absoluteTime)*[None])
+                    
 
 
                     if self.type == 'hdf':
@@ -421,7 +424,10 @@ class DataFile(object):
                 self.loadMultiFLEXXData(fileLocation)
             elif self.type == 'Bambus':
                 self.loadBambusData(fileLocation)
-            self.scanSteps = self.scanValues.shape[1]
+            try:
+                self.scanSteps = self.scanValues.shape[1]
+            except:
+                pass
             if True:
                 for attr in dir(self):
                     # If attribute is a function or property, skip it
@@ -2204,9 +2210,21 @@ def getScanParameter(self,f):
         
         scanItems = [x for x in np.array(f.get('/entry/scanvars'))[0].decode().split(',') if len(x)>0 ]
         ## In a manual scan, no scanvars are saved.... guess that it is either A3, A4 or Ei
-        
+        # Check first temperature and magnetic field
+
+
         if len(scanItems) == 0:
-            if np.abs(np.diff(self.Ei)).mean()>0.001: # it is an energy scan!
+            if np.abs(np.diff(self.temperature)).mean()>0.01:
+                scanParameters = ['T']
+                scanValues = np.array([self.temperature])
+                scanUnits = ['K']
+                scanDataPosition = ['/entry/sample/temperature']
+            elif np.abs(np.diff(self.magneticField)).mean()>0.01:
+                scanParameters = ['B']
+                scanValues = np.array([self.magneticField])
+                scanUnits = ['T']
+                scanDataPosition = ['/entry/sample/B']
+            elif np.abs(np.diff(self.Ei)).mean()>0.001: # it is an energy scan!
                 scanParameters = ['Ei']
                 scanValues = np.array([self.Ei])
                 scanUnits = ['meV']
@@ -2222,7 +2240,8 @@ def getScanParameter(self,f):
                 scanUnits = ['deg']
                 scanDataPosition = ['/entry/analyzer/polar_angle_raw']
             else:
-                raise AttributeError('Scan values from Datafile ("{}") cannot be determined'.format(self.name))
+                pass
+                #raise AttributeError('Scan values from Datafile ("{}") cannot be determined'.format(self.name))
         else:
             for item in scanItems:
                 if item in ['a3']:

@@ -17,7 +17,7 @@ import matplotlib.ticker as mticker
 import numpy as np
 from MJOLNIR import _tools
 from matplotlib.patches import Ellipse
-from mpl_toolkits.axisartist import SubplotHost
+from mpl_toolkits.axisartist import SubplotHost#,axislines
 import warnings
 try:
     from mpl_toolkits.axisartist.grid_helper_curvelinear import \
@@ -208,7 +208,7 @@ def axisChanged(event,axis=None,forceUpdate=False,direction='both'):
 
 
 
-def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 1],basex=None,basey=None):
+def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 1],basex=None,basey=None):#,ax=None):
     """Create a reciprocal lattice plot for a given DataSet object.
     
     Args:
@@ -256,10 +256,10 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
             samp.orientationMatrixINV = np.linalg.inv(samp.orientationMatrix)
             samp.theta = 0.0
 
-    if figure is None:
+    if figure is None:# and ax is None:
         fig = plt.figure(figsize=(7, 4))
     else:
-        fig = figure
+        fig = figure#ax.get_figure()
     if rlu:
         def calculateTicks(ticks,angle,round=True):
             val = ticks/np.tan(angle/2.0)
@@ -286,7 +286,17 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
             
         grid_helper = GridHelperCurveLinear((sample[0].inv_tr, sample[0].tr),grid_locator1=grid_locator1,grid_locator2=grid_locator2)
         
+
+        #if not ax is None:
+        #    if not isinstance(ax,axislines.Axes):
+        #        subargs=ax.get_subplotspec()
+        #        fig.delaxes(ax)
+        #        ax = SubplotHost(fig, subargs, grid_helper=grid_helper)
+        #        
+        #else:
+        #    #ax2=ax1
         ax = SubplotHost(fig, *ids, grid_helper=grid_helper)
+        #fig.add_subplot(ax)
     else:
         ax = fig.add_subplot(111)
     ax.sample = sample[0]
@@ -471,7 +481,7 @@ def createQAxis(self,rlu = True, withoutOnClick = False, figure=None,ids=[1, 1, 
 
 
 
-def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, projectionVector2 = None, rlu = True):
+def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, projectionVector2 = None, rlu = True, figurePos=[1,1,1]):
     """Function to create Q E plot
 
     Kwargs:
@@ -494,7 +504,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     if projectionVector1 is None or projectionVector2 is None:
         if rlu is True:
             v1 = DataSet.sample[0].projectionVector1
-            v2 = -DataSet.sample[0].projectionVector2
+            v2 = DataSet.sample[0].projectionVector2
             angle = DataSet.sample[0].projectionAngle
             orientationMatrix = DataSet.sample[0].orientationMatrix
         else:
@@ -551,8 +561,8 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     if figure is None:
 
         figure = plt.figure(figsize=(7, 4))
-    else:
-        figure.clf()
+    #else:
+    #    figure.clf()
     def inv_tr(l,x,y):
         return x*l,y
 
@@ -569,7 +579,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     else:
         labels = ['qx','qy']
 
-    ax = SubplotHost(figure, 1, 1, 1, grid_helper=grid_helper)
+    ax = SubplotHost(figure, *figurePos, grid_helper=grid_helper)
     
     ax.inv_tr = lambda x,y:inv_tr(projectionVectorLength,x,y)
     ax.tr = lambda x,y:tr(projectionVectorLength,x,y)

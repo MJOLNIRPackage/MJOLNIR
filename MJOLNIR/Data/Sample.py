@@ -36,7 +36,7 @@ def camelCase(string,split='_'):
 class Sample(object):
     """Sample object to store all information of the sample from the experiment"""
     @_tools.KwargChecker()
-    def __init__(self,a=1.0,b=1.0,c=1.0,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None,recalculateUB=False):
+    def __init__(self,a=2.0*np.pi,b=2.0*np.pi,c=2.0*np.pi,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None,recalculateUB=False):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0].decode())
 
@@ -81,7 +81,7 @@ class Sample(object):
             self.rotationAngle = np.array(0)
             self.name=name
             if projectionVector1 is None or projectionVector2 is None:
-                projectionVector1,projectionVector2 = [np.array([1.0,0.0,0.0,0.0,0.0,0.0,0.0,5.0,5.0]),np.array([0.0,1.0,0.0,0.0,0.0,0.0,0.0,5.0,5.0])]
+                projectionVector1,projectionVector2 = [np.array([1.0,0.0,0.0,0.0,-37.553,0.0,0.0,5.0,5.0]),np.array([0.0,1.0,0.0,90.0,-37.553,0.0,0.0,5.0,5.0])]
 
             r1 = projectionVector1
             r2 = projectionVector2
@@ -93,7 +93,7 @@ class Sample(object):
             
             cell = TasUBlib.calcCell(self.unitCell)
 
-            self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(cell, r1, r2)
+            self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(cell, r1, r2)#(np.pi*2)
             #self.orientationMatrix = TasUBlib.calcTasUBFromTwoReflections(self.cell,self.plane_vector1,self.plane_vector2)
             self.projectionVector1,self.projectionVector2 = calcProjectionVectors(self.plane_vector1.astype(float),self.plane_vector2.astype(float))#,self.planeNormal.astype(float))
             self.initialize()
