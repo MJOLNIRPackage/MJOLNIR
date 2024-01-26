@@ -203,11 +203,11 @@ class DataFile(object):
                         self.fromNICOS = 0
                     else:
                         self.fromNICOS = checkNICOS(f)
-
+                    instr = getInstrument(f)
                     if self.fromNICOS is None:
                         raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=getHDFEntry(f,'sample'),recalculateUB=self.fromNICOS)
-                    instr = getInstrument(f)
+                    
                     if self.type == 'hdf':
                         if np.shape(np.array(getHDFInstrumentEntry(instr,'counts',fromNICOS=self.fromNICOS))) == ():
                             raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
