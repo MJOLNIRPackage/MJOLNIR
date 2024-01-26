@@ -513,7 +513,7 @@ class DataSet(object):
             self.sample = [d.sample for d in self]
 
     @_tools.KwargChecker()
-    def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None,backgroundSubtraction=False):
+    def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None,backgroundSubtraction=False,noApproximation=False):
         """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
 
         Args:
@@ -563,7 +563,10 @@ class DataSet(object):
             Q = [[QX,QY] for QX,QY in zip(np.split(qx,maskIndices),np.split(qy,maskIndices))]
             qx,qy = np.concatenate([np.einsum('ij,j...->i...',s.RotMat,q) for s,q in zip(samples,Q)],axis=1)
         pos=[qx,qy,energy]
-        returnData,bins = binData3D(dx=dx,dy=dy,dz=dz,pos=pos,data=I,norm=Norm,mon=Monitor)
+        if noApproximation:
+            returnData,bins = binData3D(dx=dx,dy=dy,dz=dz,pos=pos,data=I/(Norm*Monitor))
+        else:    
+            returnData,bins = binData3D(dx=dx,dy=dy,dz=dz,pos=pos,data=I,norm=Norm,mon=Monitor)
 
         if backgroundSubtraction:#
             # Extract full intensities from the background model
@@ -1023,7 +1026,7 @@ class DataSet(object):
                     
             else:
                 positions = np.array([qx,qy,energy])
-            
+            positions = positions.reshape(3,-1)
             # Calcualte cut direction in QxQy space
             dirvec = (np.array(q2) - np.array(q1)).astype(float)
             dirLength = np.linalg.norm(dirvec)
@@ -1077,7 +1080,9 @@ class DataSet(object):
             
             # Perform 2D histogram
             if True: # Empirically quicker in old setup.... interesting
-
+                I = I.flatten()
+                Monitor = Monitor.flatten()
+                Norm = Norm.flatten()
                 weights = [I[inside].flatten(), Monitor[inside].flatten(), Norm[inside].flatten()]
                 if backgroundSubtraction:
                     weights.append(self.backgroundIntensities.extractData()[inside])
@@ -3272,7 +3277,7 @@ class DataSet(object):
         return ax, Data, Bins
 
 
-    @_tools.KwargChecker(function=createQAxis)
+    @_tools.KwargChecker(function=createQAxis,include=['Data','bins'])
     def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
                instrumentAngles=False,outputFunction=print,backgroundSubtraction=False,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
                cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut1DFunctionRectanglePerp=None,
@@ -3327,7 +3332,12 @@ class DataSet(object):
         binned in equal sized voxels, constant Qy does not necessarily correspond to HKL vector 2 (it will in systems with 90 degrees 
         between the two vectors). 
         """
-
+        if 'Data' in kwargs and 'bins' in kwargs:
+            Data = kwargs['Data']
+            bins = kwargs['bins']
+            kwargs = _tools.without_keys(kwargs,['Data','bins'])
+        else:
+            Data = bins = None
         if rlu:
             rluax = self.createQAxis(withoutOnClick=True,**kwargs)
 
@@ -3467,7 +3477,8 @@ class DataSet(object):
         else:
             axes = None
 
-        Data,bins = self.binData3D(dx=dQx,dy=dQy,dz=dE,rlu=rlu,backgroundSubtraction=backgroundSubtraction)
+        if Data is None:
+            Data,bins = self.binData3D(dx=dQx,dy=dQy,dz=dE,rlu=rlu,backgroundSubtraction=backgroundSubtraction)
         
         if counts:
             if counts is True:
