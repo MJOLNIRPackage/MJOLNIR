@@ -309,7 +309,7 @@ class Viewer3D(object):
             maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
         except ValueError:
             maxVal = 1
-        self.caxis = [np.nanmin(self.masked_array),maxVal]
+        self.caxis = [np.nanmin(self.masked_array[np.isfinite(self.masked_array)]),maxVal]
         if self.grid:
             self.ax.grid(self.grid,zorder=self.gridZOrder)
         else:
