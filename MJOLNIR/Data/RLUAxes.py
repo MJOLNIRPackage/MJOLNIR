@@ -504,7 +504,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     if projectionVector1 is None or projectionVector2 is None:
         if rlu is True:
             v1 = DataSet.sample[0].projectionVector1
-            v2 = -DataSet.sample[0].projectionVector2
+            v2 = DataSet.sample[0].projectionVector2
             angle = DataSet.sample[0].projectionAngle
             orientationMatrix = DataSet.sample[0].orientationMatrix
         else:
@@ -561,8 +561,8 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     if figure is None:
 
         figure = plt.figure(figsize=(7, 4))
-    else:
-        figure.clf()
+    #else:
+    #    figure.clf()
     def inv_tr(l,x,y):
         return x*l,y
 
