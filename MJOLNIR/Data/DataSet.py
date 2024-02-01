@@ -3997,6 +3997,26 @@ class DataSet(object):
         else:
             self.absoluteNormalized = normFactor
 
+    def argAutoSort(self,sortFunction = None):
+        """Generate indices for data files to be sorted using sortFunction or  according to lowest energy, then abs(2Theta), then scan direction in A3, then A3 start position.
+        
+        
+        Kwargs:
+
+            - sortFunction (function): Takes enumerate and data file (Default as described above)
+
+        returns:
+
+            - indices (tuple): Indices to be applied to ds to get sorted data files
+        """
+        if sortFunction is None:
+            def sortFunction(IdxDf): 
+                df = IdxDf[1]
+                return (np.round(df.Ei[0],1), np.abs(np.round(df.twotheta[0],1)), -np.sign(np.diff(df.A3[:2]))[0], np.round(df.A3[0],2))
+
+        return np.asarray(np.array(sorted(enumerate(self.dataFiles), key=sortFunction)).T[0]).astype(int) # sorted into [[idx0,idx1,...],[df0,df1,...]] after trasposing
+    
+
     def autoSort(self,sortFunction = None):
         """Sort datafiles according to lowest energy, then abs(2Theta), then scan direction in A3, then A3 start position.
         
@@ -4012,15 +4032,26 @@ class DataSet(object):
         >>>     df = IdxDf[1]
         >>>     return (np.round(df.Ei[0],1), np.abs(np.round(df.twotheta[0],1)), -np.sign(np.diff(df.A3[:2]))[0], np.round(df.A3[0],2))
             """
-        if sortFunction is None:
-            def sortFunction(IdxDf): 
-                df = IdxDf[1]
-                return (np.round(df.Ei[0],1), np.abs(np.round(df.twotheta[0],1)), -np.sign(np.diff(df.A3[:2]))[0], np.round(df.A3[0],2))
         
+        idx = self.argAutoSort(sortFunction=sortFunction)
+        self.applySorting(idx)
     
-        idx,dfs = np.array(sorted(enumerate(self.dataFiles), key=sortFunction)).T # sorted into [[idx0,idx1,...],[df0,df1,...]] after trasposing
+    def argSortTo(self,otherDS,sortFunction=None):
+        """Return the sorting order needed to match sorting of current dataset to argument data set"""
+        
+        selfIdx = self.argAutoSort(sortFunction=sortFunction)
+        
+        otherIdx = otherDS.argAutoSort(sortFunction=sortFunction)
+        otherIdxReturn = np.argsort(otherIdx)
+
+        selfToOther = selfIdx[otherIdxReturn]
+        return selfToOther
+        
+    def applySorting(self,idx):
+        """Apply sorting indices to dataset"""
+
+        dfs = np.asarray(self.dataFiles)[idx]
         self._dataFiles = list(dfs)
-        idx = idx.astype(np.int)
 
         if not len(self.convertedFiles) == 0:
             self._convertedFiles = list(np.array(self.convertedFiles)[idx])
