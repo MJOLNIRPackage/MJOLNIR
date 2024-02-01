@@ -1470,3 +1470,35 @@ def test_symmetrize():
     assert(np.all(ds[0].h.min()>=0))
     assert(np.all(ds[0].k.min()>=0))
     assert(np.all(ds[0].l.min()>=0))
+
+
+def test_sorting():
+
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
+    ds = DataSet(DataFile)
+    ds.convertDataFile()
+
+    ds2 = DataSet([DataFile[1],DataFile[0]])
+    ds2.convertDataFile()
+
+    names = [df.name for df in ds]
+    names2 = [df.name for df in ds2]
+
+    assert(names[0] == names2[1] and names[1] == names2[0])
+
+    idx = ds.argAutoSort()
+    ds.autoSort()
+
+    for idx1,df in zip(idx,ds):
+        oldName = names[idx1]
+        newName = df.name
+        assert(oldName==newName)
+
+    idxes = ds2.argSortTo(ds)
+    ds2.applySorting(idxes)
+    names = [df.name for df in ds]
+    names2 = [df.name for df in ds2]
+
+    assert(names[0] == names2[0] and names[1] == names2[1])
+
+    
