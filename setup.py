@@ -40,7 +40,11 @@ setup(
         },
     python_requires='>=3.5' if not operatingSystem == 'darwin' else '>=3.6',
     install_requires=['matplotlib>=3','numpy>=1.14','h5py>=2.5','scipy','datetime','pytest>=4.6','pyperclip','decorator','pandas','future','sympy',
-                    'pip>=20','ufit>=1.4.0','pyqtgraph','regex'], # ,'ufit','sip','PyQt5-sip','PyQt5<=5.12'
+                    'pip>=20','ufit>=1.4.0','pyqtgraph','regex','torch'], # ,'ufit','sip','PyQt5-sip','PyQt5<=5.12'
+    extras_require={
+        "gui": [
+            "MJOLNIRGui",
+        ]},
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
