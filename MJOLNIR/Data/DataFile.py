@@ -213,9 +213,15 @@ class DataFile(object):
                     self.sample = MJOLNIR.Data.Sample.Sample(sample=getHDFEntry(f,'sample'),recalculateUB=self.fromNICOS)
                     
                     if self.type == 'hdf':
-                        if np.shape(np.array(getHDFInstrumentEntry(instr,'counts',fromNICOS=self.fromNICOS))) == ():
+                        value = np.array(getHDFInstrumentEntry(instr,'counts',fromNICOS=self.fromNICOS))
+                        fileShape = np.shape(value)
+                        if fileShape == ():
                             raise AttributeError('Data File {} has no data in {}/detector/counts. The file might be empty.'.format(self.name,instr.name))
-                        self.I = np.array(getHDFInstrumentEntry(instr,'counts',fromNICOS=self.fromNICOS)).swapaxes(1,2)
+                        
+                        if len(fileShape) == 2:
+                            value = value.reshape(1,*fileShape)
+                        
+                        self.I = value.swapaxes(1,2)
                     else:
                         self.I=np.array(getHDFEntry(f,'intensity'))
                         self.counts = np.array(getHDFInstrumentEntry(instr,'counts')).swapaxes(1,2)
@@ -2167,34 +2173,37 @@ def getScanParameter(self,f):
 
 
         if len(scanItems) == 0:
-            if np.abs(np.diff(self.temperature)).mean()>0.01:
-                scanParameters = ['T']
-                scanValues = np.array([self.temperature])
-                scanUnits = ['K']
-                scanDataPosition = ['/entry/sample/temperature']
-            elif np.abs(np.diff(self.magneticField)).mean()>0.01:
-                scanParameters = ['B']
-                scanValues = np.array([self.magneticField])
-                scanUnits = ['T']
-                scanDataPosition = ['/entry/sample/B']
-            elif np.abs(np.diff(self.Ei)).mean()>0.001: # it is an energy scan!
-                scanParameters = ['Ei']
-                scanValues = np.array([self.Ei])
-                scanUnits = ['meV']
-                scanDataPosition = ['/entry/CAMEA/monochromator/energy']
-            elif np.abs(np.diff(self.A3)).mean()>0.001:
-                scanParameters = ['A3']
-                scanValues = np.array([self.A3])
-                scanUnits = ['deg']
-                scanDataPosition = ['/entry/sample/rotation_angle']
-            elif np.abs(np.diff(self.twotheta)).mean()>0.001:
-                scanParameters = ['A4']
-                scanValues = np.array([self.twotheta])
-                scanUnits = ['deg']
-                scanDataPosition = ['/entry/analyzer/polar_angle_raw']
-            else:
+            try:
+                if np.abs(np.diff(self.temperature)).mean()>0.01:
+                    scanParameters = ['T']
+                    scanValues = np.array([self.temperature])
+                    scanUnits = ['K']
+                    scanDataPosition = ['/entry/sample/temperature']
+                elif np.abs(np.diff(self.magneticField)).mean()>0.01:
+                    scanParameters = ['B']
+                    scanValues = np.array([self.magneticField])
+                    scanUnits = ['T']
+                    scanDataPosition = ['/entry/sample/B']
+                elif np.abs(np.diff(self.Ei)).mean()>0.001: # it is an energy scan!
+                    scanParameters = ['Ei']
+                    scanValues = np.array([self.Ei])
+                    scanUnits = ['meV']
+                    scanDataPosition = ['/entry/CAMEA/monochromator/energy']
+                elif np.abs(np.diff(self.A3)).mean()>0.001:
+                    scanParameters = ['A3']
+                    scanValues = np.array([self.A3])
+                    scanUnits = ['deg']
+                    scanDataPosition = ['/entry/sample/rotation_angle']
+                elif np.abs(np.diff(self.twotheta)).mean()>0.001:
+                    scanParameters = ['A4']
+                    scanValues = np.array([self.twotheta])
+                    scanUnits = ['deg']
+                    scanDataPosition = ['/entry/analyzer/polar_angle_raw']
+                else:
+                    pass
+                    #raise AttributeError('Scan values from Datafile ("{}") cannot be determined'.format(self.name))
+            except ValueError:
                 pass
-                #raise AttributeError('Scan values from Datafile ("{}") cannot be determined'.format(self.name))
         else:
             for item in scanItems:
                 if item in ['a3']:
