@@ -542,6 +542,8 @@ class Viewer3D(object):
         if self._axesChanged:
             tempData = np.ma.array(self.im.get_array().T)
             tempData.mask = np.ones_like(tempData,dtype=bool)
+            if tempData.shape[0] != self.X.shape[0]:
+                tempData = tempData.T
             self.im.set_array(tempData)
             self._axesChanged = False
         else:
