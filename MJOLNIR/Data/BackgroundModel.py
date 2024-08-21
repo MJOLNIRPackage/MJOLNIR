@@ -18,7 +18,7 @@ import warnings
 
 
 # If an update has happened to the self.int, and the originalDataSet has a backgroundIntensities pointer array
-def reculateOnChange(func):
+def recalculateOnChange(func):
     @functools.wraps(func)
     def recalculateFunction(self,*args,**kwargs):
         if self.isChanged and hasattr(self.originalDataSet,'_backgroundIntensities'):
@@ -117,7 +117,7 @@ class BackgroundObject(object):
             self._int = np.divide(self.intensity*self.counts,self.monitor*self.norm)
         self.isChanged = True
         
-    @reculateOnChange
+    @recalculateOnChange
     def sample(self,positions,norm=None,monitor=None):#,returnAll=False):
         """Sample the background at the given positions (|Q|,E)
         
@@ -180,7 +180,7 @@ class BackgroundObject(object):
         if value > 0:
             self._dQ = value
         else:
-            raise AttributeError('Provided dQ is negative or null. Recieved {:}'.format(value))
+            raise AttributeError('Provided dQ is negative or null. Received {:}'.format(value))
     
     @property
     def dE(self):
@@ -195,7 +195,7 @@ class BackgroundObject(object):
         if value > 0:
             self._dE = value
         else:
-            raise AttributeError('Provided dE is negative or null. Recieved {:}'.format(value))
+            raise AttributeError('Provided dE is negative or null. Received {:}'.format(value))
             
     @property
     def int(self):
