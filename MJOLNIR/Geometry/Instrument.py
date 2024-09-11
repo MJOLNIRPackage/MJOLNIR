@@ -1977,3 +1977,41 @@ def calculateResoultionMatrix(position,Ei,Ef,sample = None, rlu=True,binning = 8
 
     MRotated = np.dot(R,np.dot(M,R.T))
     return MRotated
+
+E = np.array([ 3.499997,  3.999992,  4.500001,  4.999979,  5.500007,  6.000012,
+        6.500025,  7.499971,  8.00001 ,  8.499966,  8.999993,  9.499971,
+    10.000035, 10.499964, 11.000038, 11.499965, 11.999985, 12.500008,
+    13.000015, 13.499965, 14.499921])
+
+T = np.array([23.85666688, 22.8700002 , 22.64666716, 23.44999949, 24.79333401,
+        24.85333284, 25.3733333 , 25.28333346, 25.92666626, 26.93999926,
+        28.25000127, 31.13333384, 33.85999997, 35.59000015, 37.03000069,
+        38.25000127, 40.19666672, 42.1666654 , 45.17666817, 49.03999964,
+        58.12666575])
+
+countingTime = lambda x: np.interp(x,E,T)
+
+def timeEstimate(Ei,Monitor,A3s = 180,A4s=2,current=1.3):
+    """estimate time for scan at CAMEA. 
+    
+    Args:
+
+        - Ei (list): Incoming energies
+
+        - Monitor (float): Monitor value used
+
+    Kwargs:
+
+        - A3s (int): Sample rotations per scan
+
+        - A4s (int): Number of A4 positions for given energy
+
+        - current (float): current on target in mA
+
+        - instrument (str): Instrument used to calculate resolution (default CAMEA)
+    
+    """
+    totalTime = np.sum([countingTime(E)*Monitor/100000*current*A4s*A3s for E in Ei])
+    #print('Total Counting Time: {:.2f} days ({:.1f} hr)'.format(totalTime/(60*60*24),totalTime/(60*60)))
+    return totalTime
+
