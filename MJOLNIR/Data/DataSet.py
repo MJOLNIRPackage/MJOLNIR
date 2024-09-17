@@ -678,9 +678,13 @@ class DataSet(object):
                 q1,q2 = self.convertToHKL([q1,q2])
             raise AttributeError('Provided Q points are equal. Got ({}) and ({}).'.format(', '.join([str(x) for x in q1]),', '.join([str(x) for x in q2])))
 
+        if backgroundSubtraction:
+            background = self.backgroundIntensities.extractData()
+        else:
+            background = None
         Data,[binpositionsTotal,orthopos,EArray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
                                                                 minPixel=minPixel,Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,
-                                                                extend=extend,constantBins=constantBins,I_err=I_err)
+                                                                extend=extend,constantBins=constantBins,I_err=I_err,background=background)
 
         if len(binpositionsTotal) == 0:
             return pd.DataFrame([],columns=[pdNaming['qx'],pdNaming['qy'],pdNaming['h'],pdNaming['k'],pdNaming['l'],\
@@ -706,11 +710,18 @@ class DataSet(object):
         Energy = meaning(EnergyBin)
 
         if not I_err is None:
-            I,Mon,Normalization,I_err,BinC = Data
+            if backgroundSubtraction:
+                I,Mon,Normalization,I_err,BGData,BinC = Data
+            else:
+                I,Mon,Normalization,I_err,BinC = Data
         else:
-            I,Mon,Normalization,BinC = Data
+            if backgroundSubtraction:
+                
+                I,Mon,Normalization,BGData,BinC = Data
+            else:
+                I,Mon,Normalization,BinC = Data
             I_err = np.sqrt(I)
-        #print(np.mean(I_err))
+
         DataValues = [Qx,Qy,H,K,L,Energy,I,Mon,Normalization,BinC,I_err]
         columns = [pdNaming['qx'],pdNaming['qy'],pdNaming['h'],pdNaming['k'],pdNaming['l'],\
                    pdNaming['e'],pdNaming['intensity'],pdNaming['mon'],pdNaming['norm'],\
@@ -723,14 +734,8 @@ class DataSet(object):
                 pdData[col] = dat.astype(typ)
 
             if backgroundSubtraction:
-
-                BGInt = self.backgroundIntensities.extractData()
-                BGData,_ = cut1D(positions=positions,I=BGInt,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
-                                                                minPixel=minPixel,Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,
-                                                                extend=extend,constantBins=constantBins)
                 
-                
-                pdData[pdNaming['BackgroundIntensity']] = BGData[0].flatten()
+                pdData[pdNaming['BackgroundIntensity']] = BGData.flatten()
                 pdData[pdNaming['ForegroundIntensity']] = pdData[pdNaming['intensity']]
                 
                 pdData[pdNaming['Background']] = pdData[pdNaming['BackgroundIntensity']]*pdData[pdNaming['binCount']]/(pdData[pdNaming['norm']]*pdData[pdNaming['mon']])#BGIntensities
@@ -2911,9 +2916,9 @@ class DataSet(object):
         data[pdNaming['h']] = HKL[0]*np.ones_like(intensity)
         data[pdNaming['k']] = HKL[1]*np.ones_like(intensity)
         data[pdNaming['l']] = HKL[2]*np.ones_like(intensity)
-        data[pdNaming['e']] = 0.5*(bins[0][1:]+bins[0][:-1])
+        data[pdNaming['e']] = 0.5*(bins[0][0][1:]+bins[0][0][:-1])
         if backgroundSubtraction:
-            rawIntensity = np.asarray(intensity,dtype=float)
+            data[pdNaming['ForegroundIntensity']] = intensity
             intensity = intensity.astype(float)-background
 
 
@@ -2925,7 +2930,7 @@ class DataSet(object):
         if backgroundSubtraction:
         
             data[pdNaming['BackgroundIntensity']] = background.flatten()
-            data[pdNaming['ForegroundIntensity']] = data[pdNaming['intensity']]
+            
             
             data[pdNaming['Background']] = data[pdNaming['BackgroundIntensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])#BGIntensities
             data[pdNaming['Foreground']] = data[pdNaming['ForegroundIntensity']]*data[pdNaming['binCount']]/(data[pdNaming['norm']]*data[pdNaming['mon']])
@@ -3010,6 +3015,8 @@ class DataSet(object):
             
         variables = variables+[pdNaming['e']]
         
+        backgroundSubtraction = backgroundSubtraction | plotForeground | plotBackground
+
         if data is None:
             Data, bins = self.cut1DE(q=q,width=width,minPixel=minPixel,E1=E1,E2=E2,rlu=rlu,dataFiles=dataFiles,
                                      constantBins=constantBins, backgroundSubtraction=backgroundSubtraction)
@@ -3034,12 +3041,25 @@ class DataSet(object):
             
         # Perform the actual plotting
         if counts is True:
-            ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['intensity']],yerr=np.sqrt(Data[pdNaming['intensity']]),**kwargs)
+            if backgroundSubtraction:
+                Y = Data[pdNaming['ForegroundIntensity']]-Data[pdNaming['BackgroundIntensity']]
+                YErr = np.sqrt(Data[pdNaming['ForegroundIntensity']]+Data[pdNaming['BackgroundIntensity']])
+            else:
+                Y = Data[pdNaming['intensity']]
+                YErr = np.sqrt(Data[pdNaming['intensity']])
+            ax.errorbar(Data[pdNaming['plotPosition']],Y,yerr=YErr,**kwargs)
             if plotForeground:
                 ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['ForegroundIntensity']],yerr=np.sqrt(Data[pdNaming['ForegroundIntensity']]),fmt=kwargs['fmt'],label='Foreground')
             if plotBackground:
                 ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['BackgroundIntensity']],yerr=np.sqrt(Data[pdNaming['BackgroundIntensity']]),fmt=kwargs['fmt'],label='Background')
         elif counts is False:
+            if backgroundSubtraction:
+                Y = Data[pdNaming['ForegroundIntensity']]-Data[pdNaming['BackgroundIntensity']]
+                YErr = np.sqrt(Data[pdNaming['ForegroundIntensity']]+Data[pdNaming['BackgroundIntensity']])
+            else:
+                Y = Data[pdNaming['intensity']]
+                YErr = np.sqrt(Data[pdNaming['intensity']])
+
             ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['int']],yerr=Data[pdNaming['intError']],**kwargs)
             if plotForeground:
                 ax.errorbar(Data[pdNaming['plotPosition']],Data[pdNaming['Foreground']],yerr=Data[pdNaming['ForegroundError']],fmt=kwargs['fmt'],label='Foreground')
@@ -4345,7 +4365,7 @@ def load(filename):
         return tmp_dict
 
 @_tools.KwargChecker()
-def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,plotCoverage=False,extend=False,constantBins=False):
+def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,background=None,plotCoverage=False,extend=False,constantBins=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
     the minimum step sizes is given by minPixel.
     
@@ -4432,28 +4452,18 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,plo
                    Norm[insideEnergy][insideQ].flatten()]
         if not I_err is None:
             weights.append(I_err[insideEnergy][insideQ].flatten()**2)
+        if not background is None:
+            weights.append(background[insideEnergy][insideQ].flatten())
     else:
         weights = [I[insideEnergy].flatten(),
                    Monitor[insideEnergy].flatten(),
                    Norm[insideEnergy].flatten()]
         if not I_err is None:
             weights.append(I_err[insideEnergy].flatten()**2)
+        if not background is None:
+            weights.append(background[insideEnergy].flatten())
     
     data = _tools.histogramdd(propos.T,bins=[lenbins,orthobins],weights=weights,returnCounts=True)
-    # if not I_err is None:
-    #     intensity,MonitorCount,Normalization,normcounts,intensity_err = data
-    # else:
-    #     intensity,MonitorCount,Normalization,normcounts = data
-    # normcounts = np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=np.ones((propos.shape[1])).flatten())[0]
-
-    # if extend==False: # Test both inside energy range AND inside q-limits
-    #     intensity = np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=I[insideEnergy][insideQ].flatten())[0]
-    #     MonitorCount=  np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Monitor[insideEnergy][insideQ].flatten())[0]
-    #     Normalization= np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Norm[insideEnergy][insideQ].flatten())[0]
-    # else:
-    #     intensity = np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=I[insideEnergy].flatten())[0]
-    #     MonitorCount=  np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Monitor[insideEnergy].flatten())[0]
-    #     Normalization= np.histogramdd(propos.T,bins=[lenbins,orthobins],weights=Norm[insideEnergy].flatten())[0]
     
     EmeanVec = np.ones((len(binpositions),1))*(Emin+Emax)*0.5
     binpositionsTotal = np.concatenate((binpositions,EmeanVec),axis=1)
@@ -4485,7 +4495,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,plo
 
 
 
-def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False,background=None):#,plotCoverage=False):
+def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,I_err=None,constantBins=False,background=None):#,plotCoverage=False):
     """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
     the width attribute. 
     
@@ -4547,7 +4557,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False,ba
     Energies = positions[2][allInside]
     
     if constantBins==False:
-        bins = np.array(_tools.binEdges(Energies,tolerance=minPixel))
+        bins = np.asarray([np.array(_tools.binEdges(Energies,tolerance=minPixel))])
     else:
         Min,Max = _tools.minMax(Energies)
         bins = np.arange(Min,Max+0.5*minPixel,minPixel)
@@ -4555,17 +4565,20 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,constantBins=False,ba
     if len(bins)==0:
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[[E1,E2]]
     
-    normcounts = np.histogram(Energies,bins=bins,weights=np.ones_like(Energies).flatten())[0]
-    intensity = np.histogram(Energies,bins=bins,weights=I[allInside].flatten())[0]
-    MonitorCount=  np.histogram(Energies,bins=bins,weights=np.array(Monitor[allInside].flatten(),dtype=float))[0] # Need to change to int64 to avoid overflow
-    Normalization= np.histogram(Energies,bins=bins,weights=np.array(Norm[allInside].flatten(),dtype=float))[0]
+
+    weights = [I[allInside].flatten(),
+                   Monitor[allInside].flatten(),
+                   Norm[allInside].flatten()]
+    if not I_err is None:
+        weights.append(I_err[allInside].flatten()**2)
     
-    returnData = [intensity,MonitorCount,Normalization,normcounts]
+    returnData = _tools.histogramdd(Energies,bins=bins,weights=weights,returnCounts=True)
+
     if not background is None:
         
         bg = background[allInside]
         nonNan = np.logical_not(np.isnan(bg))
-        returnData.append(np.histogram(Energies[nonNan],bins=bins,weights=bg[nonNan])[0])
+        returnData.append(np.histogram(Energies[nonNan],bins=bins[0],weights=bg[nonNan])[0])
 
 
     return returnData,[bins]
