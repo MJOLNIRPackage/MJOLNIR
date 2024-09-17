@@ -717,7 +717,8 @@ class DataFile(object):
 
         with open(fileLocation) as f:
             dataString = f.readlines()
-
+        if len(dataString) == 0:
+            raise AttributeError('DataFile not found! Looking for "{:}"'.format(f))
 
 
         # Format for starting time is 2021-11-26 10:45:05
@@ -768,7 +769,7 @@ class DataFile(object):
                     value = ':'.join(value)
                 parameters[param] = value[0]
             else:
-                if line.find('### Scan data') >-1:
+                if line.find('DATA_:') >-1:
                     dataline = I
                     break
 

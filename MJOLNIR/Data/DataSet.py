@@ -2466,8 +2466,8 @@ class DataSet(object):
             def calculatePositionInv(ax,HKLQI):
                 if ax.rlu:
                     HKLQI[:,:2] = ax.sample.calculateHKLToQxQy(*HKLQI[:,:3].T).T
-                pos = (ax.QPoints[HKLQI[:,-1].astype(int)]-HKLQI[:,:2]).T
-                return np.linalg.norm(pos,axis=0)+ax.OffSets[HKLQI[:,-1].astype(int)]
+                pos = (ax.QPoints[np.array(HKLQI[:,-1],dtype=int).flatten()]-HKLQI[:,:2]).T
+                return np.linalg.norm(pos,axis=0)+ax.OffSets[np.array(HKLQI[:,-1],dtype=int)]
 
             def calculatePosition(ax,x,rlu=None):
                 if rlu is None:
@@ -2531,7 +2531,7 @@ class DataSet(object):
                 ax.QPointsHKL = QPoints
             else:
                 variables = [pdNaming['qx'],pdNaming['qy']]
-                ax.QPoints = QPoints
+                ax.QPoints = np.asarray(QPoints)
                 ax.QPointsHKL = np.asarray([ax.sample.calculateQxQyToHKL(*QPoint) for QPoint in QPoints])
 
             variables = variables+['qCut']
@@ -3229,7 +3229,7 @@ class DataSet(object):
             data[pdNaming['h']] = HKL[0]*np.ones_like(intensity)
             data[pdNaming['k']] = HKL[1]*np.ones_like(intensity)
             data[pdNaming['l']] = HKL[2]*np.ones_like(intensity)
-            data[pdNaming['e']] = 0.5*(bins[0][1:]+bins[0][:-1])
+            data[pdNaming['e']] = 0.5*(bins[0][0][1:]+bins[0][0][:-1])
             data[pdNaming['intensity']] = intensity.astype(int)
             data[pdNaming['mon']] = returnData[1].astype(int)
             data[pdNaming['norm']] = returnData[2].astype(int)
@@ -4560,7 +4560,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,I_err=None,constantBi
         bins = np.asarray([np.array(_tools.binEdges(Energies,tolerance=minPixel))])
     else:
         Min,Max = _tools.minMax(Energies)
-        bins = np.arange(Min,Max+0.5*minPixel,minPixel)
+        bins = [np.arange(Min,Max+0.5*minPixel,minPixel)]
     
     if len(bins)==0:
         return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[[E1,E2]]
