@@ -309,7 +309,11 @@ class Viewer3D(object):
             maxVal = np.nanmax(self.masked_array[np.isfinite(self.masked_array)])
         except ValueError:
             maxVal = 1
-        self.caxis = [np.nanmin(self.masked_array[np.isfinite(self.masked_array)]),maxVal]
+        try:
+            minVal = np.nanmin(self.masked_array[np.isfinite(self.masked_array)])
+        except ValueError:
+            minVal = 0
+        self.caxis = [minVal,maxVal]
         if self.grid:
             self.ax.grid(self.grid,zorder=self.gridZOrder)
         else:
@@ -538,6 +542,8 @@ class Viewer3D(object):
         if self._axesChanged:
             tempData = np.ma.array(self.im.get_array().T)
             tempData.mask = np.ones_like(tempData,dtype=bool)
+            if tempData.shape[0] != self.X.shape[0]:
+                tempData = tempData.T
             self.im.set_array(tempData)
             self._axesChanged = False
         else:

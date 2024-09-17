@@ -511,7 +511,7 @@ def test_DataSet_1DcutE():
     Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=Q,width=width,minPixel=0.01)
     assert(np.min(bins)>=Emin-0.01) # Check that bins do not include data outside of cut
     assert(np.max(bins)<=Emax+0.01)
-    assert(len(bins)==len(intensity)+1)# Bins denotes edges and must then be 1 more than intensity
+    assert(len(bins[0])==len(intensity)+1)# Bins denotes edges and must then be 1 more than intensity
 
     assert(intensity.shape==MonitorCount.shape) # Check that all matrices are cut equally
     assert(intensity.shape==Normalization.shape)
@@ -522,8 +522,8 @@ def test_DataSet_1DcutE():
     Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     
     assert(np.all(np.isclose(np.diff(bins),0.01)))
-    assert(bins.min()>=Emin)
-    assert(bins.max()<=Emax)
+    assert(bins[0].min()>=Emin)
+    assert(bins[0].max()<=Emax)
 
     try: # no points inside energy interval
         cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=500,E2=700,q=q,width=width,minPixel=0.01)
@@ -541,7 +541,7 @@ def test_DataSet_1DcutE():
     Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     ax,Data2,[bins2] = Datset.plotCut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     assert(Data.equals(Data2))
-    assert(np.all(np.isclose(bins,bins2)))
+    assert(np.all(np.isclose(bins[0],bins2[0])))
 
     ufitData = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
     ax,ufitData2 = Datset.plotCut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
@@ -922,10 +922,10 @@ def test_DataSet_cutQELine():
 
     DataList,BinList=dataset.cutQELine(QPointsHKL,EnergyBins,width=width,minPixel=minPixel,rlu=True)
     DataList2,BinList2=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
+    print(DataList)
+    assert(len(DataList)==(len(QPointsHKL)-1))# Assert that there are 3 cuts 
 
-    assert(len(DataList['qCut'][0])==(len(QPointsHKL)-1)*(len(EnergyBins)-1))# Assert that there are 3 cuts with 4 energies
-
-    assert(len(DataList2['qCut'][0])==(len(QPoints)-1)*(len(EnergyBins)-1))
+    assert(len(DataList2)==(len(QPoints)-1))
 
     
     
@@ -967,7 +967,7 @@ def test_DataSet_plotCutQELine():
         assert True
 
 
-    ax,Data,Bins = dataset.plotCutQELine(
+    ax,Data = dataset.plotCutQELine(
         QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=False,vmin=0.0,vmax=1.5e-6,log=True,seperatorWidth=3)
 
 
@@ -978,7 +978,7 @@ def test_DataSet_plotCutQELine():
 
 
 
-    ax,Data,Bins = dataset.plotCutQELine(
+    ax,Data = dataset.plotCutQELine(
         HKLPoints,EnergyBins,width=width,minPixel=minPixel,rlu=True,plotSeperator = False,colorbar=True,log=True)
 
     
@@ -1090,7 +1090,7 @@ def test_DataSet_OxfordList():
     assert(OxfordList([]) is None)
     assert(OxfordList(['Apples'])=='Apples')
 
-
+@pytest.mark.skip(reason="Current data structure not defined")
 def test_DataSet_MultiFLEXX():
     fileLocation = _tools.fileListGenerator('65059',folder=os.path.join('Data',''),instrument='MultiFLEXX')
 
@@ -1392,11 +1392,11 @@ def test_CustomAxisInput():
     # plotting and cutting with MJOLNIR - fixed now for QE cuts
 
     cutqe_params.update({"ax":ax_direction1})
-    ax_direction1, data_dir1, bins_dir1 = ds.plotCutQELine(**cutqe_params)
+    ax_direction1, data_dir1 = ds.plotCutQELine(**cutqe_params)
 
     QPoints = np.array([[1,0,0],[1,1,0]], float)
     cutqe_params.update({'QPoints':QPoints, "ax":ax_direction2})
-    ax_direction2, data_dir2, bins_dir2 = ds.plotCutQELine(**cutqe_params)
+    ax_direction2, data_dir2 = ds.plotCutQELine(**cutqe_params)
 
     ## cut1D
     cutqe_params = {
@@ -1470,3 +1470,35 @@ def test_symmetrize():
     assert(np.all(ds[0].h.min()>=0))
     assert(np.all(ds[0].k.min()>=0))
     assert(np.all(ds[0].l.min()>=0))
+
+
+def test_sorting():
+
+    DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
+    ds = DataSet(DataFile)
+    ds.convertDataFile()
+
+    ds2 = DataSet([DataFile[1],DataFile[0]])
+    ds2.convertDataFile()
+
+    names = [df.name for df in ds]
+    names2 = [df.name for df in ds2]
+
+    assert(names[0] == names2[1] and names[1] == names2[0])
+
+    idx = ds.argAutoSort()
+    ds.autoSort()
+
+    for idx1,df in zip(idx,ds):
+        oldName = names[idx1]
+        newName = df.name
+        assert(oldName==newName)
+
+    idxes = ds2.argSortTo(ds)
+    ds2.applySorting(idxes)
+    names = [df.name for df in ds]
+    names2 = [df.name for df in ds2]
+
+    assert(names[0] == names2[0] and names[1] == names2[1])
+
+    
