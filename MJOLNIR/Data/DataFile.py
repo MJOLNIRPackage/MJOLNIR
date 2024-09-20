@@ -2562,9 +2562,11 @@ def checkNICOS(f):
 
 def isMultiFLEXX(fileLocation):
     with open(fileLocation,'r') as f:
-        while line:=f.readline():
+        line = f.readline()
+        while line:
             if line.find("### Instrument")!=-1:
                 break
+            line = f.readline()
         
         line = f.readline()[1:]
         line = line.strip().split(':')[0].split('_')[0]
