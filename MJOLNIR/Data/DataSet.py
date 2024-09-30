@@ -2355,24 +2355,29 @@ class DataSet(object):
             for _,d in dataList.groupby('qCut'):
                 dList.append(d)
             dataList = dList
-        for cutIndex,_DataList in enumerate(dataList):
-            if not cutIndex == 0: # Not First Cut
-                OffSets.append(nextOffset+OffSets[-1])
-                OffSetWidth.append(nextOffsetWidth)
-            else:
-                OffSets.append(0.0)
-                OffSetWidth.append(0.0)
-            
-            nextOffsetWidth = 0.5*np.diff(_DataList[pdNaming['plotPosition']].iloc[-2:])[0]
-            nextOffset = _DataList[pdNaming['plotPosition']].iloc[-1]+nextOffsetWidth
-        if rlu:
-            QPoints = [d[['H','K','L']].iloc[0].to_numpy() for d in dataList]
-            QPoints.append(dataList[-1][['H','K','L']].iloc[-1].to_numpy())
+        #for cutIndex,_DataList in enumerate(dataList):
+        #    if not cutIndex == 0: # Not First Cut
+        #        OffSets.append(nextOffset+OffSets[-1])
+        #        OffSetWidth.append(nextOffsetWidth)
+        #    else:
+        #        OffSets.append(0.0)
+        #        OffSetWidth.append(0.0)
+        #    
+        #    nextOffsetWidth = 0.5*np.diff(_DataList[pdNaming['plotPosition']].iloc[-2:])[0]
+        #    nextOffset = _DataList[pdNaming['plotPosition']].iloc[-1]+nextOffsetWidth
+        
+        if QPoints is None:
+            QPoints = [*[self.sample[0].calculateHKLToQxQy(*d[['H','K','L']].iloc[0].to_numpy()) for d in list(dataList)],
+                    self.sample[0].calculateHKLToQxQy(*dataList[-1][['H','K','L']].iloc[-1].to_numpy())]
         else:
-            QPoints = [d[['Qx','Qy']].iloc[0].to_numpy() for d in dataList]
+            QPoints = [self.sample[0].calculateHKLToQxQy(*q) for q in QPoints]
+        if not rlu:
+
+            QPoints = [d[['Qx','Qy']].iloc[0].to_numpy() for d in QPoints]
             QPoints.append(dataList[-1][['Qx','Qy']].iloc[-1].to_numpy())
 
-
+        OffSets = np.cumsum([0,*np.linalg.norm(np.diff(QPoints,axis=0),axis=1)])[:-1]
+        OffSetWidth = np.zeros_like(OffSets)
         if ax is None:
             fig,ax = plt.subplots()
             
@@ -2391,7 +2396,6 @@ class DataSet(object):
 
         if _3D == False:
             ax.pmeshs = []
-
             ax.QPoints = np.asarray(QPoints)
             ax.OffSets = np.asarray(OffSets)
             ax.OffSetWidth = np.asarray(OffSetWidth)
@@ -2527,12 +2531,11 @@ class DataSet(object):
             ax.rlu = rlu
             if rlu:
                 variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
-                ax.QPoints = np.asarray([ax.sample.calculateHKLToQxQy(*QPoint) for QPoint in QPoints])
-                ax.QPointsHKL = QPoints
+
             else:
                 variables = [pdNaming['qx'],pdNaming['qy']]
-                ax.QPoints = np.asarray(QPoints)
-                ax.QPointsHKL = np.asarray([ax.sample.calculateQxQyToHKL(*QPoint) for QPoint in QPoints])
+
+            ax.QPointsHKL = np.asarray([ax.sample.calculateQxQyToHKL(*QPoint) for QPoint in QPoints])
 
             variables = variables+['qCut']
                 
@@ -2561,7 +2564,6 @@ class DataSet(object):
                 for pmesh in ax.pmeshs:
                     pmesh.set_clim(vmin,vmax)
                 
-            ax.set_clim = lambda vmin,vmax:set_clim(ax, vmin, vmax)
                 
             if vmin is None:
                 vmin = np.min([p.get_array().min() for p in ax.pmeshs])
@@ -2569,6 +2571,7 @@ class DataSet(object):
             if vmax is None:
                 vmax = np.max([p.get_array().max() for p in ax.pmeshs])
 
+            ax.set_clim = lambda vmin,vmax:set_clim(ax, vmin, vmax)
 
             if plotSeperator:
                 [ax.vlines(offset-offsetWidth,*ax.get_ylim(),color=seperatorColor,linewidth=seperatorWidth) for offset,offsetWidth in zip(ax.OffSets[1:],ax.OffSetWidth[1:])]
@@ -2741,18 +2744,6 @@ class DataSet(object):
 
         ax.vmin = vmin
         ax.vmax = vmax
-        def set_clim(vmin,vmax,ax):
-            ax.vmin = vmin
-            ax.vmax = vmax
-            for pm in ax.pmeshs:
-                pm.set_clim(vmin,vmax)
-
-        ax.get_clim = lambda: (ax.vmin,ax.vmax)
-
-        ax.set_clim = lambda vmin,vmax:set_clim(vmin,vmax,ax)
-        ax.set_clim(*ax.get_clim())
-
-        
         
         return ax,DataList,BinListTotal
 
