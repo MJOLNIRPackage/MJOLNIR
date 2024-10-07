@@ -2577,7 +2577,7 @@ class DataSet(object):
                 [ax.vlines(offset-offsetWidth,*ax.get_ylim(),color=seperatorColor,linewidth=seperatorWidth) for offset,offsetWidth in zip(ax.OffSets[1:],ax.OffSetWidth[1:])]
 
             if colorbar:
-                ax.get_figure().colorbar(ax.pmeshs[0])
+                ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0])
 
 
 
