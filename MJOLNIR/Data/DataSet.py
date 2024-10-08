@@ -580,7 +580,7 @@ class DataSet(object):
             # Bin all data once more and subtract accordingly
             BGReturnData,_ = binData3D(dx=None,dy=None,dz=None,bins=bins,pos=pos,data=intensities)
             
-            returnData[0]=returnData[0]-BGReturnData[0]
+            returnData[0]=returnData[0]-BGReturnData[0]*(returnData[1]*returnData[2])
 
         return returnData,bins
 
