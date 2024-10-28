@@ -2468,6 +2468,7 @@ class DataSet(object):
                 return dataIndex
 
             def calculatePositionInv(ax,HKLQI):
+                HKLQI = HKLQI.copy()
                 if ax.rlu:
                     HKLQI[:,:2] = ax.sample.calculateHKLToQxQy(*HKLQI[:,:3].T).T
                 pos = (ax.QPoints[np.array(HKLQI[:,-1],dtype=int).flatten()]-HKLQI[:,:2]).T
