@@ -25,6 +25,7 @@ class Viewer3D(object):
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
                  cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None,\
                     cut1DFunctionCircle = None, cut1DFunctionRectanglePerp=None,cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,
+                    cut2DFunctionRectangle=None, cut2DFunctionRectanglePerp=None,cut2DFunctionRectangleHorizontal=None,cut2DFunctionRectangleVertical=None,
                     backgroundSubtraction=False, **kwargs):#pragma: no cover
         """3 dimensional viewing object generating interactive Matplotlib figure. 
         Keeps track of all the different plotting functions and variables in order to allow the user to change between different slicing modes and to scroll through the data in an interactive way.
@@ -171,8 +172,16 @@ class Viewer3D(object):
             else:
                 raise AttributeError('Number of provided axes is {} but only 1 or 3 is accepted.'.format(len(ax)))
 
+
+        dQx = np.diff(self.bins[0][:2,0,0])[0]
+        dQy = np.diff(self.bins[1][0,:2,0])[0]
+        ddE = np.diff(self.bins[2][0,0,:2])[0]
+        self.dQE = [dQx,dQy,ddE]
+
         for ax in self._axes:
             ax.backgroundSubtraction = backgroundSubtraction
+            ax.dQE = self.dQE
+            ax.get_clim = self.get_clim
         self.figure.set_size_inches(11,7)
         self.value = 0
         self.figure.subplots_adjust(bottom=0.25)
@@ -238,14 +247,6 @@ class Viewer3D(object):
         ylim = self.ax.get_ylim()
         #if self.axis == 2:
         #    self.ax.set_xlim(np.min([xlim[0],ylim[0]]),np.max([xlim[1],ylim[1]]))
-
-
-        dQx = np.diff(self.bins[0][:2,0,0])[0]
-        dQy = np.diff(self.bins[1][0,:2,0])[0]
-        ddE = np.diff(self.bins[2][0,0,:2])[0]
-        self.dQE = [dQx,dQy,ddE]
-
-        self.resolution = [0.05,0.05]
         
 
         self.Energy_slider.set_val(self.value)
@@ -295,6 +296,26 @@ class Viewer3D(object):
             if not cut1DFunctionRectangleVertical is None:
                 self.axQxE.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(viewer=self,dr=dr)
                 self.axQyE.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(viewer=self,dr=dr)
+
+            
+            if not cut2DFunctionRectangle is None:
+                self.axRLU.cut2DFunctionRectangle = lambda dr: cut2DFunctionRectangle(viewer=self,dr=dr)
+
+            if not cut1DFunctionCircle is None:
+                self.axRLU.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(viewer=self,dr=dr)
+
+            
+            if not cut2DFunctionRectanglePerp is None:
+                self.axQxE.cut2DFunctionRectanglePerpendicular = lambda dr: cut2DFunctionRectanglePerp(viewer=self,dr=dr)
+                self.axQyE.cut2DFunctionRectanglePerpendicular = lambda dr: cut2DFunctionRectanglePerp(viewer=self,dr=dr)
+
+            if not cut2DFunctionRectangleHorizontal is None:
+                self.axQxE.cut2DFunctionRectangleHorizontal = lambda dr: cut2DFunctionRectangleHorizontal(viewer=self,dr=dr)
+                self.axQyE.cut2DFunctionRectangleHorizontal = lambda dr: cut2DFunctionRectangleHorizontal(viewer=self,dr=dr)
+
+            if not cut2DFunctionRectangleVertical is None:
+                self.axQxE.cut2DFunctionRectangleVertical = lambda dr: cut2DFunctionRectangleVertical(viewer=self,dr=dr)
+                self.axQyE.cut2DFunctionRectangleVertical = lambda dr: cut2DFunctionRectangleVertical(viewer=self,dr=dr)
 
         else:
             self.ax._button_press_event = self.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, self) )
@@ -376,6 +397,9 @@ class Viewer3D(object):
             self.caxis = cmin
         else:
             self.caxis = (cmin,cmax)
+
+    def get_clim(self):
+        return self.caxis
 
     def setAxis(self,axis):
         if hasattr(self,'im'): # this function is also called before any plot has been performed

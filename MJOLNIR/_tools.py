@@ -1055,7 +1055,7 @@ def calculateAbsoluteNormalization(sampleMass=None,sampleChemicalFormula=None,sa
     ##########################
     #Calculations
     ##########################
-    normalizationFactor = 4*np.pi*sampleMass*sampleGFactor*vanadiumFactor/(sampleMolarMass*13.77)
+    normalizationFactor = 4*np.pi*sampleMass*(sampleGFactor**2)*vanadiumFactor/(sampleMolarMass*13.77)
     
     return normalizationFactor
 

@@ -11,16 +11,16 @@ import sys
 version = sys.argv[1]
 
 # update to new version in setup.py
-with open('setup.py') as f:
-	lines = f.readlines()
-	writeLines = ''
-	for l in lines:
-		if l.find("    version='")!=-1:
-			l ="    version='"+version+"',\n"
-		writeLines+=l
+# with open('setup.py') as f:
+# 	lines = f.readlines()
+# 	writeLines = ''
+# 	for l in lines:
+# 		if l.find("    version='")!=-1:
+# 			l ="    version='"+version+"',\n"
+# 		writeLines+=l
 			
-with open('setup.py','w') as f:
-	f.write(writeLines)
+# with open('setup.py','w') as f:
+# 	f.write(writeLines)
 
 
 

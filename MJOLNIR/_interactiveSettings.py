@@ -34,19 +34,20 @@ Viewer3DSettings = {'upwards':         ['+','up'  ,'right'],
 # 1D rectangular cuts
 
 interactive1DKeys = {
-                 'cutting':  ['c'],
+                 'cutting':    ['c'],
                  'resolution': ['r']
 }
 
 resolutionSettings = {
                         'return': ['b'],
-                        'clear':['c'],
+                        'clear':  ['c'],
                      }
 
-cut1DSettings = {
-                 'new':  ['n'],
+cutSettings = {
+                 'new':    ['n'],
                  'manage': ['m'],
-                 'cut':  ['c'],
+                 'cut':    ['c'],
+                 'cut2d':  ['ctrl+c'],
                  'return': ['b'],
                 }
 
@@ -114,7 +115,7 @@ for key,value in interactive1DKeys.items():
 
 interactive1DKeysAll = list(np.concatenate(list(interactive1DKeys.values())))
 # Concatenate all possible settings for 1D rectangular cuts
-cut1DSettingsAll = list(np.concatenate(list(cut1DSettings.values())))+snappingKeys['cycle']
+cutSettingsAll = list(np.concatenate(list(cutSettings.values())))+snappingKeys['cycle']
 
 # kwargs for plotting of the rectangles
 cut1DKkwargs = {'linewidth':1, 'edgecolor':'r', 'facecolor':'none','zorder':22}
@@ -122,6 +123,8 @@ cut1DKkwargs = {'linewidth':1, 'edgecolor':'r', 'facecolor':'none','zorder':22}
 # Global variable to give back generated 1DCuts to the user in scripting mode
 global cut1DHolder 
 cut1DHolder = []   
+global cut2DHolder 
+cut2DHolder = []   
 
 # Colors for selected and deselected cuts
 selectedColor = (1.0,0.0,0.0,1)
@@ -548,7 +551,7 @@ def CuttingModeCursorManagerHover(axes,event):
 
 def initializeCUTTING(ax):
         
-    resetUsingKey(ax,cut1DSettings['return'])
+    resetUsingKey(ax,cutSettings['return'])
     
 
     if ax.type in ['QE','QELineView3D']:
@@ -607,6 +610,30 @@ def initializeCUTTING(ax):
 
             cut1DHolder.append([self.ds.plotCut1D(**parameters)])
 
+        def cut2DFunctionRectangleHorizontalDefault(self,dr):
+            global cut2DHolder
+            parameters = extractCut1DPropertiesRectangleHorizontal(dr.rect,self.ds.sample[0])
+
+            if ax.type == 'QELineView3D':
+                parameters['q1'] = ax.calculateRLU(*parameters['q1'])[0]
+                parameters['q2'] = ax.calculateRLU(*parameters['q2'])[0]
+            else:
+                # Convert center point into actual position in Q
+                parameters['q1'] = ax.calculatePosition(parameters['q1'][0]).T
+                parameters['q2'] = ax.calculatePosition(parameters['q2'][0]).T
+                
+            parameters['minPixel'] = ax.minPixel
+            parameters['width'] = ax.width
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
+            parameters['EMin'] = parameters['Emin']
+            parameters['EMax'] = parameters['Emax']
+            parameters['vmin'],parameters['vmax'] = ax.get_clim()
+            
+            for t in ['Emin','Emax','q1','q2']:
+                del parameters[t]
+            
+            cut2DHolder.append([self.ds.plotQPlane(**parameters)])
+
         def cut1DFunctionRectangleVerticalDefault(self,dr):
             global cut1DHolder
             parameters = extractCut1DPropertiesRectangleVertical(dr.rect,self.ds.sample[0])
@@ -623,7 +650,41 @@ def initializeCUTTING(ax):
             parameters['minPixel'] = ax.dE
             parameters['width'] = ax.width
             cut1DHolder.append([self.ds.plotCut1DE(**parameters)])
-        
+
+        def cut2DFunctionRectangleVerticalDefault(self,dr):
+            global cut2DHolder
+            parameters = extractCut1DPropertiesRectangleVertical(dr.rect,self.ds.sample[0])
+            
+            
+            # Convert center point into actual position in Q
+            if ax.type == 'QELineView3D':
+                parameters['q'] = ax.calculateRLU(parameters['q'],0.0)[0]
+            else:
+                # Convert center point into actual position in Q
+                parameters['q'] = ax.calculatePosition(parameters['q']).T
+            
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
+            parameters['minPixel'] = ax.width
+            parameters['EMin'] = parameters['E1']
+            parameters['EMax'] = parameters['E2']
+            parameters['dE'] = ax.dE
+            parameters['width'] = ax.width
+            parameters['vmin'],parameters['vmax'] = ax.get_clim()
+            
+            if ax.rlu:
+                orthogonalVector = np.cross(self.ds.sample[0].planeNormal,ax.plotDirection.flatten())
+                orthogonalVector*=1/np.linalg.norm(orthogonalVector)
+            else:
+                orthogonalVector = np.array([ax.plotDirection[1],-ax.plotDirection[0]])
+
+            parameters['q1'] = parameters['q']-orthogonalVector
+            parameters['q2'] = parameters['q']+orthogonalVector
+
+
+            for t in ['constantBins','ufit','E1','E2','q']:
+                del parameters[t]
+
+            cut2DHolder.append([self.ds.plotCutQE(**parameters,extend=True)])
 
             
 
@@ -635,15 +696,23 @@ def initializeCUTTING(ax):
         if ax.cut1DFunctionRectangleHorizontal is None:
 
             ax.cut1DFunctionRectangleHorizontal = lambda dr: cut1DFunctionRectangleHorizontalDefault(ax,dr)
+
+        if ax.cut2DFunctionRectangleHorizontal is None:
+            ax.cut2DFunctionRectangleHorizontal = lambda dr: cut2DFunctionRectangleHorizontalDefault(ax,dr)
         
 
         if ax.cut1DFunctionRectangleVertical is None:
             ax.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVerticalDefault(ax,dr)
 
 
-        DraggableFunctions = [ax.cut1DFunctionRectanglePerpendicular,ax.cut1DFunctionRectangleHorizontal,ax.cut1DFunctionRectangleVertical]
+        if ax.cut2DFunctionRectangleVertical is None:
+            ax.cut2DFunctionRectangleVertical = lambda dr: cut2DFunctionRectangleVerticalDefault(ax,dr)
 
-        prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
+
+        DraggableFunctions = [ax.cut1DFunctionRectanglePerpendicular,ax.cut1DFunctionRectangleHorizontal,ax.cut1DFunctionRectangleVertical]
+        DraggableFunctions2 = [ax.cut2DFunctionRectanglePerpendicular,ax.cut2DFunctionRectangleHorizontal,ax.cut2DFunctionRectangleVertical]
+
+        prepareInteractiveCutting(ax,Draggables,DraggableFunctions,DraggableFunctions2)
 
     if ax.type == 'QPlane':
         Draggables = [DraggableCircle,DraggableRectangle]
@@ -655,8 +724,26 @@ def initializeCUTTING(ax):
             
             EMin = self.EMin
             EMax = self.EMax
+            minPixel = np.mean(self.dQE[:-1])
             parameters['backgroundSubtraction'] = ax.backgroundSubtraction
+            parameters['minPixel'] = minPixel
             cut1DHolder.append([self.ds.plotCut1D(**parameters,Emin=EMin,Emax=EMax)])
+
+        ## Define the cut functions to be called
+        def cut2DFunctionRectangleDefault(self,dr):
+            global cut2DHolder
+            parameters = extractCut1DPropertiesRectangle(dr.rect,self.sample)
+            
+            EMin = self.ds.energy.min()
+            EMax = self.ds.energy.max()
+            dE = self.dQE[-1]
+            minPixel = np.mean(self.dQE[:-1])
+            parameters['backgroundSubtraction'] = ax.backgroundSubtraction
+            parameters['minPixel'] = minPixel
+            parameters['vmin'],parameters['vmax'] = ax.get_clim()
+            del parameters['ufit']
+            del parameters['constantBins']
+            cut2DHolder.append([self.ds.plotCutQE(**parameters,EMin=EMin,EMax=EMax,dE=dE)])
 
 
         def cut1DFunctionCircleDefault(self,dr):
@@ -671,15 +758,19 @@ def initializeCUTTING(ax):
 
         if ax.cut1DFunctionRectangle is None:
             ax.cut1DFunctionRectangle = lambda dr: cut1DFunctionRectangleDefault(ax,dr)
+
+        if ax.cut2DFunctionRectangle is None:
+            ax.cut2DFunctionRectangle = lambda dr: cut2DFunctionRectangleDefault(ax,dr)
         
         
         if ax.cut1DFunctionCircle is None:
             ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircleDefault(ax,dr)
 
         DraggableFunctions = [ax.cut1DFunctionCircle,ax.cut1DFunctionRectangle]
+        DraggableFunctions2 = [ax.cut2DFunctionCircle,ax.cut2DFunctionRectangle]
 
 
-        prepareInteractiveCutting(ax,Draggables,DraggableFunctions)
+        prepareInteractiveCutting(ax,Draggables,DraggableFunctions,DraggableFunctions2)
 
 
     if not hasattr(ax,'_old_format_coord'):
@@ -768,7 +859,7 @@ def setupAnnotation(self):
 
                 posX,posY= self._snapper(event.xdata,event.ydata)
                 
-                self.pointer.set_data(posX,posY)
+                self.pointer.set_data([posX],[posY])
                 axes = self
                 axes.draw_artist(self.pointer)
                 self.get_figure().canvas.draw_idle()
@@ -904,12 +995,12 @@ def on_key_press(self,event):# pragma: no cover
         axes = self.ax
     else:
         axes = self
-    if not event.key in cut1DSettingsAll:
+    if not event.key in cutSettingsAll:
         self.resetFormatCoord()
         self.suppressPrint = False
 
         return
-    if event.key in cut1DSettings['manage']:
+    if event.key in cutSettings['manage']:
         if hasattr(self,'ax'):
             axes = self.ax
         else:
@@ -928,21 +1019,27 @@ def on_key_press(self,event):# pragma: no cover
             self.drawState = States.MOVE
 
         return
-    elif event.key in cut1DSettings['cut'] and self.new is False: # +cut1DSettings['maskCut']
+    elif event.key in cutSettings['cut']+cutSettings['cut2d'] and self.new is False: # +cutSettings['maskCut']
         self.lock=True
         self.resetFormatCoord()
         self.drawState = States.INACTIVE
         dr = self.selectedDr
         if not dr is None:
-            # if event.key in cut1DSettings['maskCut']:
+            # if event.key in cutSettings['maskCut']:
             #     dr.Mask1DFunction(dr=dr)
             # else:
-            dr.Cut1DFunction(dr=dr)
+            #try:
+            if event.key in cutSettings['cut2d']:
+                dr.Cut2DFunction(dr=dr)
+            else:  
+                dr.Cut1DFunction(dr=dr)
+            # except:
+            #     pass
 
             cancel(self,axes)
             return
     
-    elif event.key in cut1DSettings['new']:
+    elif event.key in cutSettings['new']:
         self.lock=True
         if hasattr(self,'ax'):
             axes = self.ax
@@ -1022,7 +1119,7 @@ def reset(self):# pragma: no cover
         del self.format_coord_old
 
 
-def prepareInteractiveCutting(ax,draggables, draggableFunctions):#, draggableMaskFunctions):# pragma: no cover
+def prepareInteractiveCutting(ax,draggables, draggableFunctions, draggableFunctions2):#, draggableMaskFunctions):# pragma: no cover
     fig = ax.get_figure()
 
     if not hasattr(ax,'tr'):
@@ -1030,8 +1127,8 @@ def prepareInteractiveCutting(ax,draggables, draggableFunctions):#, draggableMas
             ax.tr = ax.sample.tr
             ax.inv_tr = ax.sample.inv_tr
         else:
-            ax.tr = ax.tr
-            ax.inv_tr = ax.inv_tr
+            ax.tr = ax.sample.tr
+            ax.inv_tr = ax.sample.inv_tr
 
 
     ax.resetFormatCoord = lambda: reset(ax)
@@ -1045,6 +1142,7 @@ def prepareInteractiveCutting(ax,draggables, draggableFunctions):#, draggableMas
 
     ax.draggableShapes = draggables
     ax.draggableFunctions = draggableFunctions
+    ax.draggableFunctions2 = draggableFunctions2
     #ax.draggableMaskFunctions = draggableMaskFunctions
     if not hasattr(ax,'ax'):
         ax.ax = ax
@@ -1062,7 +1160,7 @@ def prepareInteractiveCutting(ax,draggables, draggableFunctions):#, draggableMas
                 'button_press_event', lambda event:on_press(ax,event))
 
 
-def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions, draggableMaskFunctions):# pragma: no cover
+def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions,draggableFunctions2, draggableMaskFunctions):# pragma: no cover
     fig = self.ax.get_figure()
     self.ax.resetFormatCoord = lambda: reset(self.ax)
     self.ax.new=False
@@ -1073,6 +1171,7 @@ def prepareInteractiveCuttingView3D(self,draggables, draggableFunctions, draggab
     self.ax.drs = []
     self.ax.draggableShapes = draggables
     self.ax.draggableFunctions = draggableFunctions
+    self.ax.draggableFunctions2 = draggableFunctions2
     self.ax.draggableMaskFunctions = draggableMaskFunctions
     self.ax.ax = self.ax
     
@@ -1114,7 +1213,7 @@ class DraggableShape(): # pragma: no cover
             
 class DraggableRectangle(DraggableShape):# pragma: no cover
     
-    def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
+    def __init__(self, rect,line,plottingObject,Cut1DFunction,Cut2DFunction,figure):
         self.rect = rect
         self.line = line
         self.press = None
@@ -1122,6 +1221,7 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
         self._selected = False
         self.plottingObject = plottingObject
         self.Cut1DFunction = Cut1DFunction
+        self.Cut2DFunction = Cut2DFunction
         self.figure = figure
         
     def remove(self):
@@ -1182,7 +1282,7 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
             return 
         self.selected = True
         x0, y0 = self.rect.xy
-        self.press = x0, y0, *self._snapper(event.xdata,event.ydata)
+        self.press = x0, y0, *self.figure._snapper(event.xdata,event.ydata)
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -1205,7 +1305,7 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress = self.press
-        x,y = self._snapper(event.xdata,event.ydata)
+        x,y = self.figure._snapper(event.xdata,event.ydata)
         dx = x - xpress
         dy = y - ypress
         self.rect.set_x(x0+dx)
@@ -1363,9 +1463,10 @@ class DraggableRectangle(DraggableShape):# pragma: no cover
         
         #Cut1DFunction = lambda dr: figure.cut1DFunction(figure,dr)
         Cut1DFunction = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectangle)]
+        Cut1DFunction2 = figure.draggableFunctions2[figure.draggableShapes.index(DraggableRectangle)]
         
         axes.add_patch(rect)
-        dr = DraggableRectangle(rect,figure.line,figure,Cut1DFunction,figure)
+        dr = DraggableRectangle(rect,figure.line,figure,Cut1DFunction,Cut1DFunction2,figure)
         dr.connect()
         dr.selected = True
         figure.newShape.remove()
@@ -1420,14 +1521,13 @@ def extractCut1DPropertiesRectangle(rect,sample=None, rounding = 4):# pragma: no
         botCenter = sample.calculateQxQyToHKL(*botCenter)
         topCenter = sample.calculateQxQyToHKL(*topCenter)
     
-    minPixel = 0.05
     rlu = not sample is None # RLU only when a sample is provided
     constantBins = False
     ufit = False
     params = {'q1':np.array([np.round(x,rounding) for x in botCenter]),
               'q2':np.array([np.round(x,rounding) for x in topCenter]),
               'width':np.round(np.abs(width),rounding),
-              'minPixel':np.round(minPixel,rounding),
+
               'rlu':rlu,
               'constantBins':constantBins,
               'ufit':ufit}
@@ -1608,7 +1708,7 @@ class DraggableCircle(DraggableShape):# pragma: no cover
 
         self.selected = True
         x0, y0 = self.circ.center
-        self.press = x0, y0, *self._snapper(event.xdata,event.ydata)#event.xdata, event.ydata
+        self.press = x0, y0, *self.figure._snapper(event.xdata,event.ydata)#event.xdata, event.ydata
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -1630,7 +1730,7 @@ class DraggableCircle(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.circ.axes: return
         x0, y0, xpress, ypress = self.press
-        x,y = self._snapper(event.xdata,event.ydata)
+        x,y = self.figure._snapper(event.xdata,event.ydata)
         dx = x - xpress
         dy = y - ypress
         self.circ.center = [x0+dx,y0+dy]
@@ -1746,13 +1846,14 @@ class DraggableCircle(DraggableShape):# pragma: no cover
 
 class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
     ### To be used in a QE plane only allowing a perpendicular cut, i.e. Q_perp (integrating over E and Q_para)
-    def __init__(self, rect,plottingObject,Cut1DFunction,figure):
+    def __init__(self, rect,plottingObject,Cut1DFunction,Cut2DFunction,figure):
         self.rect = rect
         self.press = None
         self.background = None
         self._selected = False
         self.plottingObject = plottingObject
         self.Cut1DFunction = Cut1DFunction
+        self.Cut2DFunction = Cut2DFunction
         self.figure = figure
         
     def remove(self):
@@ -1819,7 +1920,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
 
         self.selected = True
         x0, y0 = self.rect.xy
-        self.press = x0, y0, *self._snapper(event.xdata,event.ydata)
+        self.press = x0, y0, *self.figure._snapper(event.xdata,event.ydata)
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -1841,7 +1942,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress = self.press
-        x,y = self._snapper(event.xdata,event.ydata)
+        x,y = self.figure._snapper(event.xdata,event.ydata)
         dx = x - xpress
         dy = y - ypress
         self.rect.set_xy([x0+dx,y0+dy])
@@ -1908,7 +2009,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
                 width = self.newShape.get_width()
                 height = self.newShape.get_height()
                 center = np.asarray(self.newShape.xy)+np.array([0.5*width,0.5*height])
-                x,y = self._snapper(event.xdata,event.ydata)
+                x,y = self.figure._snapper(event.xdata,event.ydata)
                 mousePoint = np.array([x-center[0],y-center[1]])
                 
                 
@@ -1940,11 +2041,12 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
                         **cut1DKkwargs)
         
         # Find corresponding function to generated DR
-        func = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectanglePerpendicular)]
-        Cut1DFunction = func
+        Cut1DFunction = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectanglePerpendicular)]
+        Cut2DFunction = figure.draggableFunctions2[figure.draggableShapes.index(DraggableRectanglePerpendicular)]
+        
         
         axes.add_patch(rect)
-        dr = DraggableRectanglePerpendicular(rect,figure,Cut1DFunction,figure)
+        dr = DraggableRectanglePerpendicular(rect,figure,Cut1DFunction,Cut1DFunction,Cut2DFunction,figure)
         figure.new = False
         figure.newShape.set_visible(False)
         figure.newShape.remove()
@@ -1959,7 +2061,7 @@ class DraggableRectanglePerpendicular(DraggableShape):# pragma: no cover
 
 class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
     ### To be used in a QE plane only allowing a QCut for constant energy
-    def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
+    def __init__(self, rect,line,plottingObject,Cut1DFunction,Cut2DFunction,figure):
         self.rect = rect
         self.press = None
         self.background = None
@@ -1967,6 +2069,7 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         self._selected = False
         self.plottingObject = plottingObject
         self.Cut1DFunction = Cut1DFunction
+        self.Cut2DFunction = Cut2DFunction
         self.figure = figure
         
     def remove(self):
@@ -2039,7 +2142,7 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
         x0, y0 = self.rect.xy
         lineXData = self.line.get_xdata()
         lineYData = self.line.get_ydata()
-        self.press = x0, y0, *self._snapper(event.xdata,event.ydata), lineXData, lineYData
+        self.press = x0, y0, *self.figure._snapper(event.xdata,event.ydata), lineXData, lineYData
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -2062,7 +2165,7 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress, lineXData, lineYData = self.press
-        x,y = self._snapper(event.xdata,event.ydata)
+        x,y = self.figure._snapper(event.xdata,event.ydata)
         dx = x - xpress
         dy = y - ypress
         self.rect.set_xy([x0+dx,y0+dy])
@@ -2207,11 +2310,12 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
                         **cut1DKkwargs)
         
         # Find corresponding function to generated DR
-        func = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectangleHorizontal)]
-        Cut1DFunction = func
+        Cut1DFunction = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectangleHorizontal)]
+        Cut2DFunction = figure.draggableFunctions2[figure.draggableShapes.index(DraggableRectangleHorizontal)]
+        
         
         axes.add_patch(rect)
-        dr = DraggableRectangleHorizontal(rect,figure.line,figure,Cut1DFunction,figure)
+        dr = DraggableRectangleHorizontal(rect,figure.line,figure,Cut1DFunction,Cut2DFunction,figure)
         figure.new = False
         figure.newShape.set_visible(False)
         figure.newShape.remove()
@@ -2226,7 +2330,7 @@ class DraggableRectangleHorizontal(DraggableShape):# pragma: no cover
 
 class DraggableRectangleVertical(DraggableShape):# pragma: no cover
     ### To be used in a QE plane only allowing a QCut for constant q
-    def __init__(self, rect,line,plottingObject,Cut1DFunction,figure):
+    def __init__(self, rect,line,plottingObject,Cut1DFunction,Cut2DFunction,figure):
         self.rect = rect
         self.press = None
         self.background = None
@@ -2234,6 +2338,7 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         self._selected = False
         self.plottingObject = plottingObject
         self.Cut1DFunction = Cut1DFunction
+        self.Cut2DFunction = Cut2DFunction
         self.figure = figure
         
     def remove(self):
@@ -2306,7 +2411,7 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
         x0, y0 = self.rect.xy
         lineXData = self.line.get_xdata()
         lineYData = self.line.get_ydata()
-        self.press = x0, y0, *self._snapper(event.xdata,event.ydata), lineXData, lineYData
+        self.press = x0, y0, *self.figure._snapper(event.xdata,event.ydata), lineXData, lineYData
         self.figure.lock = self
 
         # draw everything but the selected rectangle and store the pixel buffer
@@ -2329,7 +2434,7 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
             return
         if event.inaxes != self.rect.axes: return
         x0, y0, xpress, ypress, lineXData, lineYData = self.press
-        x,y = self._snapper(event.xdata,event.ydata)
+        x,y = self.figure._snapper(event.xdata,event.ydata)
         dx = x - xpress
         dy = y - ypress
         self.rect.set_xy([x0+dx,y0+dy])
@@ -2467,11 +2572,12 @@ class DraggableRectangleVertical(DraggableShape):# pragma: no cover
                         **cut1DKkwargs)
         
         # Find corresponding function to generated DR
-        func = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectangleVertical)]
-        Cut1DFunction = func
+        
+        Cut1DFunction = figure.draggableFunctions[figure.draggableShapes.index(DraggableRectangleVertical)]
+        Cut2DFunction = figure.draggableFunctions2[figure.draggableShapes.index(DraggableRectangleVertical)]
         
         axes.add_patch(rect)
-        dr = DraggableRectangleVertical(rect,figure.line,figure,Cut1DFunction,figure)
+        dr = DraggableRectangleVertical(rect,figure.line,figure,Cut1DFunction,Cut2DFunction,figure)
         figure.new = False
         figure.newShape.set_visible(False)
         figure.newShape.remove()
