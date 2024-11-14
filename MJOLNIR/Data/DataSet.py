@@ -899,7 +899,7 @@ class DataSet(object):
 
 
     @_tools.KwargChecker()
-    def cutQE(self,q1,q2,width,minPixel,EMin=None,EMax=None,dE=None,EnergyBins=None,rlu=True,extend=True,
+    def cutQE(self,q1,q2,width,minPixel,EMin=None,EMax=None,dE=None,EnergyBins=None,rlu=True,extend=False,
               dataFiles=None,constantBins=False,smoothing=None,
               backgroundSubtraction=False,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale):
         """Wrapper for cut data into maps of q and intensity between two q points and given energies. This is performed by doing consecutive constant energy planes.
@@ -1079,13 +1079,19 @@ class DataSet(object):
             insideQ = np.logical_and(propos[0]>0.0,propos[0]<dirLength)
             insideWidth = np.logical_and(propos[1]<orthobins[1],propos[1]>orthobins[0])
             
-            inside = np.logical_and(np.logical_and(insideQ,insideWidth),insideEnergy)
+            if not extend:
+                inside = np.logical_and(np.logical_and(insideQ,insideWidth),insideEnergy)
+            else:
+                inside = np.logical_and(insideWidth,insideEnergy)
             
             propos = propos[:,inside]
             
             # Create bins from 0 to length of cuts and add a pixel length to ensure
             # that the full range is binned
-            QBins = np.arange(0,dirLength+minPixel,minPixel)
+            if not extend:
+                QBins = np.arange(0,dirLength+minPixel,minPixel)
+            else:
+                QBins = np.arange(np.min(propos[0]),np.max(propos[0]),minPixel)
             
             if EnergyBins is None: # If no EnergyBins are given, EMin,EMax, and dE are known to be given
                 EnergyBins = np.arange(EMin,EMax+dE,dE)
@@ -1176,10 +1182,11 @@ class DataSet(object):
     
     @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','edgecolors'],])) # ,'axisRedraw'
     def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,counts=False,
-                  smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,
+                  smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,extend=False,
                   backgroundSubtraction = False, scaledEnergy=False,scaleFunction=_tools.scale,
                   rescaleFunction=_tools.rescale, cut1DFunctionRectanglePerpendicular=None, cut1DFunctionRectangleHorizontal=None,
-                  cut1DFunctionRectangleVertical=None, **kwargs): #  axisRedraw=False,
+                  cut1DFunctionRectangleVertical=None, cut2DFunctionRectanglePerpendicular=None, cut2DFunctionRectangleHorizontal=None,
+                  cut2DFunctionRectangleVertical=None,**kwargs): #  axisRedraw=False,
         """plot of intensity as function of Q between Q1 and Q2 and Energy.
         
         Args:
@@ -1268,7 +1275,7 @@ class DataSet(object):
         ax.minPixel = minPixel
         
         data,bins,[minOrthoPosition,maxOrthoPosition] = self.cutQE(q1,q2,width,minPixel,EMin=EMin,EMax=EMax,dE=dE,
-                                                                   EnergyBins=EnergyBins,rlu=rlu,smoothing=smoothing,
+                                                                   EnergyBins=EnergyBins,rlu=rlu,smoothing=smoothing,extend=extend,
                                                                    backgroundSubtraction=backgroundSubtraction)
 
         if rlu==True: # Recalculate H,K,L to qx
@@ -1363,6 +1370,22 @@ class DataSet(object):
             ax.cut1DFunctionRectangleVertical = lambda dr: cut1DFunctionRectangleVertical(ax,dr)
         else:
             ax.cut1DFunctionRectangleVertical = None
+
+        
+        if not cut2DFunctionRectanglePerpendicular is None:
+            ax.cut2DFunctionRectanglePerpendicular = lambda dr: cut2DFunctionRectanglePerpendicular(ax,dr)
+        else:
+            ax.cut2DFunctionRectanglePerpendicular = None
+
+        if not cut2DFunctionRectangleHorizontal is None:
+            ax.cut2DFunctionRectangleHorizontal = lambda dr: cut2DFunctionRectangleHorizontal(ax,dr)
+        else:
+            ax.cut2DFunctionRectangleHorizontal = None
+
+        if not cut2DFunctionRectangleVertical is None:
+            ax.cut2DFunctionRectangleVertical = lambda dr: cut2DFunctionRectangleVertical(ax,dr)
+        else:
+            ax.cut2DFunctionRectangleVertical = None
 
         if colorbar:
             ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0])
@@ -1540,6 +1563,7 @@ class DataSet(object):
             ax.pmesh.set_clim(VMin,VMax)
 
         ax.set_clim = lambda VMin,VMax: set_clim(ax,VMin,VMax)
+        ax.get_clim = lambda : ax.pmesh[0].get_clim()
         
         def onclick(event,ax,dat,centerPointsE,outputFunction):# pragma: no cover
             if ax.in_axes(event):
@@ -1599,7 +1623,7 @@ class DataSet(object):
     #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
     def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,
     dataFiles=None,xScale=1.0,yScale=1.0, backgroundSubtraction=False,
-    outputFunction=print,cut1DFunctionRectangle=None, cut1DFunctionCircle=None, scaleFunction = None,
+    outputFunction=print,cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut2DFunctionRectangle=None, cut2DFunctionCircle=None, scaleFunction = None,
     **kwargs):
         """Wrapper for plotting tool to show binned intensities in the Q plane between provided energies.
             
@@ -1874,6 +1898,7 @@ class DataSet(object):
             ax.pmeshs.append(pmeshs)
 
         ax.set_clim = lambda vMin,vMax: set_clim(ax.pmeshs,vMin,vMax)
+        ax.get_clim = lambda: ax.pmeshs[0].get_clim()
 
         if colorbar:
             ax.colorbar = ax.get_figure().colorbar(ax.pmeshs[0],pad=0.1)
@@ -1910,6 +1935,17 @@ class DataSet(object):
                 ax.cut1DFunctionCircle = lambda dr: cut1DFunctionCircle(ax,dr=dr)
             else:
                 ax.cut1DFunctionCircle = cut1DFunctionCircle
+
+
+            if not cut2DFunctionRectangle is None:
+                ax.cut2DFunctionRectangle = lambda dr: cut2DFunctionRectangle(ax,dr=dr)
+            else:
+                ax.cut2DFunctionRectangle = cut2DFunctionRectangle
+
+            if not cut2DFunctionCircle is None:
+                ax.cut2DFunctionCircle = lambda dr: cut2DFunctionCircle(ax,dr=dr)
+            else:
+                ax.cut2DFunctionCircle = cut2DFunctionCircle
 
             ax.type = 'QPlane'
             ax = _interactiveSettings.setupModes(ax)
@@ -2573,6 +2609,7 @@ class DataSet(object):
                 vmax = np.max([p.get_array().max() for p in ax.pmeshs])
 
             ax.set_clim = lambda vmin,vmax:set_clim(ax, vmin, vmax)
+            ax.get_clim = lambda :ax.pmeshs[0].get_clim()
 
             if plotSeperator:
                 [ax.vlines(offset-offsetWidth,*ax.get_ylim(),color=seperatorColor,linewidth=seperatorWidth) for offset,offsetWidth in zip(ax.OffSets[1:],ax.OffSetWidth[1:])]
@@ -3366,8 +3403,10 @@ class DataSet(object):
                 p.set_clim(vmin,vmax)
                 
         ax.set_clim = lambda Vmin,Vmax: set_clim(Vmin,Vmax,ax.meshs)
+        ax.get_clim = lambda : ax.meshs[0].get_clim()
 
         ax.set_clim(Vmin,Vmax)
+        
 
         return ax, Data, Bins
 
@@ -3376,7 +3415,9 @@ class DataSet(object):
     def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
                instrumentAngles=False,outputFunction=print,backgroundSubtraction=False,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
                cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut1DFunctionRectanglePerp=None,
-               cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,**kwargs):
+               cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,
+               cut2DFunctionRectangle=None, cut2DFunctionCircle=None, cut2DFunctionRectanglePerp=None,
+               cut2DFunctionRectangleHorizontal=None,cut2DFunctionRectangleVertical=None,**kwargs):
         """View data in the Viewer3D object. 
 
         Args:
@@ -3451,6 +3492,8 @@ class DataSet(object):
 
             rluax.cut1DFunctionRectangle = None
             rluax.cut1DFunctionCircle = None
+            rluax.cut2DFunctionRectangle = None
+            rluax.cut2DFunctionCircle = None
 
             rluax = _interactiveSettings.setupModes(rluax)
             
@@ -3487,6 +3530,9 @@ class DataSet(object):
             qxEax.cut1DFunctionRectanglePerpendicular = cut1DFunctionRectanglePerp
             qxEax.cut1DFunctionRectangleHorizontal = cut1DFunctionRectangleHorizontal
             qxEax.cut1DFunctionRectangleVertical = cut1DFunctionRectangleVertical
+            qxEax.cut2DFunctionRectanglePerpendicular = cut2DFunctionRectanglePerp
+            qxEax.cut2DFunctionRectangleHorizontal = cut2DFunctionRectangleHorizontal
+            qxEax.cut2DFunctionRectangleVertical = cut2DFunctionRectangleVertical
             qxEax = _interactiveSettings.setupModes(qxEax)
             
 
@@ -3518,6 +3564,9 @@ class DataSet(object):
             qyEax.cut1DFunctionRectanglePerpendicular = cut1DFunctionRectanglePerp
             qyEax.cut1DFunctionRectangleHorizontal = cut1DFunctionRectangleHorizontal
             qyEax.cut1DFunctionRectangleVertical = cut1DFunctionRectangleVertical
+            qyEax.cut2DFunctionRectanglePerpendicular = cut2DFunctionRectanglePerp
+            qyEax.cut2DFunctionRectangleHorizontal = cut2DFunctionRectangleHorizontal
+            qyEax.cut2DFunctionRectangleVertical = cut2DFunctionRectangleVertical
             qyEax = _interactiveSettings.setupModes(qyEax)
             
 
@@ -3621,6 +3670,12 @@ class DataSet(object):
             cut1DFunctionRectanglePerp=cut1DFunctionRectanglePerp,
             cut1DFunctionRectangleHorizontal=cut1DFunctionRectangleHorizontal,
             cut1DFunctionRectangleVertical=cut1DFunctionRectangleVertical,
+            
+            cut2DFunctionRectangle=cut2DFunctionRectangle, 
+            cut2DFunctionRectanglePerp=cut2DFunctionRectanglePerp,
+            cut2DFunctionRectangleHorizontal=cut2DFunctionRectangleHorizontal,
+            cut2DFunctionRectangleVertical=cut2DFunctionRectangleVertical,
+
             backgroundSubtraction=backgroundSubtraction)
 
 
@@ -5513,6 +5568,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
                 pm.set_clim(VMin,VMax)
 
         ax.set_clim = lambda VMin,VMax: set_clim(ax,VMin,VMax)
+        ax.get_clim = lambda : ax.pmeshs[0].get_clim()
     else:
         def calculateIndex(binDistance,x):
             idx = np.argmin(np.abs(binDistance-x))
@@ -5645,7 +5701,8 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     #ax.xaxis.set_label_coords(1.075, -0.025)
     #ax.set_xlim(-0.01,1.01)
     
-    
+    ax.tr = lambda x,y: (x,y)
+    ax.tr_inv = lambda x,y: (x,y)
     
     # connect methods
     ax.format_coord = lambda x,y: format_coord(x,y,ax)

@@ -66,7 +66,7 @@ in question a number of cuts are possible, including a rectangular cut between t
 By pressing 'n' one cycles through the possible cuts with the type of cut printed in the coordinate format text (i.e. the text showing the current 
 mouse position) and after all cutting types have been cycled through you will end up returning to the initial inactive starting position. To initiate the cut click with
 the left mouse button. This point signifies, depending on the cut type, the start or the centre of the cut. After providing all positions necessary, the cut will be shown in red
-and a cut can be created by pressing 'c'. If a second cut is created the first will turn green to signify that it is now inactive. To change which cut is active and to move or delete
+and a 1D cut can be created by pressing 'c' and in some circumstances a 2D plot by 'Ctrl + c'. If a second cut is created the first will turn green to signify that it is now inactive. To change which cut is active and to move or delete
 cuts the manage mode has been created. Activating it by pressing 'm' one can activate a cut by left clicking on it or delete it by right-clicking it. By click-and-drag the cut can be translated.
 Cuts cannot be rescaled or rotated.
 
@@ -82,12 +82,16 @@ Cuts cannot be rescaled or rotated.
     +-------------------+------------+
     | Enter Manage Mode | m          |
     +-------------------+------------+
-    | Perform Cut       | c          |
+    | Perform 1D Cut    | c          |
+    +-------------------+------------+
+    | Perform 2D Cut*   | Ctrl + c   |
     +-------------------+------------+
     | Snapping Cycle    | **.**      |
     +-------------------+------------+
     | Return            | b          |
     +-------------------+------------+
+
+* Only in some circumstances, 2D plots are possible.
 
 When in cutting mode, it might be advantageous to be able to snap to the underlying grid of the figure. A snapping option has been created where one can snap to the grid or a specific 
 segment size, 1/n, for n = 1, 2, 3, 4, and 5. This mode is activated by pressing '**.**' while in cutting mode. The cycle goes as follows: None, 1, 2, 3, 4, 5 and then back to None.

@@ -607,6 +607,7 @@ def createQEAxes(DataSet=None,axis=0,figure = None, projectionVector1 = None, pr
     ax._length = projectionVectorLengthORthogonal
     ax._projectionVector = projectionVector 
     ax._projectionVectorOrthogonal = projectionVectorOrthogonal
+    ax.plotDirection = projectionVector
     ax._step = 0.0
     ax.calculateRLU = lambda x,y: calculateRLU(projectionVectorLength,ax._projectionVector,x,y,ax._projectionVectorOrthogonal,ax._step)
     ax.format_coord = lambda x,y: format_coord(*ax.calculateRLU(x,y))
