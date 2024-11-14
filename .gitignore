@@ -45,3 +45,4 @@ Report/
 coverage_html_report
 samlpedata/*
 docs/Commissioning/*
+MJOLNIR/MJOLNIR.egg-info/*
