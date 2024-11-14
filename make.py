@@ -15,7 +15,7 @@ import os,glob
 import re, numpy as np
 from MJOLNIR.Data.DataSet import OxfordList
 
-DEBUG = True
+DEBUG = False
 
 possibleArguments = ['test', 'tutorials', 'wheel', 'html', 'upload', 'testVersion', 'version']
 
