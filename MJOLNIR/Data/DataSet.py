@@ -578,9 +578,9 @@ class DataSet(object):
             intensities = self.backgroundIntensities.extractData()
             
             # Bin all data once more and subtract accordingly
-            BGReturnData,_ = binData3D(dx=None,dy=None,dz=None,bins=bins,pos=pos,data=intensities)
+            BGReturnData,_ = binData3D(dx=None,dy=None,dz=None,bins=bins,pos=pos,data=intensities*Norm*Monitor)#,norm=Norm,mon=Monitor)
             
-            returnData[0]=returnData[0]-BGReturnData[0]*(returnData[1]*returnData[2])
+            returnData[0]=returnData[0]-BGReturnData[0]#*(BGReturnData[1]*BGReturnData[2])
 
         return returnData,bins
 
