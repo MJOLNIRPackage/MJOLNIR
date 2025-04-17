@@ -5,7 +5,7 @@ from difflib import SequenceMatcher
 import functools
 import logging
 import math
-from MJOLNIR.Marray import *
+#from MJOLNIR.Marray import *
 import os
 import inspect
 import matplotlib

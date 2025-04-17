@@ -1194,7 +1194,7 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         nxdata.attrs['NX_class'] = np.string_('NXdata')
         
         det = entry['CAMEA/detector']
-        dset = det.create_dataset('counts',data=data.swapaxes(1,2), compression="gzip", compression_opts=9)
+        dset = det.create_dataset('data',data=data.swapaxes(1,2), compression="gzip", compression_opts=9)
         dset.attrs['target'] = np.string_('/entry/CAMEA/detector/counts')
         dset.attrs['units'] = np.string_('counts')
         nxdata['counts'] = dset
@@ -1302,6 +1302,11 @@ def convertToHDF(fileName,title,sample,fname,CalibrationFile=None,pixels=1024,ce
         control.attrs['NX_class'] = np.string_('NXmonitor')
         
         control.create_dataset('data',data=mons,dtype='int32')
+
+        monitor2 = entry.create_group('monitor_2')
+        monitor2.attrs['NX_class'] = np.string_('NXmonitor')
+        monitor2.create_dataset('data',data=mons,dtype='int32')
+
         dset = control.create_dataset('preset',(1,),dtype='int32')
         dset[0] = 10000
         dset = control.create_dataset('mode',(1,),dtype='S70')
