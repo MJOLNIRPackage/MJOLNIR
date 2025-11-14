@@ -18,8 +18,8 @@ import warnings
 try: 
     from AMBER import background
     AMBER_located = True
-except ModuleNotFoundError:
-    AMBER_located = True
+except (ModuleNotFoundError, ImportError):
+    AMBER_located = False
 
 
 # If an update has happened to the self.int, and the originalDataSet has a backgroundIntensities pointer array
