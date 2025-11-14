@@ -584,11 +584,12 @@ class DataSet(object):
 
         return returnData,bins
 
+    @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
     @_tools.KwargChecker()
-    def cut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,plotCoverage=False,extend=False,
+    def cut1D(self,q1,q2,width,minPixel,EMin,EMax,rlu=True,plotCoverage=False,extend=False,
               dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,
               backgroundSubtraction=False, ufit=False):
-        """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
+        """Wrapper for 1D cut through constant energy plane from q1 to q2 function returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by EMin and EMax. 
         the minimum step sizes is given by minPixel.
         
         .. note::
@@ -604,9 +605,9 @@ class DataSet(object):
             
             - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
             
-            - Emin (float): Minimal energy to include in cut.
+            - EMin (float): Minimal energy to include in cut.
             
-            - Emax (float): Maximal energy to include in cut
+            - EMax (float): Maximal energy to include in cut
             
         Kwargs:
             
@@ -683,7 +684,7 @@ class DataSet(object):
         else:
             background = None
         Data,[binpositionsTotal,orthopos,EArray] = cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,width=width,
-                                                                minPixel=minPixel,Emin=Emin,Emax=Emax,plotCoverage=plotCoverage,
+                                                                minPixel=minPixel,EMin=EMin,EMax=EMax,plotCoverage=plotCoverage,
                                                                 extend=extend,constantBins=constantBins,I_err=I_err,background=background)
 
         if len(binpositionsTotal) == 0:
@@ -761,14 +762,16 @@ class DataSet(object):
         
         if rlu:
             q1,q2 = self.convertToHKL([q1,q2])
-        ufitData = self.generateUFitDataset(pdData,q1,q2,rlu,width=width,Emin=Emin,Emax=Emax,minPixel=minPixel)
+        ufitData = self.generateUFitDataset(pdData,q1,q2,rlu,width=width,EMin=EMin,EMax=EMax,minPixel=minPixel)
         
         return ufitData
 
         
     
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
-    def plotCut1D(self,q1,q2,width,minPixel,Emin,Emax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,
+    #@_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
+    @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
+    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']]))
+    def plotCut1D(self,q1,q2,width,minPixel,EMin,EMax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,
                   counts=False,extend=False,data=None,dataFiles=None,constantBins=False,backgroundSubtraction=False,
                   ufit=False,plotForeground=False,plotBackground=False,outputFunction=print,**kwargs):  
         """plot new or already performed cut.
@@ -783,9 +786,9 @@ class DataSet(object):
                 
                 - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
 
-                - Emin (float): Minimal energy to include in cut.
+                - EMin (float): Minimal energy to include in cut.
                 
-                - Emax (float): Maximal energy to include in cut.
+                - EMax (float): Maximal energy to include in cut.
                 
             Kwargs:
                 
@@ -830,7 +833,7 @@ class DataSet(object):
         variables = variables+[pdNaming['e']]
         
         if data is None:
-            Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,Emin=Emin,Emax=Emax,
+            Data, bins = self.cut1D(q1=q1,q2=q2,width=width,minPixel=minPixel,EMin=EMin,EMax=EMax,
                                     extend=extend,rlu=rlu,dataFiles=dataFiles,plotCoverage=plotCoverage,
                                     constantBins=constantBins, backgroundSubtraction = backgroundSubtraction)
         else:
@@ -891,7 +894,7 @@ class DataSet(object):
 
         # Generate ufit object if needed
         if ufit==True:
-            ufitdata = self.generateUFitDataset(pdData=Data,q1=q1,q2=q2,rlu=rlu,width=width,Emin=Emin,Emax=Emax,minPixel=minPixel)
+            ufitdata = self.generateUFitDataset(pdData=Data,q1=q1,q2=q2,rlu=rlu,width=width,EMin=EMin,EMax=EMax,minPixel=minPixel)
             return ax,ufitdata
             
         ax.get_figure().tight_layout()
@@ -988,7 +991,7 @@ class DataSet(object):
             for i in np.arange(len(EnergyBins)-1):
 
                 _local,position = self.cut1D(positions=positions,I=I,Norm=Norm,Monitor=Monitor,q1=q1,q2=q2,
-                                        width=width,minPixel=minPixel,Emin=EnergyBins[i],Emax=EnergyBins[i+1],
+                                        width=width,minPixel=minPixel,EMin=EnergyBins[i],EMax=EnergyBins[i+1],
                                         plotCoverage=False,extend=extend,constantBins=constantBins,dataFiles=dataFiles,rlu=False)                                      
 
                 _local['energyCut'] = i
@@ -1011,7 +1014,7 @@ class DataSet(object):
 
             return dataFrame,returnpositions,centerPos,binDistance
         else:
-            if EnergyBins is None: # No bins given, then all Emin,EMax and dE must be given
+            if EnergyBins is None: # No bins given, then all EMin, EMax and dE must be given
                 test = [X is None for X in [EMin,EMax,dE]]
                 if np.any(test):
                     raise AttributeError('When no EnergyBins are given EMin, EMax, and dE must be given. Recieved: EMin={},EMax={}, and dE={}'.format(EMin,EMax,dE))
@@ -1464,7 +1467,7 @@ class DataSet(object):
         return returnValues
 
     
-    @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','edgecolors']]))
+    @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['edgecolors']]))
     def plotCutPowder(self,EBins,QBins,ax=None,dataFiles=None,log=False,colorbar=True, 
                       backgroundSubtraction=False, 
                       vmin=None, vmax=None,outputFunction=print,**kwargs):
@@ -2320,7 +2323,7 @@ class DataSet(object):
         return DataList,BinList#,OffSets,OffSetWidth    
         
         
-    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','ticks','seperatorWidth','plotSeperator','seperatorColor','cmap','colorbar']]))
+    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['log','ticks','seperatorWidth','plotSeperator','seperatorColor','cmap','colorbar']]))
     def plotCutQELine(self,QPoints=None,EnergyBins=None,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=True,
                       outputFunction=print,backgroundSubtraction=False,dataList=None,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
@@ -2980,7 +2983,7 @@ class DataSet(object):
         if not ufit:
             return data,bins
         
-        ufitData = self.generateUFitDataset(data,q1=q,q2=None,rlu=rlu,width=width,minPixel=minPixel,Emin=E1,Emax=E2,QDirection=False)
+        ufitData = self.generateUFitDataset(data,q1=q,q2=None,rlu=rlu,width=width,minPixel=minPixel,EMin=E1,EMax=E2,QDirection=False)
         
         return ufitData
 
@@ -3123,8 +3126,8 @@ class DataSet(object):
     
         return ax,ufitData
 
-
-    def cutELine(self, Q1, Q2, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, 
+    @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
+    def cutELine(self, Q1, Q2, EMn=None, EMax=None, energyWidth = 0.05, minPixel = 0.02, 
                  width = 0.02, rlu=True, dataFiles=None, constantBins=False, backgroundSubtraction=False):
         """Perform cut along energy in steps between two Q Point 
         
@@ -3137,9 +3140,9 @@ class DataSet(object):
 
         Kwargs: 
 
-            - Emin (float): Start energy (default is self.Energy.min() for data in cut).
+            - EMin (float): Start energy (default is self.Energy.min() for data in cut).
             
-            - Emax (float): End energy (default is self.Energy.max() for data in cut).
+            - EMax (float): End energy (default is self.Energy.max() for data in cut).
 
             - energyWidth (float): Height of energy bins (default 0.05 meV)
 
@@ -3214,10 +3217,10 @@ class DataSet(object):
         points = np.linalg.norm(dirvec)/minPixel
 
         # Find minimum and maximum for newly masked data
-        if Emin is None:
-            Emin = DS.energy.min()
-        if Emax is None:
-            Emax = DS.energy.max()
+        if EMin is None:
+            EMin = DS.energy.min()
+        if EMax is None:
+            EMax = DS.energy.max()
 
         # Points for which constant Q cut in energy is to be performed
         QPoints = np.array([Q1+dirvec*x for x in np.linspace(0.0,1.0,int(np.floor(points)))])
@@ -3246,7 +3249,7 @@ class DataSet(object):
         for i,Q in enumerate(Qs):
             Q = Q.flatten()
             returnData,bins  = \
-                cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=Emin,E2=Emax,
+                cut1DE(positions = positions, I=I, Norm=Norm,Monitor=Monitor,E1=EMin,E2=EMax,
                        q=Q,width=width,minPixel=energyWidth,constantBins=constantBins,
                        background=background)
             data = pd.DataFrame()
@@ -3292,8 +3295,8 @@ class DataSet(object):
 
         return Data,Bins
 
-
-    def plotCutELine(self, Q1, Q2, ax=None, Emin=None, Emax=None, energyWidth = 0.05, minPixel = 0.02, 
+    @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
+    def plotCutELine(self, Q1, Q2, ax=None, EMin=None, EMax=None, energyWidth = 0.05, minPixel = 0.02, 
                      width = 0.02, rlu=True, counts=False, dataFiles=None, constantBins=False, Vmin=None, 
                      Vmax = None, backgroundSubtraction=False, **kwargs):
         """Perform cut along energy in steps between two Q Point 
@@ -3309,9 +3312,9 @@ class DataSet(object):
 
             - ax (matplotlib axis): Axis into which the plot is to go (default None, new created)
 
-            - Emin (float): Start energy (default is self.Energy.min() for data in cut).
+            - EMin (float): Start energy (default is self.Energy.min() for data in cut).
             
-            - Emax (float): End energy (default is self.Energy.max() for data in cut).
+            - EMax (float): End energy (default is self.Energy.max() for data in cut).
 
             - energyWidth (float): Height of energy bins (default 0.05 meV)
 
@@ -3341,7 +3344,7 @@ class DataSet(object):
 
         """
         
-        Data,Bins = self.cutELine(Q1=Q1, Q2=Q2,Emin=Emin, Emax=Emax, energyWidth=energyWidth, minPixel =minPixel, 
+        Data,Bins = self.cutELine(Q1=Q1, Q2=Q2,EMin=EMin, EMax=EMax, energyWidth=energyWidth, minPixel =minPixel, 
                                   width = width, rlu=rlu, dataFiles=dataFiles, constantBins=constantBins, 
                                   backgroundSubtraction=backgroundSubtraction)
 
@@ -3929,8 +3932,8 @@ class DataSet(object):
         for d in self:
             d.updateCalibration(calibFiles,overwrite=overwrite)
 
-
-    def generateUFitDataset(self, pdData,q1,q2,rlu,width,minPixel,Emin,Emax,QDirection=True):
+    @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
+    def generateUFitDataset(self, pdData,q1,q2,rlu,width,minPixel,EMin,EMax,QDirection=True):
         """Generate uFitDataset from cut.
 
         Args:
@@ -3947,9 +3950,9 @@ class DataSet(object):
 
             - minPixel (float): Minimum pixel size (used for rounding of labels)
 
-            - Emin (float): Minimum energy
+            - EMin (float): Minimum energy
              
-            - Emax (float): Maximum energy
+            - EMax (float): Maximum energy
 
         Kwargs:
 
@@ -3965,7 +3968,7 @@ class DataSet(object):
 
         if QDirection:
             QRounding = int(-np.round(np.log10(minPixel)))
-            ERounding = int(np.round(6/(np.linalg.norm(Emin-Emax))))
+            ERounding = int(np.round(6/(np.linalg.norm(EMin-EMax))))
             ERounding = np.max([ERounding,1])
             QRounding = np.max([QRounding,1])
 
@@ -4008,7 +4011,7 @@ class DataSet(object):
         x = np.array(pdData[pdNaming['plotPosition']])
 
         # Calcualte mean energy from bins (last return value)
-        Energy = (Emin+Emax)*0.5
+        Energy = (EMin+EMax)*0.5
         # Create meta data for uFit dataset
         meta = dict()
 
@@ -4411,9 +4414,10 @@ def load(filename):
         fileObject.close()
         return tmp_dict
 
+@_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
 @_tools.KwargChecker()
-def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,background=None,plotCoverage=False,extend=False,constantBins=False):
-    """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by Emin and Emax. 
+def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,EMin,EMax,I_err=None,background=None,plotCoverage=False,extend=False,constantBins=False):
+    """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by EMin and EMax. 
     the minimum step sizes is given by minPixel.
     
     .. note::
@@ -4437,9 +4441,9 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,bac
         
         - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
         
-        - Emin (float): Minimal energy to include in cut.
+        - EMin (float): Minimal energy to include in cut.
         
-        - Emax (float): Maximal energy to include in cut
+        - EMax (float): Maximal energy to include in cut
         
     Kwargs:
         
@@ -4462,10 +4466,10 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,bac
     orthovec=np.array([dirvec[1],-dirvec[0]])
     
     ProjectMatrix = np.array([dirvec,orthovec])
-    insideEnergy = np.logical_and(positions[2]<=Emax,positions[2]>=Emin)
+    insideEnergy = np.logical_and(positions[2]<=EMax,positions[2]>=EMin)
     if(np.sum(insideEnergy)==0):
         #raise AttributeError('No points are within the provided energy limits.')
-        return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),np.array([]),[Emin,Emax]]
+        return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),np.array([]),[EMin,EMax]]
         
 
     positions2D = np.array([positions[0][insideEnergy], positions[1][insideEnergy]])
@@ -4490,7 +4494,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,bac
     orthopos = np.outer(orthobins,orthovec)
     binpositions = np.outer(lenbins,dirvec)+q1
     if len(lenbins)==0:
-        return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),orthopos,[Emin,Emax]]
+        return [np.array(np.array([])),np.array([]),np.array([]),np.array([])],[np.array([]),orthopos,[EMin,EMax]]
     
 
     if extend is False:
@@ -4512,7 +4516,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,bac
     
     data = _tools.histogramdd(propos.T,bins=[lenbins,orthobins],weights=weights,returnCounts=True)
     
-    EmeanVec = np.ones((len(binpositions),1))*(Emin+Emax)*0.5
+    EmeanVec = np.ones((len(binpositions),1))*(EMin+EMax)*0.5
     binpositionsTotal = np.concatenate((binpositions,EmeanVec),axis=1)
    
     if not plotCoverage is False: # pragma: no cover
@@ -4538,7 +4542,7 @@ def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,Emin,Emax,I_err=None,bac
             ax.set_xlabel(r'Qx [$\AA^{-1}$]')
             ax.set_ylabel(r'Qy [$\AA^{-1}$]')
 
-    return data,[binpositionsTotal,orthopos,np.array([Emin,Emax])]
+    return data,[binpositionsTotal,orthopos,np.array([EMin,EMax])]
 
 
 
@@ -4569,9 +4573,9 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,I_err=None,constantBi
         
         - minPixel (float): Minimal size of binning along the cutting direction. Points will be binned if they are closer than minPixel.
         
-        - Emin (float): Minimal energy to include in cut.
+        - EMin (float): Minimal energy to include in cut.
         
-        - Emax (float): Maximal energy to include in cut
+        - EMax (float): Maximal energy to include in cut
 
     Kwargs:
 

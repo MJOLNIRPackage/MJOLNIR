@@ -21,7 +21,7 @@ pythonVersion = sys.version_info[0]
 pythonSubVersion = sys.version_info[1]
 
 class Viewer3D(object):  
-    @_tools.KwargChecker(include=[_tools.MPLKwargs])
+    @_tools.KwargChecker(include=[*_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
                  cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None,\
                     cut1DFunctionCircle = None, cut1DFunctionRectanglePerp=None,cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,
