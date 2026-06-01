@@ -650,7 +650,7 @@ class DataSet(object):
                     I_err = None
                     if hasattr(self,'I_err'):
                         if not self.I_err is None:
-                            I_err = np.power(self.I_err.extractData(),2.0)
+                            I_err = self.I_err.extractData()
                             
 
 
