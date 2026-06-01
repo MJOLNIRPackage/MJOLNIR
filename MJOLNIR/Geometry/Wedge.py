@@ -11,7 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Wedge(GeometryConcept.GeometryConcept):
     """Wedge object to keep track of analysers and detectors. To be used as a storage object and facilitate easy movement of multiple detectors and analysers as once."""
-    @_tools.KwargChecker(include=[''])
+    @_tools.KwargChecker(include=[])
     def __init__(self,position=(0.0,0.0,0.0),detectors=[],analysers=[],concept='ManyToMany',**kwargs):
         """
         Args:
