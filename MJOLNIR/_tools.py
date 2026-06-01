@@ -1361,10 +1361,15 @@ class PointerArray():
 
         - datafiles (list): List of pointers to the data files
 
+        - function (func): Function to be run on the attribute of a datafile before it is returned
+
     """
-    def __init__(self,attribute,datafiles):
+    def __init__(self,attribute,datafiles,function=None):
         self._attribute = attribute
         self._datafiles = datafiles
+        if function is None:
+            function = lambda x: x
+        self._function = function
         self._shape = None
         self._multiD = None
 
@@ -1372,10 +1377,10 @@ class PointerArray():
         gotten = self._datafiles[index]
         if isinstance(gotten,type(self._datafiles[0])):
             
-            return getattr(gotten,self._attribute)
+            return self._function(getattr(gotten,self._attribute))
         else:
         
-            return [getattr(df,self._attribute) for df in gotten]
+            return [self._function(getattr(df,self._attribute)) for df in gotten]
     
     def __iter__(self):
         self._index=0
@@ -1384,7 +1389,7 @@ class PointerArray():
     def __next__(self):
         if self._index >= len(self):
             raise StopIteration
-        result = getattr(self._datafiles[self._index],self._attribute)
+        result = self._function(getattr(self._datafiles[self._index],self._attribute))
         self._index += 1
         return result
 
@@ -1396,7 +1401,7 @@ class PointerArray():
     
     @property
     def shape(self):
-        return [getattr(df,self._attribute).shape for df in self._datafiles]
+        return [self._function(getattr(df,self._attribute).shape) for df in self._datafiles]
     
     
     @property
@@ -1410,20 +1415,20 @@ class PointerArray():
     
     @property
     def size(self):
-        return np.sum([getattr(df,self._attribute).size for df in self._datafiles])
+        return np.sum([self._function(getattr(df,self._attribute)).size for df in self._datafiles])
     
     def extractData(self):
         if self._multiD is None: # State is unknown
-            self._multiD = len(getattr(self._datafiles[0],self._attribute).shape)>1 # 
+            self._multiD = len(self._function(getattr(self._datafiles[0],self._attribute)).shape)>1 # 
 
         if self._multiD:
-            return np.concatenate([getattr(df,self._attribute)[np.logical_not(df.mask)] for df in self._datafiles])
+            return np.concatenate([self._function(getattr(df,self._attribute))[np.logical_not(df.mask)] for df in self._datafiles])
         else:
-            return np.concatenate([getattr(df,self._attribute)[np.logical_not(np.all(df.mask))] for df in self._datafiles])
+            return np.concatenate([self._function(getattr(df,self._attribute))[np.logical_not(np.all(df.mask))] for df in self._datafiles])
         
     @property
     def data(self):
-        return np.concatenate([getattr(df,self._attribute) for df in self._datafiles])
+        return np.concatenate([self._function(getattr(df,self._attribute)) for df in self._datafiles])
     
     
     def min(self):
