@@ -447,9 +447,9 @@ class DataFile(object):
                         #self.I[:,:,:150]=0#
                         ###################
                         pass
-                    self.mask = np.zeros_like(self.I,dtype=bool)
-                    if self.binning == 8:
-                        self.mask[:,:,:2] = True
+                    #self.mask = np.zeros_like(self.I,dtype=bool)
+                    #if self.binning == 8:
+                    #    self.mask[:,:,:2] = True
             elif self.type == 'MultiFLEXX': # type is multiFLEXX
                 self.loadMultiFLEXXData(fileLocation)
             elif self.type == 'Bambus':
@@ -1379,8 +1379,22 @@ class DataFile(object):
         Monitor = self.Monitor.copy().reshape((steps,1,1))
         Monitor = Monitor*np.ones((1,self.detectors,self.EPrDetector*binning))
         Normalization = EfNormalization*np.ones((steps,1,1))
-        mask = np.zeros_like(Intensity) # TODO: Redo???
-       
+        
+        mask = None # Only change from None if needed. None is caught below as default
+        if hasattr(self,'mask'):
+            if hasattr(self.mask,'shape'):
+                if self.mask.shape == Intensity.shape:
+                    mask = self.mask
+                else:
+                    warnings.warn('Size of mask of data file ({}) does not fit converted data file. No mask applied.'.format(self.name))
+            elif self.mask is False:
+                    pass # Mask is found but was simply False
+            else:
+                warnings.warn('Mask for file ({}) was found but is not used.'.format(self.name))
+
+        # Catch all non changed masks
+        if mask is None:
+            mask = np.zeros_like(Intensity)
         ###########################
         #Monitor[:,:,:binning] = 0 #
         ###########################
