@@ -29,7 +29,7 @@ reFloat = r'-?\d*\.\d*'
 reInt   = r'-?\d'
 factorsqrtEK = 0.694692
 supportedRawFormats = ['hdf','','dat']
-supportedInstruments = ['CAMEA','MultiFLEXX','Flatcone','Bambus']
+supportedInstruments = ['CAMEA','MultiFLEXX','Flatcone','Bambus','Marmot']
 supportedConvertedFormats = ['nxs']
 
 def cosd(x):
@@ -166,12 +166,14 @@ def getHDFInstrumentEntry(instr,prop,fromNICOS=False):
 analyzerLimits = {'CAMEA':7,
                   'Bambus': 4,
                   'MultiFLEXX': 4,
-                  'Flatcone':1}
+                  'Flatcone':1,
+                  'Marmot':1}
 
 detectorLimits = {'CAMEA':103,
                   'Bambus':19,
                   'MultiFLEXX':31,
-                  'Flatcone':32}
+                  'Flatcone':32,
+                  'Marmot':30}
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
@@ -188,9 +190,10 @@ class DataFile(object):
                     name = np.asarray(getHDFEntry(instr,'name'))[0].decode('utf8')
                     if name.lower() == 'in20':
                         self.type = 'Flatcone'
+                    elif name.lower() == 'thales':
+                        self.type = 'Marmot'
                     else:
                         self.type='nxs'
-        
             elif fileLocation.split('.')[-1]=='hdf':
                 self.type='hdf'
             elif os.path.splitext(fileLocation)[1]=='': # No extension
@@ -203,6 +206,7 @@ class DataFile(object):
                     self.type = 'Bambus'
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
+            
             self.name = os.path.basename(fileLocation)
             self.fileLocation = os.path.abspath(fileLocation)
             self._binning = 1
@@ -451,7 +455,9 @@ class DataFile(object):
             elif self.type == 'Bambus':
                 self.loadBambusData(fileLocation)
             elif self.type == 'Flatcone':
-                return self.loadFlatcone(fileLocation)
+                return self.loadFlatcone()
+            elif self.type == 'Marmot':
+                return self.loadMarmot()
             try:
                 self.scanSteps = self.scanValues.shape[1]
             except:
@@ -1250,8 +1256,11 @@ class DataFile(object):
 
         self._mask = np.zeros_like(self.I)
 
-    def loadFlatcone(self,fileLocation):
-        loadFlatcone(self,fileLocation)
+    def loadFlatcone(self):
+        loadFlatcone(self)
+
+    def loadMarmot(self):
+        loadMarmot(self)
         
 
     @_tools.KwargChecker()
@@ -1280,7 +1289,7 @@ class DataFile(object):
     
     @_tools.KwargChecker()
     def convert(self,binning=None,printFunction=None):
-        if self.instrument == 'CAMEA' or self.type in ['MultiFLEXX','Flatcone','Bambus']:
+        if self.instrument == 'CAMEA' or self.type in ['MultiFLEXX','Flatcone','Bambus','Marmot']:
             if binning is None:
                 binning = self.binning
         else:
@@ -2270,10 +2279,10 @@ def getScanParameter(self,f):
                     
                 else:
                     scanParameters.append(item)
-                
-                    scanUnits.append(decodeStr(fItem.attrs['units']))
-                    scanValues.append(np.array(fItem))
+                    
                     try:
+                        scanUnits.append(decodeStr(fItem.attrs['units']))
+                        scanValues.append(np.array(fItem))
                         scanDataPosition.append(decodeStr(fItem.attrs['target']))
                     except:
                         pass
@@ -2682,7 +2691,7 @@ class TempSample():
     def __init__(self):
         pass
 
-def loadFlatcone(self,fileLocation):
+def loadFlatcone(self):
     
     with hdf.File(self.fileLocation) as f:
         self.possibleBinnings = [1] # Standard value (1 energy/detector)
@@ -2795,3 +2804,225 @@ def loadFlatcone(self,fileLocation):
 
     self.I = self.ii.T
     
+
+
+HDFTranslationMarmot = \
+                 {'sample':'/entry0/sample',
+                 # 'sampleName':'/entry0/sample/name',
+                  'sampleParameters':'/entry0/sample/param',
+                  'intensity':'entry0/data_scan/detector_data/data',
+                  'startTime':'entry0/start_time',
+                  'twotheta':'entry0/THALES/A4/value',
+                  'time':'entry0/time',
+                  'endTime':'entry0/end_time',
+                  'experimentalIdentifier':'entry0/experiment_identifier',
+                  'comment':'entry0/comment',
+                  'proposal':'entry0/experiment_identifier',
+                  'proposalTitle':'entry0/proposal_title',
+                  'localContact':'entry0/user/namelocalcontact',
+                  'proposalUser':'entry0/user/name',
+                  'scanPoints': 'entry0/data_scan/actual_step',
+                  'labels': 'entry0/data_scan/scanned_variables/variables_names/label',
+                  'scanData': 'entry0/data_scan/scanned_variables/data',
+                #  'proposalEmail':'entry0/user/email',
+                  'user':'entry0/user/name',
+                #  'email':'entry0/user/email',
+                #  'address':'entry0/user/address',
+                #  'affiliation':'entry0/user/affiliation',
+                  'A3':'entry0/THALES/A3P/value',
+                  'A4':'entry0/THALES/A4/value',
+                  'A4Off':'entry0/THALES/A4/offset_value',
+                  'Ei':'entry0/THALES/Monochromator/ei',
+                  'temperature':'entry0/sample/temperature',
+                  'magneticField':'entry0/sample/magnetic_field',
+                  'electricField':'entry0/sample/electric_field',
+                  'scanCommand':'entry0/THALES/command_line/actual_command',
+                  'title':'entry0/title',
+                # 'absoluteTime':'entry0/control/absolute_time',
+                  'source':'entry0/THALES/source/power',
+                  'scanned_variables_data':'entry0/data_scan/scanned_variables/data',
+                  'scanned_variables_label':'entry0/data_scan/scanned_variables/variables_names/label',
+
+}
+
+
+## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
+
+HDFTranslationFunctionsMarmot = defaultdict(lambda : [])
+
+HDFTranslationFunctionsMarmot['sampleName'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['startTime'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['endTime'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['experimentalIdentifier'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['comment'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['proposal'] = [['__getitem__',[0]]]
+HDFTranslationFunctionsMarmot['proposalTitle'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['localContact'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['proposalUser'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['proposalEmail'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['user'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['email'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['address'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['affiliation'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['scanCommand'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['title'] = [['__getitem__',[0]],['decode',['utf8']]]
+
+def getHDFEntryMarmot(f,prop):
+    if prop in HDFTranslationMarmot:
+        value = f.get(HDFTranslationMarmot[prop])
+    else:
+        value = f.get(prop)
+    value = np.asarray(value)
+    if prop in HDFTranslationFunctionsMarmot and not value is None:
+        for func,args in HDFTranslationFunctionsMarmot[prop]:
+            try:
+                value = getattr(value,func)(*args)
+            except IndexError as e:
+                value = 'Property not found'
+                break
+                
+        return value
+    else:
+        return value
+
+
+
+def loadMarmot(self, normalizationTable = r'C:\Users\lass_j\Documents\Collaborations\Marmot\Normalization_054640.table'):
+    with hdf.File(self.fileLocation) as f:
+        self.possibleBinnings = [1] # Standard value (1 energy/detector)
+        self.binning = 1
+
+        ## No dasel
+        self.analyzerSelection = 0  
+        self.detectorSelection = 0
+
+        # Get all parameters defined in HDFTranslationFlatcone
+        for key,destination in HDFTranslationMarmot.items():
+            setattr(self,key,getHDFEntryMarmot(f,key))
+
+        # extract sample parameters
+        sample = f.get(HDFTranslationMarmot['sample'])
+        temp_sample = TempSample()
+        
+        sample.visititems(lambda name, node: visitor_func(name, node, temp_sample,exclude=HDFTranslationMarmot))
+
+        
+
+    
+    sample = {}    
+    cell = np.asarray([temp_sample.unit_cell_a,temp_sample.unit_cell_b,temp_sample.unit_cell_c,temp_sample.unit_cell_alpha,temp_sample.unit_cell_beta,temp_sample.unit_cell_gamma]).flatten()
+
+    for param,value in zip(['a','b','c','alpha','beta','gamma'],cell):
+        sample[param] = value
+
+
+    q1 = np.asarray([temp_sample.ax,temp_sample.ay,temp_sample.az]).flatten()
+    q2 = np.asarray([temp_sample.bx,temp_sample.by,temp_sample.bz]).flatten()
+
+
+
+    Ei = 10.0 # TODO: What is the good solution here? Dummy incoming energy needed to calcualte UB
+    k = np.sqrt(Ei)*factorsqrtEK
+
+    Cell = TasUBlib.calcCell(cell)
+    B = TasUBlib.calculateBMatrix(Cell)
+
+    A3offset = float(0)# TODO: CHECK! self.Sample_psi0.split(' ')[0])
+
+    A41 = TasUBlib.calTwoTheta(B,[*q1,Ei,Ei],-1)
+    A31 = TasUBlib.calcTheta(k,k,A41)+A3offset
+    A42 = TasUBlib.calTwoTheta(B,[*q2,Ei,Ei],-1)
+    A32 = TasUBlib.calcTheta(k,k,A42)
+
+    planeVector1 = list(q1)
+    planeVector1.append(A31) # A3 
+    planeVector1.append(A41) # A4
+    [planeVector1.append(0.0) for _ in range(2)]# append values for gonios set to zero
+    planeVector1.append(Ei)
+    planeVector1.append(Ei)
+
+    planeVector2 = list(q2)
+    planeVector2.append(A32) # A3 
+    planeVector2.append(A42) # A4 
+    [planeVector2.append(0.0) for _ in range(2)]# append values for gonios set to zero
+    planeVector2.append(Ei)
+    planeVector2.append(Ei)
+
+    # add correct angle in theta between the two reflections
+    between = TasUBlib.tasAngleBetweenReflections(B,np.array(planeVector1),np.array(planeVector2))
+
+    planeVector2[3]+=between
+
+    sample['projectionVector1']=np.array(planeVector1)
+    sample['projectionVector2']=np.array(planeVector2)
+
+    sample['name'] = 'Unknown Sample Name'#self.Sample_samplename
+
+
+    self.sample = MJOLNIR.Data.Sample.Sample(**sample)
+
+    self._A4Off = 0.0
+    self._A3Off = 0.0
+
+    self._A4 = self.twotheta
+
+
+
+    self.possibleBinnings = [1]
+    calibrations = []
+    #for binning in self.possibleBinnings:
+    #    fileName = getattr(MJOLNIR,'__flatConeNormalization__'.format(binning))
+    calib = np.loadtxt(normalizationTable,delimiter=',',skiprows=1)
+    calibrations.append([calib[:,3:7],calib[:,-1],calib[:,7:9]])
+    self.instrumentCalibrations = calibrations
+    self.loadBinning(self.binning)
+    self.EPrDetector = 256
+
+    # Extract monitor
+    self.labels = [x.decode('utf8') for x in self.labels]
+    self.MonitorID = self.labels.index('Monitor1')
+    self.Monitor = self.scanData[self.MonitorID]
+    
+    
+    try:
+        scanType,*params,_,numpoints,countingType,counting = self.scanCommand.strip().split(' ')
+    except ValueError: # not enough values to unpack
+        scanType = 'Unknown'
+        params = [None,None,None,None]
+        numpoints = 0
+        self.scanValues = [0]
+
+
+    numpoints = int(numpoints)
+    
+    ## Extract scan parameters
+    params = np.asarray(params).reshape(-1,4)
+    self.scanParameters = params[:,0]
+    if scanType == 'bs': # TODO: Like below
+
+        self.scanValues = np.asarray([np.arange(float(p[1]),float(p[1])+numpoints*float(p[3]),float(p[3])) for p in params])
+    elif scanType ==     'sc':
+        sV = []
+        for p in params:
+            if np.isclose(float(p[3]),0):
+                sV.append([float(p[1])]*numpoints)
+            else:
+                sV.append(np.arange(float(p[1])-(0.5*numpoints)*float(p[3]),float(p[1])+(0.5*numpoints)*float(p[3]),float(p[3])))
+        self.scanValues = np.asarray(sV)
+        
+    else:# scanType = 'sc':
+        AttributeError('Scan type not regocnized! Got {}, I only know "bs"'.format(scanType))
+    self.scanUnits = ['N/A' for _ in self.scanParameters]
+
+    self.instrument = 'Marmot'
+
+    self.I = self.intensity
+    remove = self.instrumentCalibrationEf[:,1].reshape(1,*self.I.shape[1:])<1
+    self.mask = np.repeat(remove.reshape(-1,*self.I.shape[1:]),len(self.I),axis=0)
+
+    self.scanned_variables_label =[s.decode('utf8') for s in self.scanned_variables_label]
+
+    for par in ['A3']:
+        idx = self.scanned_variables_label.index(par)
+        setattr(self,par,self.scanned_variables_data[idx])
+    self.scanned_variables_label = np.asarray(self.scanned_variables_label)
