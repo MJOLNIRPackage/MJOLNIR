@@ -2323,7 +2323,7 @@ class DataSet(object):
         return DataList,BinList#,OffSets,OffSetWidth    
         
         
-    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['log','ticks','seperatorWidth','plotSeperator','seperatorColor','cmap','colorbar']]))
+    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['log','ticks','seperatorWidth','plotSeperator','seperatorColor','cmap','colorbar','vmin','vmax']]))
     def plotCutQELine(self,QPoints=None,EnergyBins=None,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=True,
                       outputFunction=print,backgroundSubtraction=False,dataList=None,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
