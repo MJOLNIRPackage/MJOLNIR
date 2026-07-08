@@ -187,11 +187,14 @@ class DataFile(object):
             if fileLocation.split('.')[-1]=='nxs':
                 with hdf.File(fileLocation,mode='r') as f:
                     instr = getInstrument(f)
-                    name = np.asarray(getHDFEntry(instr,'name'))[0].decode('utf8')
-                    if name.lower() == 'in20':
-                        self.type = 'Flatcone'
-                    elif name.lower() == 'thales':
-                        self.type = 'Marmot'
+                    name = np.asarray(getHDFEntry(instr,'name'))
+                    print(f'{name = }',f'{type(name) = }')
+                    if not name.item() is None:
+                        name = name[0].decode('utf8')
+                        if name.lower() == 'in20':
+                            self.type = 'Flatcone'
+                        elif name.lower() == 'thales':
+                            self.type = 'Marmot'
                     else:
                         self.type='nxs'
             elif fileLocation.split('.')[-1]=='hdf':
@@ -462,6 +465,8 @@ class DataFile(object):
                 self.scanSteps = self.scanValues.shape[1]
             except:
                 pass
+
+            self.detectors = self.I.shape[1]
             if True:
                 for attr in dir(self):
                     # If attribute is a function or property, skip it
@@ -511,8 +516,16 @@ class DataFile(object):
 
         if self.instrument == 'CAMEA':
             self.EPrDetector = 8 
+            self.detectors = 104
         elif self.type in ['MultiFLEXX','Flatcone','Bambus']:
             self.EPrDetector = 1
+            if self.type == 'MultiFLEXX':
+                self.detectors = 31*5
+            elif self.type == 'Flatcone':
+                self.detectors = 32
+            elif self.type == 'Bambus':
+                self.detectors = 20
+
         else:
             pass
         
@@ -758,7 +771,7 @@ class DataFile(object):
         if calibrationFile is None:
             calibrationFile = MJOLNIR.__multiFLEXXNormalization__
 
-        detectors = 31
+        self.detectors = 31
         self.mask = False
 
         calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
@@ -771,7 +784,7 @@ class DataFile(object):
 
         EfTable = np.array([amplitude,final_energy,width,background]).T
         calibrations=[[EfTable,A4,bound]]
-        bound =  np.array(detectors*[0,1],dtype=int).reshape(-1,2)
+        bound =  np.array(self.detectors*[0,1],dtype=int).reshape(-1,2)
 
         self.instrumentCalibrationEdges = bound
         self.instrumentCalibrationEf = EfTable
@@ -838,7 +851,7 @@ class DataFile(object):
             
         
         #reshape into [scan points, 31 wedges, 5 energies]
-        self.I = np.array([d[detectorMap] for d in data]).reshape(-1,31*5,1)
+        self.I = np.array([d[detectorMap] for d in data]).reshape(-1,self.detectors*5,1)
 
 
         self.timer = data[:,0].astype(float)
@@ -1026,7 +1039,7 @@ class DataFile(object):
         if calibrationFile is None:
             calibrationFile = MJOLNIR.__bambusNormalization__
 
-        detectors = 20
+        self.detectors = 20
         self.mask = False
 
         calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
@@ -1039,7 +1052,7 @@ class DataFile(object):
 
         EfTable = np.array([amplitude,final_energy,width,background]).T
         calibrations=[[EfTable,A4,bound]]
-        bound =  np.array(detectors*[0,1],dtype=int).reshape(-1,2)
+        bound =  np.array(self.detectors*[0,1],dtype=int).reshape(-1,2)
 
         self.instrumentCalibrationEdges = bound
         self.instrumentCalibrationEf = EfTable
@@ -2805,6 +2818,7 @@ def loadFlatcone(self):
     self.instrumentCalibrations = calibrations
     self.loadBinning(self.binning)
     self.EPrDetector = 1
+    self.detectors = 31
 
     _,*params,_,numpoints = self.scanCommand.strip().split(' ')
     numpoints = int(numpoints)
