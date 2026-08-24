@@ -2700,12 +2700,9 @@ class DataSet(object):
                     
                     ax.outputFunction(printString)
 
-            # def onkeypress(event,ax):
-            #     if event.key in ['r']:
-            #         ax.resolutionMode = not ax.resolutionMode    
             ax.onClick = lambda event:onclick(event,ax)
             ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
-            # ax._key_press_event    = ax.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, ax) )
+            
             return ax,dataList#, BinList
             
         else: 
