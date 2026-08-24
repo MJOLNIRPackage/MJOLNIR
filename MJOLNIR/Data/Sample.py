@@ -393,7 +393,7 @@ class Sample(object):
                 returnVal = np.array(self.inv_tr(toProjection[0],toProjection[1]))
                 returnValShape[-1]=2 # reshape Qx,Qy,Qz dimension to P1,P2 (3 -> 2)
             
-            returnVal.shape = returnValShape # Shape (l,m,n,3) or (l,m,n,2)
+            returnVal = returnVal.reshape(returnValShape) # Shape (l,m,n,3) or (l,m,n,2)
         return returnVal
 
     def updateCell(self,unitCell=None):

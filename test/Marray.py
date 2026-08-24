@@ -43,8 +43,8 @@ def test_Marray_1D():
     assert(len(shortList)==5)
     assert(len(shortList.flatten())==5)
 
-    shortList.shape = (-1)
-    shortList.shape = -1
+    shortList = shortList.reshape((-1))
+    shortList = shortList.reshape(-1)
     assert(shortList.shape == (len(shortList),))
 
 def test_Marray_multiD():
@@ -78,9 +78,9 @@ def test_Marray_multiD():
     assert(len(A.extractData())==np.sum([np.array(M).size for M in mask])-np.sum([np.sum(M) for M in mask]))
     assert(np.all(A.extractData() == A.compress()))
 
-    A.shape = (3,-1)
+    A = A.reshape((3,-1))
     assert(np.all(A.shape == np.array([(6,), (12,), (18,)])))
-    A.shape = (3,[(1, 2, 3), (2, 2, 3), (3, 2, 3)])
+    A = A.reshape((3,[(1, 2, 3), (2, 2, 3), (3, 2, 3)]))
     assert(np.all(A.shape == np.array([(1, 2, 3), (2, 2, 3), (3, 2, 3)])))
 
     0-A-A+2*A-0

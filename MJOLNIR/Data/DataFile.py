@@ -1357,30 +1357,20 @@ class DataFile(object):
         EfNormalization = EfNormalization[:,0]#.reshape(1,A4.shape[0],EPrDetector*binning)#
         #EfNormalization = EfNormalization[:,0]*(np.sqrt(2*np.pi)*EfNormalization[:,2])
         
-        EfNormalization.shape = (1,A4.shape[0],self.EPrDetector*binning)
+        EfNormalization = EfNormalization.reshape((1,A4.shape[0],self.EPrDetector*binning))
         A3 = np.deg2rad(np.array(self.A3).copy())+A3Zero #file.get('/entry/sample/rotation_angle/')
         if A3.shape[0]==1:
             A3 = A3*np.ones((steps))
         
         A3.resize((steps,1,1))
         Ei = self.Ei.copy().reshape(-1,1,1)#np.array(instrument.get('monochromator/energy'))
-        if False:
-            kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
-            
-            ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
-            # Shape everything into shape (steps,detectors,bins) (if external parameter 
-            # is changed, this is assured by A3 reshape)
-            Qx = ki-kf*np.cos(A4Mean)
-            Qy = -kf*np.sin(A4Mean)
-            QX = Qx*np.cos(A3)-Qy*np.sin(A3)
-            QY = Qx*np.sin(A3)+Qy*np.cos(A3)
-        else:
-            UB = self.sample.orientationMatrix
-            UBINV = np.linalg.inv(UB)
-            HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3),
-                np.rad2deg(A4Mean)],Ei,EfMean)
-            H,K,L = np.swapaxes(np.swapaxes(HKL,1,2),0,3)
-            self.sample.B = TasUBlib.calculateBMatrix(self.sample.cell)
+    
+        UB = self.sample.orientationMatrix
+        UBINV = np.linalg.inv(UB)
+        HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3),
+            np.rad2deg(A4Mean)],Ei,EfMean)
+        H,K,L = np.swapaxes(np.swapaxes(HKL,1,2),0,3)
+        self.sample.B = TasUBlib.calculateBMatrix(self.sample.cell)
 
         DeltaE = Ei-EfMean
         if DeltaE.shape[0]==1:
@@ -1558,9 +1548,9 @@ class DataFile(object):
             binning = binning[0]
         self._binning = binning
 
-        self.instrumentCalibrationEf.shape = (-1,4)
-        self.instrumentCalibrationA4.shape = (-1)
-        self.instrumentCalibrationEdges.shape = (-1,2)
+        self.instrumentCalibrationEf = self.instrumentCalibrationEf.reshape(-1,4)
+        self.instrumentCalibrationA4 = self.instrumentCalibrationA4.reshape(-1)
+        self.instrumentCalibrationEdges = self.instrumentCalibrationEdges.reshape(-1,2)
         
 
 

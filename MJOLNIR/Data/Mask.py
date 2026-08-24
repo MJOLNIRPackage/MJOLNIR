@@ -464,10 +464,10 @@ class rectangleMask(MaskingObject):
         # calculate mask by rotating all points so rectangle is along coordinate axes
         # This makes the logical checks easy
         pointShape = points.shape[1:]
-        points.shape = (2,-1)
+        points = points.reshape((2,-1))
         
         rotatedPoints = np.einsum('ij,jk->ik',self.rotationMatrix,np.array(points)-self.center)
-        rotatedPoints.shape = np.concatenate([[2],pointShape])
+        rotatedPoints = rotatedPoints.reshape(np.concatenate([[2],pointShape]))
         logic = np.array([np.logical_and(x>-0.5*edge,x<0.5*edge) for x,edge in zip(rotatedPoints,[self.height,self.length])])
         
         mask = np.all(logic,axis=0)
@@ -641,10 +641,10 @@ class boxMask(MaskingObject):
         # This makes the logical checks easy
         pointShape = points.shape[1:]
         
-        points.shape = (3,-1)
+        points = points.reshape((3,-1))
         
         rotatedPoints = np.einsum('ij,jk->ik',self.rotationMatrix,np.array(points)-self.center.T)
-        rotatedPoints.shape = np.concatenate([[3],pointShape]).astype(int)
+        rotatedPoints = rotatedPoints.reshape(np.concatenate([[3],pointShape]).astype(int))
         logic = np.array([np.logical_and(x>=-0.5*edge,x<=0.5*edge) for x,edge in zip(rotatedPoints,[self.length,self.height,self.width])])
         
         mask = np.all(logic,axis=0)
@@ -747,10 +747,10 @@ class circleMask(MaskingObject):
                     points = np.array([x,y,z])
         
         pointShape = points.shape[1:]
-        points.shape = (points.shape[0],-1)
+        points = points.reshape((points.shape[0],-1))
         
         mask = np.linalg.norm(points-self.center,axis=0)<=self.radius
-        mask.shape = pointShape
+        mask = mask.reshape(pointShape)
         
         if self.maskInside == False:
             mask = np.logical_not(mask)

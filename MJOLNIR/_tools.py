@@ -789,9 +789,9 @@ def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitud
         raise AttributeError('Arrays for spinWaveEnergy(shape: {}), spinWaveWidth(shape: {}), and spinWaveAmplitude(shape: {}) have to have same shape.'.format(spinWaveEnergy.shape,spinWaveWidth.shape,spinWaveAmplitude.shape))
         
     if len(spinWaveEnergy.shape) == 1:
-        spinWaveEnergy.shape = (1,-1)
-        spinWaveWidth.shape = (1,-1)
-        spinWaveAmplitude.shape = (1,-1)
+        spinWaveEnergy = spinWaveEnergy.reshape((1,-1))
+        spinWaveWidth = spinWaveWidth.reshape((1,-1))
+        spinWaveAmplitude = spinWaveAmplitude.reshape((1,-1))
         
     spinWaves,dataPoints = spinWaveEnergy.shape
     

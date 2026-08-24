@@ -1335,7 +1335,7 @@ class DataSet(object):
                 pos = np.linalg.norm(HKL-q1,axis=1)
         data[pdNaming['plotPosition']] = pos
 
-        pos.shape = shape
+        pos = pos.reshape(shape)
 
         X,Y = np.meshgrid(pos[0],E[:,0])
 
@@ -2413,7 +2413,7 @@ class DataSet(object):
                 E = np.asarray(df[pdNaming['e']]).reshape(shape)
                 pos = ax.calculatePositionInv(HKL)
                 
-                pos.shape = shape
+                pos = pos.reshape(shape)
                 
                 X,Y = np.meshgrid(pos[0],E[:,0])
                 
@@ -4405,7 +4405,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,I_err=None,constantBi
         
     """
     if len(q.shape)==1:
-        q.shape = (2,1)
+        q = q.reshape((2,1))
     distToQ = np.linalg.norm(positions[:2]-q,axis=0)
 
     inside = distToQ<width
@@ -5389,7 +5389,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     
     def calculatePositionInv(ax,HKL):
         HKL = np.asarray(HKL).copy()
-        HKL.shape = (-1,len(variables)-1)
+        HKL = HKL.reshape(-1,len(variables)-1)
         return np.dot((HKL-ax.startPoint),ax.plotDirection)/(np.dot(ax.plotDirection.T,ax.plotDirection))
     
     # Add methods to the axis

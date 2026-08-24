@@ -13,6 +13,7 @@ import matplotlib.gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
+from matplotlib.backend_bases import KeyEvent
 from MJOLNIR import _tools
 from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder, cancel
 import functools
@@ -492,7 +493,12 @@ class Viewer3D(object):
     
     def setProjection(self,value):
         """Change projection between Qx,Qy, and E, or along principal, orthogonal Q direction, or E if plotting in RLU."""
-        self.figure.canvas.key_press_event(str(value))
+        event = KeyEvent(
+            'key_press_event',
+            self.figure.canvas,
+            key=str(value)
+        )
+        self.figure.canvas.callbacks.process('key_press_event', event)
 
     def setPlane(self,value):
         """Change plotting plane to new along same axis"""

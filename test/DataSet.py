@@ -396,19 +396,19 @@ def test_DataSet_1Dcut():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile(saveFile=False)
 
-    ax,Data,bins = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
-    Data2,bins2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
+    ax,Data,bins = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,EMin=2.0,EMax=2.5,fmt='.')
+    Data2,bins2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,EMin=2.0,EmMx=2.5)
     
     # Check that the two data sets have the same values (except for Data2 also having 'BinDistance')
     assert(Data2.equals(Data.loc[:, Data.columns != 'BinDistance']))
 
-    Data,bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
+    Data,bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,EMin=2.0,EMax=2.5,extend=False)
     assert(np.all(np.logical_and(bins[0][:,0]>=q1[0]-0.1,bins[0][:,0]<=q2[0]+0.1))) 
     # x-values should be between 1.1 and 2.0 correpsonding to q points given (add some extra space due to way bins are created (binEdges))
 
     #q3 = np.array([1.1,1.1])
     #q4 = np.array([2.0,2.0])
-    Data,bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,extend=False)
+    Data,bins = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,EMin=2.0,EMax=2.5,extend=False)
     
     assert(np.all(bins[0][:,0]>=q1[0]-0.1))
     assert(np.all(bins[0][:,0]<=q2[0]+0.1))
@@ -419,15 +419,15 @@ def test_DataSet_1Dcut():
     Q1 = np.array([1,0,0])
     Q2 = np.array([0.5,1,0])
 
-    ax,Data,bins = ds.plotCut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.')
-    Data2,bins2 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
+    ax,Data,bins = ds.plotCut1D(Q1,Q2,width,rlu=True,minPixel=0.01,EMin=2.0,EMax=2.5,fmt='.')
+    Data2,bins2 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,EMin=2.0,EMax=2.5)
 
     assert(Data2.equals(Data.loc[:,Data.columns!='BinDistance']))
     assert(np.all(np.array([np.all(np.isclose(bins[i],bins2[i])) for i in range(len(bins))]).flatten()))
 
     q1,q2 = ds.convertToQxQy([Q1,Q2])
-    D1,b1 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,Emin=2.0,Emax=2.5)
-    D2,b2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5)
+    D1,b1 = ds.cut1D(Q1,Q2,width,rlu=True,minPixel=0.01,EMin=2.0,EMax=2.5)
+    D2,b2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,EMin=2.0,EMax=2.5)
 
     # Convert b1 to HKL in order to check if conversion works
     BinPos,OrthoPos,E = b1
@@ -443,9 +443,9 @@ def test_DataSet_1Dcut():
     # Check that generating a plot from previous data is equivalent to directly plotting
 
     
-    ax1,cut,bins = ds.plotCut1D(Q1,Q2,width=0.1,minPixel=0.04,Emin=2.0,Emax=2.5,ufit=False)
+    ax1,cut,bins = ds.plotCut1D(Q1,Q2,width=0.1,minPixel=0.04,EMin=2.0,EMax=2.5,ufit=False)
 
-    ax2,*_ = ds.plotCut1D(Q1,Q2,Emin=2.0,Emax=2.5,width=0.1,minPixel=0.04,data=[cut,bins])
+    ax2,*_ = ds.plotCut1D(Q1,Q2,EMin=2.0,EMax=2.5,width=0.1,minPixel=0.04,data=[cut,bins])
 
 
 
@@ -476,8 +476,8 @@ def test_DataSet_1Dcut_ufit():
     ds = DataSet(dataFiles = convertFiles)
     ds.convertDataFile(saveFile=False)
 
-    ax,dataset = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,fmt='.',ufit=True)
-    dataset2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,Emin=2.0,Emax=2.5,ufit=True)
+    ax,dataset = ds.plotCut1D(q1,q2,width,rlu=False,minPixel=0.01,EMin=2.0,EMax=2.5,fmt='.',ufit=True)
+    dataset2 = ds.cut1D(q1,q2,width,rlu=False,minPixel=0.01,EMin=2.0,EMax=2.5,ufit=True)
     
 
     files = ', '.join([x.replace('hdf','nxs').split(os.path.sep)[-1] for x in convertFiles])
@@ -493,8 +493,8 @@ def test_DataSet_1Dcut_ufit():
 def test_DataSet_1DcutE():
     q =  np.array([1.23,-1.25]).reshape(2,1)
     width = 0.1
-    Emin = 1.5
-    Emax = 2.5
+    EMin = 1.5
+    EMax = 2.5
     plt.ioff()
     import matplotlib
     matplotlib.use('Agg')
@@ -505,25 +505,25 @@ def test_DataSet_1DcutE():
     Datset._getData()
     I,qx,qy,energy,Norm,Monitor = Datset.I.extractData(),Datset.qx.extractData(),Datset.qy.extractData(),Datset.energy.extractData(),Datset.Norm.extractData(),Datset.Monitor.extractData()
 
-    [intensity,MonitorCount,Normalization,normcounts],[bins] = cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=Emin,E2=Emax,q=q,width=width,minPixel=0.01)
+    [intensity,MonitorCount,Normalization,normcounts],[bins] = cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=EMin,E2=EMax,q=q,width=width,minPixel=0.01)
     Q = Datset.convertToHKL(q.reshape(2))
     
-    Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=Q,width=width,minPixel=0.01)
-    assert(np.min(bins)>=Emin-0.01) # Check that bins do not include data outside of cut
-    assert(np.max(bins)<=Emax+0.01)
+    Data,[bins] = Datset.cut1DE(E1=EMin,E2=EMax,q=Q,width=width,minPixel=0.01)
+    assert(np.min(bins)>=EMin-0.01) # Check that bins do not include data outside of cut
+    assert(np.max(bins)<=EMax+0.01)
     assert(len(bins[0])==len(intensity)+1)# Bins denotes edges and must then be 1 more than intensity
 
     assert(intensity.shape==MonitorCount.shape) # Check that all matrices are cut equally
     assert(intensity.shape==Normalization.shape)
     assert(intensity.shape==normcounts.shape)
 
-    Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=width,minPixel=0.01,rlu=False)
+    Data,[bins] = Datset.cut1DE(E1=EMin,E2=EMax,q=q,width=width,minPixel=0.01,rlu=False)
     
-    Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
+    Data,[bins] = Datset.cut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     
     assert(np.all(np.isclose(np.diff(bins),0.01)))
-    assert(bins[0].min()>=Emin)
-    assert(bins[0].max()<=Emax)
+    assert(bins[0].min()>=EMin)
+    assert(bins[0].max()<=EMax)
 
     try: # no points inside energy interval
         cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=500,E2=700,q=q,width=width,minPixel=0.01)
@@ -538,13 +538,13 @@ def test_DataSet_1DcutE():
         assert True
 
     # Check the data of plot to be the same as cut
-    Data,[bins] = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
-    ax,Data2,[bins2] = Datset.plotCut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
+    Data,[bins] = Datset.cut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
+    ax,Data2,[bins2] = Datset.plotCut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     assert(Data.equals(Data2))
     assert(np.all(np.isclose(bins[0],bins2[0])))
 
-    ufitData = Datset.cut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
-    ax,ufitData2 = Datset.plotCut1DE(E1=Emin,E2=Emax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
+    ufitData = Datset.cut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
+    ax,ufitData2 = Datset.plotCut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
 
     files = ', '.join([x.replace('hdf','nxs').split(os.path.sep)[-1] for x in convertFiles])
     
@@ -554,7 +554,7 @@ def test_DataSet_1DcutE():
     assert(ufitData.meta['instrument'] == 'CAMEA')
     assert(ufitData.meta['datafilename'] == files)
 
-    ax,Data3,[bins3] = Datset.plotCut1DE(E1=Emin,E2=Emax,q=Q,width=0.1,minPixel=0.01,constantBins=True)
+    ax,Data3,[bins3] = Datset.plotCut1DE(E1=EMin,E2=EMax,q=Q,width=0.1,minPixel=0.01,constantBins=True)
 
 
 
@@ -686,7 +686,7 @@ def test_DataSet_plotQPlane():
 
     EmptyDS = DataSet()
     try:
-        Datset.plotQPlane() # No Bins, Emin or Emax
+        Datset.plotQPlane() # No Bins, EMin or EMax
         assert False
     except AttributeError:
         assert True
@@ -1111,20 +1111,20 @@ def test_DataSet_ELine():
 
     Q1 = [1.0,-0.185,0.0]
     Q2 = [0.5,1.5,0.0]
-    Emin = 1.65
-    Emax = 3.3
+    EMin = 1.65
+    EMax = 3.3
 
-    CutData,Bins = dataset.cutELine(Q1, Q2, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False)
-    ax, CutDataPlot, BinsPlot = dataset.plotCutELine(Q1, Q2, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False)
+    CutData,Bins = dataset.cutELine(Q1, Q2, EMin=EMin, EMax=EMax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False)
+    ax, CutDataPlot, BinsPlot = dataset.plotCutELine(Q1, Q2, EMin=EMin, EMax=EMax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False)
 
     assert(np.all([np.all(np.isclose(B,B2)) for B,B2 in zip(Bins,BinsPlot)]))
     assert(np.all(CutDataPlot.equals(CutData)))
 
-    assert(np.all(np.logical_and(CutData['Energy']>=Emin,CutData['Energy']<=Emax*1.01))) # Allow for slightly heigher energy
+    assert(np.all(np.logical_and(CutData['Energy']>=EMin,CutData['Energy']<=EMax*1.01))) # Allow for slightly heigher energy
     assert(np.logical_and(np.all(CutData['H']<=Q1[0]*1.01),np.all(CutData['H']>=Q2[0]*0.99)))
     assert(np.logical_and(np.all(CutData['K']>=Q1[1]*1.01),np.all(CutData['K']<=Q2[1]*1.01)))
     assert(np.all(np.isclose(CutData['L'],0.0,atol=1e-6)))
-    assert(np.all([np.all(np.logical_and(B[0]>=Emin*0.99,B[0]<=Emax*1.05)) for B in Bins])) # Allow for slightly heigher energy
+    assert(np.all([np.all(np.logical_and(B[0]>=EMin*0.99,B[0]<=EMax*1.05)) for B in Bins])) # Allow for slightly heigher energy
 
 
     if sys.version[0] == '3':
@@ -1136,18 +1136,18 @@ def test_DataSet_ELine():
     Q1raw = dataset.convertToQxQy(Q1)
     Q2raw = dataset.convertToQxQy(Q2)
 
-    CutData,Bins = dataset.cutELine(Q1raw, Q2raw, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=False)
-    ax, CutDataPlot, BinsPlot = dataset.plotCutELine(Q1raw, Q2raw, Emin=Emin, Emax=Emax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=False)
+    CutData,Bins = dataset.cutELine(Q1raw, Q2raw, EMin=EMin, EMax=EMax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=False)
+    ax, CutDataPlot, BinsPlot = dataset.plotCutELine(Q1raw, Q2raw, EMin=EMin, EMax=EMax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=False)
 
 
     assert(np.all([np.all(np.isclose(B,B2)) for B,B2 in zip(Bins,BinsPlot)]))
     assert(np.all(CutDataPlot.equals(CutData)))
 
-    assert(np.all(np.logical_and(CutData['Energy']>=Emin,CutData['Energy']<=Emax*1.01))) # Allow for slightly heigher energy
+    assert(np.all(np.logical_and(CutData['Energy']>=EMin,CutData['Energy']<=EMax*1.01))) # Allow for slightly heigher energy
     assert(np.logical_and(np.all(CutData['Qx']<=Q1raw[0]*1.01),np.all(CutData['Qx']>=Q2raw[0]*0.99)))
     assert(np.logical_and(np.all(CutData['Qy']<=Q1raw[1]*0.99),np.all(CutData['Qy']>=Q2raw[1]*1.01)))
 
-    assert(np.all([np.all(np.logical_and(B[0]>=Emin*0.99,B[0]<=Emax*1.05)) for B in Bins])) # Allow for slightly heigher energy
+    assert(np.all([np.all(np.logical_and(B[0]>=EMin*0.99,B[0]<=EMax*1.05)) for B in Bins])) # Allow for slightly heigher energy
 
 
 def test_updateCalibration():
@@ -1402,7 +1402,7 @@ def test_CustomAxisInput():
     cutqe_params = {
             "q1":np.array([0,0,0], float),
             "q2":np.array([1,0,0], float),
-            "Emin":1.8, "Emax":2.0, "width":0.1, "minPixel":0.05,
+            "EMin":1.8, "EMax":2.0, "width":0.1, "minPixel":0.05,
             "rlu":True, 
         }
 

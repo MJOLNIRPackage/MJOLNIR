@@ -190,7 +190,7 @@ class TubeDetector1D(Detector):
         a = np.array([0.0,0.0,1.0]) # Original direction
         b = self.direction.copy()    # Correct direction
 
-        b.shape = (1,3)
+        b = b.reshape((1,3))
 
 
         # Rotation matrix found from http://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
@@ -198,7 +198,7 @@ class TubeDetector1D(Detector):
         v = np.cross(a.T,b)
         s = np.linalg.norm(v)
         vmat=np.array([0.0,-v[0,2],v[0,1], v[0,2],0.0,-v[0,0],  -v[0,1],v[0,0],0.0])
-        vmat.shape = (3,3)
+        vmat = vmat.reshape((3,3))
         c = np.dot(a.T,b[0,:])
         R = np.eye(3)+vmat+(1.0-c)/(pow(s,2.0))*np.dot(vmat,vmat)
 
