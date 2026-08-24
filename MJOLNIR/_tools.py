@@ -1352,6 +1352,10 @@ def histogramdd(sample, bins, weights, returnCounts = False):
     return histograms
 
 
+def identity(x):
+    """Identity function"""
+    return x
+
 class PointerArray():
     """Array-like object designed to facilitate data acquisition from a list of differently sized list of data files having the same attributes.    
 
@@ -1368,7 +1372,7 @@ class PointerArray():
         self._attribute = attribute
         self._datafiles = datafiles
         if function is None:
-            function = lambda x: x
+            function = identity
         self._function = function
         self._shape = None
         self._multiD = None
