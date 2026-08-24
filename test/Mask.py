@@ -1,11 +1,7 @@
 from xml.dom.minidom import Attr
 import numpy as np
 import warnings
-# Compability of python 2 and 3 with metaclasses
-# Python 2 and 3:
-from six import with_metaclass
-# or
-from future.utils import with_metaclass
+
 from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask, CurratAxeMask, parse, extract, load
 import sympy,os
 

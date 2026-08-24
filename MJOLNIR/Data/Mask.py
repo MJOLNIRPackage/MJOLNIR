@@ -5,11 +5,7 @@ from MJOLNIR.Data import DataSet,DataFile
 import sympy
 import warnings
 import pickle
-# Compability of python 2 and 3 with metaclasses
-# Python 2 and 3:
-from six import with_metaclass
-# or
-from future.utils import with_metaclass
+
 
 def requiredArguments(func,requiredNames):
     """Return list of arguments not found in arguments of func"""
@@ -59,7 +55,7 @@ class MaskingObjectMeta(ABCMeta):
         return ABCMeta.__new__(mcls,name,bases,namespace)
     
             
-class MaskingObject(with_metaclass(MaskingObjectMeta)):
+class MaskingObject(metaclass=MaskingObjectMeta):#with_metaclass(MaskingObjectMeta)):
     """Base class for all masking objects"""
     #dimensionality = '2D'
     def __init__(self,coordinates=None,maskInside=True,name=None):
