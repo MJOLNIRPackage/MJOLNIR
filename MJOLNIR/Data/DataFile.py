@@ -726,7 +726,6 @@ class DataFile(object):
     def __hasattr__(self,s):
         return s in self.__dict__.keys()
 
-    @_tools.KwargChecker()
     def loadMultiFLEXXData(self,fileLocation,calibrationFile=None):
         """"Dedicated loader for MultiFLEXX data.
 
@@ -1275,7 +1274,6 @@ class DataFile(object):
         loadMarmot(self)
         
 
-    @_tools.KwargChecker()
     def calcualteDataIndexFromDasel(self,detectorSelection=None,analyzerSelection=None):
         if detectorSelection is None:
             detectorSelection = self.detectorSelection
@@ -1299,7 +1297,6 @@ class DataFile(object):
             return detectorSelection*(analyzerLimits[self.instrument]+1)+analyzerSelection,[0] # Last index is to be able to sum over
     
     
-    @_tools.KwargChecker()
     def convert(self,binning=None,printFunction=None):
         if self.instrument == 'CAMEA' or self.type in ['MultiFLEXX','Flatcone','Bambus','Marmot']:
             if binning is None:
@@ -1439,7 +1436,6 @@ class DataFile(object):
         return convFile
 
 
-    @_tools.KwargChecker()
     def plotA4(self,binning=None):
         """Method to plot the fitted A4 values of the normalization table
 
@@ -1467,7 +1463,6 @@ class DataFile(object):
 
         return fig
 
-    @_tools.KwargChecker()
     def plotEf(self,binning=None):
         """Method to plot the fitted Ef values of the normalization table
 
@@ -1494,7 +1489,6 @@ class DataFile(object):
 
         return fig
 
-    @_tools.KwargChecker()
     def plotEfOverview(self,binning=None):
         """Method to plot the fitted Ef values of the normalization table
 
@@ -1519,7 +1513,7 @@ class DataFile(object):
 
         return fig
 
-    @_tools.KwargChecker()
+
     def plotNormalization(self,binning=None):
         """Method to plot the fitted integrated intensities of the normalization table
 
@@ -1545,7 +1539,6 @@ class DataFile(object):
         plt.colorbar()
         return fig
 
-    @_tools.KwargChecker()
     def loadBinning(self,binning):
         """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
 
@@ -2191,7 +2184,6 @@ def decodeStr(string):
     #except:
     #    return string
 
-@_tools.KwargChecker()
 def getScanParameter(self,f):
 
     """Extract scan parameter from hdf file.
@@ -2315,8 +2307,6 @@ def getScanParameter(self,f):
     return scanParameters,np.array(scanValues),scanUnits,scanDataPosition
 
 
-
-@_tools.KwargChecker()
 def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
                         title='EmptyDataFileTitle', name='EmptyDataFile',
                         temperature = None, electricField = None, magneticField = None,

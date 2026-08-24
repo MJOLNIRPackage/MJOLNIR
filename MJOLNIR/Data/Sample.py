@@ -35,7 +35,6 @@ def camelCase(string,split='_'):
 
 class Sample(object):
     """Sample object to store all information of the sample from the experiment"""
-    @_tools.KwargChecker()
     def __init__(self,a=2.0*np.pi,b=2.0*np.pi,c=2.0*np.pi,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None,recalculateUB=False):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0].decode())
@@ -335,7 +334,6 @@ class Sample(object):
 
         return returnStr
 
-    @_tools.KwargChecker()
     def CurratAxe(self,Ei,Ef,Bragg,spurionType='Monochromator',HKL=False,Projection=False):
         """Function to calculate Currat-Axe position in QxQy coordinate system.
     

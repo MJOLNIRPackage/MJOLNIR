@@ -11,7 +11,6 @@ from mpl_toolkits.mplot3d import Axes3D
 
 class Analyser(GeometryConcept.GeometryObject):
     """Generic analyser object. Base class from which all analysers must inherit."""
-    @_tools.KwargChecker()
     def __init__(self,position,direction,d_spacing=3.35,mosaicity=60):
         """
         Args:
@@ -95,7 +94,6 @@ class Analyser(GeometryConcept.GeometryObject):
 
 class FlatAnalyser(Analyser):
     """Simple flat analyser. """
-    @_tools.KwargChecker()
     def __init__(self,position,direction,d_spacing=3.35,mosaicity=60,width=0.05,height=0.1):
         """
         Args:
@@ -158,7 +156,6 @@ class FlatAnalyser(Analyser):
         self._height = height
 
 
-    @_tools.KwargChecker()
     def plot(self,ax,offset=np.array([0,0,0]),n=100):
         """
         Args:

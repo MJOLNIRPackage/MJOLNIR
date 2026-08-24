@@ -25,7 +25,6 @@ predictionInstrumentSupport = ['CAMEA','MultiFLEXX','Bambus'] # Instrument suppo
 
 
 class Instrument(GeometryConcept.GeometryConcept):
-    @_tools.KwargChecker(include=['Author','Instrument','Date','Initialized']) # Not used as excess kwargs are put into settings
     def __init__(self, position=(0,0,0),wedges=[],fileName='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
@@ -314,7 +313,6 @@ class Instrument(GeometryConcept.GeometryConcept):
         with open(fileName,'w') as f:
             f.write(string)
 
-    @_tools.KwargChecker()
     def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/', 
     tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False, ignoreTubes=None,
     sample='V',sampleMass=None,sampleDebyeWallerFactor=1.0,formulaUnitsPerUnitCell=1.0,sampleIncoherent=5.08):
