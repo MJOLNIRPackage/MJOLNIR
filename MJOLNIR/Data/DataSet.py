@@ -33,8 +33,11 @@ import time
 
 
 import warnings
-from ufit import Dataset
-
+try:
+    from ufit import Dataset
+except ImportError:
+    warnings.warn('ufit not installed. ufit functionality will not be available.')
+    
 pythonVersion = sys.version_info[0]
 
 
