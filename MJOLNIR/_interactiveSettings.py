@@ -10,8 +10,15 @@ from  matplotlib.backend_tools import Cursors as cursors
 
 import MJOLNIR
 import os
-import PyQt5.QtCore
-from PyQt5.QtGui import QCursor, QPixmap
+
+try:
+    from PyQt5.QtCore import Qt
+    QtVersion = 5
+except ImportError:
+    from PyQt6.QtCore import Qt
+    QtVersion = 6
+
+#from PyQt5.QtGui import QCursor, QPixmap
 
 import sys
 from collections import defaultdict
@@ -151,13 +158,22 @@ Modes= Enum('Modes', modes)
 
 
 ## Cursor type mode
-pointerType = defaultdict(lambda: PyQt5.QtCore.Qt.ArrowCursor)
-pointerType['CUTTING_EMPTY'] = PyQt5.QtCore.Qt.ForbiddenCursor
-pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.OpenHandCursor
-pointerType['RESOLUTION'] = PyQt5.QtCore.Qt.BlankCursor
+if QtVersion == 5:
+    pointerType = defaultdict(lambda: Qt.ArrowCursor)
+    pointerType['CUTTING_EMPTY'] = Qt.ForbiddenCursor
+    pointerType['CUTTING_INITIAL'] = Qt.CrossCursor
+    pointerType['CUTTING_WIDTH'] = Qt.CrossCursor
+    pointerType['CUTTING_DIRECTION'] = Qt.CrossCursor
+    pointerType['CUTTING_MOVE'] = Qt.OpenHandCursor
+    pointerType['RESOLUTION'] = Qt.BlankCursor
+else:
+    pointerType = defaultdict(lambda: Qt.CursorShape.ArrowCursor)
+    pointerType['CUTTING_EMPTY'] = Qt.CursorShape.ForbiddenCursor
+    pointerType['CUTTING_INITIAL'] = Qt.CursorShape.CrossCursor
+    pointerType['CUTTING_WIDTH'] = Qt.CursorShape.CrossCursor
+    pointerType['CUTTING_DIRECTION'] = Qt.CursorShape.CrossCursor
+    pointerType['CUTTING_MOVE'] = Qt.CursorShape.OpenHandCursor
+    pointerType['RESOLUTION'] = Qt.CursorShape.BlankCursor
 
 
 def resetUsingKey(ax,keys):
