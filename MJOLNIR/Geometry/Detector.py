@@ -229,9 +229,9 @@ class TubeDetector1D(Detector):
     def getPixelPositions(self):
         """Return pixel positions relative to center."""
         scale = (np.arange(self.pixels,dtype=float)-(self.pixels-1.0)/2.0)/self.pixels*self.length   # the distance of the pixels relative to the central pixel
-        scale.shape=(self.pixels,1)
+        scale = scale.reshape((self.pixels,1))
         direction = self.direction.copy()
-        direction.shape=(1,3)
+        direction = direction.reshape((1,3))
         pixelPositions = np.dot(scale,direction)+self.position
 
         return np.split(pixelPositions,self.split)[1:-1]

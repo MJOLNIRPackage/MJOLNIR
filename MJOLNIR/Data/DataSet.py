@@ -4905,10 +4905,10 @@ def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0): # pragma: no cover
         kfmax=np.array([kfmax])
         A4Min = np.array([A4Min])
         A4Max = np.array([A4Max])
-    kfmin.shape= (-1)
-    kfmax.shape= (-1)
-    A4Min.shape= (-1)
-    A4Max.shape= (-1)
+    kfmin = kfmin.reshape((-1))
+    kfmax = kfmax.reshape((-1))
+    A4Min = A4Min.reshape((-1))
+    A4Max = A4Max.reshape((-1))
     
     A4Min-=A4Extend*np.pi/180.0
     A4Max+=A4Extend*np.pi/180.0
