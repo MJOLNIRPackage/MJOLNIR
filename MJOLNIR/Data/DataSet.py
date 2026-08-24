@@ -2944,7 +2944,7 @@ class DataSet(object):
         return ax,ufitData
 
     @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
-    def cutELine(self, Q1, Q2, EMn=None, EMax=None, energyWidth = 0.05, minPixel = 0.02, 
+    def cutELine(self, Q1, Q2, EMin=None, EMax=None, energyWidth = 0.05, minPixel = 0.02, 
                  width = 0.02, rlu=True, dataFiles=None, constantBins=False, backgroundSubtraction=False):
         """Perform cut along energy in steps between two Q Point 
         
