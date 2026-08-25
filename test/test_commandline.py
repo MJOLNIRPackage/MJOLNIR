@@ -15,7 +15,8 @@ if sys.platform == 'win32':
 
 
 ## Calibration inspector
-
+@pytest.mark.commandline
+@pytest.mark.unit
 def test_CalibrationInspector_Help_Text():
     result = subprocess.check_output(['MJOLNIRCalibrationInspector','-h'])
     print(result)
@@ -36,7 +37,9 @@ def test_CalibrationInspector_Help_Text():
             
     assert(helpTextWin32Bool or helpTextLinuxBool or helpTextWin10Bool or helpTextPython39Bool or helpTextTravisPython39Bool or helpTextPython39WindowsBool or helpTextPython312WindowsBool)
 
-
+@pytest.mark.commandline
+@pytest.mark.unit
+@pytest.mark.gui
 @pytest.mark.skip(reason="Fails on the headless Travis-ci")
 def test_CalibrationInsepctor_Run():
     try:
@@ -56,8 +59,8 @@ def test_CalibrationInsepctor_Run():
     
 
 
-
-
+@pytest.mark.commandline
+@pytest.mark.unit
 def test_History_Help_Text():
     result = subprocess.check_output(['MJOLNIRHistory', '-h'])
     print(result)
@@ -82,12 +85,17 @@ def test_History_Help_Text():
            helpTextTravisPython39WindowsBool or helpTextTravisPython39Bool or helpTextTravisMoreTestBool or helpTextPython312WindowsBool)
 
 
+@pytest.mark.commandline
+@pytest.mark.unit
+@pytest.mark.data
 def test_History_SingleFile():
     result = subprocess.check_output(['MJOLNIRHistory', dataFiles[0]])
     print(result)
     assert(returnText[0]==result)
 
-
+@pytest.mark.commandline
+@pytest.mark.unit
+@pytest.mark.data
 def test_History_MultipleFiles():
     call = ['MJOLNIRHistory'] + dataFiles
     
@@ -95,6 +103,9 @@ def test_History_MultipleFiles():
     print(result)
     assert(b''.join(returnText)==result)
 
+@pytest.mark.commandline
+@pytest.mark.unit
+@pytest.mark.data
 def test_History_MultipleFiles_repeat():
     call = ['MJOLNIRHistory'] + dataFiles[-2:]
     results = subprocess.check_output(call)
@@ -106,6 +117,8 @@ def test_History_MultipleFiles_repeat():
     
 
 ### 3DView
+@pytest.mark.commandline
+@pytest.mark.unit
 def test_3DView_Help_Text():
     result = subprocess.check_output(['MJOLNIR3DView','-h'])
     print(result)
@@ -129,6 +142,10 @@ def test_3DView_Help_Text():
 
   
 @pytest.mark.skip(reason="Fails on the headless Travis-ci")    
+@pytest.mark.commandline
+@pytest.mark.unit
+@pytest.mark.data
+@pytest.mark.gui
 def test_3DView_Run_Through():
     call = ['MJOLNIR3DView'] + [dataFiles[0],dataFiles[0]]
     subprocess.check_output(call)

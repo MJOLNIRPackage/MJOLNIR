@@ -7,9 +7,9 @@ import numpy as np
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+import pytest
 
-
-
+@pytest.mark.integration
 def test_Wedge_init():
     wedge = Wedge(position=(0,0,0))
 
@@ -28,6 +28,7 @@ def test_Wedge_init():
     assert(len(wedge3.detectors)==2)
 
 
+@pytest.mark.integration
 def test_Wedge_error():
     wedge = Wedge(position=(0,0,0))
 
@@ -89,7 +90,7 @@ def test_Wedge_error():
     except ValueError:
         assert True
 
-
+@pytest.mark.integration
 def test_Wedge_warnings():
     wedge = Wedge()
 
@@ -111,6 +112,7 @@ def test_Wedge_warnings():
         assert 'The list of detectors is not empty! Appending new detector(s)' in str(w[0].message)
         assert 'The list of analysers is not empty! Appending new analyser(s)' in str(w[1].message)
 
+@pytest.mark.integration
 def test_Wedge_append():
     wedge = Wedge()
 
@@ -124,6 +126,8 @@ def test_Wedge_append():
     assert(len(wedge.detectors)==3)
     assert(len(wedge.analysers)==2)
 
+@pytest.mark.integration
+@pytest.mark.gui
 def test_Wedge_plot():
     wedge = Wedge()
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
@@ -136,6 +140,7 @@ def test_Wedge_plot():
 
     wedge.plot(ax)
 
+@pytest.mark.integration
 def test_wedge_calculateDetectorAnalyserPositions_OneToOne():
     wedge = Wedge(concept='OneToOne')
     Det = Detector.TubeDetector1D(position=(1.0,0.0,1.0),direction=(1.0,0,0),length=0.5,pixels=5)
@@ -162,7 +167,7 @@ def test_wedge_calculateDetectorAnalyserPositions_OneToOne():
     assert(np.sum([analyserPixelPositions[1][i][1]-offcenterpos[i] for i in range(5)])<1e-8)
     
     
-
+@pytest.mark.integration
 def test_wedge_calculateDetectorAnalyserPositions_ManyToMany():
     
     wedge = Wedge(concept='ManyToMany')
@@ -188,12 +193,14 @@ def test_wedge_calculateDetectorAnalyserPositions_ManyToMany():
     #offcenterpos = np.array([0.00700467,0.00676014,0.02105171,0.02041748,0.01977911])
     #assert(np.sum([analyserPixelPositions[0][i][1]-offcenterpos[i] for i in range(5)])<1e-8)
 
+@pytest.mark.unit
 def test_wedge_string_dummy():
     wedge = Wedge(concept='ManyToMany')
 
     string = str(wedge)
     assert True
 
+@pytest.mark.unit
 def test_wedge_repr_dummy():
     wedge = Wedge(concept='ManyToMany')
 

@@ -4,7 +4,10 @@ import warnings
 
 from MJOLNIR.Data.Mask import MaskingObject, lineMask, rectangleMask, circleMask, boxMask, indexMask, MultiMask, CurratAxeMask, parse, extract, load
 import sympy,os
+import pytest
 
+
+@pytest.mark.unit
 def test_subclass_MaskingObject():
     # Generate a subclass of MaskingObect that is missing stuff
     
@@ -49,7 +52,8 @@ def test_subclass_MaskingObject():
     except TypeError as E:
         print(E)
         assert True
-        
+
+@pytest.mark.integration
 def test_BooleanAlgebra():
     class simpleMaskingObject(MaskingObject):
         dimensionality = '1D'
@@ -142,7 +146,8 @@ def test_BooleanAlgebra():
     assert(val2()==False)
     assert(val3()==False)
     assert(val4()==False)
-    
+
+@pytest.mark.unit
 def test_lineMask():
     X,Y,Z = np.array(np.meshgrid(np.linspace(0,1,50),np.linspace(0,1,50),np.linspace(0,1,50))).reshape(3,-1)
     
@@ -167,7 +172,7 @@ def test_lineMask():
     assert(np.all(mask==mask2))
     assert(np.all(mask3==mask2))
     
-    
+@pytest.mark.unit
 def test_rectangleMask():
     X,Y,Z = np.array(np.meshgrid(np.linspace(0,3,50),np.linspace(0,3,50),np.linspace(0,3,50))).reshape(3,-1)
     
@@ -205,7 +210,7 @@ def test_rectangleMask():
     assert(rec3.length == 2.23606797749979)
     assert(np.isclose(rec3.rotation,-0.85241638*np.pi))
     
-    
+@pytest.mark.unit
 def test_circleMask():
     X,Y,Z = np.array(np.meshgrid(np.linspace(0,3,50),np.linspace(0,3,50),np.linspace(0,3,50))).reshape(3,-1)
     
@@ -237,7 +242,8 @@ def test_circleMask():
     assert(circ2(0.9,0.9) == False)
     assert(circ2(np.cos(np.pi/4)*0.5+0.501,np.cos(np.pi/4)*0.5+0.501) == False)
     assert(circ2(np.cos(np.pi/4)*0.5+0.499,np.cos(np.pi/4)*0.5+0.499) == True)
-    
+
+@pytest.mark.unit
 def test_boxMask():
     X,Y,Z = np.array(np.meshgrid(np.linspace(0,2,100),np.linspace(0,2,100),np.linspace(0,2,100))).reshape(3,-1)
     
@@ -261,7 +267,7 @@ def test_boxMask():
     assert(np.isclose(box3.length*box3.width*box3.height,0.25))
     assert(np.all(np.isclose(box3.center,np.array([ 0.34444444, -0.06111111,  0.13888889]))))
     
-    
+@pytest.mark.unit
 def test_indexMask():
     A = np.arange(120).reshape(4,5,6)
     imask = indexMask(1,4,axis=1) # mask all all but two edges of first axis
@@ -278,7 +284,8 @@ def test_indexMask():
     assert(np.all(mask[:,:,:,0,:]==False))
     assert(np.all(mask[:,:,:,1,:]==True))
     assert(np.all(mask[:,:,:,2,:]==False))
-    
+
+@pytest.mark.unit
 def test_CurratAxeMask():
     # Real test is performed in the DataSet testing
 
@@ -291,6 +298,7 @@ def test_CurratAxeMask():
     except AttributeError:
         assert True
 
+@pytest.mark.unit
 def test_CurratAxeMask():
     # Real test is performed in the DataSet testing
 
@@ -303,6 +311,7 @@ def test_CurratAxeMask():
     except AttributeError:
         assert True
 
+@pytest.mark.integration
 def test_Combinatorics_Extraction():
     # Test of combination and extraction of multiple masks
     masks = []
@@ -351,6 +360,7 @@ def test_Combinatorics_Extraction():
         print(np.any([mask == m for m in masks]))
     assert(np.all([np.any([mask == m for m in masks]) for mask in masks4]))
 
+@pytest.mark.integration
 def test_Masks_naming():
 
     dqx = None#0.1

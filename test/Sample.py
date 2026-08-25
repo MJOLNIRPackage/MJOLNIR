@@ -5,11 +5,12 @@ from MJOLNIR import _tools
 import os
 import numpy as np
 import MJOLNIR.TasUBlibDEG as TasUBlib
+import pytest
 
 dataPath = 'samlpedata'
 
 
-
+@pytest.mark.unit
 def test_sample_exceptions():
     try: # No parameters given
         s1 = Sample(a=None)
@@ -50,6 +51,8 @@ def test_sample_exceptions():
     except:
         assert True
 
+@pytest.mark.integration
+@pytest.mark.data
 def test_Sample_conversions():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000178.hdf'))
     sample = df.sample
@@ -72,17 +75,21 @@ def test_Sample_conversions():
     assert(np.all(np.isclose(QxQyFromSample,[Qx,Qy],atol=1e-3)))
 
 
+@pytest.mark.unit
 def test_parameters():
     s1 = Sample(1,2,3,90,90,120)
     pars = np.array([getattr(s1,x) for x in ['a','b','c','alpha','beta','gamma']])
 
     assert(np.all(np.isclose(pars,np.array([1,2,3,90,90,120]))))
 
+
+@pytest.mark.unit
 def test_equality():
     s1 = Sample(1,2,3,90,90,120)
     s2 = Sample(1,2,3,90,90,120)
     assert(s1==s2)
 
+@pytest.mark.unit
 def test_calculateProjections(): # TODO: Update test
 
     s1 = Sample(np.pi*2,np.pi*2,np.pi*2,90,90,60)
@@ -104,6 +111,8 @@ def test_calculateProjections(): # TODO: Update test
     #string = s1.format_coord(point[0],point[1])
     #assert(string=='h = 3.500, k = 7.200, l = 0.000')
 
+@pytest.mark.integration
+@pytest.mark.data
 def test_DataFile_Sample_UB():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
     s = df.sample
@@ -122,7 +131,8 @@ def test_DataFile_Sample_UB():
     print(np.round(s.orientationMatrix,5))
     assert(np.all(comparison))
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_DataFile_Sample_Projection():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000136.hdf')) # In A-B plane
     print(df.sample.projectionVector1,df.sample.projectionVector2)
@@ -134,7 +144,8 @@ def test_DataFile_Sample_Projection():
     assert(np.all(np.isclose(df2.sample.projectionVector2,np.array([1.0,1.0,0.0]))))
 
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_Sample_CurratAxe():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000178.hdf'))
     sample = df.sample

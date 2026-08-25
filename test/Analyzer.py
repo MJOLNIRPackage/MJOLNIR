@@ -5,7 +5,9 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import pytest
 
+@pytest.mark.unit
 def test_init():
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
     assert(np.all(GenericAnalyser.position==np.array([0.0,1.0,0.0])))
@@ -13,6 +15,7 @@ def test_init():
     assert(GenericAnalyser.d_spacing==3.35)
     assert(GenericAnalyser.mosaicity==60.0)
 
+@pytest.mark.unit
 def test_Generic_plot():
     
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
@@ -23,6 +26,7 @@ def test_Generic_plot():
     except NotImplementedError:
         assert True
 
+@pytest.mark.unit
 def test_warnings():
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
 
@@ -39,6 +43,7 @@ def test_warnings():
         assert "The unit of d spacing is Angstrom" in str(w[0].message)
         assert "The unit of mosaicity is arcminutes" in str(w[1].message)
 
+@pytest.mark.unit
 def test_Generic_errors():
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
     try:
@@ -54,6 +59,7 @@ def test_Generic_errors():
         assert True
 
 
+@pytest.mark.unit
 def test_Analyser_init():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60,width=0.05,height=0.1)
     assert(np.all(Analyser.position==np.array([0.0,1.0,0.0])))
@@ -62,6 +68,7 @@ def test_Analyser_init():
     assert(Analyser.height==0.1)
  
 
+@pytest.mark.unit
 def test_Analyser_width():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     try:
@@ -70,6 +77,7 @@ def test_Analyser_width():
     except AttributeError:
         assert True
 
+@pytest.mark.unit
 def test_Analyser_height():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     try:
@@ -79,13 +87,15 @@ def test_Analyser_height():
         assert True
 
 
+@pytest.mark.unit
 def test_FlatAnalyser_plot():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
 
     Analyser.plot(ax)
-    
+
+@pytest.mark.unit
 def test_FlatAnalyser_str():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     assert(str(Analyser)=='FlatAnalyser located at '+np.array2string(np.array([0.0,1.0,0.0])))

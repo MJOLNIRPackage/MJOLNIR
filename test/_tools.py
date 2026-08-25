@@ -2,7 +2,9 @@ import numpy as np
 from MJOLNIR._tools import *
 
 import os
+import pytest
 
+@pytest.mark.unit
 def test_minMax():
     L = np.random.rand(10,3,2)
     minmax = minMax(L)
@@ -17,12 +19,14 @@ def test_minMax():
     minmax = np.array(minMax(L,axis=0))
     assert(minmax.shape==(2,3,2))
 
+@pytest.mark.unit
 def test_unitVector():
     V = np.array([1.0,2.0,3.0])
     v = unitVector(V)
     assert(np.isclose(np.linalg.norm(v),1.0))
 
 
+@pytest.mark.unit
 def test_rotations():
     vectors = [np.array([0,0,3.0]),np.array([1.0,0.0,0.0]),np.array([0.0,1.0,0.0]),np.random.rand(3)]
     rotations = [rotate2X(v) for v in vectors]
@@ -32,7 +36,7 @@ def test_rotations():
         print(rotVector[i][0],np.linalg.norm(rotVector[i]))
         assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
 
-
+@pytest.mark.unit
 def test_vectorAngle():
     v1 = np.array([1,0,0])
     v2 = np.array([0,1,0])
@@ -44,7 +48,8 @@ def test_vectorAngle():
     assert(np.isclose(theta1,np.pi/2))
     assert(np.isclose(theta2,theta3))
     assert(np.isclose(theta2,0.955316618125))
-    
+
+@pytest.mark.unit
 def test_Rotation_matrix():
     M1 = rotationMatrix(0,0,0)
 
@@ -62,7 +67,7 @@ def test_Rotation_matrix():
 
 
 
-
+@pytest.mark.unit
 def test_binEdges():
     values = np.exp(np.linspace(-0.1,1,101)) # Generate non-linear points
     #values[0]-tolerance/2.0 and ends at values[-1]+tolerance/2.0.
@@ -89,7 +94,7 @@ def test_binEdges():
     binsCut = binEdges(values-np.max(values)+1.0,0.01,startPoint=0.0,endPoint=1.01)
     assert(binsCut[-1]<=1.01)
 
-    
+@pytest.mark.unit
 def test_fileListGenerator():
     numberStr = '0,20-23-24,4000'
     year = 2018
@@ -118,6 +123,7 @@ def test_fileListGenerator():
     files = fileListGenerator(numberStr,folder,year)
     assert(np.all(filesCorrect == np.array(files)))
 
+@pytest.mark.unit
 def test_RoundBinning():
     
     X = np.random.rand(2,3000)
@@ -138,7 +144,7 @@ def test_RoundBinning():
     assert(np.all(C==C2))
     assert(np.all(Data.shape[0]==BP.shape[1]))
 
-
+@pytest.mark.unit
 def test_generateLabel():
     v = [1,-1,2]
     label = generateLabel(v)
@@ -148,7 +154,7 @@ def test_generateLabel():
     label = generateLabel(v)
     assert(label=='(-0.5H, 22K, -3L)')
 
-
+@pytest.mark.unit
 def test_generateLabelDirection():
     v = [1,-1,2]
     label = generateLabelDirection(v)
@@ -162,6 +168,7 @@ def test_generateLabelDirection():
     label = generateLabelDirection(v)
     assert(label=='(0, 0, -3.333L)')
 
+@pytest.mark.unit
 def test_molarMassCalculation():
     water = 18.01528 # g/mol
     value,elements = calculateMolarMass('H2O',returnElements=True)
@@ -186,7 +193,7 @@ def test_molarMassCalculation():
     assert(np.isclose(value,weight,atol=1e-4))
     assert(np.all([np.isclose(elem[key],elements[key],atol=1e-8) for key in elem.keys()]))
 
-    
+@pytest.mark.unit
 def test_absoluteNormalization():# TODO: Improve and recalculate the expected factor 
     sampleMass = 6.2
     normFactor = calculateAbsoluteNormalization(sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,sampleMass=sampleMass,correctVanadium=True)
@@ -210,7 +217,7 @@ def test_absoluteNormalization():# TODO: Improve and recalculate the expected fa
     assert(np.isclose(normFactor,normFactor2))
 
 
-
+@pytest.mark.unit
 def test_KWavelength():
     k = np.pi
     wavelength = WavelengthK(k)
@@ -218,7 +225,8 @@ def test_KWavelength():
     
     k_prime = KWavelength(wavelength)
     assert(np.isclose(k,k_prime))
-    
+
+@pytest.mark.unit
 def test_KWavelength_multidim():
     k = np.random.rand(10,20)*2*np.pi
     wavelength = WavelengthK(k)
@@ -226,7 +234,7 @@ def test_KWavelength_multidim():
     k_prime = KWavelength(wavelength)
     assert(np.all(np.isclose(k,k_prime)))
     
-    
+@pytest.mark.unit
 def test_EnergyK():
     E = 5.0
     k = KEnergy(E)
@@ -235,7 +243,8 @@ def test_EnergyK():
     
     E_prime = EnergyK(k)
     assert(np.isclose(E,E_prime))
-    
+
+@pytest.mark.unit
 def test_WnergyK_multidim():
     E = np.random.rand(10,20)*2*np.pi
     wavelength = WavelengthEnergy(E)
@@ -244,6 +253,7 @@ def test_WnergyK_multidim():
     assert(np.all(np.isclose(E,E_prime)))
     
     
+@pytest.mark.unit
 def test_ScatteringAngle():
     d = 3.355 # AA
     E = 5.00 # meV
@@ -259,7 +269,8 @@ def test_ScatteringAngle():
     A4True = 74.14275085067898
     
     assert(np.all(np.isclose([A4E,A4K,A4W,A4ERad],A4True)))
-    
+
+@pytest.mark.unit
 def test_DSpacing():
     twoTheta = 74.14275085067898#
     E = 5.00 # meV
@@ -276,6 +287,7 @@ def test_DSpacing():
     
     assert(np.all(np.isclose([dE,dK,dW,dERad],dTrue)))
     
+@pytest.mark.unit
 def test_ScatteringAngle_Errors():
     d = 3.355 # AA
     E = 5.00 # meV
@@ -306,7 +318,7 @@ def test_ScatteringAngle_Errors():
     except AttributeError:
         assert True
         
-        
+@pytest.mark.unit
 def test_DSpacing_Errors():
     twoTheta = 3.355 # AA
     E = 5.00 # meV
@@ -337,7 +349,7 @@ def test_DSpacing_Errors():
     except AttributeError:
         assert True
     
-
+@pytest.mark.unit
 def test_scaling():# Test standard scaling functions used for rescaling of energy bins
 
     x = np.random.rand(20)*20-10 # points between -10 and 10

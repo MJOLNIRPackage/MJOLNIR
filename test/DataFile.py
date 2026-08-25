@@ -9,7 +9,8 @@ import pytest
 
 dataPath = 'samlpedata'
 
-
+@pytest.mark.data
+@pytest.mark.unit
 def test_DataFile():
     try:
         DF = DataFile('/nope.txt')
@@ -42,19 +43,22 @@ def test_DataFile():
     except AttributeError:
         assert True
 
-
+@pytest.mark.data
+@pytest.mark.unit
 def test_DataFile_equility():
     f1 = DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
     print('----------')
     f2 = DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
     assert(f1==f2)
-    
+
+
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataFile_plotA4():
     plt.ioff()
-    import matplotlib
-    #matplotlib.use('Agg')
+
     fileName = os.path.join(dataPath,'camea2022n000894.hdf')
-    fileName2= os.path.join(dataPath,'camea2022n000894.nxs')
     file = DataFile(fileName)
     
 
@@ -69,7 +73,10 @@ def test_DataFile_plotA4():
     
     plt.close('all')
 
-    
+
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataFile_plotEf():
     plt.ioff()
     import matplotlib
@@ -90,10 +97,12 @@ def test_DataFile_plotEf():
     
     plt.close('all')
 
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataFile_plotEfOverview():
     plt.ioff()
-    import matplotlib
-    #matplotlib.use('Agg')
+
     fileName = os.path.join(dataPath,'camea2022n000894.hdf')
 
     file = DataFile(fileName)
@@ -109,6 +118,9 @@ def test_DataFile_plotEfOverview():
 
     plt.close('all')
 
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataFile_plotNormalization():
     plt.ioff()
     import matplotlib
@@ -128,6 +140,7 @@ def test_DataFile_plotNormalization():
 
     plt.close('all')
 
+@pytest.mark.unit
 def test_DataFile_decodeString():
     a = b'String'
     b = 'String'
@@ -137,6 +150,9 @@ def test_DataFile_decodeString():
     assert(decodeStr(a)==decodeStr(b))
     assert(c == decodeStr(c))
 
+
+@pytest.mark.data
+@pytest.mark.unit
 def test_DataFile_ScanParameter():
 
     files = [os.path.join(dataPath,'camea2022n000894.hdf')]
@@ -149,7 +165,8 @@ def test_DataFile_ScanParameter():
         assert(dfile.scanUnits[0]=='degree')
         ##assert(np.all(dfile.scanValues==np.arange(0,150,1)))
 
-
+@pytest.mark.data
+@pytest.mark.unit
 def test_DataFile_Error():
     df = DataFile(os.path.join(dataPath,'camea2022n000894.hdf'))
 
@@ -169,6 +186,7 @@ def test_DataFile_Error():
     
 
 @pytest.mark.skip(reason="Save/load feature currently under investigation")
+@pytest.mark.data
 def test_DataFile_SaveLoad():
     df = DataFile(os.path.join(dataPath,'camea2022n000894.hdf'))
 
@@ -206,6 +224,7 @@ def test_DataFile_SaveLoad():
     os.remove(df2.fileLocation)
 
 
+@pytest.mark.integration
 def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
     nf = np.array([os.path.join('Data','Normalization_1.calib'),
     os.path.join('Data','Normalization_3.calib'),os.path.join('Data','Normalization_8.calib')])
@@ -239,7 +258,8 @@ def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
     assert(len(df.possibleBinnings)==len(nf))
     #assert(False)
 
-
+@pytest.mark.data
+@pytest.mark.integration
 def test_updateCalibration():
     calibFiles = [os.path.join('Data','Normalization80_1.calib'),
                     os.path.join('Data','Normalization80_3.calib'),
@@ -270,22 +290,9 @@ def test_updateCalibration():
     
     assert(np.any(newEdges!=edges)) # Check if all elements are equal
 
-#
-#def test_DataFile_BoundaryCalculation(quick):
-#    if quick==True:
-#        binning = [1,3,8]
-#    else:
-#        binning = [1]
-#    for B in binning:
-#        print('Using binning {}'.format(B))
-#        df = DataFile(os.path.join(dataPath,'camea2018n000017.hdf'))
-#        converted = df.convert(binning=B)
-#        EP,EBins = converted.calculateEdgePolygons()
-#        areas = np.array([e.area for e in EP])
-#        assert(np.all(areas>2.0)) # Value found by running algorithm
-#        assert(len(EBins)==B*8+1)
-        
-
+       
+@pytest.mark.data
+@pytest.mark.unit
 def test_shallowRead():
     # read out all possible things
     parameters = possibleAttributes

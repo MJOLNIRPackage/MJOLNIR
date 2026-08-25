@@ -18,7 +18,8 @@ pythonVersion = sys.version_info[0]
 
 dataPath = 'samlpedata'
 
-
+@pytest.mark.unit
+@pytest.mark.data
 def test_Dataset_Initialization():
 
     emptyDataset = DataSet()
@@ -30,7 +31,8 @@ def test_Dataset_Initialization():
     assert(dataset.normalizationfiles == [])
     
 
-                                                                                                                 
+@pytest.mark.unit
+@pytest.mark.data                                                                                                        
 def test_DataSet_Error():
     
     try:
@@ -101,7 +103,10 @@ def test_DataSet_Error():
 
     ds.dataFiles = os.path.join(dataPath,'camea2018n000136.hdf')
 
+
 @pytest.mark.skip(reason="Bambus Data file currently not available")
+@pytest.mark.integration
+@pytest.mark.data
 def test_LoadBambusData():
     ds = DataSet(dataFiles=[os.path.join(dataPath,'BambusTest.dat')])
 
@@ -138,6 +143,8 @@ def test_LoadBambusData():
     ds.convertDataFile()
 
 
+@pytest.mark.unit
+@pytest.mark.data
 def test_DataSet_Pythonic():
     dataFiles = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
     dataset = DataSet(dataFiles=dataFiles)
@@ -178,18 +185,22 @@ def test_DataSet_Pythonic():
     assert(dataset.I.shape!=secondShape)
 
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_DataSet_Equality():
     D1 = DataSet(dataFiles=os.path.join(dataPath,'camea2018n000136.hdf'))#,convertedFiles=['TestData/VanNormalization.nxs')])
     assert(D1==D1)
 
 
+@pytest.mark.unit
+@pytest.mark.data
 def test_DataSet_str():
     D1 = DataSet(dataFiles=os.path.join(dataPath,'camea2018n000136.hdf'))#,normalizationfiles = 'TestData/VanNormalization.hdf'))
     string = str(D1)
     print(string)
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_DataSet_Convert_Data(): # TODO: redo test!
     dataFiles = os.path.join(dataPath,'camea2018n000136.hdf')
     dataset = DataSet(dataFiles=dataFiles)
@@ -230,6 +241,7 @@ def test_DataSet_Convert_Data(): # TODO: redo test!
     assert(np.all(np.isclose(dataset.I[0][10,4,50:64],I)))
 
 
+@pytest.mark.unit
 def test_DataSet_3DMesh():
     
     x = np.linspace(0,1,2)
@@ -245,7 +257,7 @@ def test_DataSet_3DMesh():
     assert(np.all(YT1[0,:,0]==ZT1[0,0,:]-1.0))
 
 
-
+@pytest.mark.unit
 def test_DataSet_BinData():
     I = np.random.randint(0,100,(10,20,30))
     Norm = np.random.rand(10,20,30)
@@ -272,7 +284,9 @@ def test_DataSet_BinData():
     assert(RebinnedNorm.dtype==Norm.dtype)
     assert(ReBinnedI.dtype==I.dtype)
 
-
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_full_test():
     import MJOLNIR.Data.Viewer3D
     
@@ -309,9 +323,12 @@ def test_DataSet_full_test():
     del viewer
     plt.close('all')
 
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_Visualization():
     import warnings
-    from MJOLNIR.Data import Viewer3D,DataFile
+    from MJOLNIR.Data import Viewer3D
     DataFiles = [os.path.join(dataPath,'camea2018n000136.hdf')]
 
     dataset = DataSet(dataFiles=DataFiles)
@@ -350,7 +367,7 @@ def test_DataSet_Visualization():
     plt.plot()
     plt.close('all')
     
-
+@pytest.mark.unit
 def test_DataSet_binEdges():
     X = np.random.rand(100)*3 # array between 0 and 3 -ish
     X.sort()
@@ -362,6 +379,9 @@ def test_DataSet_binEdges():
     assert(len(Bins)<=3.0/tolerance)
     assert(np.all(np.diff(Bins[:-1])>tolerance*0.99))
 
+@pytest.mark.integration
+@pytest.mark.data  
+@pytest.mark.gui
 def test_DataSet_1Dcut():
     q1 =  np.array([1.23,-1.51])
     q2 =  np.array([1.54, -1.25])
@@ -443,6 +463,10 @@ def test_DataSet_1Dcut():
 
 
 @pytest.mark.skipif(Dataset is None, reason="ufit not installed")
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_1Dcut_ufit():
     q1 =  np.array([1.23,-1.51])
     q2 =  np.array([1.54, -1.25])
@@ -471,6 +495,10 @@ def test_DataSet_1Dcut_ufit():
 
     
 @pytest.mark.skipif(Dataset is None, reason="ufit not installed")
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_1DcutE():
     q =  np.array([1.23,-1.25]).reshape(2,1)
     width = 0.1
@@ -538,7 +566,10 @@ def test_DataSet_1DcutE():
     ax,Data3,[bins3] = Datset.plotCut1DE(E1=EMin,E2=EMax,q=Q,width=0.1,minPixel=0.01,constantBins=True)
 
 
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_2Dcut():
     q1 =  np.array([1.23,-1.25])
     q2 =  np.array([1.54, -1.51])
@@ -578,6 +609,9 @@ def test_DataSet_2Dcut():
     
     np.all([np.allclose(Data1[p],Data2[p],equal_nan=True) for p in comparisons])
 
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataSet_cutPowder():
 
     plt.ioff()
@@ -603,7 +637,9 @@ def test_DataSet_cutPowder():
     #assert(np.all(np.isclose(QCentres2,QCentres)))
     #assert(np.all(np.isclose(ECentres2,ECentres)))
 
-    
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataSet_createRLUAxes():
     plt.ioff()
     import matplotlib
@@ -629,7 +665,9 @@ def test_DataSet_createRLUAxes():
 
     plt.close('all')
 
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataSet_createQEAxes():
     plt.ioff()
     import matplotlib
@@ -654,7 +692,9 @@ def test_DataSet_createQEAxes():
     plt.close('all')
 
 
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_DataSet_plotQPlane():
     plt.ioff()
     import matplotlib
@@ -734,114 +774,16 @@ def test_DataSet_plotQPlane():
             binning='polar',vmin=7.5e-7,vmax=7e-6,antialiased=True,cmap=cmap,rlu=True,extend='max')
     plt.close('all')
 
-#@pytest.mark.unit
-#def test_DataSet_plotA3A4(quick):
-#    plt.ioff()
-#
-#    File1 = os.path.join(dataPath,'camea2018n000136.hdf')
-#    File2 = os.path.join(dataPath,'camea2018n000137.hdf')
-#
-#    DS = DataSet(dataFiles=[File1,File2])
-#    DS.convertDataFile(saveFile=True)
-#
-#    F1 = DS.convertedFiles[0]
-#    F2 = DS.convertedFiles[1]
-#
-#    files = [F1,F2]
-#    axes = [plt.figure().gca(),plt.figure().gca()]
-#    try:
-#        plotA3A4(files,planes=[],ax=axes) # 64 planes and only 2 axes
-#        assert False
-#    except AttributeError:
-#        assert True
-#
-#    try:
-#        plotA3A4(files,planes=None,ax=[]) # 64 planes and only 2 axes
-#        assert False
-#    except AttributeError:
-#        assert True 
-#
-#    try:
-#        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
-#        assert False
-#    except AttributeError:
-#        assert True
-#    
-#    try:
-#        ei = F1.Ei
-#        F2.Ei = F1.Ei*10
-#        plotA3A4(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
-#        assert False
-#    except AttributeError:
-#        F2.Ei = ei
-#        assert True
-#
-#    try:
-#        plotA3A4(files,planes=[10,[22]],ax=axes,singleFigure=True) # 2 axes and singleFigure true
-#        assert False
-#    except AttributeError:
-#        assert True
-#    if not quick==True:
-#        print('___________')
-#        plotA3A4(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
-#        print('___________')
-#        DS.plotA3A4(planes=[19,[22,25]]) # Plot planes in new axes
-#        print('___________')
-#        DS.plotA3A4([F1,F1],planes=[19,[22,25]]) # Plot planes in new axes
-#        print('___________')
-#        patches,energies=DS.plotA3A4([F1],planes=[10,25],returnPatches=True)
-#        print('___________')
-#        assert(len(patches)==2)
-#        assert(len(energies)==2)
-#    plt.close('all')
 
-@pytest.mark.unit
-def test_DataSet_plotQPatches(quick):
-    assert True
-    #     plt.ioff()
-
-#     File1 = 'TestData/T0Phonon10meV.nxs')
-#     File2 = 'TestData/T0Phonon10meV93_5A4.nxs')
-
-#     DS = DataSet(convertedFiles=[File1,File2])
-
-#     F1 = DS.convertedFiles[0]
-#     F2 = DS.convertedFiles[1]
-
-#     files = [F1,F2]
-#     axes = [plt.figure().gca(),plt.figure().gca()]
-#     try:
-#         plotQPatches(files,planes=[],ax=axes) # 64 planes and only 2 axes
-#         assert False
-#     except AttributeError:
-#         assert True
-        
-#     try:
-#         plotQPatches(files,planes=[[0,2,3],23,44],ax=axes) # 3 planes and 2 axes
-#         assert False
-#     except AttributeError:
-#         assert True
-
-#     try:
-#         plotQPatches(files,planes=[10,[22]],ax=axes,singleFigure=True) # 2 axes and singleFigure true
-#         assert False
-#     except AttributeError:
-#         assert True
-
-#     if not quick==True:
-#         plotQPatches(files,planes=[10,[22,23]],ax=axes) # Plot plane 10 and 22+23 in the provided axes
-#         DS.plotQPatches(planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes
-#         DS.plotQPatches(dataFiles=[files[0],files[0]],planes=[19,[22,25]],A4Extend=0.5,A3Extend=1) # Plot planes in new axes and only one file
-#     plt.close('all')
     
-
+@pytest.mark.unit
 def test_DataSet_fmt():
     assert('$1.00 \\times 10^{1}$' == fmt(10,'Unused'))
     assert('$1.00 \\times 10^{-10}$' == fmt(1e-10,'Unused'))
     assert('$2.55 \\times 10^{-2}$' == fmt(0.0255,'Unused'))
     assert('$2.56 \\times 10^{-2}$' == fmt(0.02556,'Unused'))
     
-
+@pytest.mark.unit
 def test_DataSet_figureRowColumns():
     assert(np.all(np.array([3,4])==np.array(figureRowColumns(10)))) # 10 -> 3,4
     assert(np.all(np.array([3,3])==np.array(figureRowColumns(9)))) # 9 -> 3,3
@@ -854,14 +796,15 @@ def test_DataSet_figureRowColumns():
 
     assert(np.all(np.array([8,8])==np.array(figureRowColumns(63)))) # 63 -> 8,8
     
-
+@pytest.mark.unit
 def test_DataSet_centeroidnp():
     pos = np.array([[0,0],[1,0],[0,1],[1,1]],dtype=float)
     assert(np.all(np.isclose(np.array([0.5,0.5]),centeroidnp(pos))))
 
     pos2 = np.array([[1.2,2.2],[7.5,1.0],[11.0,0.0],[4.0,-1.0],[2.0,2.0]],dtype=float)
     assert(np.all(np.isclose(np.array([5.14,0.84]),centeroidnp(pos2))))
-    
+
+@pytest.mark.unit
 def test_DataSet_compareNones():
     assert(compareNones(np.array([None]),np.array([None]),0.1))
     assert(not compareNones(np.array([None]),np.array([0.5]),0.1))
@@ -872,7 +815,10 @@ def test_DataSet_compareNones():
     assert(not np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.5]),0.001)))
     assert(np.all(compareNones(np.array([0.4,10.2,10.0]),np.array([0.4,10.2,10.0]),0.001)))
 
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_cutQELine():
     QPoints = np.array([[0.3,-1],[0.7,-1.4],[1.6,-0.9],[0.3,-0.9]],dtype=float)
     QPointsHKL=np.array([[1.0,0.0,0.0],
@@ -910,7 +856,10 @@ def test_DataSet_cutQELine():
 
     
     
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_plotCutQELine():
     
     Points = np.array([[0.7140393034102988,-0.4959224853328328],
@@ -987,7 +936,9 @@ def test_DataSet_plotCutQELine():
             assert True
 
 
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.slow
 def test_DataSet_extractDetectorData():
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]#['TestData/ManuallyChangedData/A3.nxs'),'TestData/ManuallyChangedData/A3.nxs')]
     dataset = DataSet(DataFile)
@@ -1039,7 +990,9 @@ def test_DataSet_extractDetectorData():
         assert(DatAllRaw[0][i].shape==DatAllRaw[1][i].shape and DatAllRaw[0][i].shape==DatAllRaw[2][i].shape) # Check that 3 list have same shape
         assert(DatAllRaw[0][i].shape==DatAll[i].shape) 
         
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.slow
 def test_DataSet_subract():
     #Simple test of subtracting the same data file from it-self
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
@@ -1059,6 +1012,7 @@ def test_DataSet_subract():
     assert(np.all(np.isclose(subtracted.Norm.data,dataset.Norm.data)))
     assert(np.all(np.isclose(subtracted.Monitor.data,dataset.Monitor.data)))
 
+@pytest.mark.unit
 def test_DataSet_OxfordList():
     l = ['Apples','Pears']
     S = OxfordList(l)
@@ -1072,6 +1026,10 @@ def test_DataSet_OxfordList():
     assert(OxfordList(['Apples'])=='Apples')
 
 @pytest.mark.skip(reason="Current data structure not defined")
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_MultiFLEXX():
     fileLocation = _tools.fileListGenerator('65059',folder=os.path.join('Data',''),instrument='MultiFLEXX')
 
@@ -1082,6 +1040,10 @@ def test_DataSet_MultiFLEXX():
 
     V = ds.View3D(0.05,0.05,0.5,grid=True)
 
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def test_DataSet_ELine():
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
     dataset = DataSet(DataFile)
@@ -1130,7 +1092,9 @@ def test_DataSet_ELine():
 
     assert(np.all([np.all(np.logical_and(B[0]>=EMin*0.99,B[0]<=EMax*1.05)) for B in Bins])) # Allow for slightly heigher energy
 
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.slow
 def test_updateCalibration():
     calibFiles = [os.path.join('Data','Normalization80_1.calib'),
                     os.path.join('Data','Normalization80_3.calib'),
@@ -1161,7 +1125,10 @@ def test_updateCalibration():
     newEdges = df.instrumentCalibrationEdges
     assert(np.any(newEdges!=edges)) # Check if all elemenst are equal
 
-
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def testplotRaw1D_Error():
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
      # Scan variables are A3 and A3+A4
@@ -1194,7 +1161,11 @@ def testplotRaw1D_Error():
         assert False
     except AttributeError:
         assert True
-        
+
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
+@pytest.mark.slow
 def testplotRaw1D():
     DataFile = [os.path.join(dataPath,'camea2018n000137.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
     dataset = DataSet(DataFile)
@@ -1206,6 +1177,9 @@ def testplotRaw1D():
     ax = dataset.plotRaw1D(legend=['1','2'],detectorSelection=[0,0],analyzerSelection=[5,5],grid=True)
     assert True
 
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.slow
 def testMasking():
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
      # Scan variables are A3 and A3+A4
@@ -1246,7 +1220,8 @@ def testMasking():
     ds.mask = mask[0] # Only provide 1 mask to be applied to both data files
     
     
-
+@pytest.mark.data
+@pytest.mark.integration
 def testupdateSampleParameters():
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
     ds = DataSet(DataFile)
@@ -1261,6 +1236,9 @@ def testupdateSampleParameters():
         assert(np.all(np.isclose(d.sample.cell,newCell)))
         assert(np.all(np.isclose(d.sample.UB,newUB)))
 
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.slow
 def test_CurratAxeMasking():
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
     ds = DataSet(DataFile)
@@ -1304,7 +1282,8 @@ def test_CurratAxeMasking():
     assert(averageSum-averageSumMasked>0.004)
     
 
-
+@pytest.mark.data
+@pytest.mark.integration
 def test_absoluteNormalziation(): # TODO: Improve and recalculate the expected factor for MnF2
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf')]
     ds = DataSet(DataFile)
@@ -1332,6 +1311,9 @@ def test_absoluteNormalziation(): # TODO: Improve and recalculate the expected f
 
     assert(np.isclose(factor,ds.absoluteNormalized))
 
+@pytest.mark.data
+@pytest.mark.integration
+@pytest.mark.gui
 def test_CustomAxisInput():
     # dset object generation
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),
@@ -1421,7 +1403,8 @@ def test_CustomAxisInput():
     cut1de_params.update({'q':q, "ax":ax_direction2})
     ax_direction2, data_dir2, bins_dir2 = ds.plotCut1DE(**cut1de_params)
 
-
+@pytest.mark.data
+@pytest.mark.integration
 def test_symmetrize():
 
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),]
@@ -1453,6 +1436,8 @@ def test_symmetrize():
     assert(np.all(ds[0].l.min()>=0))
 
 
+@pytest.mark.data
+@pytest.mark.integration
 def test_sorting():
 
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]

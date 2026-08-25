@@ -1,6 +1,8 @@
 from MJOLNIR.Geometry.InstrumentXML import createXMLString, parseXML
+import pytest
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_parseXML(): # Improve this test!
 	from MJOLNIR.Geometry import Wedge,Analyser,Detector,Instrument
 	import os
@@ -30,6 +32,7 @@ def test_parseXML(): # Improve this test!
 	assert(Instr==InstrLoaded)
 
 
+@pytest.mark.integration
 def test_parseWrongXML():
 	import os
 	tempFileName = '__temp__'

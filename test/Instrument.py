@@ -11,9 +11,11 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 import os
+import pytest
 
 dataPath = 'samlpedata'
 
+@pytest.mark.integration
 def test_Instrument_init():
     Instr = Instrument()
 
@@ -29,7 +31,7 @@ def test_Instrument_init():
     assert(Instr.settings['Initialized']==False)
 
 
-
+@pytest.mark.integration
 def test_Instrument_error():
     
     try:
@@ -72,7 +74,7 @@ def test_Instrument_error():
     except NotImplementedError:
         return True
 
-
+@pytest.mark.integration
 def test_Instrument_warnings():
     Instr = Instrument()
 
@@ -90,7 +92,7 @@ def test_Instrument_warnings():
         assert issubclass(w[0].category, UserWarning)
         assert 'The list of wedges is not empty! Appending new wedges(s)' in str(w[0].message)
 
-
+@pytest.mark.integration
 def test_Instrument_append():
     Instr = Instrument()
 
@@ -101,7 +103,8 @@ def test_Instrument_append():
 
     assert(len(Instr.wedges)==3)
 
-
+@pytest.mark.integration
+@pytest.mark.gui
 def test_Instrument_plot():
     Instr = Instrument()
 
@@ -118,12 +121,13 @@ def test_Instrument_plot():
 
     Instr.plot(ax)
 
+@pytest.mark.unit
 def test_Instrument_Setting(): 
     Instr = Instrument()
     Instr.settings['SettingVersion']=1.0
     assert(Instr.settings['SettingVersion']==1.0)
 
-
+@pytest.mark.integration
 def test_Instrument_Initialization():
     Instr = Instrument()
 
@@ -184,7 +188,7 @@ def test_Instrument_Initialization():
         assert True
 
 
-
+@pytest.mark.integration
 def test_Instrument_saveload():
     import os
     Instr = Instrument(position=(0,1,0))
@@ -207,7 +211,8 @@ def test_Instrument_saveload():
     assert(Instr==Instr2)
 
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_parseXML(): # Improve this test!
 
     tempFileName = '__temp__.xml'
@@ -230,7 +235,7 @@ def test_parseXML(): # Improve this test!
 
     assert(Instr==InstrLoaded) 
 
-
+@pytest.mark.integration
 def test_XML_errors():
 
     fileString = ""
@@ -289,13 +294,15 @@ def test_XML_errors():
         assert True
     os.remove(temp_file)
 
+@pytest.mark.unit
 def test_instrument_string_dummy(): # Todo: Improve test!
     Instr = Instrument()
 
     string = str(Instr)
     del string
     assert True
-    
+
+@pytest.mark.integration
 def test_instrument_create_xml():
 
     Instr = Instrument()
@@ -333,7 +340,8 @@ def test_Normalization_tables(quick):
     else:
         Instr.generateCalibration(Vanadiumdatafile=NF ,savelocation=os.path.join(dataPath,''),plot=False,tables=[1],sampleMass=4.7) 
 
-
+@pytest.mark.integration
+@pytest.mark.gui
 def test_Prediction():
     A3Start = 0.0
     A3Stop = 100

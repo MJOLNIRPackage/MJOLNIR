@@ -1,6 +1,9 @@
 from MJOLNIR.TasUBlibDEG import calcTasUBFromTwoReflections, calcTasQH, calculateBMatrix, calcUBFromAngles, calcTasQAngles, calcCell
 import numpy as np
+import pytest
 
+
+@pytest.mark.unit
 def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating the UB matrices
                 
     
@@ -48,6 +51,8 @@ def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating
         
     assert(np.all(np.isclose([QH[0]],[qh,qk,ql],atol=1e-4)))
 
+
+@pytest.mark.unit
 def test_TasUBDeg_CreateUB():
 
     UBFile = np.array([[ 1.7459887e-01,  2.4665387e-02,  2.1624945e-08],
@@ -63,6 +68,7 @@ def test_TasUBDeg_CreateUB():
     
     assert(np.all(np.isclose(UBFile,UB,atol=4)))
 
+@pytest.mark.unit
 def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one needs to do the trick with a3 to calculate anything correctly...
     cell = [6.11,   6.11,  11.35, 1.187430040454027, 1.1874300210500532, 0.5535845899562842, 90.  ,  90.  , 120., 90., 90., 60.]
     B = calculateBMatrix(cell)
@@ -90,7 +96,7 @@ def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one need
         assert(np.all(np.isclose([sgu,sgl],0.0))) # Sgu and sgl are 0 by definition
         assert(np.all(np.isclose(hkl,qe[:3])))
     
-
+@pytest.mark.unit
 def test_TasUBDeg_calculateCell():
     cellParams = np.array([5.103,5.103,13.755,90.0,90.0,120.0])
 
