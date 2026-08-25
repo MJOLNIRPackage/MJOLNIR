@@ -10,18 +10,13 @@ History generator tool for looking through data files and create history.
 
 
 import argparse
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib._pylab_helpers
 import os
-import sys
+
 
 settingsName = 'HistoryDir'
 
 from MJOLNIR.Data import DataFile
 from MJOLNIR.CommandLineScripts import _tools
-
-import warnings
 
 
 

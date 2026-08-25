@@ -31,6 +31,7 @@ import warnings
 try:
     from ufit import Dataset
 except ImportError:
+    Dataset = None
     warnings.warn('ufit not installed. ufit functionality will not be available.')
     
 pythonVersion = sys.version_info[0]
@@ -426,7 +427,7 @@ class DataSet(object):
 
 
 
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None,deleteOnConvert=True):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,printFunction=None,deleteOnConvert=True):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -437,8 +438,6 @@ class DataSet(object):
             - binning (int): Binning to be used when converting files (default 8).
 
             - saveLocation (string): File path to save location of data file(s) (defaults to same as raw file).
-
-            - saveFile (bool): If true, the file(s) will be saved as nxs-files. Otherwise they will only persis in memory.
 
             - printFunction (function): Function called if a message is to be printed (default None, uses warning)
 
@@ -470,20 +469,6 @@ class DataSet(object):
                 rawFile = MJOLNIR.Data.DataFile.DataFile(rawFile.original_fileLocation)
 
             convFile = rawFile.convert(binning,printFunction=printFunction)
-            
-            if saveFile: # TODO:
-                if not saveLocation is None:
-                    directory,_ = os.path.split(saveLocation)
-                    directory = os.path.abspath(directory)
-
-                    file = os.path.split(rawFile.fileLocation)[-1]
-                    fileName = os.path.splitext(file)[0]
-                    saveloc = os.path.join(directory,fileName+'.nxs')
-                    
-                else:
-                    saveloc = rawFile.fileLocation.replace('.hdf','.nxs')
-                print(saveloc)
-                convFile.saveNXsqom(saveloc)
             
             convertedFiles.append(convFile)
         self._convertedFiles = []
@@ -2232,11 +2217,11 @@ class DataSet(object):
         if QPoints is None:
             QPoints = [*[self.sample[0].calculateHKLToQxQy(*d[['H','K','L']].iloc[0].to_numpy()) for d in list(dataList)],
                     self.sample[0].calculateHKLToQxQy(*dataList[-1][['H','K','L']].iloc[-1].to_numpy())]
-        else:
+        elif rlu is True:
             QPoints = [self.sample[0].calculateHKLToQxQy(*q) for q in QPoints]
         if not rlu:
 
-            QPoints = [d[['Qx','Qy']].iloc[0].to_numpy() for d in QPoints]
+            QPoints = [d[['Qx','Qy']].iloc[0].to_numpy() for d in dataList]
             QPoints.append(dataList[-1][['Qx','Qy']].iloc[-1].to_numpy())
 
         OffSets = np.cumsum([0,*np.linalg.norm(np.diff(QPoints,axis=0),axis=1)])[:-1]
@@ -3775,6 +3760,8 @@ class DataSet(object):
             - QDirection (bool): If true ufitdata is created along Q, otherwise energy (default True)
 
         """
+        if Dataset is None:
+            raise AttributeError('ufitData requires ufit to be installed. Please install ufit to use this feature.')
 
         if rlu:
             variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]

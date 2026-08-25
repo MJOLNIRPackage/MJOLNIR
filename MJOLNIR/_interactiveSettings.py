@@ -18,7 +18,6 @@ except ImportError:
     from PyQt6.QtCore import Qt
     QtVersion = 6
 
-#from PyQt5.QtGui import QCursor, QPixmap
 
 import sys
 from collections import defaultdict

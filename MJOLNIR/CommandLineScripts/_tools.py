@@ -5,9 +5,13 @@ import re
 import MJOLNIR._tools
 from MJOLNIR.Data import DataFile
 import numpy as np
-from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog
-from PyQt5.Qt import QApplication
-from PyQt5 import Qt
+try:
+    from PyQt5.QtWidgets import QApplication, QWidget, QFileDialog
+    from PyQt5 import Qt
+except ImportError:
+    from PyQt6.QtWidgets import QApplication, QWidget, QFileDialog
+    from PyQt6.QtCore import Qt
+
 
 from os.path import expanduser
 settingsFile = expanduser("~") # Use home folder for storing settings file
@@ -118,5 +122,5 @@ class App(QWidget):
     
 def loadFiles(startingPath=None):
     app = QApplication(sys.argv)
-    ex = App(startingPath=startingPath)
+    ex = app(startingPath=startingPath)
     return dataFilesLoaded

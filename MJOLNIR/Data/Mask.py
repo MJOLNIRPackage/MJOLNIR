@@ -282,8 +282,11 @@ def RotationMatrix3D(theta,n=None,deg=True):
     else:
         n = np.array(n,dtype=float)
         n*=1.0/np.linalg.norm(n)
-        cost = np.cos(theta)
-        sint = np.sin(theta)
+        cost = np.cos(theta).item()
+        sint = np.sin(theta).item()
+        print("DEBUG:",type(cost), np.shape(cost))
+        print("DEBUG:",type(n), np.shape(n))
+        print("DEBUG:",type(n[0]), np.shape(n[0]))
         M = np.zeros((3,3))
          # taken from http://scipp.ucsc.edu/~haber/ph216/rotation_12.pdf
         M[0,0] = cost+n[0]**2*(1-cost)

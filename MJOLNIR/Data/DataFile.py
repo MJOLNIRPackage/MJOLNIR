@@ -1554,120 +1554,6 @@ class DataFile(object):
         
 
 
-
-    def saveNXsqom(self,saveFileName):
-        """Save converted file into an NXsqom.
-
-        Args:
-
-            - saveFileName (string): File name to be saved into.
-
-        """
-
-        if not self.__hasattr__('original_fileLocation'):
-            raise AttributeError('Data file does not have link to the original file. This is needed to make a complete copy when creating nxs-files')
-        if not self.type =='nxs':
-            raise AttributeError('Only nxs typed files can be saved as nxs-files.')
-
-        datafile = self.original_fileLocation
-        Intensity = self.I # Dont swap axis as they are correct!
-        Monitor = self.Monitor
-        QX = self.qx
-        QY = self.qy
-        DeltaE = self.energy 
-        binning = self.binning
-        Normalization = self.Norm
-        H = self.h
-        K = self.k
-        L = self.l
-
-        if os.path.exists(saveFileName):
-            warnings.warn('The file {} exists alread. Old file will be renamed to {}.'.format(saveFileName,saveFileName+'_old'))
-            if os.path.exists(saveFileName+'_old'):
-                os.remove(saveFileName+'_old')
-            os.rename(saveFileName,saveFileName+'_old')
-        with hdf.File(saveFileName,'w') as fd:
-            with hdf.File(datafile,'r') as fs:
-                group_path = fs['/entry'].parent.name
-                
-                group_id = fd.require_group(group_path)
-                
-                
-                fs.copy('/entry', group_id, name="/entry")
-                
-                definition = fd.create_dataset('entry/definition',(1,),dtype='S70',data=np.bytes_('NXsqom'))
-                definition.attrs['NX_class'] = 'NX_CHAR'
-                
-                process = fd.create_group('entry/reduction')
-                process.attrs['NX_class']=b'NXprocess'
-                proc = process.create_group('MJOLNIR_algorithm_convert')
-                proc.attrs['NX_class']=b'NXprocess'
-                author= proc.create_dataset('author',shape=(1,),dtype='S70',data=np.bytes_('Jakob Lass'))
-                author.attrs['NX_class']=b'NX_CHAR'
-                
-                date= proc.create_dataset('date',shape=(1,),dtype='S70',data=np.bytes_(datetime.datetime.now()))
-                date.attrs['NX_class']=b'NX_CHAR'
-                
-                description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.bytes_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
-                description.attrs['NX_class']=b'NX_CHAR'
-                
-                rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.bytes_(os.path.realpath(datafile)))
-                rawdata.attrs['NX_class']=b'NX_CHAR'
-
-                normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
-                normalizationString.attrs['NX_class']=b'NX_INT'
-                
-                data = fd.get('entry/data')
-                
-                fileLength = Intensity.shape
-                
-                Int = data.create_dataset('intensity',shape=(fileLength),dtype='int32',data=Intensity)
-                Int.attrs['NX_class']='NX_INT'
-
-                if self.fromNICOS:
-                    counts = np.array(fd.get('entry/data/data'))
-                    Int = data.create_dataset('counts',dtype='int32',data=counts)
-                    Int.attrs['NX_class']='NX_INT'
-                    instr = getInstrument(fd)
-                    Int = instr.create_dataset('detector/counts',dtype='int32',data=counts)
-                    Int.attrs['NX_class']='NX_INT'
-                
-                monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
-                monitor.attrs['NX_class']=b'NX_INT'
-                
-                if fd.get('entry/monitor_2') is None:
-                    mon = fd.create_group('entry/monitor_2')
-                    monitor = mon.create_dataset('data',shape=(fileLength),dtype='int32',data=Monitor)
-                    monitor.attrs['NX_class']=b'NX_INT'
-                else:
-                    pass
-
-                
-
-                normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
-                normalization.attrs['NX_class']=b'NX_FLOAT'
-                
-                qx = data.create_dataset('qx',shape=(fileLength),dtype='float32',data=QX)
-                qx.attrs['NX_class']=b'NX_FLOAT'
-                qx.attrs['units']=b'1/angstrom'
-                
-                qy = data.create_dataset('qy',shape=(fileLength),dtype='float32',data=QY)
-                qy.attrs['NX_class']=b'NX_FLOAT'
-                qy.attrs['units']=b'1/angstrom'
-
-                en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
-                en.attrs['NX_class']=b'NX_FLOAT'
-                en.attrs['units']=b'mev'
-
-                h = data.create_dataset('h',shape=(fileLength),dtype='float32',data=H)
-                k = data.create_dataset('k',shape=(fileLength),dtype='float32',data=K)
-                l = data.create_dataset('l',shape=(fileLength),dtype='float32',data=L)
-                for x in [h,k,l]:
-                    x.attrs['NX_class']=b'NX_FLOAT'
-                    x.attrs['units']=b'rlu'
-
-                #fd.close()
-
     def updateCalibration(self,calibrationFile,overwrite=False):
         """Update calibrations for the data file. Does not save the changes.
         
@@ -1799,7 +1685,7 @@ class DataFile(object):
                 for localMonoQx,localMonoQy in zip(monoQx,monoQy):
                     if monoInside is None:
                         monoInside = np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
-                        monoInside.dtype = bool
+                        monoInside = monoInside.astype(bool)
                     else:
                         monoInside += np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
             
@@ -1810,7 +1696,7 @@ class DataFile(object):
                 for localAnaQx,localAnaQy in zip(anaQx,anaQy):
                     if anaInside is None:
                         anaInside = np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
-                        anaInside.dtype = bool
+                        anaInside = anaInside.astype(bool)
                     else:
                         anaInside += np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
             
@@ -1832,7 +1718,7 @@ class DataFile(object):
                 for localMonoH,localMonoK,localMonoL in zip(monoH,monoK,monoL):
                     if monoInside is None:
                         monoInside = np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
-                        monoInside.dtype = bool
+                        monoInside = monoInside.astype(bool)
                     else:
                         monoInside += np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
 
@@ -1846,7 +1732,7 @@ class DataFile(object):
                 for localAnaH,localAnaK,localAnaL in zip(anaH,anaK,anaL):
                     if anaInside is None:
                         anaInside = np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
-                        anaInside.dtype = bool
+                        anaInside = anaInside.astype(bool)
                     else:
                         anaInside += np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
 
@@ -1859,309 +1745,6 @@ class DataFile(object):
         if not maskInside:
             mask = np.logical_not(mask)
         return mask
-
-    def saveHDF(self,saveFileName):
-        """Save current HDF file object into an HDF file.
-
-        Args:
-
-            - saveFileName (string): File name to be saved into.
-
-        """
-        
-        
-        def addMetaData(self,entry):
-            dset = entry.create_dataset('start_time',(1,),dtype='<S70')
-            dset[0] = np.bytes_(self.startTime)
-
-            dset = entry.create_dataset('end_time',(1,),dtype='<S70')
-            dset[0] = np.bytes_(self.endTime)
-            
-            dset = entry.create_dataset('experiment_identifier',(1,),dtype='<S70')
-            dset[0] = self.experimentIdentifier.encode('utf8')
-
-            dset = entry.create_dataset('instrument',(1,),dtype='<S70')
-            dset[0] = self.instrument.title().upper().encode('utf8')
-
-            dset = entry.create_dataset('comment',(1,),data=np.bytes_(self.comment))
-
-            dset = entry.create_dataset('title',(1,),data=np.bytes_(self.title))
-
-            dset = entry.create_dataset('proposal_id',(1,),data=np.bytes_(self.proposalId))
-
-            dset = entry.create_dataset('proposal_title',(1,),data=np.bytes_(self.proposalTitle))
-
-            cont = entry.create_group('local_contact')
-            cont.attrs['NX_class'] = np.bytes_('NXuser')
-            dset = cont.create_dataset('name',(1,),data=np.bytes_(self.localContactName))
-
-            us = entry.create_group('proposal_user')
-            us.attrs['NX_class'] = np.bytes_('NXuser')
-            dset = us.create_dataset('name',(1,),data=np.bytes_(self.proposalUserName))
-            dset = us.create_dataset('email',(1,),data=np.bytes_(self.proposalUserEmail))
-
-            pus = entry.create_group('user')
-            pus.attrs['NX_class'] = np.bytes_('NXuser')
-            dset = pus.create_dataset('name',(1,),data=np.bytes_(self.userName))
-            dset = pus.create_dataset('email',(1,),data=np.bytes_(self.userEmail))
-            dset = pus.create_dataset('address',(1,),data=np.bytes_(self.userAddress))
-            dset = pus.create_dataset('affiliation',(1,),data=np.bytes_(self.userAffiliation))
-
-            
-
-        def addMono(self,inst):
-            mono = inst.create_group('monochromator')
-            mono.attrs['NX_class'] = np.bytes_('NXmonochromator')
-            
-                
-            dset = mono.create_dataset('type',(1,),dtype='S70')
-            dset[0] = getattr(self,'monochromatorType')
-            
-            attributes = ['d_spacing','horizontal_curvature','vertical_curvature',
-                'horizontal_curvature_zero','vertical_curvature_zero',
-                'gm','gm_zero','tlm','tlm_zero','tum','tum_zero']
-            units = ['angstrom']+['meter']*4+['degree']*6
-            
-            
-            values = ['monochromator'+x for x in ['DSpacing','HorizontalCurvature',
-                    'VerticalCurvature','HorizontalCurvatureZero','VerticalCurvatureZero',
-                    'GM','GMZero','TLM','TLMZero','TUM','TUMZero']]
-            
-            for att,val,unit in zip(attributes,values,units):
-                if val in self.__dict__:
-                    dset = mono.create_dataset(att,(1,),'float32')
-                    dset[0] = getattr(self,val)
-                    dset.attrs['units'] = unit
-
-
-
-            monoSlit = inst.create_group('monochromator_slit')
-            monoSlit.attrs['NX_class'] = np.bytes_('NXmonochromatorslit')
-
-
-            attributes = [x+zero for x in ['bottom','left','right','top'] for zero in ['','_zero']]
-            values = ['monochromatorSlit'+x+zero for x in ['Bottom','Left','Right','Top'] for zero in ['','Zero']]
-            if self.fromNICOS: 
-                attributes += ['x_gap','y_gap']
-                values += ['monochromatorSlit'+x+'Gap' for x in ['X','Y']]
-            
-            for att,value in zip(attributes,values):
-                val =  getattr(self,value)
-                if not val.dtype == 'O':
-                    dset = monoSlit.create_dataset(att,(1,),'float32')
-                    dset[0] = val
-                    dset.attrs['units'] = np.bytes_('mm')
-
-        
-        def addAna(self,inst):
-            ana = inst.create_group('analyzer')
-            ana.attrs['NX_class'] = np.bytes_('NXcrystal')
-            
-            attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']+self.fromNICOS*['polar_angle_raw']
-            values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
-            units = ['anstrom','mev','degree','degree']+self.fromNICOS*['degree']
-
-
-            for att,value,unit in zip(attributes,values,units):
-                data = getattr(self,value)
-                dset = ana.create_dataset(att,(len(data),),'float32')
-                dset[:len(data)] = data
-                if not unit is None:
-                    dset.attrs['units'] = np.bytes_(unit)
-                
-            dset = ana.create_dataset('type',data = np.array([np.bytes_(self.analyzerType)]))
-            dset = ana.create_dataset('analyzer_selection',(1,),'int32',data=self.analyzerSelection)
-            
-
-
-        def addDetector(inst):
-            det = inst.create_group('detector')
-            det.attrs['NX_class'] = np.bytes_('NXdetector')
-
-            
-        def addSample(self,entry):
-            sam = entry.create_group('sample')
-            sam.attrs['NX_class'] = np.bytes_('NXsample')
-            dset = sam.create_dataset('name',(1,),data=np.bytes_(self.sample.name))
-
-            ub = self.sample.orientationMatrix/(2*np.pi) # 2pi is for change in convention
-            
-            dset = sam.create_dataset('orientation_matrix',data=ub)
-            dset = sam.create_dataset('plane_vector_1',data=self.sample.plane_vector1)
-            dset = sam.create_dataset('plane_vector_2',data=self.sample.plane_vector2)
-
-            normal = self.sample.planeNormal
-            dset = sam.create_dataset('plane_normal',data=normal)
-
-            cell = np.array(self.sample.unitCell,dtype='float32')
-            dset = sam.create_dataset('unit_cell',data=cell)
-
-            dset = sam.create_dataset('azimuthal_angle',data=self.sample.azimuthalAngle)
-            dset.attrs['units']=np.bytes_('degree')
-            dset = sam.create_dataset('x',data=self.sample.x)
-            dset.attrs['units']=np.bytes_('degree')
-            dset = sam.create_dataset('y',data=self.sample.y)
-            dset.attrs['units']=np.bytes_('degree')
-
-            if hasattr(self,'temperature'):
-                if not self.temperature is None:
-                    dset = sam.create_dataset('temperature',data=self.temperature,dtype='float32')
-                    dset.attrs['units'] = np.bytes_('K')
-
-            if hasattr(self,'magneticField'):
-                if not self.magneticField is None:
-                    dset = sam.create_dataset('magnetic_field',data=self.magneticField,dtype='float32')
-                    dset.attrs['units'] = np.bytes_('T')
-
-            if hasattr(self,'electricField'):
-                if not self.electricField is None:
-                    dset = sam.create_dataset('electric_field',data=self.electricField,dtype='float32')
-                    dset.attrs['units'] = np.bytes_('V') # TODO: Check if this unit is correct.
-
-            for attr,value in zip(['sgu','sgl'],['sgu','sgl']):
-                dset = sam.create_dataset(attr,(1,),data=getattr(self.sample,value))
-                dset.attrs['units']=np.bytes_('degree')
-                dset = sam.create_dataset(attr+'_zero',(1,),data=getattr(self.sample,value+'Zero'))
-                dset.attrs['units']=np.bytes_('degree')
-            
-        def makeTheta(self):
-            
-            k = np.sqrt(self.Ei/2.072)
-            fd = np.pi/(k*self.monochromatorDSpacing[0])
-            theta = np.degrees(np.arcsin(fd))
-            
-            return theta,2*theta
-        
-            
-        def storeScanData(self,entry):
-            nxdata = entry.create_group('data')
-            nxdata.attrs['NX_class'] = np.bytes_('NXdata')
-            
-            det = entry['CAMEA/detector']
-            dset = det.create_dataset('counts',data=self.I.swapaxes(1,2), compression="gzip", compression_opts=6)
-            dset.attrs['target'] = np.bytes_('/entry/CAMEA/detector/counts')
-            nxdata['counts'] = dset
-            
-            dset = det.create_dataset('detector_selection',(1,),'int32',data=self.detectorSelection)
-            
-            dset = det.create_dataset('summed_counts',data=np.sum(self.I,axis=(1,2)))
-            dset.attrs['target'] = np.bytes_('/entry/CAMEA/detector/summed_counts')
-            nxdata['summed_counts'] = dset
-            
-            sam = entry['sample']
-
-            dset = sam.create_dataset('rotation_angle',data=self.A3,dtype='float32')
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=self.A3Off,dtype='float32')
-
-            dset.attrs['units'] = np.bytes_('degree')
-            dset_zero.attrs['units'] = np.bytes_('degree')
-            
-            dset = sam.create_dataset('polar_angle',data=self.A4,dtype='float32')
-            dset_zero = sam.create_dataset('polar_angle_zero',data=self.A4Off,dtype='float32')
-
-            dset.attrs['units'] = np.bytes_('degree')
-            dset_zero.attrs['units'] = np.bytes_('degree')
-            dset.attrs['units'] = np.bytes_('degree')
-            dset_zero.attrs['units'] = np.bytes_('degree')
-            
-
-            mono = entry['CAMEA/monochromator']
-            
-            dset = mono.create_dataset('energy',data=self.Ei,dtype='float32')
-            dset.attrs['units'] = np.bytes_('mev')
-
-            dset = mono.create_dataset('rotation_angle',data=self.monochromatorRotationAngle,dtype='float32')
-            dset.attrs['units'] = np.bytes_('degree')
-            if hasattr(self,'monochromatorRotationAngleZero'):
-                v = self.monochromatorRotationAngleZero
-            else:
-                v = 0.0
-            dset = mono.create_dataset('rotation_angle_zero',data=v,dtype='float32')
-            dset.attrs['units'] = np.bytes_('degree')
-
-
-            entry.create_dataset('scancommand',(1,),data=np.bytes_(self.scanCommand))
-            entry.create_dataset('scanvars',data=np.bytes_([x.encode('utf8') for x in self.scanParameters]))
-            
-            # save the correct scan variables 
-
-            for variable,pos in zip(self.scanParameters,self.scanDataPosition):
-                positionRelativeEntry = '/'.join([x for x in pos.split('/')[2:]])
-                original = entry.get(positionRelativeEntry)
-                nxdata[variable] = original
-                nxdata[variable].attrs['target'] = np.bytes_('/entry/'+positionRelativeEntry)
-
-
-            control = entry.create_group('control')
-            control.attrs['NX_class'] = np.bytes_('NXmonitor')
-            mons = self.Monitor
-            control.create_dataset('data',data=mons,dtype='int32')
-            dset = control.create_dataset('preset',(1,),dtype='int32')
-            dset[0] = self.MonitorPreset
-            dset = control.create_dataset('mode',(1,),data=np.bytes_(self.MonitorMode))
-            time = self.Time
-            dset = control.create_dataset('time',data=time,dtype='float32')
-            dset.attrs['units'] = np.bytes_('seconds')
-
-            time =  self.absoluteTime
-            if time[0] == np.array(None):
-                time = [0.0]
-            dset = control.create_dataset('absolute_time',data=time,dtype='float32')
-            dset.attrs['units'] = np.bytes_('seconds')
-            
-            pb = entry.create_group('proton_beam')
-            pb.attrs['NX_class'] = np.bytes_('NXmonitor')
-            vals = self.protonBeam
-            dset = pb.create_dataset('data',data=vals,dtype='int32')
-
-        with hdf.File(saveFileName,'w') as f:
-            
-            f.attrs['file_name'] = np.bytes_(saveFileName)
-            
-            
-            import datetime,time
-            cT = datetime.datetime.now()
-            
-            f.attrs['file_time'] = np.bytes_('{}-{}-{}T{}:{}:{}{:+02.0f}:00'.format(cT.year,cT.month,cT.day,cT.hour,cT.minute,cT.second,-time.timezone/(60*60)))
-            
-            entry = f.create_group('entry')
-            entry.attrs['NX_class'] = np.bytes_('NXentry')
-        
-            
-            #------------ Instrument
-            inst = entry.create_group(b'CAMEA')
-            inst.attrs['NX_class'] = np.bytes_('NXinstrument')
-
-            if hasattr(self,'singleDetector1'): # If the single detectors have been loaded
-                for idx in ['1','8']:
-                    segment = inst.create_group('segment_'+idx)
-                    dset = segment.create_dataset('data',data=getattr(self,'singleDetector'+idx),dtype='int32')
-                    dset.attrs['units']=np.bytes_('counts')
-            
-            
-        
-            attribute = ['a4offset','amplitude','background','boundaries','final_energy','width']
-            for calibration,binning in zip(self.instrumentCalibrations,self.possibleBinnings):
-                if binning is None: continue
-                pixelCalib = inst.create_group('calib{}'.format(binning))
-                Etable, A4, bound = calibration
-                amp,Ef,width,bg = Etable.T
-                
-                values = [A4,amp,bg,bound,Ef,width]
-                dtypes = ['float32','float32','float32','int','float32','float32']
-                units = ['degree',None,None,None,'mev','mev']
-                for att,value,dtype,unit in zip(attribute,values,dtypes,units):
-                    dset = pixelCalib.create_dataset(att,data=value,dtype=dtype)
-                    if not unit is None:
-                        dset.attrs['units']=np.bytes_(unit)
-                
-            
-            addMetaData(self,entry)
-            addMono(self,inst)
-            addAna(self,inst)
-            addDetector(inst)
-            addSample(self,entry)
-            storeScanData(self,entry)
 
 
             
@@ -2406,7 +1989,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
                     A4 = data[:,-1]
                     bound = data[:,[7,8]]
                     calib.append([EfTable,A4,bound])
-                    binning.append(len(A4)/(df.detectors*df.EPrDetector*binning))
+                    binning.append(len(A4)/(df.detectors*df.EPrDetector))
             df.instrumentCalibrations = np.array(calib,dtype=object)
             df.possibleBinnings = binning
             df.loadBinning(1)
@@ -2582,12 +2165,6 @@ def extractData(files):
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,temperature
 
-def assertFile(file):
-    """Make sure that file exists for methods to work"""
-    if not os.path.isfile(file):
-        df = DataFile(file.replace('.nxs','.hdf'))
-        con = df.convert(binning=8)
-        con.saveNXsqom(file)
 
 def checkNICOS(f):
     """Check if open hdf file is NICOS"""
