@@ -1,0 +1,25 @@
+[workspace]
+authors = ["Jakob Lass <jakob.lass@psi.ch>"]
+channels = ["conda-forge"]
+name = "MJOLNIR"
+platforms = ["win-64"]
+version = "0.1.0"
+
+[tasks]
+lab = "jupyter lab"
+test = "pytest"
+
+[dependencies]
+python = "3.12.*"
+numpy = ">=2.5.2,<3"
+scipy = ">=1.18.0,<2"
+matplotlib = ">=3.11.1,<4"
+pytest = ">=9.1.1,<10"
+h5py = ">=3.16.0,<4"
+regex = ">=2026.7.19,<2027"
+pyqt6 = ">=6,<7"
+pandas = ">=3.0.5,<4"
+sympy = ">=1.14.0,<2"
+jupyterlab = ">=4.6.3,<5"
+ipykernel = ">=7.3.0,<8"
+pip = ">=26.2.1,<27"

@@ -46,3 +46,6 @@ coverage_html_report
 samlpedata/*
 docs/Commissioning/*
 MJOLNIR/MJOLNIR.egg-info/*
+# pixi environments
+.pixi/*
+!.pixi/config.toml
