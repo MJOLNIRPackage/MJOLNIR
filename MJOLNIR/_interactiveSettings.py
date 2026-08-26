@@ -11,12 +11,7 @@ from  matplotlib.backend_tools import Cursors as cursors
 import MJOLNIR
 import os
 
-try:
-    from PyQt5.QtCore import Qt
-    QtVersion = 5
-except ImportError:
-    from PyQt6.QtCore import Qt
-    QtVersion = 6
+from MJOLNIR._qt import Qt, QT_VERSION
 
 
 import sys
@@ -157,7 +152,7 @@ Modes= Enum('Modes', modes)
 
 
 ## Cursor type mode
-if QtVersion == 5:
+if QT_VERSION == 5:
     pointerType = defaultdict(lambda: Qt.ArrowCursor)
     pointerType['CUTTING_EMPTY'] = Qt.ForbiddenCursor
     pointerType['CUTTING_INITIAL'] = Qt.CrossCursor

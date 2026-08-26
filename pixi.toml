@@ -3,23 +3,92 @@ authors = ["Jakob Lass <jakob.lass@psi.ch>"]
 channels = ["conda-forge"]
 name = "MJOLNIR"
 platforms = ["win-64"]
-version = "0.1.0"
+version = "1.4.0"
 
 [tasks]
 lab = "jupyter lab"
 test = "pytest"
 
+# ---------------------------------------------------------------------------
+# Common dependencies
+# ---------------------------------------------------------------------------
+
 [dependencies]
+pytest = ">=7,<10"
+h5py = ">=3.8,<4"
+regex = ">=2025.0,<2027"
+pandas = ">=2,<4"
+future = ">=1,<2"
+sympy = ">=1.14,<2"
+
+
+# ---------------------------------------------------------------------------
+# Python versions
+# ---------------------------------------------------------------------------
+
+[feature.py39.dependencies]
+python = "3.9.*"
+
+[feature.py312.dependencies]
 python = "3.12.*"
-numpy = ">=2.5.2,<3"
-scipy = ">=1.18.0,<2"
-matplotlib = ">=3.11.1,<4"
-pytest = ">=9.1.1,<10"
-h5py = ">=3.16.0,<4"
-regex = ">=2026.7.19,<2027"
+
+
+# ---------------------------------------------------------------------------
+# NumPy / SciPy versions
+# ---------------------------------------------------------------------------
+
+[feature.numpy1.dependencies]
+numpy = ">=1.26,<2"
+scipy = ">=1.10,<1.18"
+
+[feature.numpy2.dependencies]
+numpy = ">=2,<3"
+scipy = ">=1.18,<2"
+
+
+# ---------------------------------------------------------------------------
+# Matplotlib / pyqtgraph versions
+# ---------------------------------------------------------------------------
+
+[feature.legacy-plot.dependencies]
+matplotlib = ">=3.7,<3.9"
+pyqtgraph = ">=0.13,<0.14"
+
+[feature.current-plot.dependencies]
+matplotlib = ">=3.11,<4"
+pyqtgraph = ">=0.14,<1"
+
+
+# ---------------------------------------------------------------------------
+# Qt versions
+# ---------------------------------------------------------------------------
+
+[feature.qt5.dependencies]
+pyqt = ">=5.15,<6"
+
+[feature.qt6.dependencies]
 pyqt6 = ">=6,<7"
-pandas = ">=3.0.5,<4"
-sympy = ">=1.14.0,<2"
-jupyterlab = ">=4.6.3,<5"
-ipykernel = ">=7.3.0,<8"
-pip = ">=26.2.1,<27"
+
+
+# ---------------------------------------------------------------------------
+# Environments
+# ---------------------------------------------------------------------------
+
+[environments]
+
+# Python 3.9 compatibility
+py39-qt5 = [
+    "py39",
+    "numpy1",
+    "legacy-plot",
+    "qt5",
+]
+
+
+# Current development
+default = [
+    "py312",
+    "numpy2",
+    "current-plot",
+    "qt6",
+]
