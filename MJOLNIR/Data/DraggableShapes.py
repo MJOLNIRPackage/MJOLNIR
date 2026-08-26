@@ -3,9 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 from matplotlib.patches import Rectangle,Circle
 import numpy as np
-from pkg_resources import ResolutionError
 
-#from MJOLNIR.Data import Viewer3D
 from MJOLNIR._interactiveSettings import selectedColor, \
 deselectedColor, States, cut1DKkwargs
 
