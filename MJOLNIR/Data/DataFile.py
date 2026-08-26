@@ -182,7 +182,7 @@ class DataFile(object):
             self.updateProperty(fileLocation.__dict__)
         elif isinstance(fileLocation,str) :
             if not os.path.isfile(fileLocation):
-                raise AttributeError('File location does not exist({}).'.format(fileLocation))
+                raise FileNotFoundError('File location does not exist({}).'.format(fileLocation))
             if fileLocation.split('.')[-1]=='nxs':
                 with hdf.File(fileLocation,mode='r') as f:
                     instr = getInstrument(f)
