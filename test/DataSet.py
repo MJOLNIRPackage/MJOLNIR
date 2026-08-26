@@ -463,6 +463,7 @@ def test_DataSet_1Dcut():
 
 
 @pytest.mark.skipif(Dataset is None, reason="ufit not installed")
+@pytest.mark.ufit
 @pytest.mark.data
 @pytest.mark.integration
 @pytest.mark.gui
@@ -495,6 +496,7 @@ def test_DataSet_1Dcut_ufit():
 
     
 @pytest.mark.skipif(Dataset is None, reason="ufit not installed")
+@pytest.mark.ufit
 @pytest.mark.data
 @pytest.mark.integration
 @pytest.mark.gui
