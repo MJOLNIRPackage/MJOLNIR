@@ -12,17 +12,12 @@ dataPath = 'samlpedata'
 @pytest.mark.data
 @pytest.mark.unit
 def test_DataFile():
-    try:
+    with pytest.raises(FileNotFoundError):
         DF = DataFile('/nope.txt')
-        assert False
-    except:
-        assert True
 
-    try:
+    with pytest.raises(FileNotFoundError):
         DF= DataFile(os.path.join(dataPath,'CAMEA_Full.xml')) # Wrong file
-        assert False
-    except:
-        assert True
+
 
     files = [os.path.join(dataPath,f) for f in ['camea2018n000137.hdf','camea2018n000137.nxs','camea2022n000894.hdf','camea2022n000894.nxs']]
     DF1 = DataFile(files[0])
@@ -32,16 +27,11 @@ def test_DataFile():
     assert(size==DF1.I.size)
     assert(np.all(shape == DF1.I.shape))
 
-    try:
+    with pytest.raises(AttributeError):
         DF1.size = 0
-        assert False
-    except AttributeError:
-        assert True
-    try:
+    with pytest.raises(AttributeError):
         DF1.shape = 0
-        assert False
-    except AttributeError:
-        assert True
+
 
 @pytest.mark.data
 @pytest.mark.unit
@@ -62,11 +52,8 @@ def test_DataFile_plotA4():
     file = DataFile(fileName)
     
 
-    try:
+    with pytest.raises(AttributeError):
         file.plotA4(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
 
     fig = file.plotA4(1)
     fig2 = file.plotA4()
@@ -85,11 +72,8 @@ def test_DataFile_plotEf():
     
     file = DataFile(fileName)
 
-    try:
+    with pytest.raises(AttributeError):
         file.plotEf(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
 
     fig = file.plotEf(1)
     fig2 = file.plotEf()
@@ -107,11 +91,8 @@ def test_DataFile_plotEfOverview():
 
     file = DataFile(fileName)
 
-    try:
+    with pytest.raises(AttributeError):
         file.plotEfOverview(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
 
     fig = file.plotEfOverview(1)
     fig2 = file.plotEfOverview()
@@ -129,11 +110,9 @@ def test_DataFile_plotNormalization():
     
     file = DataFile(fileName)
     
-    try:
+    with pytest.raises(AttributeError):
         file.plotNormalization(binning=20) # Binning not found in data file
-        assert False
-    except AttributeError:
-        assert True
+
 
     fig = file.plotNormalization(1)
     fig2 = file.plotNormalization()
@@ -171,18 +150,12 @@ def test_DataFile_Error():
     df = DataFile(os.path.join(dataPath,'camea2022n000894.hdf'))
 
     # Not implimented
-    try:
+    with pytest.raises(NotImplementedError):
         df+df
-        assert False
-    except NotImplementedError:
-        assert True
 
     df.instrument = 'WrongInstrument'
-    try:
+    with pytest.raises(AttributeError):
         df.convert(binning=1)
-        assert False
-    except AttributeError:
-        assert True
     
 
 @pytest.mark.skip(reason="Save/load feature currently under investigation")
@@ -238,17 +211,11 @@ def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
     projectionVector2 = np.array([1,0,0,A3Position,A4,0.0,0.0,Ei,Ei])
     sample = MJOLNIR.Data.Sample.Sample(a=6.0,b=6.0,c=12.2,projectionVector2=projectionVector2,projectionVector1=projectionVector1,gamma=120.,beta=80.,alpha=90.)
 
-    try:
+    with pytest.raises(AttributeError):
         _ = createEmptyDataFile(A3=10,A4=10,Ei=10,sample=sample) # No change in any parameter
-        assert False
-    except AttributeError:
-        assert True
     
-    try:
+    with pytest.raises(AttributeError):
         _ = createEmptyDataFile(A3=[10,11],A4=[10,11,12],Ei=10,sample=sample) # Two parameters change but not with the same shape
-        assert False
-    except AttributeError:
-        assert True
     
 
     df = createEmptyDataFile(A3=A3,A4=A4,Ei=Ei,sample=sample,Monitor=Monitor,normalizationFiles = nf)
@@ -256,7 +223,6 @@ def test_DataFile_CreateEmpty(): # TODO: Make this test!!!
     # Check the contents of df
     assert(df.sample == sample)
     assert(len(df.possibleBinnings)==len(nf))
-    #assert(False)
 
 @pytest.mark.data
 @pytest.mark.integration
@@ -305,8 +271,5 @@ def test_shallowRead():
     assert(len(result[0]) == len(parameters))
     assert(len(result[0]) == len(result[1]))
 
-    try:
+    with pytest.raises(AttributeError):
         shallowRead(files,['NotExisting!'])
-        assert False
-    except AttributeError:
-        assert True

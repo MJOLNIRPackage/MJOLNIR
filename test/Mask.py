@@ -11,7 +11,7 @@ import pytest
 def test_subclass_MaskingObject():
     # Generate a subclass of MaskingObect that is missing stuff
     
-    try:
+    with pytest.raises(TypeError):
         class Missing__call__(MaskingObject):
             dimensionality = '2D'
             def __init__(self,*args,**kwargs):
@@ -19,12 +19,9 @@ def test_subclass_MaskingObject():
             
             def plot(self,ax,transformation=None,**kwargs):
                 pass
-        assert False
-    except TypeError as E:
-        print(E)
-        assert True
+
     
-    try:
+    with pytest.raises(TypeError):
         class Missing__plot__(MaskingObject):
             dimensionality = '2D'
             def __init__(self,*args,**kwargs):
@@ -32,12 +29,9 @@ def test_subclass_MaskingObject():
             
             def __call__(self,ax,**kwargs):
                 pass
-        assert False
-    except TypeError as E:
-        print(E)
-        assert True
+
         
-    try:
+    with pytest.raises(TypeError):
         class Wrong__plot__(MaskingObject):
             dimensionality = '2D'
             def __init__(self,*args,**kwargs):
@@ -48,10 +42,7 @@ def test_subclass_MaskingObject():
             
             def plot(self,ax,**kwargs): # missing transformation argument
                 pass
-        assert False
-    except TypeError as E:
-        print(E)
-        assert True
+
 
 @pytest.mark.integration
 def test_BooleanAlgebra():
@@ -222,11 +213,8 @@ def test_circleMask():
     for name,coord in zip(['X','Y','Z'],[X,Y,Z]):
         setattr(points,name,coord)
         
-    try:
+    with pytest.raises(AttributeError):
         circ0 = circleMask(center=[0.5,0.5])
-        assert False
-    except AttributeError:
-        assert True
 
     circ1 = circleMask(center=[0.5,0.5],radiusPoint=[1,0.5],coordinates=['X','Y'])
     circ2 = circleMask(center=[0.5,0.5],radiusPoint=[1,0.5])
@@ -292,11 +280,8 @@ def test_CurratAxeMask():
     M = CurratAxeMask([[1,0,0]])
     X = np.linspace(0,1,11)
     
-    try:
+    with pytest.raises(AttributeError):
         M(X)
-        assert False
-    except AttributeError:
-        assert True
 
 @pytest.mark.unit
 def test_CurratAxeMask():
@@ -305,11 +290,8 @@ def test_CurratAxeMask():
     M = CurratAxeMask([[1,0,0]])
     X = np.linspace(0,1,11)
     
-    try:
+    with pytest.raises(AttributeError):
         M(X)
-        assert False
-    except AttributeError:
-        assert True
 
 @pytest.mark.integration
 def test_Combinatorics_Extraction():

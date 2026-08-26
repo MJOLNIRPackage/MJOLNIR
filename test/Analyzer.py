@@ -20,11 +20,9 @@ def test_Generic_plot():
     
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
     ax = []
-    try:
+    with pytest.raises(NotImplementedError):
         GenericAnalyser.plot(ax)
-        assert False
-    except NotImplementedError:
-        assert True
+
 
 @pytest.mark.unit
 def test_warnings():
@@ -46,17 +44,11 @@ def test_warnings():
 @pytest.mark.unit
 def test_Generic_errors():
     GenericAnalyser = Analyser(position=(0.0,1.0,0.0),direction=(1.0,0,0),d_spacing=3.35,mosaicity=60.0)
-    try:
+    with pytest.raises(AttributeError):
         GenericAnalyser.d_spacing=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+    with pytest.raises(AttributeError):
         GenericAnalyser.mosaicity=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
 
 @pytest.mark.unit
@@ -71,20 +63,14 @@ def test_Analyser_init():
 @pytest.mark.unit
 def test_Analyser_width():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         Analyser.width=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
 @pytest.mark.unit
 def test_Analyser_height():
     Analyser = FlatAnalyser(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         Analyser.height=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
 
 @pytest.mark.unit
@@ -103,14 +89,8 @@ def test_FlatAnalyser_str():
 
 def test_FlatAnalyser_kwChecker():
 
-    try:
+    with pytest.raises(TypeError):
         Analyser = FlatAnalyser(Position=(0.0,1.0,0.0),direction=(1.0,0,0))
-        assert False
-    except:
-        assert True
 
-    try:
+    with pytest.raises(TypeError):
         Analyser = FlatAnalyser(pos=(0.0,1.0,0.0),direction=(1.0,0,0))
-        assert False
-    except:
-        assert True

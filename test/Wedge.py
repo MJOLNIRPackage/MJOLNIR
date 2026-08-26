@@ -35,60 +35,37 @@ def test_Wedge_error():
     Det = Detector.TubeDetector1D(position=(1.0,1,0),direction=(1,0,0))
     Ana = Analyser.FlatAnalyser(position=(0.5,0,0),direction=(1,0,1))
 
-    try:
+    with pytest.raises(AttributeError):
         wedge.detectors=Ana
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+    with pytest.raises(AttributeError):
         wedge.analysers=Det
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+    with pytest.raises(AttributeError):
         wedge.append("Wrong object type")
-        assert False
-    except AttributeError:
-        assert True
     
-    try:
+    with pytest.raises(AttributeError):
         wedge.append(["List of",3.0,"wrong objects"])
-        assert False
-    except AttributeError:
-        assert True
 
 
-    try:
+    with pytest.raises(ValueError):
         wedge.settings['concept']='OneToOne'
         wedge.calculateDetectorAnalyserPositions()
-        assert False
-    except ValueError:
-        assert True
 
-    try:
+    with pytest.raises(RuntimeError):
         wedge.settings['concept']='OneToOne'
         wedge.append([Det,Det,Ana])
         wedge.calculateDetectorAnalyserPositions()
-        assert False
-    except RuntimeError:
-        assert True
 
-    try:
+    with pytest.raises(ValueError):
         wedge.settings['concept']='ManyToMany'
         wedge.detectors[0].split=[10,30,44]
         wedge.calculateDetectorAnalyserPositions()
-        assert False
-    except ValueError:
-        assert True
 
-    try:
+    with pytest.raises(ValueError):
         wedge.settings['concept']='Wrong'
         wedge.calculateDetectorAnalyserPositions()
-        assert False
-    except ValueError:
-        assert True
+
 
 @pytest.mark.integration
 def test_Wedge_warnings():

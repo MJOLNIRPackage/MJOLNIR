@@ -12,44 +12,23 @@ dataPath = 'samlpedata'
 
 @pytest.mark.unit
 def test_sample_exceptions():
-    try: # No parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=None)
-        assert False
-    except:
-        assert True
 
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=-1,b=1,c=1)
-        assert False
-    except:
-        assert True
 
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=-1,c=1)
-        assert False
-    except:
-        assert True
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=-1)
-        assert False
-    except:
-        assert True
 
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=1,alpha=200)
-        assert False
-    except:
-        assert True
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=1,beta=-10)
-        assert False
-    except:
-        assert True
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=1,gamma=-10)
-        assert False
-    except:
-        assert True
 
 @pytest.mark.integration
 @pytest.mark.data
@@ -72,7 +51,7 @@ def test_Sample_conversions():
 
     QxQyFromSample = sample.calculateHKLToQxQy(*hkl)
     print(QxQyFromSample)
-    assert(np.all(np.isclose(QxQyFromSample,[Qx,Qy],atol=1e-3)))
+    np.testing.assert_allclose(QxQyFromSample,[Qx,Qy],atol=1e-3)
 
 
 @pytest.mark.unit
@@ -159,7 +138,7 @@ def test_Sample_CurratAxe():
 
     assert(pos.shape == (len(Bragg),np.array(Ei).size,Ef.size,3))
 
-    assert(np.all(np.isclose(pos[:,:,:,2],0.0))) # All Qz are to be zero
+    np.testing.assert_allclose(pos[:,:,:,2],0.0) # All Qz are to be zero
 
 
     POS = np.array([[[[ 5.99262072e-01, -3.88754450e-01,  0.00000000e+00],
@@ -205,7 +184,7 @@ def test_Sample_CurratAxe():
          [-3.25162358e-01, -1.35371906e+00,  0.00000000e+00],
          [-3.25162358e-01, -1.35371906e+00,  0.00000000e+00]]]])
 
-    assert(np.all(np.isclose(pos,POS)))
+    np.testing.assert_allclose(pos, POS)
 
     POSAnalyser = np.array([[[[ 0.52989639, -0.36439634,  0.        ],
          [ 0.52989639, -0.36439634,  0.        ],
@@ -253,8 +232,8 @@ def test_Sample_CurratAxe():
 
     posAna = sample.CurratAxe(Ei,Ef,Bragg,spurionType='ANAlYser')
 
-    assert(np.all(np.isclose(posAna[:,:,:,2],0.0))) # All Qz are to be zero
-    assert(np.all(np.isclose(posAna,POSAnalyser)))
+    np.testing.assert_allclose(posAna[:,:,:,2],0.0) # All Qz are to be zero
+    np.testing.assert_allclose(posAna,POSAnalyser,atol=1e-6)
 
 
     posMonoProjection = sample.CurratAxe(Ei,Ef,Bragg,spurionType='monoChrOmaTOR',Projection=True)
@@ -262,8 +241,6 @@ def test_Sample_CurratAxe():
     assert(posMonoProjection.shape == (len(Bragg),np.array(Ei).size,Ef.size,2))
     assert(posMonoHKL.shape == (len(Bragg),np.array(Ei).size,Ef.size,3))
 
-    try:
+    with pytest.raises(AttributeError):
         sample.CurratAxe(Ei,Ef,Bragg,spurionType='WRONG!!')
-        assert False
-    except AttributeError:
-        assert True
+

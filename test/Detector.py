@@ -17,11 +17,8 @@ def test_Generic_plot():
     plt.ioff()
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    try:
+    with pytest.raises(NotImplementedError):
         GenericDetector.plot(ax)
-        assert False
-    except NotImplementedError:
-        assert True
 
 
 @pytest.mark.unit
@@ -37,38 +34,27 @@ def test_TubeDetector_init():
 @pytest.mark.unit
 def test_TubeDetector_pixels():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         TubeDetector.pixels=0
-        assert False
-    except AttributeError:
-        assert True
 
 @pytest.mark.unit
 def test_TubeDetector_length():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         TubeDetector.length=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
 @pytest.mark.unit
 def test_TubeDetector_diameter():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         TubeDetector.diameter=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
 @pytest.mark.unit
 def test_TubeDetector_split():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=100)
-    try:
+
+    with pytest.raises(AttributeError):
         TubeDetector.split=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
     TubeDetector.split=[50,60,100]
     pixelPos = TubeDetector.getPixelPositions()

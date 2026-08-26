@@ -17,11 +17,9 @@ def test_Concept_plot():
     plt.ioff()
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    try:
+    with pytest.raises(NotImplementedError):
         Concept.plot(ax)
-        assert False
-    except NotImplementedError:
-        assert True
+
     print(str(Concept))
 
 
@@ -45,17 +43,11 @@ def test_position():
 @pytest.mark.unit
 def test_Object_position_exception():
     GenericConcept = GeometryConcept(position=(0,1.0,0.0))
-    try:
+    with pytest.raises(AttributeError):
         GenericConcept.position=((0,0),(0,0))
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+    with pytest.raises(AttributeError):
         GenericConcept.position=(0,0,0,0)
-        assert False
-    except AttributeError:
-        assert True
 
 @pytest.mark.unit
 def test_Object_direction():
@@ -66,20 +58,12 @@ def test_Object_direction():
 @pytest.mark.unit
 def test_Object_direction_exception():
     GenericObject = GeometryObject(position=(0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         GenericObject.direction=((0,0),(0,0))
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+    with pytest.raises(AttributeError):
         GenericObject.direction=(0,0,0)
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+
+    with pytest.raises(AttributeError):
         GenericObject.direction=(0,0,0,1)
-        assert False
-    except AttributeError:
-        assert True

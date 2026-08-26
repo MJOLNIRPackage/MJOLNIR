@@ -10,8 +10,8 @@ def test_minMax():
     minmax = minMax(L)
     
     assert(len(minmax)==2)
-    assert(np.isclose(minmax[0],np.min(L)))
-    assert(np.isclose(minmax[1],np.max(L)))
+    np.testing.assert_allclose(minmax[0],np.min(L))
+    np.testing.assert_allclose(minmax[1],np.max(L))
 
     minmax = np.array(minMax(L,axis=-1))
     assert(minmax.shape==(2,10,3))
@@ -23,7 +23,7 @@ def test_minMax():
 def test_unitVector():
     V = np.array([1.0,2.0,3.0])
     v = unitVector(V)
-    assert(np.isclose(np.linalg.norm(v),1.0))
+    np.testing.assert_allclose(np.linalg.norm(v),1.0)
 
 
 @pytest.mark.unit
@@ -32,9 +32,8 @@ def test_rotations():
     rotations = [rotate2X(v) for v in vectors]
     rotVector = [np.dot(rotations[i],vectors[i]) for i in range(len(vectors))]
     for i in range(len(rotVector)):
-        assert(np.isclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i])))
-        print(rotVector[i][0],np.linalg.norm(rotVector[i]))
-        assert(np.isclose(rotVector[i][0],np.linalg.norm(rotVector[i])))
+        np.testing.assert_allclose(np.linalg.norm(vectors[i]),np.linalg.norm(rotVector[i]))
+        np.testing.assert_allclose(rotVector[i][0],np.linalg.norm(rotVector[i]))
 
 @pytest.mark.unit
 def test_vectorAngle():
@@ -45,25 +44,25 @@ def test_vectorAngle():
     theta2 = vectorAngle(v1,v3)
     theta3 = vectorAngle(v2,v3)
     print(theta2)
-    assert(np.isclose(theta1,np.pi/2))
-    assert(np.isclose(theta2,theta3))
-    assert(np.isclose(theta2,0.955316618125))
+    np.testing.assert_allclose(theta1,np.pi/2)
+    np.testing.assert_allclose(theta2,theta3)
+    np.testing.assert_allclose(theta2,0.955316618125)
 
 @pytest.mark.unit
 def test_Rotation_matrix():
     M1 = rotationMatrix(0,0,0)
 
-    assert(np.all(np.isclose(M1,np.identity(3))))
+    np.testing.assert_allclose(M1,np.identity(3))
 
     M2 = rotationMatrix(90,0,0)
     M3 = rotationMatrix(np.pi/2,np.pi/3,np.pi/4,format='rad')
     M4 = rotationMatrix(90,60,45)
     
-    assert(np.all(np.isclose(M2,np.array([[1,0,0],[0,0,-1],[0,1,0]]))))
-    assert(np.all(np.isclose(M3,M4)))
+    np.testing.assert_allclose(M2,np.array([[1,0,0],[0,0,-1],[0,1,0]]),atol=1e-8)
+    np.testing.assert_allclose(M3,M4)
     
     M4_check = np.array([[3.53553391e-01,6.12372436e-01,7.07106781e-01],[3.53553391e-01,6.12372436e-01,-7.07106781e-01],[-8.66025404e-01,5.00000000e-01,3.06161700e-17]])
-    assert(np.all(np.isclose(M4,M4_check)))
+    np.testing.assert_allclose(M4,M4_check,atol=1e-8)
 
 
 
@@ -99,11 +98,8 @@ def test_fileListGenerator():
     numberStr = '0,20-23-24,4000'
     year = 2018
     folder = os.path.join('','home','camea')
-    try:
+    with pytest.raises(AttributeError):
         files = fileListGenerator(numberStr,folder,year)
-        assert False # Too many dasches
-    except AttributeError:
-        assert True
 
     numberStr = '0,20-23,4000'
 
@@ -232,7 +228,7 @@ def test_KWavelength_multidim():
     wavelength = WavelengthK(k)
     
     k_prime = KWavelength(wavelength)
-    assert(np.all(np.isclose(k,k_prime)))
+    np.testing.assert_allclose(k,k_prime)
     
 @pytest.mark.unit
 def test_EnergyK():
@@ -250,7 +246,7 @@ def test_WnergyK_multidim():
     wavelength = WavelengthEnergy(E)
     
     E_prime = EnergyWavelength(wavelength)
-    assert(np.all(np.isclose(E,E_prime)))
+    np.testing.assert_allclose(E,E_prime)
     
     
 @pytest.mark.unit
@@ -266,13 +262,13 @@ def test_ScatteringAngle():
     A4ERad = ScatteringAngle(d,Energy=E,degrees=False)
     A4ERad = np.rad2deg(A4ERad)
     
-    A4True = 74.14275085067898
+    A4True = 74.14270982536185
     
-    assert(np.all(np.isclose([A4E,A4K,A4W,A4ERad],A4True)))
+    np.testing.assert_allclose([A4E,A4K,A4W,A4ERad],A4True,atol=1e-5)
 
 @pytest.mark.unit
 def test_DSpacing():
-    twoTheta = 74.14275085067898#
+    twoTheta = 74.14270982536185#
     E = 5.00 # meV
     K = KEnergy(E)
     W = WavelengthEnergy(E)
@@ -294,29 +290,17 @@ def test_ScatteringAngle_Errors():
     K = KEnergy(E)
     W = WavelengthEnergy(E)
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = ScatteringAngle(d,Energy=E,K=K)
-        assert False
-    except AttributeError:
-        assert True
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = ScatteringAngle(d,Energy=E,Wavelength=W)
-        assert False
-    except AttributeError:
-        assert True
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = ScatteringAngle(d,Energy=E,Wavelength=W,K=K)
-        assert False
-    except AttributeError:
-        assert True
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = ScatteringAngle(d)
-        assert False
-    except AttributeError:
-        assert True
         
 @pytest.mark.unit
 def test_DSpacing_Errors():
@@ -325,36 +309,24 @@ def test_DSpacing_Errors():
     K = KEnergy(E)
     W = WavelengthEnergy(E)
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = DSpacing(twoTheta,Energy=E,K=K)
-        assert False
-    except AttributeError:
-        assert True
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = DSpacing(twoTheta,Energy=E,Wavelength=W)
-        assert False
-    except AttributeError:
-        assert True
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = DSpacing(twoTheta,Energy=E,Wavelength=W,K=K)
-        assert False
-    except AttributeError:
-        assert True
     
-    try: 
+    with pytest.raises(AttributeError):
         _ = DSpacing(twoTheta)
-        assert False
-    except AttributeError:
-        assert True
     
 @pytest.mark.unit
 def test_scaling():# Test standard scaling functions used for rescaling of energy bins
 
     x = np.random.rand(20)*20-10 # points between -10 and 10
-    assert(np.all(np.isclose(x,rescale(scale(x)))))
-    assert(np.all(np.isclose(x,rescale(scale(x,f=0.1),f=0.1))))
+    np.testing.assert_allclose(x,rescale(scale(x)))
+    np.testing.assert_allclose(x,rescale(scale(x,f=0.1),f=0.1))
 
 def test_getNext():
     

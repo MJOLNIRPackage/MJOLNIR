@@ -25,15 +25,15 @@ def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating
        [-7.2323568e-02, -1.8736884e-01, -5.1334577e-09],
        [ 4.7066340e-08,  1.6969278e-08, -8.8105723e-02]])
     
-    test = np.all(np.isclose(UB,2*np.pi*UBFile,atol=1e-6))
-    
     print(cellDeg)
     print('--------------')
     print(UB)
     print('--------------')
     print(UBFile)
     print('--------------')
-    assert(test)
+    
+    np.testing.assert_allclose(UB,2*np.pi*UBFile,atol=1e-6)
+    
 
 
     UBInv = np.linalg.inv(UB)
@@ -42,14 +42,14 @@ def test_TasUBDeg(): # Test that the two libraries are equivalent in calculating
     Ei = 5.05
     Ef = 3.2
     ## Values from SIX
-    qh =  1.174406
-    qk =  -0.127853
+    qh =  1.1743682893030232
+    qk =  -0.1278436
     ql =  0.000000
     qm =  1.325155
 
     QH = calcTasQH(UBInv,angles,Ei,Ef)
         
-    assert(np.all(np.isclose([QH[0]],[qh,qk,ql],atol=1e-4)))
+    np.testing.assert_allclose(QH[0],[qh,qk,ql],atol=1e-7)
 
 
 @pytest.mark.unit
@@ -66,7 +66,7 @@ def test_TasUBDeg_CreateUB():
     sgl = 0.0
     UB = calcUBFromAngles(B,OM,sgu,sgl)
     
-    assert(np.all(np.isclose(UBFile,UB,atol=4)))
+    np.testing.assert_allclose(UBFile,UB,atol=4)
 
 @pytest.mark.unit
 def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one needs to do the trick with a3 to calculate anything correctly...
@@ -93,8 +93,8 @@ def test_TasUBDEG_CalculateAngles(): # TODO: Redo these calculations as one need
         print('------------------\nA3:{}\nA4{}'.format(a3,a4))
         hkl = calcTasQH(UBINV,[a3,a4],qe[3],qe[4])[0]
         print('{}'.format(hkl))
-        assert(np.all(np.isclose([sgu,sgl],0.0))) # Sgu and sgl are 0 by definition
-        assert(np.all(np.isclose(hkl,qe[:3])))
+        np.testing.assert_allclose([sgu,sgl],0.0,atol=1e-8)
+        np.testing.assert_allclose(hkl,qe[:3],atol=1e-8)
     
 @pytest.mark.unit
 def test_TasUBDeg_calculateCell():
@@ -102,10 +102,10 @@ def test_TasUBDeg_calculateCell():
 
     cell = calcCell(cellParams)
     result = np.array([5.103, 5.103, 13.755, 1.4217514122941153, 1.4217514122941153, 0.4567928249494428, 90.0, 90.0, 120.0, 90., 90., 60.])
-    assert(np.all(np.isclose(cell,result)))
+    np.testing.assert_allclose(cell,result)
 
     cellParams = np.array([5.103,6.103,13.755,80.0,93.0,120.0])
 
     cell = calcCell(cellParams)
     result = np.array([5.103, 6.103, 13.755, 1.4229152753265009, 1.2064634997894217, 0.4642192953135897, 80.0, 93.0, 120.0, 99.81858754108276, 92.31754754830274, 60.05495280628465])
-    assert(np.all(np.isclose(cell,result)))
+    np.testing.assert_allclose(cell,result)

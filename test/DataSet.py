@@ -35,70 +35,41 @@ def test_Dataset_Initialization():
 @pytest.mark.data                                                                                                        
 def test_DataSet_Error():
     
-    try:
+    with pytest.raises(AttributeError):
         ds = DataSet(normalizationfiles=[10,11])
-        assert False
-    except:
-        assert True
+
 
     ds = DataSet()
     
-    try: # No data files
+    with pytest.raises(AttributeError):
         ds.convertDataFile()
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # No data files
+    with pytest.raises(AttributeError):
         ds.binData3D(0.1,0.1,0.1)
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # No data files
+    with pytest.raises(AttributeError): 
         ds.cut1D([0,0],[1,1],0.1,0.01,5.5,6.0)
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # No data files
+    with pytest.raises(AttributeError):
         ds.plotCut1D([0,0],[1,1],0.1,0.01,5.5,6.0)
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # No data files
+    with pytest.raises(AttributeError):
         ds.cutQE([0,0],[1,1],0.1,0.01,5.5,6.0)
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # No data files
+
+    with pytest.raises(AttributeError):
         ds.cutPowder(np.linspace(0,4,5),np.linspace(0,4,5))
-        assert False
-    except AttributeError:
-        assert True
-
-    try: # No data files
+        
+    with pytest.raises(AttributeError): # No data files
         ds.plotCutPowder(np.linspace(0,4,5),np.linspace(0,4,5))
-        assert False
-    except AttributeError:
-        assert True
            
     
 
-    try: # Wrong data file type
+    with pytest.raises(AttributeError):
         ds.dataFiles = 100
-        assert False
-    except AttributeError:
-        assert True
 
-
-    try:# Wrong data file type
+    with pytest.raises(AttributeError):
         ds.convertedFiles = 10
-        assert False
-    except AttributeError:
-        assert True
 
 
     ds.dataFiles = os.path.join(dataPath,'camea2018n000136.hdf')
@@ -128,15 +99,11 @@ def test_LoadBambusData():
     
 
     for param,value in zip(['Ei','A4','A3'],[Ei,A4,A3]):
-        assert(np.isclose(getattr(ds[0],param)[0],value))
+        np.testing.assert_allclose(getattr(ds[0],param)[0],value)
 
 
-    try: # Only binning 1 can be used
+    with pytest.raises(AttributeError):
         ds.convertDataFile(binning = 3)
-        assert False
-    except AttributeError:
-        assert True
-
     
     assert(ds[0].I.shape == (scanValues.shape[1],100,1))
 
@@ -155,7 +122,7 @@ def test_DataSet_Pythonic():
     names = [dataset[i].name for i in range(len(dataset))]
     names.reverse()
     for i,df in enumerate(list(reversed(dataset))):
-        names[i]==df.name
+        assert names[i]==df.name
 
     dataset.append(dataFiles)
     assert(len(dataset)==4)
@@ -163,22 +130,14 @@ def test_DataSet_Pythonic():
     assert(np.all(secondShape!=initShape))
     del dataset[3]
     del dataset[2]
-    try:
+    with pytest.raises(IndexError):
         dataset[10]
-        assert False
-    except IndexError:
-        assert True
     
-    try:
+    with pytest.raises(IndexError):
         del dataset[10]
-        assert False
-    except IndexError:
-        assert True
 
-    try:
+    with pytest.raises(FileNotFoundError):
         dataset.append('NoFile')
-    except:
-        assert True
     
     dataset.append(MJOLNIR.Data.DataFile.DataFile(dataFiles[0]))
     assert(len(dataset)==3)
@@ -206,22 +165,15 @@ def test_DataSet_Convert_Data(): # TODO: redo test!
     dataset = DataSet(dataFiles=dataFiles)
     
 
-    try:
+    with pytest.raises(AttributeError):
         dataset.convertDataFile(dataFiles=dataFiles,binning=100)
-        assert False
-    except AttributeError: # Cant find normalization table
-        assert True
 
-    try:
+    with pytest.raises(FileNotFoundError):
         dataset.convertDataFile(dataFiles='FileDoesNotExist',binning=1)
-        assert False
-    except AttributeError: # FileDoesNotExist
-        assert True
 
-    try:
+    with pytest.raises(FileNotFoundError):
         os.remove(os.path.join(dataPath,'camea2018n000136.nxs'))
-    except: # FileDoesNotExist
-        pass
+    
     dataset.convertDataFile(dataFiles=dataFiles,binning=8,saveLocation=os.path.join(dataPath,''))
     convertedFile = dataset.convertedFiles[0]
 
@@ -235,10 +187,10 @@ def test_DataSet_Convert_Data(): # TODO: redo test!
     qy1 = np.asarray([-0.46624969, -0.47152159, -0.46554817, -0.45894287, -0.45253364])
     I = np.asarray([0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0])
 
-    assert(np.all(np.isclose(dataset.qx[0][5,99,2:10],qx1)))
-    assert(np.all(np.isclose(dataset.qx[0][35,49,5:28],qx2)))
-    assert(np.all(np.isclose(dataset.qy[0][35,39,55:60],qy1)))
-    assert(np.all(np.isclose(dataset.I[0][10,4,50:64],I)))
+    np.testing.assert_allclose(dataset.qx[0][5,99,2:10],qx1)
+    np.testing.assert_allclose(dataset.qx[0][35,49,5:28],qx2)
+    np.testing.assert_allclose(dataset.qy[0][35,39,55:60],qy1)
+    np.testing.assert_allclose(dataset.I[0][10,4,50:64],I)
 
 
 @pytest.mark.unit
@@ -346,23 +298,13 @@ def test_DataSet_Visualization():
     
     viewer = Viewer3D.Viewer3D(Intensity,bins)
     viewer.caxis = (0,100)
-    try:
+    with pytest.raises(AttributeError):
         viewer.caxis = 'Wrong type'
-        assert False
-    except AttributeError:
-        assert True
     
-    try:
+    with pytest.raises(AttributeError):
         viewer.caxis = [0,1,2,3,4] # Too long input
-        assert False
-    except AttributeError:
-        assert True
-    
-    try:
+    with pytest.raises(AttributeError):
         viewer.setAxis(20) # Must bee 0,1, or 2
-        assert False
-    except AttributeError:
-        assert True
 
     plt.plot()
     plt.close('all')
@@ -532,27 +474,21 @@ def test_DataSet_1DcutE():
     
     Data,[bins] = Datset.cut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     
-    assert(np.all(np.isclose(np.diff(bins),0.01)))
+    np.testing.assert_allclose(np.diff(bins),0.01)
     assert(bins[0].min()>=EMin)
     assert(bins[0].max()<=EMax)
 
-    try: # no points inside energy interval
+    with pytest.raises(AttributeError):
         cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=500,E2=700,q=q,width=width,minPixel=0.01)
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # no points inside q
+    with pytest.raises(AttributeError):
         cut1DE(positions=[qx,qy,energy],I=I,Norm=Norm,Monitor=Monitor,E1=5,E2=7,q=np.array([20.0,0]).reshape(2,1),width=width,minPixel=0.01)
-        assert False
-    except AttributeError:
-        assert True
 
     # Check the data of plot to be the same as cut
     Data,[bins] = Datset.cut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     ax,Data2,[bins2] = Datset.plotCut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True)
     assert(Data.equals(Data2))
-    assert(np.all(np.isclose(bins[0],bins2[0])))
+    np.testing.assert_allclose(bins[0],bins2[0])
 
     ufitData = Datset.cut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
     ax,ufitData2 = Datset.plotCut1DE(E1=EMin,E2=EMax,q=q,width=0.1,minPixel=0.01,rlu=False,constantBins=True,ufit=True)
@@ -593,7 +529,7 @@ def test_DataSet_2Dcut():
     comparisons = list(Data.columns)
     del comparisons[comparisons.index('BinDistance')]
 
-    np.all([np.allclose(Data[p],Data2[p],equal_nan=True) for p in comparisons])
+    assert(np.all([np.allclose(Data[p],Data2[p],equal_nan=True) for p in comparisons]))
 
     Q1 = np.array([1,0,0])
     Q2 = np.array([0.5,1,0])
@@ -609,7 +545,7 @@ def test_DataSet_2Dcut():
     assert(np.all(comparisons == Data2.columns))
 
     
-    np.all([np.allclose(Data1[p],Data2[p],equal_nan=True) for p in comparisons])
+    assert(np.all([np.allclose(Data1[p],Data2[p],equal_nan=True) for p in comparisons]))
 
 @pytest.mark.data
 @pytest.mark.integration
@@ -636,8 +572,7 @@ def test_DataSet_cutPowder():
     ax,D,QCentres,ECentres = Datset.plotCutPowder(eBins,qBins)# Remove to improve test ,vmin=0,vmax=1e-6)
     D2 = Datset.cutPowder(eBins,qBins)
     assert(np.all(D.equals(D2)))
-    #assert(np.all(np.isclose(QCentres2,QCentres)))
-    #assert(np.all(np.isclose(ECentres2,ECentres)))
+
 
 @pytest.mark.data
 @pytest.mark.integration
@@ -708,30 +643,18 @@ def test_DataSet_plotQPlane():
     Datset.convertDataFile()
 
     EmptyDS = DataSet()
-    try:
+    with pytest.raises(AttributeError):
         Datset.plotQPlane() # No Bins, EMin or EMax
-        assert False
-    except AttributeError:
-        assert True
-    try:
+        
+    with pytest.raises(AttributeError):
         Datset.plotQPlane(EBins=[10]) # Length of bins is 1
-        assert False
-    except AttributeError:
-        assert True
-    
-    try:
+
+    with pytest.raises(AttributeError):
         Datset.plotQPlane(EMin=20,EMax=10) # EMin>EMax
-        assert False
-    except AttributeError:
-        assert True
     
-    try:
+    with pytest.raises(AttributeError):
         EmptyDS.plotQPlane(EMin=2,EMax=3) # Empty DataSet
-        assert False
-    except AttributeError:
-        assert True
-
-
+    
     EMin = Datset.energy.min()
     EMax = EMin+0.5
     Data,ax1 = Datset.plotQPlane(EMin,EMax,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=True,log=False,rlu=True)
@@ -750,11 +673,8 @@ def test_DataSet_plotQPlane():
         d.A3Off +=90 # rotate data to fall into problem of arctan2
     Data,ax2 = Datset.plotQPlane(EMin,EMax,binning='polar',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=True,rlu=True,cmap=cmap)
     
-    try:
+    with pytest.raises(AttributeError):
         Datset.plotQPlane(EMin,EMax,binning='notABinningMethod')
-        assert False
-    except:
-        assert True
 
     # 3D
     from mpl_toolkits.mplot3d import Axes3D
@@ -790,21 +710,19 @@ def test_DataSet_figureRowColumns():
     assert(np.all(np.array([3,4])==np.array(figureRowColumns(10)))) # 10 -> 3,4
     assert(np.all(np.array([3,3])==np.array(figureRowColumns(9)))) # 9 -> 3,3
     assert(np.all(np.array([1,1])==np.array(figureRowColumns(1)))) # 1 -> 1,1
-    try:
-        figureRowColumns(0) # No figures
-        assert False
-    except AttributeError:
-        assert True
 
+    with pytest.raises(AttributeError):
+        figureRowColumns(0) # No figures
+        
     assert(np.all(np.array([8,8])==np.array(figureRowColumns(63)))) # 63 -> 8,8
     
 @pytest.mark.unit
 def test_DataSet_centeroidnp():
     pos = np.array([[0,0],[1,0],[0,1],[1,1]],dtype=float)
-    assert(np.all(np.isclose(np.array([0.5,0.5]),centeroidnp(pos))))
+    np.testing.assert_allclose(np.array([0.5,0.5]),centeroidnp(pos))
 
     pos2 = np.array([[1.2,2.2],[7.5,1.0],[11.0,0.0],[4.0,-1.0],[2.0,2.0]],dtype=float)
-    assert(np.all(np.isclose(np.array([5.14,0.84]),centeroidnp(pos2))))
+    np.testing.assert_allclose(np.array([5.14,0.84]),centeroidnp(pos2))
 
 @pytest.mark.unit
 def test_DataSet_compareNones():
@@ -837,17 +755,10 @@ def test_DataSet_cutQELine():
     dataset = DataSet(convertedFiles=DataFile)
     dataset.convertDataFile()
 
-    try: # No Q-points
+    with pytest.raises(AttributeError):
         dataset.cutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=True)
-        assert False
-    except AttributeError:
-        assert True
-    try: # Wrong RLU-input
+    with pytest.raises(AttributeError):
         dataset.cutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu='42') # Wrong RLU-input
-        assert False
-    except AttributeError:
-        assert True
-
 
     DataList,BinList=dataset.cutQELine(QPointsHKL,EnergyBins,width=width,minPixel=minPixel,rlu=True)
     DataList2,BinList2=dataset.cutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
@@ -880,24 +791,15 @@ def test_DataSet_plotCutQELine():
     dataset = DataSet(convertedFiles=DataFile)
     dataset.convertDataFile()
     
-    try: # No Q-points
+    with pytest.raises(AttributeError):
         dataset.plotCutQELine([],EnergyBins,width=width,minPixel=minPixel,rlu=False)
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # No wrong dim of QPonts
+
+    with pytest.raises(AttributeError):
         dataset.plotCutQELine(QPoints,EnergyBins,width=width,minPixel=minPixel,rlu=False)
-        assert False
-    except AttributeError:
-        assert True
 
-    try: # No wrong dim of QPonts
+    with pytest.raises(AttributeError):
         dataset.plotCutQELine(QPoints[:,:2],EnergyBins,width=width,minPixel=minPixel,rlu=True)
-        assert False
-    except AttributeError:
-        assert True
-
 
     ax,Data = dataset.plotCutQELine(
         QPoints=QPoints[:,:2],EnergyBins=EnergyBins,width=width,minPixel=minPixel,rlu=False,vmin=0.0,vmax=1.5e-6,log=True,seperatorWidth=3)
@@ -929,13 +831,10 @@ def test_DataSet_plotCutQELine():
         Energies = np.concatenate(dataset.energy,axis=0)
         E = np.arange(Energies.min()+0.35,Energies.max(),0.35)
         
-        try:
+        with pytest.raises(NotImplementedError):
             ax,Data,Bins = \
             dataset.plotCutQELine(QPoints=HKLPoints,EnergyBins=E,ax = ax,width=0.05,minPixel=0.01,
                     vmin=7.5e-7,vmax=7e-6,cmap=cmap,rlu=True)
-            assert False
-        except NotImplementedError:
-            assert True
 
 
 @pytest.mark.data
@@ -948,20 +847,12 @@ def test_DataSet_extractDetectorData():
     binning = 1
     dataset.convertDataFile(binning=binning)
 
-    
-    try:
+    with pytest.raises(AttributeError):
         dataset.extractDetectorData(A4=10000.0) # A4 outside of detector
-        assert False
-    except AttributeError:
-        assert True
 
-    try:
+    with pytest.raises(AttributeError):
         dataset.extractDetectorData(Ef=10000.0) # Ef outside of detector
-        assert False
-    except AttributeError:
-        assert True
     
-
     Efs = dataset.convertedFiles[0].instrumentCalibrationEf[:,1].reshape(104,8*binning)
     AnalyserSelection = 5
     Ef = np.mean(Efs[:,AnalyserSelection])
@@ -1011,8 +902,8 @@ def test_DataSet_subract():
     dataset2.convertDataFile()
     subtracted = dataset-dataset2
     assert(np.sum(subtracted.I.data)==0)
-    assert(np.all(np.isclose(subtracted.Norm.data,dataset.Norm.data)))
-    assert(np.all(np.isclose(subtracted.Monitor.data,dataset.Monitor.data)))
+    np.testing.assert_allclose(subtracted.Norm.data,dataset.Norm.data)
+    np.testing.assert_allclose(subtracted.Monitor.data,dataset.Monitor.data)
 
 @pytest.mark.unit
 def test_DataSet_OxfordList():
@@ -1063,12 +954,12 @@ def test_DataSet_ELine():
     ax, CutDataPlot, BinsPlot = dataset.plotCutELine(Q1, Q2, EMin=EMin, EMax=EMax, energyWidth = 0.05, minPixel = 0.02, width = 0.02, rlu=True, dataFiles=None, constantBins=False)
 
     assert(np.all([np.all(np.isclose(B,B2)) for B,B2 in zip(Bins,BinsPlot)]))
-    assert(np.all(CutDataPlot.equals(CutData)))
+    np.testing.assert_allclose(CutDataPlot, CutData)
 
     assert(np.all(np.logical_and(CutData['Energy']>=EMin,CutData['Energy']<=EMax*1.01))) # Allow for slightly heigher energy
     assert(np.logical_and(np.all(CutData['H']<=Q1[0]*1.01),np.all(CutData['H']>=Q2[0]*0.99)))
     assert(np.logical_and(np.all(CutData['K']>=Q1[1]*1.01),np.all(CutData['K']<=Q2[1]*1.01)))
-    assert(np.all(np.isclose(CutData['L'],0.0,atol=1e-6)))
+    np.testing.assert_allclose(CutData['L'],0.0,atol=1e-6)
     assert(np.all([np.all(np.logical_and(B[0]>=EMin*0.99,B[0]<=EMax*1.05)) for B in Bins])) # Allow for slightly heigher energy
 
 
@@ -1139,30 +1030,21 @@ def testplotRaw1D_Error():
     import matplotlib
     matplotlib.use('Agg')
 
-    try:
+    with pytest.raises(AttributeError):
         dataset.plotRaw1D() # Two different scan types
-        assert False
-    except AttributeError:
-        assert True
         
     DataFile = [os.path.join(dataPath,'camea2018n000137.hdf'),os.path.join(dataPath,'camea2018n000137.hdf')]
     dataset = DataSet(DataFile)
-    try:
+    with pytest.raises(AttributeError):
         dataset.plotRaw1D(analyzerSelection=[0]) # Not enough analyzers provided
-        assert False
-    except AttributeError:
-        assert True
-    try:
+
+    with pytest.raises(AttributeError):
         dataset.plotRaw1D(detectorSelection=[0]) # Not enough detectors provided
-        assert False
-    except AttributeError:
-        assert True
+
         
-    try:
+    with pytest.raises(AttributeError):
         dataset.plotRaw1D(legend=[0]) # Not enough legend labels provided
-        assert False
-    except AttributeError:
-        assert True
+    
 
 @pytest.mark.data
 @pytest.mark.integration
@@ -1201,11 +1083,8 @@ def testMasking():
 
 
     # Test failing mask
-    try:
+    with pytest.raises(AttributeError):
         ds.mask = 'Error'
-        assert False
-    except AttributeError:
-        assert True
     
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -1235,8 +1114,8 @@ def testupdateSampleParameters():
     newUB = ds.sample[0].UB
 
     for d in ds:
-        assert(np.all(np.isclose(d.sample.cell,newCell)))
-        assert(np.all(np.isclose(d.sample.UB,newUB)))
+        np.testing.assert_allclose(d.sample.cell, newCell)
+        np.testing.assert_allclose(d.sample.UB, newUB)
 
 @pytest.mark.data
 @pytest.mark.integration
@@ -1290,11 +1169,8 @@ def test_absoluteNormalziation(): # TODO: Improve and recalculate the expected f
     DataFile = [os.path.join(dataPath,'camea2018n000136.hdf')]
     ds = DataSet(DataFile)
 
-    try:
+    with pytest.raises(AttributeError): # Must be converted first!
         ds.absoluteNormalize(10.0,'MnF2')
-        assert False
-    except  AttributeError: # Must be converted first!
-        assert True
 
     ds.convertDataFile()
     norm = np.mean(ds.Norm.extractData())
@@ -1305,13 +1181,13 @@ def test_absoluteNormalziation(): # TODO: Improve and recalculate the expected f
     
     factor = 2*0.06088201383247563 # Factor calculated for MnF2
 
-    assert(np.isclose(factor,ds.absoluteNormalized))
+    np.testing.assert_allclose(factor,ds.absoluteNormalized)
 
     # Redo normalization to retrive the same factor
     ds.absoluteNormalize(sampleMass=6.2,sampleChemicalFormula='MnF2',formulaUnitsPerUnitCell=2,
                                       correctVanadium=False)
 
-    assert(np.isclose(factor,ds.absoluteNormalized))
+    np.testing.assert_allclose(factor,ds.absoluteNormalized)
 
 @pytest.mark.data
 @pytest.mark.integration
@@ -1425,8 +1301,8 @@ def test_symmetrize():
     qy = ds[0].qy
 
 
-    assert(np.all(np.isclose(qx,qxOriginal,atol=1e-6)))
-    assert(np.all(np.isclose(qy,qyOriginal,atol=1e-6)))
+    np.testing.assert_allclose(qx, qxOriginal, atol=1e-6)
+    np.testing.assert_allclose(qy, qyOriginal, atol=1e-6)
 
     def absolute(H,K,L):
         return np.abs(H),np.abs(K),np.abs(L)
