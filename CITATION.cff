@@ -1,0 +1,114 @@
+cff-version: 1.2.0
+
+title: "MJOLNIR: Data treatment software for multiplexing neutron spectrometers"
+version: "1.4.0"
+date-released: "2026-08-27"
+
+abstract: >
+  MJOLNIR is a Python software package for the treatment and analysis
+  of data from multiplexing inelastic neutron spectrometers. It provides
+  tools for data conversion, normalization, visualization, masking,
+  cutting, fitting, and analysis of neutron scattering data.
+
+authors:
+  - family-names: "Lass"
+    given-names: "Jakob"
+    affiliation: "Paul Scherrer Institut"
+    email: "jakob.lass@psi.ch"
+
+  - family-names: "Jacobsen"
+    given-names: "Henrik"
+
+  - family-names: "Mazzone"
+    given-names: "Daniel G."
+
+  - family-names: "Lefmann"
+    given-names: "Kim"
+
+repository-code: "https://github.com/MJOLNIRPackage/MJOLNIR"
+repository-artifact: "https://pypi.org/project/MJOLNIR/"
+url: "https://github.com/MJOLNIRPackage/MJOLNIR"
+
+license: "MPL-2.0"
+
+keywords:
+  - "inelastic neutron scattering"
+  - "neutron scattering"
+  - "multiplexing spectrometer"
+  - "three-axis spectroscopy"
+  - "CAMEA"
+  - "data analysis"
+  - "data treatment"
+  - "visualization"
+
+type: software
+
+references:
+  - type: article
+    authors:
+      - family-names: "Lass"
+        given-names: "Jakob"
+      - family-names: "Jacobsen"
+        given-names: "Henrik"
+      - family-names: "Mazzone"
+        given-names: "Daniel G."
+      - family-names: "Lefmann"
+        given-names: "Kim"
+    title: "MJOLNIR: A software package for multiplexing neutron spectrometers"
+    journal: "SoftwareX"
+    year: 2020
+    volume: 12
+    article-number: "100600"
+    doi: "10.1016/j.softx.2020.100600"
+
+  - type: article
+    authors:
+      - family-names: "Lass"
+        given-names: "Jakob"
+      - family-names: "Jacobsen"
+        given-names: "Henrik"
+      - family-names: "Krighaar"
+        given-names: "Kristine M. L."
+      - family-names: "Graf"
+        given-names: "Dieter"
+      - family-names: "Groitl"
+        given-names: "Felix"
+      - family-names: "Herzog"
+        given-names: "Frank"
+      - family-names: "Yamada"
+        given-names: "Masako"
+      - family-names: "Kägi"
+        given-names: "Christian"
+      - family-names: "Müller"
+        given-names: "Raphael A."
+      - family-names: "Bürge"
+        given-names: "Roman"
+      - family-names: "Schild"
+        given-names: "Marcel"
+      - family-names: "Lehmann"
+        given-names: "Manuel S."
+      - family-names: "Bollhalder"
+        given-names: "Alex"
+      - family-names: "Keller"
+        given-names: "Peter"
+      - family-names: "Bartkowiak"
+        given-names: "Marek"
+      - family-names: "Filges"
+        given-names: "Uwe"
+      - family-names: "Greuter"
+        given-names: "Urs"
+      - family-names: "Theidel"
+        given-names: "Gerd"
+      - family-names: "Rønnow"
+        given-names: "Henrik M."
+      - family-names: "Niedermayer"
+        given-names: "Christof"
+      - family-names: "Mazzone"
+        given-names: "Daniel G."
+    title: "Commissioning of the novel Continuous Angle Multi-energy Analysis spectrometer at the Paul Scherrer Institut"
+    journal: "Review of Scientific Instruments"
+    year: 2023
+    volume: 94
+    issue: 2
+    article-number: "023302"
+    doi: "10.1063/5.0128226"
