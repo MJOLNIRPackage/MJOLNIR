@@ -299,9 +299,10 @@ def initializeRESOLUTION(ax):
                     #C[0]/=np.linalg.norm(dirVector)**2
 
                     eigenValues,eigenVectors = np.linalg.eig(C[:2,:2])
-                    sigma = np.power(eigenValues,-0.5)
+                    sigma = np.power(eigenValues.real(),-0.5)
                     # M,eigenVectors,sigma = ax.ds.calculateResolutionMatrixAndVectors(pos,P1,P2,Ei,Ef,rlu=ax.rlu,rluAxis=True)
                     
+                    eigenVectors = eigenVectors.real()
                     ellipseColor = ax.EiColors[Ei]
                     angle = -np.rad2deg(np.arctan2(*eigenVectors[0,::-1])) 
                     E.set_center(np.array([x,y]))
