@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import sys
+import sys, os
 import numpy as np
 import pickle as pickle
 import matplotlib.pyplot as plt
