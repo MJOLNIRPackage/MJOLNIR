@@ -5,7 +5,7 @@ from MJOLNIR.Data import DataSet,DataFile
 import sympy
 import warnings
 import pickle
-
+import re
 
 def requiredArguments(func,requiredNames):
     """Return list of arguments not found in arguments of func"""
@@ -857,12 +857,17 @@ class CurratAxeMask(MaskingObject):
         return x.calculateCurratAxeMask(self.braggPeaks,dqx=self.dqx,dqy=self.dqy,dH=self.dH,dK=self.dK,dL=self.dL,spurionType=self.spurionType,maskInside=self.maskInside)
 
 
-def parse(string,masks):
-    for m in masks:
-        locals()[m.name]=m
-    
-    return eval(string)
+def parse(string, masks):
+    namespace = {m.name: m for m in masks}
+    if not re.fullmatch(r'[\w\s+*()]+', string):
+        raise ValueError("Invalid mask expression")
 
+    names = re.findall(r'[A-Za-z_][A-Za-z0-9_]*', string)
+
+    if any(name not in namespace for name in names):
+        raise ValueError("Unknown mask")
+
+    return eval(string, {"__builtins__": {}}, namespace)
 
 
 def flatten(t):
