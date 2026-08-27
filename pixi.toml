@@ -21,7 +21,6 @@ pandas = ">=2,<4"
 future = ">=1,<2"
 sympy = ">=1.14,<2"
 
-
 # ---------------------------------------------------------------------------
 # Python versions
 # ---------------------------------------------------------------------------
@@ -52,12 +51,21 @@ scipy = ">=1.18,<2"
 
 [feature.legacy-plot.dependencies]
 matplotlib = ">=3.7,<3.9"
-pyqtgraph = ">=0.13,<0.14"
 
 [feature.current-plot.dependencies]
 matplotlib = ">=3.11,<4"
+
+[feature.pyqtgraph-legacy.dependencies]
+pyqtgraph = ">=0.13,<0.14"
+
+[feature.pyqtgraph-current.dependencies]
 pyqtgraph = ">=0.14,<1"
 
+# ---------------------------------------------------------------------------
+# Build dependencies
+# ---------------------------------------------------------------------------
+[feature.build.pypi-dependencies]
+build = ">=1,<2"
 
 # ---------------------------------------------------------------------------
 # Qt versions
@@ -76,19 +84,34 @@ pyqt6 = ">=6,<7"
 
 [environments]
 
-# Python 3.9 compatibility
+py39 = [
+    "py39",
+    "numpy1",
+    "legacy-plot",
+    "build",
+]
+
+py312 = [
+    "py312",
+    "numpy2",
+    "legacy-plot",
+    "build",
+]
+
 py39-qt5 = [
     "py39",
     "numpy1",
     "legacy-plot",
+    "pyqtgraph-legacy",
     "qt5",
+    "build",
 ]
 
-
-# Current development
 default = [
     "py312",
     "numpy2",
     "current-plot",
+    "pyqtgraph-current",
     "qt6",
+    "build",
 ]
