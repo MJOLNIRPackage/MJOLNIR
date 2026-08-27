@@ -1,7 +1,4 @@
-import sys,os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
+import os
 import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 from MJOLNIR import _tools
@@ -11,14 +8,11 @@ from MJOLNIR.Data import RLUAxes,DataFile
 from MJOLNIR.TasUBlibDEG import factorsqrtEK
 import warnings
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import scipy.optimize
 from scipy.stats import norm
 import h5py as hdf
 import datetime
-import pytest
 from MJOLNIR.Geometry.eck_Flipped import get_E, get_scattering_angle,get_mono_angle,get_angle_ki_Q,get_angle_kf_Q,calc_eck
-from MJOLNIR import _interactiveSettings
 
 NumberOfSigmas= 3.0 # Defining the active area of a peak on a detector as \pm n*sigma
 predictionInstrumentSupport = ['CAMEA','MultiFLEXX','Bambus'] # Instrument supported in prediction function

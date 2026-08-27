@@ -1,21 +1,15 @@
-import sys, os
+import os
 from typing import DefaultDict
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-import scipy
+
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py as hdf
 import warnings
 from MJOLNIR import _tools
 import MJOLNIR
-import datetime
-import math
 
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import PointerArray
-from MJOLNIR.Data import Mask
 
 import MJOLNIR.Data.Sample
 import re

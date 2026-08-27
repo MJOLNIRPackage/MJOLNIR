@@ -1,12 +1,5 @@
-import sys
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
 from MJOLNIR.Geometry import GeometryConcept
-from MJOLNIR import _tools
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 
 class Detector(GeometryConcept.GeometryObject):

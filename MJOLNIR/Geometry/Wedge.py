@@ -1,13 +1,6 @@
-import sys
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-import math,numpy as np
+import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector
-from MJOLNIR import _tools
 import warnings
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 class Wedge(GeometryConcept.GeometryConcept):
     """Wedge object to keep track of analysers and detectors. To be used as a storage object and facilitate easy movement of multiple detectors and analysers as once."""

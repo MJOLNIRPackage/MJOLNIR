@@ -1,13 +1,6 @@
-import sys
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-import math,numpy as np
+import numpy as np
 from MJOLNIR.Geometry import GeometryConcept
-from MJOLNIR import _tools
 import warnings
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 class Analyser(GeometryConcept.GeometryObject):
     """Generic analyser object. Base class from which all analysers must inherit."""

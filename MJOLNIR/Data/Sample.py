@@ -1,8 +1,3 @@
-import sys, os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-
 import numpy as np
 import h5py as hdf
 

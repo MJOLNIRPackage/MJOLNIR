@@ -1,20 +1,14 @@
 import os
 import sys
-from typing import Type
-
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
 
 import warnings
-import copy
 import matplotlib.cm as cm
 import matplotlib.gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
 from matplotlib.backend_bases import KeyEvent
-from MJOLNIR import _tools
+
 from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder, cancel
 import functools
 

@@ -1,14 +1,10 @@
 import copy
 import functools
-import os
 import sys
 from operator import sub
 
 pythonVersion = sys.version_info[0]
 
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
 
 import matplotlib.pyplot as plt
 #if pythonVersion == 3: # Only for python 3
@@ -16,8 +12,8 @@ import matplotlib.ticker as mticker
 
 import numpy as np
 from MJOLNIR import _tools
-from matplotlib.patches import Ellipse
-from mpl_toolkits.axisartist import SubplotHost#,axislines
+
+from mpl_toolkits.axisartist import SubplotHost
 import warnings
 try:
     from mpl_toolkits.axisartist.grid_helper_curvelinear import \
