@@ -91,10 +91,9 @@ def extractDataFiles(args,settingsName,oneFile = False):# pragma: no cover
 
 
 if not QT_VERSION is None:
-    from MJOLNIR._qt import QWidget, Qt
-    from MJOLNIR._qt.QWidget import QFileDialog, QApplication
+    from MJOLNIR._qt import QtWidgets, Qt
 
-    class App(QWidget):
+    class App(QtWidgets.QWidget):
         def __init__(self,startingPath=None):
             super().__init__()
             self.title = 'MJOLNIR Command Line - Load Files'
@@ -110,10 +109,7 @@ if not QT_VERSION is None:
             Qt.QCoreApplication.quit()
         
         def openFileNamesDialog(self):
-            #options = QFileDialog.Options()
-            #options |= QFileDialog.DontUseNativeDialog
-            #print(self,"MJOLNIR Command Line - Load Files", allowedString,self.startingPath)
-            files, _ = QFileDialog.getOpenFileNames(self,"MJOLNIR Command Line - Load Files", self.startingPath,allowedString)
+            files, _ = QtWidgets.QFileDialog.getOpenFileNames(self,"MJOLNIR Command Line - Load Files", self.startingPath,allowedString)
             global dataFilesLoaded 
             dataFilesLoaded = files
             self.close()
@@ -121,7 +117,7 @@ if not QT_VERSION is None:
 
         
     def loadFiles(startingPath=None):
-        app = QApplication(sys.argv)
+        app = QtWidgets.QApplication(sys.argv)
         ex = app(startingPath=startingPath)
         return dataFilesLoaded
 else:
