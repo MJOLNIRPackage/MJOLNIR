@@ -1,3 +1,76 @@
 [build-system]
-requires = ["setuptools >= 61.0"]
+requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = {attr = "MJOLNIR.__version__"}
+
+[project]
+name = "MJOLNIR"
+dynamic = ["version"]
+description = "Neutron Scattering software suite"
+readme = "README.MD"
+requires-python = ">=3.9"
+
+authors = [
+    {name = "Jakob Lass", email = "MJOLNIRPackage@gmail.com"},
+]
+
+license = {text = "MPL-2.0"}
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "matplotlib>=3.7",
+    "h5py>=2.5",
+    "scipy>=1.10",
+    "datetime",
+    "pyperclip",
+    "decorator",
+    "pandas>=2.0",
+    "sympy>=1.14",
+    "pip>=20",
+    "regex>=2023.10",
+]
+
+[project.optional-dependencies]
+AMBER = [
+    "AMBER-ds4ms",
+]
+
+gui = [
+    "MJOLNIRGui",
+]
+
+ufit = [
+    "ufit",
+]
+
+[project.scripts]
+MJOLNIRHistory = "MJOLNIR.CommandLineScripts.MJOLNIRHistory:main"
+MJOLNIRCalibrationInspector = "MJOLNIR.CommandLineScripts.MJOLNIRCalibrationInspector:main"
+MJOLNIR3DView = "MJOLNIR.CommandLineScripts.MJOLNIR3DView:main"
+
+
+[tool.setuptools.package-data]
+"*" = [
+    "*.calib",
+    "*.csv",
+]
+"MJOLNIR" = [
+    "license.txt",
+    "CommandLineScripts/.settings",
+    "Geometry/detsequence.dat",
+]
