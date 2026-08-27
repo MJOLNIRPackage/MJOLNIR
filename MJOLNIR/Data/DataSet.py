@@ -1,14 +1,9 @@
 # -*- coding: utf-8 -*-
-import sys, os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-
-
+import sys
 import numpy as np
 import pickle as pickle
 import matplotlib.pyplot as plt
-from matplotlib.collections import PatchCollection,PolyCollection
+from matplotlib.collections import PatchCollection
 import matplotlib.ticker as ticker
 from matplotlib.patches import Polygon
 from MJOLNIR.Data import Viewer3D,RLUAxes, Mask, BackgroundModel
@@ -3441,7 +3436,8 @@ class DataSet(object):
                 
             
         if customSlicer == True:
-            
+            from MJOLNIR._qt import QtWidgets, QtGui, QtCore
+            from MJOLNIR.Data import Viewer3DPyQtGraph
             if QtWidgets.QApplication.instance() is None:
                 _cache.append(QtWidgets.QApplication(sys.argv))
             win = QtGui.QMainWindow()

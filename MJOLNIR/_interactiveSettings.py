@@ -11,7 +11,7 @@ from  matplotlib.backend_tools import Cursors as cursors
 import MJOLNIR
 import os
 
-from MJOLNIR._qt import Qt, QT_VERSION
+from MJOLNIR._qt import pointerType
 
 
 import sys
@@ -102,6 +102,8 @@ def setupModes(ax):
 
 
 def setCursor(ax,cursor):
+    if cursor is None: # No Qt installed
+        return
     try:
         ax.get_figure().canvas.setCursor(cursor)
     except AttributeError:
@@ -150,24 +152,6 @@ Modes= Enum('Modes', modes)
 #CutImageLocation = os.path.join(os.path.split(MJOLNIR.Data.__file__)[0],'scissors.png')
 #CutCursor = QCursor(QPixmap(CutImageLocation))
 
-
-## Cursor type mode
-if QT_VERSION == 5:
-    pointerType = defaultdict(lambda: Qt.ArrowCursor)
-    pointerType['CUTTING_EMPTY'] = Qt.ForbiddenCursor
-    pointerType['CUTTING_INITIAL'] = Qt.CrossCursor
-    pointerType['CUTTING_WIDTH'] = Qt.CrossCursor
-    pointerType['CUTTING_DIRECTION'] = Qt.CrossCursor
-    pointerType['CUTTING_MOVE'] = Qt.OpenHandCursor
-    pointerType['RESOLUTION'] = Qt.BlankCursor
-else:
-    pointerType = defaultdict(lambda: Qt.CursorShape.ArrowCursor)
-    pointerType['CUTTING_EMPTY'] = Qt.CursorShape.ForbiddenCursor
-    pointerType['CUTTING_INITIAL'] = Qt.CursorShape.CrossCursor
-    pointerType['CUTTING_WIDTH'] = Qt.CursorShape.CrossCursor
-    pointerType['CUTTING_DIRECTION'] = Qt.CursorShape.CrossCursor
-    pointerType['CUTTING_MOVE'] = Qt.CursorShape.OpenHandCursor
-    pointerType['RESOLUTION'] = Qt.CursorShape.BlankCursor
 
 
 def resetUsingKey(ax,keys):
