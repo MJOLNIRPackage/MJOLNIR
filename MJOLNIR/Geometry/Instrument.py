@@ -1,7 +1,4 @@
-import sys,os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
+import os
 import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 from MJOLNIR import _tools
@@ -11,21 +8,17 @@ from MJOLNIR.Data import RLUAxes,DataFile
 from MJOLNIR.TasUBlibDEG import factorsqrtEK
 import warnings
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import scipy.optimize
 from scipy.stats import norm
 import h5py as hdf
 import datetime
-import pytest
 from MJOLNIR.Geometry.eck_Flipped import get_E, get_scattering_angle,get_mono_angle,get_angle_ki_Q,get_angle_kf_Q,calc_eck
-from MJOLNIR import _interactiveSettings
 
 NumberOfSigmas= 3.0 # Defining the active area of a peak on a detector as \pm n*sigma
 predictionInstrumentSupport = ['CAMEA','MultiFLEXX','Bambus'] # Instrument supported in prediction function
 
 
 class Instrument(GeometryConcept.GeometryConcept):
-    @_tools.KwargChecker(include=['Author','Instrument','Date','Initialized']) # Not used as excess kwargs are put into settings
     def __init__(self, position=(0,0,0),wedges=[],fileName='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
@@ -314,7 +307,6 @@ class Instrument(GeometryConcept.GeometryConcept):
         with open(fileName,'w') as f:
             f.write(string)
 
-    @_tools.KwargChecker()
     def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/', 
     tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False, ignoreTubes=None,
     sample='V',sampleMass=None,sampleDebyeWallerFactor=1.0,formulaUnitsPerUnitCell=1.0,sampleIncoherent=5.08):
@@ -1994,9 +1986,36 @@ T = np.array([23.85666688, 22.8700002 , 22.64666716, 23.44999949, 24.79333401,
         38.25000127, 40.19666672, 42.1666654 , 45.17666817, 49.03999964,
         58.12666575])
 
-countingTime = lambda x: np.interp(x,E,T)
+## Counting times as  of 2026 for 1 mA on the target for 100 000 monitor
+E = np.array([ 3.000189 ,  3.2497096,  3.4996533,  3.7496057,  3.9995492,
+         4.249493 ,  4.4994416,  4.7493815,  4.999333 ,  5.2492876,
+         5.4992166,  5.749123 ,  5.999071 ,  6.248984 ,  6.498924 ,
+         6.748864 ,  6.9987855,  7.2487264,  7.4986377,  7.748611 ,
+         7.9985075,  8.248458 ,  8.498355 ,  8.748202 ,  8.998205 ,
+         9.248078 ,  9.497999 ,  9.747922 ,  9.997784 , 10.247683 ,
+        10.497607 , 10.747606 , 10.997376 , 11.247383 , 11.4973135,
+        11.747201 , 11.99713  , 12.246988 , 12.496943 , 12.746822 ,
+        12.996736 , 13.246557 , 13.496467 , 13.746392 , 13.996279 ,
+        14.246248 , 14.496134 , 14.745937 , 14.996029 , 15.245775 ],
+       dtype=np.float32)
 
-def timeEstimate(Ei,Monitor,A3s = 180,A4s=2,current=1.3):
+T = np.array([29.04194643, 27.7725184 , 27.61006279, 27.25681366, 26.1938876 ,
+        26.10261621, 26.29907551, 26.06483655, 27.47216368, 28.13899068,
+        29.27807518, 29.31396685, 29.39781406, 29.44336638, 29.604878  ,
+        29.68516271, 29.93262482, 29.93640261, 30.2433707 , 30.62495413,
+        30.95270095, 31.44477276, 31.92460625, 32.84078695, 33.84575013,
+        35.35602869, 37.27717258, 39.05191779, 40.51591532, 41.75062447,
+        42.52962126, 43.4363548 , 44.4092077 , 45.11003477, 46.4351892 ,
+        47.36503579, 48.63969047, 50.13202229, 51.63096929, 52.93062141,
+        54.63074769, 56.78109468, 58.74505408, 60.99678037, 63.85582768,
+        67.07473209, 70.6799628 , 74.64879521, 79.01717708, 88.9544229 ],
+        dtype=np.float32)
+
+
+
+countingTime = lambda energy,current=1.4: np.interp(energy,E,T)/current
+
+def timeEstimate(Ei,Monitor,A3s = 180,A4s=2,current=1.4):
     """estimate time for scan at CAMEA. 
     
     Args:
@@ -2016,7 +2035,7 @@ def timeEstimate(Ei,Monitor,A3s = 180,A4s=2,current=1.3):
         - instrument (str): Instrument used to calculate resolution (default CAMEA)
     
     """
-    totalTime = np.sum([countingTime(E)*Monitor/100000*current*A4s*A3s for E in Ei])
+    totalTime = np.sum([countingTime(E,current=current)*Monitor/(100000)*A4s*A3s for E in Ei])
     #print('Total Counting Time: {:.2f} days ({:.1f} hr)'.format(totalTime/(60*60*24),totalTime/(60*60)))
     return totalTime
 

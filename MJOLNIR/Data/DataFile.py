@@ -1,27 +1,20 @@
-import sys, os
+import os
 from typing import DefaultDict
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-import scipy
+
 import matplotlib.pyplot as plt
 import numpy as np
 import h5py as hdf
 import warnings
 from MJOLNIR import _tools
 import MJOLNIR
-import datetime
-import math
-#import shapely
-# from shapely.geometry import Polygon as PolygonS, Point as PointS
+
 from MJOLNIR import TasUBlibDEG as TasUBlib
 from MJOLNIR._tools import PointerArray
-from MJOLNIR.Data import Mask
 
 import MJOLNIR.Data.Sample
 import re
 import copy
-import platform
+
 from collections import defaultdict
 
 multiFLEXXDetectors = 31*5
@@ -29,7 +22,7 @@ reFloat = r'-?\d*\.\d*'
 reInt   = r'-?\d'
 factorsqrtEK = 0.694692
 supportedRawFormats = ['hdf','','dat']
-supportedInstruments = ['CAMEA','MultiFLEXX','FlatCone','Bambus']
+supportedInstruments = ['CAMEA','MultiFLEXX','Flatcone','Bambus','Marmot']
 supportedConvertedFormats = ['nxs']
 
 def cosd(x):
@@ -150,8 +143,10 @@ def getHDFEntry(f,prop,fromNICOS=False):
             else:
                 value = f.get(HDFTranslationNICOSAlternative[prop])
             return value
-
-    return f.get(HDFTranslation[prop])
+    if prop in HDFTranslation:
+        return f.get(HDFTranslation[prop])
+    else:
+        return f.get(prop)
 
 def getHDFInstrumentEntry(instr,prop,fromNICOS=False):
     if fromNICOS:
@@ -164,12 +159,14 @@ def getHDFInstrumentEntry(instr,prop,fromNICOS=False):
 analyzerLimits = {'CAMEA':7,
                   'Bambus': 4,
                   'MultiFLEXX': 4,
-                  'FlatCone':1}
+                  'Flatcone':1,
+                  'Marmot':1}
 
 detectorLimits = {'CAMEA':103,
                   'Bambus':19,
                   'MultiFLEXX':31,
-                  'FlatCone':32}
+                  'Flatcone':32,
+                  'Marmot':30}
 
 class DataFile(object):
     """Object to load and keep track of HdF files and their conversions"""
@@ -179,10 +176,20 @@ class DataFile(object):
             self.updateProperty(fileLocation.__dict__)
         elif isinstance(fileLocation,str) :
             if not os.path.isfile(fileLocation):
-                raise AttributeError('File location does not exist({}).'.format(fileLocation))
+                raise FileNotFoundError('File location does not exist({}).'.format(fileLocation))
             if fileLocation.split('.')[-1]=='nxs':
-                self.type='nxs'
-        
+                with hdf.File(fileLocation,mode='r') as f:
+                    instr = getInstrument(f)
+                    name = np.asarray(getHDFEntry(instr,'name'))
+                    print(f'{name = }',f'{type(name) = }')
+                    if not name.item() is None:
+                        name = name[0].decode('utf8')
+                        if name.lower() == 'in20':
+                            self.type = 'Flatcone'
+                        elif name.lower() == 'thales':
+                            self.type = 'Marmot'
+                    else:
+                        self.type='nxs'
             elif fileLocation.split('.')[-1]=='hdf':
                 self.type='hdf'
             elif os.path.splitext(fileLocation)[1]=='': # No extension
@@ -195,6 +202,7 @@ class DataFile(object):
                     self.type = 'Bambus'
             else:
                 raise AttributeError('File is not of type nxs or hdf.')
+            
             self.name = os.path.basename(fileLocation)
             self.fileLocation = os.path.abspath(fileLocation)
             self._binning = 1
@@ -234,7 +242,11 @@ class DataFile(object):
                         self.l=np.array(getHDFEntry(f,'QL'))
                         self.energy=np.array(getHDFEntry(f,'energy'))
                         self.Norm=np.array(getHDFEntry(f,'normalization'))
-                    self.MonitorMode = np.array(getHDFEntry(f,'mode',fromNICOS=self.fromNICOS))[0].decode()
+                    self.MonitorMode = np.array(getHDFEntry(f,'mode',fromNICOS=self.fromNICOS))
+                    try:
+                        self.MonitorMode = self.MonitorMode[0]
+                    except:
+                        pass
                     self.MonitorPreset=np.array(getHDFEntry(f,'preset',fromNICOS=self.fromNICOS))
                     if len(self.MonitorPreset)>1:
                         self.MonitorPreset = self.MonitorPreset[0]             
@@ -337,7 +349,7 @@ class DataFile(object):
 
                     instr = getInstrument(f)
                     self.instrument = instr.name.split('/')[-1]
-                    self.possibleBinnings = np.array([int(x[-1]) for x in np.array(instr) if x[:5]=='calib'])
+                    self.possibleBinnings = np.array([int(x.split('ib')[-1]) for x in np.array(instr) if x[:5]=='calib'])
                     self.Ei = np.array(getHDFInstrumentEntry(instr,'ei',fromNICOS=self.fromNICOS))
                     self.A3 = np.array(getHDFEntry(f,'A3',fromNICOS=self.fromNICOS))
                     self.A4 = np.array(getHDFInstrumentEntry(instr,'A4',fromNICOS=self.fromNICOS)).reshape(-1)
@@ -431,17 +443,23 @@ class DataFile(object):
                         #self.I[:,:,:150]=0#
                         ###################
                         pass
-                    self.mask = np.zeros_like(self.I,dtype=bool)
-                    if self.binning == 8:
-                        self.mask[:,:,:2] = True
+                    #self.mask = np.zeros_like(self.I,dtype=bool)
+                    #if self.binning == 8:
+                    #    self.mask[:,:,:2] = True
             elif self.type == 'MultiFLEXX': # type is multiFLEXX
                 self.loadMultiFLEXXData(fileLocation)
             elif self.type == 'Bambus':
                 self.loadBambusData(fileLocation)
+            elif self.type == 'Flatcone':
+                return self.loadFlatcone()
+            elif self.type == 'Marmot':
+                return self.loadMarmot()
             try:
                 self.scanSteps = self.scanValues.shape[1]
             except:
                 pass
+
+            self.detectors = self.I.shape[1]
             if True:
                 for attr in dir(self):
                     # If attribute is a function or property, skip it
@@ -491,8 +509,16 @@ class DataFile(object):
 
         if self.instrument == 'CAMEA':
             self.EPrDetector = 8 
-        elif self.type in ['MultiFLEXX','FlatCone','Bambus']:
+            self.detectors = 104
+        elif self.type in ['MultiFLEXX','Flatcone','Bambus']:
             self.EPrDetector = 1
+            if self.type == 'MultiFLEXX':
+                self.detectors = 31*5
+            elif self.type == 'Flatcone':
+                self.detectors = 32
+            elif self.type == 'Bambus':
+                self.detectors = 20
+
         else:
             pass
         
@@ -694,7 +720,6 @@ class DataFile(object):
     def __hasattr__(self,s):
         return s in self.__dict__.keys()
 
-    @_tools.KwargChecker()
     def loadMultiFLEXXData(self,fileLocation,calibrationFile=None):
         """"Dedicated loader for MultiFLEXX data.
 
@@ -738,7 +763,7 @@ class DataFile(object):
         if calibrationFile is None:
             calibrationFile = MJOLNIR.__multiFLEXXNormalization__
 
-        detectors = 31
+        self.detectors = 31
         self.mask = False
 
         calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
@@ -751,7 +776,7 @@ class DataFile(object):
 
         EfTable = np.array([amplitude,final_energy,width,background]).T
         calibrations=[[EfTable,A4,bound]]
-        bound =  np.array(detectors*[0,1],dtype=int).reshape(-1,2)
+        bound =  np.array(self.detectors*[0,1],dtype=int).reshape(-1,2)
 
         self.instrumentCalibrationEdges = bound
         self.instrumentCalibrationEf = EfTable
@@ -818,7 +843,7 @@ class DataFile(object):
             
         
         #reshape into [scan points, 31 wedges, 5 energies]
-        self.I = np.array([d[detectorMap] for d in data]).reshape(-1,31*5,1)
+        self.I = np.array([d[detectorMap] for d in data]).reshape(-1,self.detectors*5,1)
 
 
         self.timer = data[:,0].astype(float)
@@ -1006,7 +1031,7 @@ class DataFile(object):
         if calibrationFile is None:
             calibrationFile = MJOLNIR.__bambusNormalization__
 
-        detectors = 20
+        self.detectors = 20
         self.mask = False
 
         calibrationData = np.genfromtxt(calibrationFile,skip_header=1,delimiter=',')
@@ -1019,7 +1044,7 @@ class DataFile(object):
 
         EfTable = np.array([amplitude,final_energy,width,background]).T
         calibrations=[[EfTable,A4,bound]]
-        bound =  np.array(detectors*[0,1],dtype=int).reshape(-1,2)
+        bound =  np.array(self.detectors*[0,1],dtype=int).reshape(-1,2)
 
         self.instrumentCalibrationEdges = bound
         self.instrumentCalibrationEf = EfTable
@@ -1236,7 +1261,13 @@ class DataFile(object):
 
         self._mask = np.zeros_like(self.I)
 
-    @_tools.KwargChecker()
+    def loadFlatcone(self):
+        loadFlatcone(self)
+
+    def loadMarmot(self):
+        loadMarmot(self)
+        
+
     def calcualteDataIndexFromDasel(self,detectorSelection=None,analyzerSelection=None):
         if detectorSelection is None:
             detectorSelection = self.detectorSelection
@@ -1260,9 +1291,8 @@ class DataFile(object):
             return detectorSelection*(analyzerLimits[self.instrument]+1)+analyzerSelection,[0] # Last index is to be able to sum over
     
     
-    @_tools.KwargChecker()
     def convert(self,binning=None,printFunction=None):
-        if self.instrument == 'CAMEA' or self.type in ['MultiFLEXX','FlatCone','Bambus']:
+        if self.instrument == 'CAMEA' or self.type in ['MultiFLEXX','Flatcone','Bambus','Marmot']:
             if binning is None:
                 binning = self.binning
         else:
@@ -1279,10 +1309,10 @@ class DataFile(object):
         Data = self.I.copy()#np.array(instrument.get('detector/data'))
 
 
-        detectors = Data.shape[1]
+        self.detectors = Data.shape[1]
         steps = Data.shape[0]
         
-        if self.type in ['MultiFLEXX','FlatCone','Bambus']:
+        if self.type in ['MultiFLEXX','Flatcone','Bambus']:
             Data.shape = (Data.shape[0],Data.shape[1],-1)
 
         A4Zero = self.A4Off#file.get('entry/sample/polar_angle_zero')
@@ -1300,17 +1330,18 @@ class DataFile(object):
             A3Zero = np.deg2rad(np.array(A3Zero))
 
         A4 = np.deg2rad(A4Normalization)
-        A4=A4.reshape(detectors,binning*self.EPrDetector,order='C')
 
-        PixelEdge = EdgesNormalization.reshape(detectors,self.EPrDetector,binning,2).astype(int)
+        A4=A4.reshape(self.detectors,binning*self.EPrDetector,order='C')
+
+        PixelEdge = EdgesNormalization.reshape(self.detectors,self.EPrDetector,binning,2).astype(int)
         A4File = self.A4.copy()
         
         A4File = A4File.reshape((-1,1,1))
 
-        A4Mean = (A4.reshape((1,detectors,binning*self.EPrDetector))+np.deg2rad(A4File-A4Zero))
+        A4Mean = (A4.reshape((1,self.detectors,binning*self.EPrDetector))+np.deg2rad(A4File-A4Zero))
         
         Intensity=np.zeros((Data.shape[0],Data.shape[1],self.EPrDetector*binning),dtype=int)
-        for i in range(detectors): # for each detector
+        for i in range(self.detectors): # for each detector
             for j in range(self.EPrDetector):
                 for k in range(binning):
                     Intensity[:,i,j*binning+k] = np.sum(Data[:,i,PixelEdge[i,j,k,0]:PixelEdge[i,j,k,1]],axis=1)
@@ -1320,39 +1351,43 @@ class DataFile(object):
         EfNormalization = EfNormalization[:,0]#.reshape(1,A4.shape[0],EPrDetector*binning)#
         #EfNormalization = EfNormalization[:,0]*(np.sqrt(2*np.pi)*EfNormalization[:,2])
         
-        EfNormalization.shape = (1,A4.shape[0],self.EPrDetector*binning)
+        EfNormalization = EfNormalization.reshape((1,A4.shape[0],self.EPrDetector*binning))
         A3 = np.deg2rad(np.array(self.A3).copy())+A3Zero #file.get('/entry/sample/rotation_angle/')
         if A3.shape[0]==1:
             A3 = A3*np.ones((steps))
         
         A3.resize((steps,1,1))
         Ei = self.Ei.copy().reshape(-1,1,1)#np.array(instrument.get('monochromator/energy'))
-        if False:
-            kf = factorsqrtEK*np.sqrt(EfMean)#.reshape(1,detectors,binning*EPrDetector)
-            
-            ki = factorsqrtEK*np.sqrt(Ei).reshape(-1,1,1)
-            # Shape everything into shape (steps,detectors,bins) (if external parameter 
-            # is changed, this is assured by A3 reshape)
-            Qx = ki-kf*np.cos(A4Mean)
-            Qy = -kf*np.sin(A4Mean)
-            QX = Qx*np.cos(A3)-Qy*np.sin(A3)
-            QY = Qx*np.sin(A3)+Qy*np.cos(A3)
-        else:
-            UB = self.sample.orientationMatrix
-            UBINV = np.linalg.inv(UB)
-            HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3),
-                np.rad2deg(A4Mean)],Ei,EfMean)
-            H,K,L = np.swapaxes(np.swapaxes(HKL,1,2),0,3)
-            self.sample.B = TasUBlib.calculateBMatrix(self.sample.cell)
+    
+        UB = self.sample.orientationMatrix
+        UBINV = np.linalg.inv(UB)
+        HKL,QX,QY = TasUBlib.calcTasQH(UBINV,[np.rad2deg(A3),
+            np.rad2deg(A4Mean)],Ei,EfMean)
+        H,K,L = np.swapaxes(np.swapaxes(HKL,1,2),0,3)
+        self.sample.B = TasUBlib.calculateBMatrix(self.sample.cell)
 
         DeltaE = Ei-EfMean
         if DeltaE.shape[0]==1:
             DeltaE = DeltaE*np.ones((steps,1,1))
         Monitor = self.Monitor.copy().reshape((steps,1,1))
-        Monitor = Monitor*np.ones((1,detectors,self.EPrDetector*binning))
+        Monitor = Monitor*np.ones((1,self.detectors,self.EPrDetector*binning))
         Normalization = EfNormalization*np.ones((steps,1,1))
-        mask = np.zeros_like(Intensity) # TODO: Redo???
-       
+        
+        mask = None # Only change from None if needed. None is caught below as default
+        if hasattr(self,'mask'):
+            if hasattr(self.mask,'shape'):
+                if self.mask.shape == Intensity.shape:
+                    mask = self.mask
+                else:
+                    warnings.warn('Size of mask of data file ({}) does not fit converted data file. No mask applied.'.format(self.name))
+            elif self.mask is False:
+                    pass # Mask is found but was simply False
+            else:
+                warnings.warn('Mask for file ({}) was found but is not used.'.format(self.name))
+
+        # Catch all non changed masks
+        if mask is None:
+            mask = np.zeros_like(Intensity)
         ###########################
         #Monitor[:,:,:binning] = 0 #
         ###########################
@@ -1370,7 +1405,7 @@ class DataFile(object):
 
 
         if convFile.instrument == 'CAMEA':
-            defectTubes = np.arange(104)[np.any(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1)),axis=1)] 
+            defectTubes = np.arange(self.detectors)[np.all(np.isnan(convFile.instrumentCalibrationA4.reshape(self.detectors,-1)),axis=1)] 
 
             if len(defectTubes)>0: # if any tubes are defect
                     if len(defectTubes)>1:
@@ -1378,14 +1413,13 @@ class DataFile(object):
                     else:
                         printFunction('Detector tube {} masked'.format(defectTubes[0]))
 
-                    newMask = np.repeat(np.isnan(convFile.instrumentCalibrationA4.reshape(104,-1))[np.newaxis],len(convFile.I),axis=0)
+                    newMask = np.repeat(np.isnan(convFile.instrumentCalibrationA4.reshape(self.detectors,-1))[np.newaxis],len(convFile.I),axis=0)
                     if np.all(convFile.mask.shape==newMask.shape):
                         newMask = np.logical_or(convFile.mask,newMask)
                     convFile.mask = newMask
         return convFile
 
 
-    @_tools.KwargChecker()
     def plotA4(self,binning=None):
         """Method to plot the fitted A4 values of the normalization table
 
@@ -1400,9 +1434,9 @@ class DataFile(object):
         """
         self.loadBinning(binning)
         binning = self.binning
-        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
+        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((self.detectors,self.EPrDetector*binning))
 
-        A4 = np.reshape(self.instrumentCalibrationA4,(104,8*binning))
+        A4 = np.reshape(self.instrumentCalibrationA4,(self.detectors,self.EPrDetector*binning))
         fig = plt.figure()
         for a4,N in zip(A4,Norm):
             plt.scatter(-a4,np.arange(len(a4)),c=N)
@@ -1413,7 +1447,6 @@ class DataFile(object):
 
         return fig
 
-    @_tools.KwargChecker()
     def plotEf(self,binning=None):
         """Method to plot the fitted Ef values of the normalization table
 
@@ -1429,9 +1462,9 @@ class DataFile(object):
         self.loadBinning(binning)
         
         binning = self.binning
-        Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
+        Ef = self.instrumentCalibrationEf[:,1].reshape(self.detectors,self.EPrDetector*binning)
         fig = plt.figure()
-        for i in range(104):
+        for i in range(self.detectors):
             plt.scatter(i*np.ones_like(Ef[i]),Ef[i],zorder=10)
         plt.xlabel('Detector number')
         plt.ylabel('Ef [meV]')
@@ -1440,7 +1473,6 @@ class DataFile(object):
 
         return fig
 
-    @_tools.KwargChecker()
     def plotEfOverview(self,binning=None):
         """Method to plot the fitted Ef values of the normalization table
 
@@ -1455,7 +1487,7 @@ class DataFile(object):
         """
         self.loadBinning(binning)
         binning = self.binning
-        Ef = self.instrumentCalibrationEf[:,1].reshape(104,8*binning)
+        Ef = self.instrumentCalibrationEf[:,1].reshape(self.detectors,self.EPrDetector*binning)
         fig = plt.figure()
         plt.imshow(Ef.T,origin='lower')
         plt.xlabel('Detector number')
@@ -1465,7 +1497,7 @@ class DataFile(object):
 
         return fig
 
-    @_tools.KwargChecker()
+
     def plotNormalization(self,binning=None):
         """Method to plot the fitted integrated intensities of the normalization table
 
@@ -1481,7 +1513,7 @@ class DataFile(object):
         
         self.loadBinning(binning)
         binning = self.binning
-        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((104,8*binning))
+        Norm = (self.instrumentCalibrationEf[:,0]*self.instrumentCalibrationEf[:,2]*np.sqrt(2*np.pi)).reshape((self.detectors,self.EPrDetector*binning))
 
         fig = plt.figure()
         plt.imshow(Norm.T,origin='lower')
@@ -1491,7 +1523,6 @@ class DataFile(object):
         plt.colorbar()
         return fig
 
-    @_tools.KwargChecker()
     def loadBinning(self,binning):
         """Small function to check if current binning is equal to wanted binning and if not reloads to binning wanted"""
 
@@ -1511,125 +1542,11 @@ class DataFile(object):
             binning = binning[0]
         self._binning = binning
 
-        self.instrumentCalibrationEf.shape = (-1,4)
-        self.instrumentCalibrationA4.shape = (-1)
-        self.instrumentCalibrationEdges.shape = (-1,2)
+        self.instrumentCalibrationEf = self.instrumentCalibrationEf.reshape(-1,4)
+        self.instrumentCalibrationA4 = self.instrumentCalibrationA4.reshape(-1)
+        self.instrumentCalibrationEdges = self.instrumentCalibrationEdges.reshape(-1,2)
         
 
-
-
-    def saveNXsqom(self,saveFileName):
-        """Save converted file into an NXsqom.
-
-        Args:
-
-            - saveFileName (string): File name to be saved into.
-
-        """
-
-        if not self.__hasattr__('original_fileLocation'):
-            raise AttributeError('Data file does not have link to the original file. This is needed to make a complete copy when creating nxs-files')
-        if not self.type =='nxs':
-            raise AttributeError('Only nxs typed files can be saved as nxs-files.')
-
-        datafile = self.original_fileLocation
-        Intensity = self.I # Dont swap axis as they are correct!
-        Monitor = self.Monitor
-        QX = self.qx
-        QY = self.qy
-        DeltaE = self.energy 
-        binning = self.binning
-        Normalization = self.Norm
-        H = self.h
-        K = self.k
-        L = self.l
-
-        if os.path.exists(saveFileName):
-            warnings.warn('The file {} exists alread. Old file will be renamed to {}.'.format(saveFileName,saveFileName+'_old'))
-            if os.path.exists(saveFileName+'_old'):
-                os.remove(saveFileName+'_old')
-            os.rename(saveFileName,saveFileName+'_old')
-        with hdf.File(saveFileName,'w') as fd:
-            with hdf.File(datafile,'r') as fs:
-                group_path = fs['/entry'].parent.name
-                
-                group_id = fd.require_group(group_path)
-                
-                
-                fs.copy('/entry', group_id, name="/entry")
-                
-                definition = fd.create_dataset('entry/definition',(1,),dtype='S70',data=np.string_('NXsqom'))
-                definition.attrs['NX_class'] = 'NX_CHAR'
-                
-                process = fd.create_group('entry/reduction')
-                process.attrs['NX_class']=b'NXprocess'
-                proc = process.create_group('MJOLNIR_algorithm_convert')
-                proc.attrs['NX_class']=b'NXprocess'
-                author= proc.create_dataset('author',shape=(1,),dtype='S70',data=np.string_('Jakob Lass'))
-                author.attrs['NX_class']=b'NX_CHAR'
-                
-                date= proc.create_dataset('date',shape=(1,),dtype='S70',data=np.string_(datetime.datetime.now()))
-                date.attrs['NX_class']=b'NX_CHAR'
-                
-                description = proc.create_dataset('description',shape=(1,),dtype='S70',data=np.string_('Conversion from pixel to Qx,Qy,E in reference system of instrument.'))
-                description.attrs['NX_class']=b'NX_CHAR'
-                
-                rawdata = proc.create_dataset('rawdata',shape=(1,),dtype='S200',data=np.string_(os.path.realpath(datafile)))
-                rawdata.attrs['NX_class']=b'NX_CHAR'
-
-                normalizationString = proc.create_dataset('binning',shape=(1,),dtype='int32',data=binning)
-                normalizationString.attrs['NX_class']=b'NX_INT'
-                
-                data = fd.get('entry/data')
-                
-                fileLength = Intensity.shape
-                
-                Int = data.create_dataset('intensity',shape=(fileLength),dtype='int32',data=Intensity)
-                Int.attrs['NX_class']='NX_INT'
-
-                if self.fromNICOS:
-                    counts = np.array(fd.get('entry/data/data'))
-                    Int = data.create_dataset('counts',dtype='int32',data=counts)
-                    Int.attrs['NX_class']='NX_INT'
-                    instr = getInstrument(fd)
-                    Int = instr.create_dataset('detector/counts',dtype='int32',data=counts)
-                    Int.attrs['NX_class']='NX_INT'
-                
-                monitor = data.create_dataset('monitor',shape=(fileLength),dtype='int32',data=Monitor)
-                monitor.attrs['NX_class']=b'NX_INT'
-                
-                if fd.get('entry/monitor_2') is None:
-                    mon = fd.create_group('entry/monitor_2')
-                    monitor = mon.create_dataset('data',shape=(fileLength),dtype='int32',data=Monitor)
-                    monitor.attrs['NX_class']=b'NX_INT'
-                else:
-                    pass
-
-                
-
-                normalization = data.create_dataset('normalization',shape=(fileLength),dtype='float32',data=Normalization)
-                normalization.attrs['NX_class']=b'NX_FLOAT'
-                
-                qx = data.create_dataset('qx',shape=(fileLength),dtype='float32',data=QX)
-                qx.attrs['NX_class']=b'NX_FLOAT'
-                qx.attrs['units']=b'1/angstrom'
-                
-                qy = data.create_dataset('qy',shape=(fileLength),dtype='float32',data=QY)
-                qy.attrs['NX_class']=b'NX_FLOAT'
-                qy.attrs['units']=b'1/angstrom'
-
-                en = data.create_dataset('en',shape=(fileLength),dtype='float32',data=DeltaE)
-                en.attrs['NX_class']=b'NX_FLOAT'
-                en.attrs['units']=b'mev'
-
-                h = data.create_dataset('h',shape=(fileLength),dtype='float32',data=H)
-                k = data.create_dataset('k',shape=(fileLength),dtype='float32',data=K)
-                l = data.create_dataset('l',shape=(fileLength),dtype='float32',data=L)
-                for x in [h,k,l]:
-                    x.attrs['NX_class']=b'NX_FLOAT'
-                    x.attrs['units']=b'rlu'
-
-                #fd.close()
 
     def updateCalibration(self,calibrationFile,overwrite=False):
         """Update calibrations for the data file. Does not save the changes.
@@ -1762,7 +1679,7 @@ class DataFile(object):
                 for localMonoQx,localMonoQy in zip(monoQx,monoQy):
                     if monoInside is None:
                         monoInside = np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
-                        monoInside.dtype = bool
+                        monoInside = monoInside.astype(bool)
                     else:
                         monoInside += np.linalg.norm([qx-localMonoQx,(qy-localMonoQy)*factor],axis=0)<dqx
             
@@ -1773,7 +1690,7 @@ class DataFile(object):
                 for localAnaQx,localAnaQy in zip(anaQx,anaQy):
                     if anaInside is None:
                         anaInside = np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
-                        anaInside.dtype = bool
+                        anaInside = anaInside.astype(bool)
                     else:
                         anaInside += np.linalg.norm([qx-localAnaQx,(qy-localAnaQy)*factor],axis=0)<dqx
             
@@ -1795,7 +1712,7 @@ class DataFile(object):
                 for localMonoH,localMonoK,localMonoL in zip(monoH,monoK,monoL):
                     if monoInside is None:
                         monoInside = np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
-                        monoInside.dtype = bool
+                        monoInside = monoInside.astype(bool)
                     else:
                         monoInside += np.linalg.norm(np.array([H-localMonoH,K-localMonoK,L-localMonoL])*factor,axis=0)<dH
 
@@ -1809,7 +1726,7 @@ class DataFile(object):
                 for localAnaH,localAnaK,localAnaL in zip(anaH,anaK,anaL):
                     if anaInside is None:
                         anaInside = np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
-                        anaInside.dtype = bool
+                        anaInside = anaInside.astype(bool)
                     else:
                         anaInside += np.linalg.norm(np.asarray([H-localAnaH,K-localAnaK,L-localAnaL])*factor,axis=0)<dH
 
@@ -1823,309 +1740,6 @@ class DataFile(object):
             mask = np.logical_not(mask)
         return mask
 
-    def saveHDF(self,saveFileName):
-        """Save current HDF file object into an HDF file.
-
-        Args:
-
-            - saveFileName (string): File name to be saved into.
-
-        """
-        
-        
-        def addMetaData(self,entry):
-            dset = entry.create_dataset('start_time',(1,),dtype='<S70')
-            dset[0] = np.string_(self.startTime)
-
-            dset = entry.create_dataset('end_time',(1,),dtype='<S70')
-            dset[0] = np.string_(self.endTime)
-            
-            dset = entry.create_dataset('experiment_identifier',(1,),dtype='<S70')
-            dset[0] = self.experimentIdentifier.encode('utf8')
-
-            dset = entry.create_dataset('instrument',(1,),dtype='<S70')
-            dset[0] = self.instrument.title().upper().encode('utf8')
-
-            dset = entry.create_dataset('comment',(1,),data=np.string_(self.comment))
-
-            dset = entry.create_dataset('title',(1,),data=np.string_(self.title))
-
-            dset = entry.create_dataset('proposal_id',(1,),data=np.string_(self.proposalId))
-
-            dset = entry.create_dataset('proposal_title',(1,),data=np.string_(self.proposalTitle))
-
-            cont = entry.create_group('local_contact')
-            cont.attrs['NX_class'] = np.string_('NXuser')
-            dset = cont.create_dataset('name',(1,),data=np.string_(self.localContactName))
-
-            us = entry.create_group('proposal_user')
-            us.attrs['NX_class'] = np.string_('NXuser')
-            dset = us.create_dataset('name',(1,),data=np.string_(self.proposalUserName))
-            dset = us.create_dataset('email',(1,),data=np.string_(self.proposalUserEmail))
-
-            pus = entry.create_group('user')
-            pus.attrs['NX_class'] = np.string_('NXuser')
-            dset = pus.create_dataset('name',(1,),data=np.string_(self.userName))
-            dset = pus.create_dataset('email',(1,),data=np.string_(self.userEmail))
-            dset = pus.create_dataset('address',(1,),data=np.string_(self.userAddress))
-            dset = pus.create_dataset('affiliation',(1,),data=np.string_(self.userAffiliation))
-
-            
-
-        def addMono(self,inst):
-            mono = inst.create_group('monochromator')
-            mono.attrs['NX_class'] = np.string_('NXmonochromator')
-            
-                
-            dset = mono.create_dataset('type',(1,),dtype='S70')
-            dset[0] = getattr(self,'monochromatorType')
-            
-            attributes = ['d_spacing','horizontal_curvature','vertical_curvature',
-                'horizontal_curvature_zero','vertical_curvature_zero',
-                'gm','gm_zero','tlm','tlm_zero','tum','tum_zero']
-            units = ['angstrom']+['meter']*4+['degree']*6
-            
-            
-            values = ['monochromator'+x for x in ['DSpacing','HorizontalCurvature',
-                    'VerticalCurvature','HorizontalCurvatureZero','VerticalCurvatureZero',
-                    'GM','GMZero','TLM','TLMZero','TUM','TUMZero']]
-            
-            for att,val,unit in zip(attributes,values,units):
-                if val in self.__dict__:
-                    dset = mono.create_dataset(att,(1,),'float32')
-                    dset[0] = getattr(self,val)
-                    dset.attrs['units'] = unit
-
-
-
-            monoSlit = inst.create_group('monochromator_slit')
-            monoSlit.attrs['NX_class'] = np.string_('NXmonochromatorslit')
-
-
-            attributes = [x+zero for x in ['bottom','left','right','top'] for zero in ['','_zero']]
-            values = ['monochromatorSlit'+x+zero for x in ['Bottom','Left','Right','Top'] for zero in ['','Zero']]
-            if self.fromNICOS: 
-                attributes += ['x_gap','y_gap']
-                values += ['monochromatorSlit'+x+'Gap' for x in ['X','Y']]
-            
-            for att,value in zip(attributes,values):
-                val =  getattr(self,value)
-                if not val.dtype == 'O':
-                    dset = monoSlit.create_dataset(att,(1,),'float32')
-                    dset[0] = val
-                    dset.attrs['units'] = np.string_('mm')
-
-        
-        def addAna(self,inst):
-            ana = inst.create_group('analyzer')
-            ana.attrs['NX_class'] = np.string_('NXcrystal')
-            
-            attributes = ['d_spacing','nominal_energy','polar_angle','polar_angle_offset']+self.fromNICOS*['polar_angle_raw']
-            values = ['analyzer'+x.replace('_',' ').title().replace(' ','') for x in attributes]
-            units = ['anstrom','mev','degree','degree']+self.fromNICOS*['degree']
-
-
-            for att,value,unit in zip(attributes,values,units):
-                data = getattr(self,value)
-                dset = ana.create_dataset(att,(len(data),),'float32')
-                dset[:len(data)] = data
-                if not unit is None:
-                    dset.attrs['units'] = np.string_(unit)
-                
-            dset = ana.create_dataset('type',data = np.array([np.string_(self.analyzerType)]))
-            dset = ana.create_dataset('analyzer_selection',(1,),'int32',data=self.analyzerSelection)
-            
-
-
-        def addDetector(inst):
-            det = inst.create_group('detector')
-            det.attrs['NX_class'] = np.string_('NXdetector')
-
-            
-        def addSample(self,entry):
-            sam = entry.create_group('sample')
-            sam.attrs['NX_class'] = np.string_('NXsample')
-            dset = sam.create_dataset('name',(1,),data=np.string_(self.sample.name))
-
-            ub = self.sample.orientationMatrix/(2*np.pi) # 2pi is for change in convention
-            
-            dset = sam.create_dataset('orientation_matrix',data=ub)
-            dset = sam.create_dataset('plane_vector_1',data=self.sample.plane_vector1)
-            dset = sam.create_dataset('plane_vector_2',data=self.sample.plane_vector2)
-
-            normal = self.sample.planeNormal
-            dset = sam.create_dataset('plane_normal',data=normal)
-
-            cell = np.array(self.sample.unitCell,dtype='float32')
-            dset = sam.create_dataset('unit_cell',data=cell)
-
-            dset = sam.create_dataset('azimuthal_angle',data=self.sample.azimuthalAngle)
-            dset.attrs['units']=np.string_('degree')
-            dset = sam.create_dataset('x',data=self.sample.x)
-            dset.attrs['units']=np.string_('degree')
-            dset = sam.create_dataset('y',data=self.sample.y)
-            dset.attrs['units']=np.string_('degree')
-
-            if hasattr(self,'temperature'):
-                if not self.temperature is None:
-                    dset = sam.create_dataset('temperature',data=self.temperature,dtype='float32')
-                    dset.attrs['units'] = np.string_('K')
-
-            if hasattr(self,'magneticField'):
-                if not self.magneticField is None:
-                    dset = sam.create_dataset('magnetic_field',data=self.magneticField,dtype='float32')
-                    dset.attrs['units'] = np.string_('T')
-
-            if hasattr(self,'electricField'):
-                if not self.electricField is None:
-                    dset = sam.create_dataset('electric_field',data=self.electricField,dtype='float32')
-                    dset.attrs['units'] = np.string_('V') # TODO: Check if this unit is correct.
-
-            for attr,value in zip(['sgu','sgl'],['sgu','sgl']):
-                dset = sam.create_dataset(attr,(1,),data=getattr(self.sample,value))
-                dset.attrs['units']=np.string_('degree')
-                dset = sam.create_dataset(attr+'_zero',(1,),data=getattr(self.sample,value+'Zero'))
-                dset.attrs['units']=np.string_('degree')
-            
-        def makeTheta(self):
-            
-            k = np.sqrt(self.Ei/2.072)
-            fd = np.pi/(k*self.monochromatorDSpacing[0])
-            theta = np.degrees(np.arcsin(fd))
-            
-            return theta,2*theta
-        
-            
-        def storeScanData(self,entry):
-            nxdata = entry.create_group('data')
-            nxdata.attrs['NX_class'] = np.string_('NXdata')
-            
-            det = entry['CAMEA/detector']
-            dset = det.create_dataset('counts',data=self.I.swapaxes(1,2), compression="gzip", compression_opts=6)
-            dset.attrs['target'] = np.string_('/entry/CAMEA/detector/counts')
-            nxdata['counts'] = dset
-            
-            dset = det.create_dataset('detector_selection',(1,),'int32',data=self.detectorSelection)
-            
-            dset = det.create_dataset('summed_counts',data=np.sum(self.I,axis=(1,2)))
-            dset.attrs['target'] = np.string_('/entry/CAMEA/detector/summed_counts')
-            nxdata['summed_counts'] = dset
-            
-            sam = entry['sample']
-
-            dset = sam.create_dataset('rotation_angle',data=self.A3,dtype='float32')
-            dset_zero = sam.create_dataset('rotation_angle_zero',data=self.A3Off,dtype='float32')
-
-            dset.attrs['units'] = np.string_('degree')
-            dset_zero.attrs['units'] = np.string_('degree')
-            
-            dset = sam.create_dataset('polar_angle',data=self.A4,dtype='float32')
-            dset_zero = sam.create_dataset('polar_angle_zero',data=self.A4Off,dtype='float32')
-
-            dset.attrs['units'] = np.string_('degree')
-            dset_zero.attrs['units'] = np.string_('degree')
-            dset.attrs['units'] = np.string_('degree')
-            dset_zero.attrs['units'] = np.string_('degree')
-            
-
-            mono = entry['CAMEA/monochromator']
-            
-            dset = mono.create_dataset('energy',data=self.Ei,dtype='float32')
-            dset.attrs['units'] = np.string_('mev')
-
-            dset = mono.create_dataset('rotation_angle',data=self.monochromatorRotationAngle,dtype='float32')
-            dset.attrs['units'] = np.string_('degree')
-            if hasattr(self,'monochromatorRotationAngleZero'):
-                v = self.monochromatorRotationAngleZero
-            else:
-                v = 0.0
-            dset = mono.create_dataset('rotation_angle_zero',data=v,dtype='float32')
-            dset.attrs['units'] = np.string_('degree')
-
-
-            entry.create_dataset('scancommand',(1,),data=np.string_(self.scanCommand))
-            entry.create_dataset('scanvars',data=np.string_([x.encode('utf8') for x in self.scanParameters]))
-            
-            # save the correct scan variables 
-
-            for variable,pos in zip(self.scanParameters,self.scanDataPosition):
-                positionRelativeEntry = '/'.join([x for x in pos.split('/')[2:]])
-                original = entry.get(positionRelativeEntry)
-                nxdata[variable] = original
-                nxdata[variable].attrs['target'] = np.string_('/entry/'+positionRelativeEntry)
-
-
-            control = entry.create_group('control')
-            control.attrs['NX_class'] = np.string_('NXmonitor')
-            mons = self.Monitor
-            control.create_dataset('data',data=mons,dtype='int32')
-            dset = control.create_dataset('preset',(1,),dtype='int32')
-            dset[0] = self.MonitorPreset
-            dset = control.create_dataset('mode',(1,),data=np.string_(self.MonitorMode))
-            time = self.Time
-            dset = control.create_dataset('time',data=time,dtype='float32')
-            dset.attrs['units'] = np.string_('seconds')
-
-            time =  self.absoluteTime
-            if time[0] == np.array(None):
-                time = [0.0]
-            dset = control.create_dataset('absolute_time',data=time,dtype='float32')
-            dset.attrs['units'] = np.string_('seconds')
-            
-            pb = entry.create_group('proton_beam')
-            pb.attrs['NX_class'] = np.string_('NXmonitor')
-            vals = self.protonBeam
-            dset = pb.create_dataset('data',data=vals,dtype='int32')
-
-        with hdf.File(saveFileName,'w') as f:
-            
-            f.attrs['file_name'] = np.string_(saveFileName)
-            
-            
-            import datetime,time
-            cT = datetime.datetime.now()
-            
-            f.attrs['file_time'] = np.string_('{}-{}-{}T{}:{}:{}{:+02.0f}:00'.format(cT.year,cT.month,cT.day,cT.hour,cT.minute,cT.second,-time.timezone/(60*60)))
-            
-            entry = f.create_group('entry')
-            entry.attrs['NX_class'] = np.string_('NXentry')
-        
-            
-            #------------ Instrument
-            inst = entry.create_group(b'CAMEA')
-            inst.attrs['NX_class'] = np.string_('NXinstrument')
-
-            if hasattr(self,'singleDetector1'): # If the single detectors have been loaded
-                for idx in ['1','8']:
-                    segment = inst.create_group('segment_'+idx)
-                    dset = segment.create_dataset('data',data=getattr(self,'singleDetector'+idx),dtype='int32')
-                    dset.attrs['units']=np.string_('counts')
-            
-            
-        
-            attribute = ['a4offset','amplitude','background','boundaries','final_energy','width']
-            for calibration,binning in zip(self.instrumentCalibrations,self.possibleBinnings):
-                if binning is None: continue
-                pixelCalib = inst.create_group('calib{}'.format(binning))
-                Etable, A4, bound = calibration
-                amp,Ef,width,bg = Etable.T
-                
-                values = [A4,amp,bg,bound,Ef,width]
-                dtypes = ['float32','float32','float32','int','float32','float32']
-                units = ['degree',None,None,None,'mev','mev']
-                for att,value,dtype,unit in zip(attribute,values,dtypes,units):
-                    dset = pixelCalib.create_dataset(att,data=value,dtype=dtype)
-                    if not unit is None:
-                        dset.attrs['units']=np.string_(unit)
-                
-            
-            addMetaData(self,entry)
-            addMono(self,inst)
-            addAna(self,inst)
-            addDetector(inst)
-            addSample(self,entry)
-            storeScanData(self,entry)
-
 
             
 def decodeStr(string):
@@ -2137,7 +1751,6 @@ def decodeStr(string):
     #except:
     #    return string
 
-@_tools.KwargChecker()
 def getScanParameter(self,f):
 
     """Extract scan parameter from hdf file.
@@ -2251,18 +1864,16 @@ def getScanParameter(self,f):
                     
                 else:
                     scanParameters.append(item)
-                
-                    scanUnits.append(decodeStr(fItem.attrs['units']))
-                    scanValues.append(np.array(fItem))
+                    
                     try:
+                        scanUnits.append(decodeStr(fItem.attrs['units']))
+                        scanValues.append(np.array(fItem))
                         scanDataPosition.append(decodeStr(fItem.attrs['target']))
                     except:
                         pass
     return scanParameters,np.array(scanValues),scanUnits,scanDataPosition
 
 
-
-@_tools.KwargChecker()
 def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
                         title='EmptyDataFileTitle', name='EmptyDataFile',
                         temperature = None, electricField = None, magneticField = None,
@@ -2372,7 +1983,7 @@ def createEmptyDataFile(A3,A4,Ei,sample,Monitor=50000, A3Off = 0.0, A4Off = 0.0,
                     A4 = data[:,-1]
                     bound = data[:,[7,8]]
                     calib.append([EfTable,A4,bound])
-                    binning.append(len(A4)/(104*8))
+                    binning.append(len(A4)/(df.detectors*df.EPrDetector))
             df.instrumentCalibrations = np.array(calib,dtype=object)
             df.possibleBinnings = binning
             df.loadBinning(1)
@@ -2548,12 +2159,6 @@ def extractData(files):
         return I,Monitor,a3,a3Off,a4,a4Off,instrumentCalibrationEf,\
         instrumentCalibrationA4,instrumentCalibrationEdges,Ei,scanParameters,scanParamValue,scanParamUnit,temperature
 
-def assertFile(file):
-    """Make sure that file exists for methods to work"""
-    if not os.path.isfile(file):
-        df = DataFile(file.replace('.nxs','.hdf'))
-        con = df.convert(binning=8)
-        con.saveNXsqom(file)
 
 def checkNICOS(f):
     """Check if open hdf file is NICOS"""
@@ -2576,3 +2181,426 @@ def isMultiFLEXX(fileLocation):
         line = line.strip().split(':')[0].split('_')[0]
     
     return line == 'mira'
+HDFTranslationFlatcone = \
+                 {'sample':'/entry0/sample',
+                 # 'sampleName':'/entry0/sample/name',
+                  'sampleParameters':'/entry0/sample/param',
+                  #'intensity':'entry0/data_scan/pastis_data',
+                  'startTime':'entry0/start_time',
+                  'Monitor':'entry0/monitor/data',
+                  'twotheta':'entry0/IN20/A4/value',
+                  'time':'entry0/time',
+                  'endTime':'entry0/end_time',
+                  'experimentalIdentifier':'entry0/experiment_identifier',
+                  'comment':'entry0/comment',
+                  'proposal':'entry0/experiment_identifier',
+                  'proposalTitle':'entry0/proposal_title',
+                  'localContact':'entry0/user/namelocalcontact',
+                  'proposalUser':'entry0/user/name',
+                #  'proposalEmail':'entry0/user/email',
+                  'user':'entry0/user/name',
+                #  'email':'entry0/user/email',
+                #  'address':'entry0/user/address',
+                #  'affiliation':'entry0/user/affiliation',
+                  'A3':'entry0/IN20/A3P/value',
+                  'Ei':'entry0/IN20/Monochromator/ei',
+                  'temperature':'entry0/sample/temperature',
+                  'magneticField':'entry0/sample/magnetic_field',
+                  'electricField':'entry0/sample/electric_field',
+                  'scanCommand':'entry0/IN20/command_line/actual_command',
+                  'title':'entry0/title',
+                # 'absoluteTime':'entry0/control/absolute_time',
+                  'source':'entry0/IN20/source/power',
+
+}
+
+
+## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
+
+HDFTranslationFunctionsFlatcone = defaultdict(lambda : [])
+
+HDFTranslationFunctionsFlatcone['sampleName'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['startTime'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['endTime'] = [['__getitem__',[0]]]
+HDFTranslationFunctionsFlatcone['experimentalIdentifier'] = [['__getitem__',[0]]]
+HDFTranslationFunctionsFlatcone['comment'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['proposal'] = [['__getitem__',[0]]]
+HDFTranslationFunctionsFlatcone['proposalTitle'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['localContact'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['proposalUser'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['proposalEmail'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['user'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['email'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['address'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['affiliation'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['scanCommand'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsFlatcone['title'] = [['__getitem__',[0]],['decode',['utf8']]]
+
+def getHDFEntryFlatcone(f,prop):
+    if prop in HDFTranslationFlatcone:
+        value = f.get(HDFTranslationFlatcone[prop])
+    else:
+        value = f.get(prop)
+    value = np.asarray(value)
+    if prop in HDFTranslationFunctionsFlatcone and not value is None:
+        for func,args in HDFTranslationFunctionsFlatcone[prop]:
+            try:
+                value = getattr(value,func)(*args)
+            except IndexError as e:
+                value = 'Property not found'
+                break
+                
+        return value
+    else:
+        return value
+
+
+def visitor_func(name, node, obj, exclude=None):
+    if not exclude is None:
+        if name in exclude: return
+    if isinstance(node, hdf.Dataset):
+        attrname = name.split('/')[-1]#.replace('/','_')
+        setattr(obj,attrname,np.asarray(node))
+    else:
+        pass#node.visititems(lambda name, node: visitor_func(name, node, obj))
+
+class TempSample():
+    def __init__(self):
+        pass
+
+def loadFlatcone(self):
+    
+    with hdf.File(self.fileLocation) as f:
+        self.possibleBinnings = [1] # Standard value (1 energy/detector)
+        self.binning = 1
+
+        ## No dasel
+        self.analyzerSelection = 0
+        self.detectorSelection = 0
+
+        # Get all parameters defined in HDFTranslationFlatcone
+        for key,destination in HDFTranslationFlatcone.items():
+            setattr(self,key,getHDFEntryFlatcone(f,key))
+
+        # extract sample parameters
+        sample = f.get(HDFTranslationFlatcone['sample'])
+        temp_sample = TempSample()
+        
+        sample.visititems(lambda name, node: visitor_func(name, node, temp_sample,exclude=HDFTranslationFlatcone))
+
+        
+        # get intensities
+        basefolder = '/entry0/data_scan/pastis_data'
+        parameters = ['ii','nn','yy','zz']
+        prepend = ['','e_','v_'] # i.e. an entry would be prepend[0]+parameters[0] = ii, or [1],[1] = e_nn
+        for param in parameters:
+            for pre in prepend:
+                title = pre+param
+                setattr(self,title,np.asarray(f.get(basefolder+'/'+title)))
+
+
+
+    sample = {}    
+    cell = np.asarray([temp_sample.AS,temp_sample.BS,temp_sample.CS,temp_sample.AA,temp_sample.BB,temp_sample.CC]).flatten()
+
+    for param,value in zip(['a','b','c','alpha','beta','gamma'],cell):
+        sample[param] = value
+
+
+    q1 = np.asarray([temp_sample.AX,temp_sample.AY,temp_sample.AZ]).flatten()
+    q2 = np.asarray([temp_sample.BX,temp_sample.BY,temp_sample.BZ]).flatten()
+
+
+
+    Ei = 10.0 # TODO: What is the good solution here? Dummy incoming energy needed to calcualte UB
+    k = np.sqrt(Ei)*factorsqrtEK
+
+    Cell = TasUBlib.calcCell(cell)
+    B = TasUBlib.calculateBMatrix(Cell)
+
+    A3offset = float(0)# TODO: CHECK! self.Sample_psi0.split(' ')[0])
+
+    A41 = TasUBlib.calTwoTheta(B,[*q1,Ei,Ei],-1)
+    A31 = TasUBlib.calcTheta(k,k,A41)+A3offset
+    A42 = TasUBlib.calTwoTheta(B,[*q2,Ei,Ei],-1)
+    A32 = TasUBlib.calcTheta(k,k,A42)
+
+    planeVector1 = list(q1)
+    planeVector1.append(A31) # A3 
+    planeVector1.append(A41) # A4
+    [planeVector1.append(0.0) for _ in range(2)]# append values for gonios set to zero
+    planeVector1.append(Ei)
+    planeVector1.append(Ei)
+
+    planeVector2 = list(q2)
+    planeVector2.append(A32) # A3 
+    planeVector2.append(A42) # A4 
+    [planeVector2.append(0.0) for _ in range(2)]# append values for gonios set to zero
+    planeVector2.append(Ei)
+    planeVector2.append(Ei)
+
+    # add correct angle in theta between the two reflections
+    between = TasUBlib.tasAngleBetweenReflections(B,np.array(planeVector1),np.array(planeVector2))
+
+    planeVector2[3]+=between
+
+    sample['projectionVector1']=np.array(planeVector1)
+    sample['projectionVector2']=np.array(planeVector2)
+
+    sample['name'] = 'Unknown Sample Name'#self.Sample_samplename
+
+
+    self.sample = MJOLNIR.Data.Sample.Sample(**sample)
+
+    self._A4Off = 0.0
+    self._A3Off = 0.0
+
+    self._A4 = self.twotheta
+
+
+
+    self.possibleBinnings = [1]
+    calibrations = []
+    for binning in self.possibleBinnings:
+        fileName = getattr(MJOLNIR,'__flatConeNormalization__'.format(binning))
+        calib = np.loadtxt(fileName,delimiter=',',skiprows=1)
+        calibrations.append([calib[:,3:7],calib[:,-1],calib[:,7:9]])
+    self.instrumentCalibrations = calibrations
+    self.loadBinning(self.binning)
+    self.EPrDetector = 1
+    self.detectors = 31
+
+    _,*params,_,numpoints = self.scanCommand.strip().split(' ')
+    numpoints = int(numpoints)
+    ## Extract scan parameters
+    params = np.asarray(params).reshape(-1,4)
+    self.scanParameters = params[:,0]
+    self.scanValues = np.asarray([np.arange(float(p[1]),float(p[1])+numpoints*float(p[3]),float(p[3])) for p in params])
+    self.scanUnits = ['N/A' for _ in self.scanParameters]
+
+    self.instrument = 'Flatcone'
+
+    self.I = self.ii.T
+    
+
+
+HDFTranslationMarmot = \
+                 {'sample':'/entry0/sample',
+                 # 'sampleName':'/entry0/sample/name',
+                  'sampleParameters':'/entry0/sample/param',
+                  'intensity':'entry0/data_scan/detector_data/data',
+                  'startTime':'entry0/start_time',
+                  'twotheta':'entry0/THALES/A4/value',
+                  'time':'entry0/time',
+                  'endTime':'entry0/end_time',
+                  'experimentalIdentifier':'entry0/experiment_identifier',
+                  'comment':'entry0/comment',
+                  'proposal':'entry0/experiment_identifier',
+                  'proposalTitle':'entry0/proposal_title',
+                  'localContact':'entry0/user/namelocalcontact',
+                  'proposalUser':'entry0/user/name',
+                  'scanPoints': 'entry0/data_scan/actual_step',
+                  'labels': 'entry0/data_scan/scanned_variables/variables_names/label',
+                  'scanData': 'entry0/data_scan/scanned_variables/data',
+                #  'proposalEmail':'entry0/user/email',
+                  'user':'entry0/user/name',
+                #  'email':'entry0/user/email',
+                #  'address':'entry0/user/address',
+                #  'affiliation':'entry0/user/affiliation',
+                  'A3':'entry0/THALES/A3P/value',
+                  'A4':'entry0/THALES/A4/value',
+                  'A4Off':'entry0/THALES/A4/offset_value',
+                  'Ei':'entry0/THALES/Monochromator/ei',
+                  'temperature':'entry0/sample/temperature',
+                  'magneticField':'entry0/sample/magnetic_field',
+                  'electricField':'entry0/sample/electric_field',
+                  'scanCommand':'entry0/THALES/command_line/actual_command',
+                  'title':'entry0/title',
+                # 'absoluteTime':'entry0/control/absolute_time',
+                  'source':'entry0/THALES/source/power',
+                  'scanned_variables_data':'entry0/data_scan/scanned_variables/data',
+                  'scanned_variables_label':'entry0/data_scan/scanned_variables/variables_names/label',
+
+}
+
+
+## Default dictionary to perform on loaded data, i.e. take the zeroth element, swap axes, etc
+
+HDFTranslationFunctionsMarmot = defaultdict(lambda : [])
+
+HDFTranslationFunctionsMarmot['sampleName'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['startTime'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['endTime'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['experimentalIdentifier'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['comment'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['proposal'] = [['__getitem__',[0]]]
+HDFTranslationFunctionsMarmot['proposalTitle'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['localContact'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['proposalUser'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['proposalEmail'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['user'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['email'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['address'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['affiliation'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['scanCommand'] = [['__getitem__',[0]],['decode',['utf8']]]
+HDFTranslationFunctionsMarmot['title'] = [['__getitem__',[0]],['decode',['utf8']]]
+
+def getHDFEntryMarmot(f,prop):
+    if prop in HDFTranslationMarmot:
+        value = f.get(HDFTranslationMarmot[prop])
+    else:
+        value = f.get(prop)
+    value = np.asarray(value)
+    if prop in HDFTranslationFunctionsMarmot and not value is None:
+        for func,args in HDFTranslationFunctionsMarmot[prop]:
+            try:
+                value = getattr(value,func)(*args)
+            except IndexError as e:
+                value = 'Property not found'
+                break
+                
+        return value
+    else:
+        return value
+
+
+
+def loadMarmot(self, normalizationTable = r'C:\Users\lass_j\Documents\Collaborations\Marmot\Normalization_054640.table'):
+    with hdf.File(self.fileLocation) as f:
+        self.possibleBinnings = [1] # Standard value (1 energy/detector)
+        self.binning = 1
+
+        ## No dasel
+        self.analyzerSelection = 0  
+        self.detectorSelection = 0
+
+        # Get all parameters defined in HDFTranslationFlatcone
+        for key,destination in HDFTranslationMarmot.items():
+            setattr(self,key,getHDFEntryMarmot(f,key))
+
+        # extract sample parameters
+        sample = f.get(HDFTranslationMarmot['sample'])
+        temp_sample = TempSample()
+        
+        sample.visititems(lambda name, node: visitor_func(name, node, temp_sample,exclude=HDFTranslationMarmot))
+
+        
+
+    
+    sample = {}    
+    cell = np.asarray([temp_sample.unit_cell_a,temp_sample.unit_cell_b,temp_sample.unit_cell_c,temp_sample.unit_cell_alpha,temp_sample.unit_cell_beta,temp_sample.unit_cell_gamma]).flatten()
+
+    for param,value in zip(['a','b','c','alpha','beta','gamma'],cell):
+        sample[param] = value
+
+
+    q1 = np.asarray([temp_sample.ax,temp_sample.ay,temp_sample.az]).flatten()
+    q2 = np.asarray([temp_sample.bx,temp_sample.by,temp_sample.bz]).flatten()
+
+
+
+    Ei = 10.0 # TODO: What is the good solution here? Dummy incoming energy needed to calcualte UB
+    k = np.sqrt(Ei)*factorsqrtEK
+
+    Cell = TasUBlib.calcCell(cell)
+    B = TasUBlib.calculateBMatrix(Cell)
+
+    A3offset = float(0)# TODO: CHECK! self.Sample_psi0.split(' ')[0])
+
+    A41 = TasUBlib.calTwoTheta(B,[*q1,Ei,Ei],-1)
+    A31 = TasUBlib.calcTheta(k,k,A41)+A3offset
+    A42 = TasUBlib.calTwoTheta(B,[*q2,Ei,Ei],-1)
+    A32 = TasUBlib.calcTheta(k,k,A42)
+
+    planeVector1 = list(q1)
+    planeVector1.append(A31) # A3 
+    planeVector1.append(A41) # A4
+    [planeVector1.append(0.0) for _ in range(2)]# append values for gonios set to zero
+    planeVector1.append(Ei)
+    planeVector1.append(Ei)
+
+    planeVector2 = list(q2)
+    planeVector2.append(A32) # A3 
+    planeVector2.append(A42) # A4 
+    [planeVector2.append(0.0) for _ in range(2)]# append values for gonios set to zero
+    planeVector2.append(Ei)
+    planeVector2.append(Ei)
+
+    # add correct angle in theta between the two reflections
+    between = TasUBlib.tasAngleBetweenReflections(B,np.array(planeVector1),np.array(planeVector2))
+
+    planeVector2[3]+=between
+
+    sample['projectionVector1']=np.array(planeVector1)
+    sample['projectionVector2']=np.array(planeVector2)
+
+    sample['name'] = 'Unknown Sample Name'#self.Sample_samplename
+
+
+    self.sample = MJOLNIR.Data.Sample.Sample(**sample)
+
+    self._A4Off = 0.0
+    self._A3Off = 0.0
+
+    self._A4 = self.twotheta
+
+
+
+    self.possibleBinnings = [1]
+    calibrations = []
+    #for binning in self.possibleBinnings:
+    #    fileName = getattr(MJOLNIR,'__flatConeNormalization__'.format(binning))
+    calib = np.loadtxt(normalizationTable,delimiter=',',skiprows=1)
+    calibrations.append([calib[:,3:7],calib[:,-1],calib[:,7:9]])
+    self.instrumentCalibrations = calibrations
+    self.loadBinning(self.binning)
+    self.EPrDetector = 256
+
+    # Extract monitor
+    self.labels = [x.decode('utf8') for x in self.labels]
+    self.MonitorID = self.labels.index('Monitor1')
+    self.Monitor = self.scanData[self.MonitorID]
+    
+    
+    try:
+        scanType,*params,_,numpoints,countingType,counting = self.scanCommand.strip().split(' ')
+    except ValueError: # not enough values to unpack
+        scanType = 'Unknown'
+        params = [None,None,None,None]
+        numpoints = 0
+        self.scanValues = [0]
+
+
+    numpoints = int(numpoints)
+    
+    ## Extract scan parameters
+    params = np.asarray(params).reshape(-1,4)
+    self.scanParameters = params[:,0]
+    if scanType == 'bs': # TODO: Like below
+
+        self.scanValues = np.asarray([np.arange(float(p[1]),float(p[1])+numpoints*float(p[3]),float(p[3])) for p in params])
+    elif scanType ==     'sc':
+        sV = []
+        for p in params:
+            if np.isclose(float(p[3]),0):
+                sV.append([float(p[1])]*numpoints)
+            else:
+                sV.append(np.arange(float(p[1])-(0.5*numpoints)*float(p[3]),float(p[1])+(0.5*numpoints)*float(p[3]),float(p[3])))
+        self.scanValues = np.asarray(sV)
+        
+    else:# scanType = 'sc':
+        AttributeError('Scan type not regocnized! Got {}, I only know "bs"'.format(scanType))
+    self.scanUnits = ['N/A' for _ in self.scanParameters]
+
+    self.instrument = 'Marmot'
+
+    self.I = self.intensity
+    remove = self.instrumentCalibrationEf[:,1].reshape(1,*self.I.shape[1:])<1
+    self.mask = np.repeat(remove.reshape(-1,*self.I.shape[1:]),len(self.I),axis=0)
+
+    self.scanned_variables_label =[s.decode('utf8') for s in self.scanned_variables_label]
+
+    for par in ['A3']:
+        idx = self.scanned_variables_label.index(par)
+        setattr(self,par,self.scanned_variables_data[idx])
+    self.scanned_variables_label = np.asarray(self.scanned_variables_label)

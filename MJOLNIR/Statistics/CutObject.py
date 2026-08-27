@@ -1,23 +1,9 @@
 # -*- coding: utf-8 -*-
-import sys, os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-
+import sys
 import numpy as np
 import pickle as pickle
-import matplotlib.pyplot as plt
 import matplotlib.axes
-from matplotlib.collections import PatchCollection,PolyCollection
-from MJOLNIR.Data import Viewer3D,RLUAxes
 import MJOLNIR.Data.DataSet
-import MJOLNIR.Data.Sample
-from MJOLNIR import _tools
-import pytest
-from scipy.ndimage import filters
-import scipy.optimize
-from scipy.spatial import Voronoi,ConvexHull,KDTree
-import time
 import warnings
 
 pythonVersion = sys.version_info[0]

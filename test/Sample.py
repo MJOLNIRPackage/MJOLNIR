@@ -5,51 +5,33 @@ from MJOLNIR import _tools
 import os
 import numpy as np
 import MJOLNIR.TasUBlibDEG as TasUBlib
+import pytest
 
 dataPath = 'samlpedata'
 
 
-
+@pytest.mark.unit
 def test_sample_exceptions():
-    try: # No parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=None)
-        assert False
-    except:
-        assert True
 
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=-1,b=1,c=1)
-        assert False
-    except:
-        assert True
 
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=-1,c=1)
-        assert False
-    except:
-        assert True
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=-1)
-        assert False
-    except:
-        assert True
 
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=1,alpha=200)
-        assert False
-    except:
-        assert True
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=1,beta=-10)
-        assert False
-    except:
-        assert True
-    try: # negative parameters given
+    with pytest.raises(AttributeError):
         s1 = Sample(a=1,b=1,c=1,gamma=-10)
-        assert False
-    except:
-        assert True
 
+@pytest.mark.integration
+@pytest.mark.data
 def test_Sample_conversions():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000178.hdf'))
     sample = df.sample
@@ -69,20 +51,24 @@ def test_Sample_conversions():
 
     QxQyFromSample = sample.calculateHKLToQxQy(*hkl)
     print(QxQyFromSample)
-    assert(np.all(np.isclose(QxQyFromSample,[Qx,Qy],atol=1e-3)))
+    np.testing.assert_allclose(QxQyFromSample,[Qx,Qy],atol=1e-3)
 
 
+@pytest.mark.unit
 def test_parameters():
     s1 = Sample(1,2,3,90,90,120)
     pars = np.array([getattr(s1,x) for x in ['a','b','c','alpha','beta','gamma']])
 
     assert(np.all(np.isclose(pars,np.array([1,2,3,90,90,120]))))
 
+
+@pytest.mark.unit
 def test_equality():
     s1 = Sample(1,2,3,90,90,120)
     s2 = Sample(1,2,3,90,90,120)
     assert(s1==s2)
 
+@pytest.mark.unit
 def test_calculateProjections(): # TODO: Update test
 
     s1 = Sample(np.pi*2,np.pi*2,np.pi*2,90,90,60)
@@ -104,6 +90,8 @@ def test_calculateProjections(): # TODO: Update test
     #string = s1.format_coord(point[0],point[1])
     #assert(string=='h = 3.500, k = 7.200, l = 0.000')
 
+@pytest.mark.integration
+@pytest.mark.data
 def test_DataFile_Sample_UB():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000136.hdf'))
     s = df.sample
@@ -122,7 +110,8 @@ def test_DataFile_Sample_UB():
     print(np.round(s.orientationMatrix,5))
     assert(np.all(comparison))
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_DataFile_Sample_Projection():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000136.hdf')) # In A-B plane
     print(df.sample.projectionVector1,df.sample.projectionVector2)
@@ -134,7 +123,8 @@ def test_DataFile_Sample_Projection():
     assert(np.all(np.isclose(df2.sample.projectionVector2,np.array([1.0,1.0,0.0]))))
 
 
-
+@pytest.mark.integration
+@pytest.mark.data
 def test_Sample_CurratAxe():
     df = MJOLNIR.Data.DataFile.DataFile(os.path.join(dataPath,'camea2018n000178.hdf'))
     sample = df.sample
@@ -148,7 +138,7 @@ def test_Sample_CurratAxe():
 
     assert(pos.shape == (len(Bragg),np.array(Ei).size,Ef.size,3))
 
-    assert(np.all(np.isclose(pos[:,:,:,2],0.0))) # All Qz are to be zero
+    np.testing.assert_allclose(pos[:,:,:,2],0.0) # All Qz are to be zero
 
 
     POS = np.array([[[[ 5.99262072e-01, -3.88754450e-01,  0.00000000e+00],
@@ -194,7 +184,7 @@ def test_Sample_CurratAxe():
          [-3.25162358e-01, -1.35371906e+00,  0.00000000e+00],
          [-3.25162358e-01, -1.35371906e+00,  0.00000000e+00]]]])
 
-    assert(np.all(np.isclose(pos,POS)))
+    np.testing.assert_allclose(pos, POS)
 
     POSAnalyser = np.array([[[[ 0.52989639, -0.36439634,  0.        ],
          [ 0.52989639, -0.36439634,  0.        ],
@@ -242,8 +232,8 @@ def test_Sample_CurratAxe():
 
     posAna = sample.CurratAxe(Ei,Ef,Bragg,spurionType='ANAlYser')
 
-    assert(np.all(np.isclose(posAna[:,:,:,2],0.0))) # All Qz are to be zero
-    assert(np.all(np.isclose(posAna,POSAnalyser)))
+    np.testing.assert_allclose(posAna[:,:,:,2],0.0) # All Qz are to be zero
+    np.testing.assert_allclose(posAna,POSAnalyser,atol=1e-6)
 
 
     posMonoProjection = sample.CurratAxe(Ei,Ef,Bragg,spurionType='monoChrOmaTOR',Projection=True)
@@ -251,8 +241,6 @@ def test_Sample_CurratAxe():
     assert(posMonoProjection.shape == (len(Bragg),np.array(Ei).size,Ef.size,2))
     assert(posMonoHKL.shape == (len(Bragg),np.array(Ei).size,Ef.size,3))
 
-    try:
+    with pytest.raises(AttributeError):
         sample.CurratAxe(Ei,Ef,Bragg,spurionType='WRONG!!')
-        assert False
-    except AttributeError:
-        assert True
+

@@ -1,15 +1,15 @@
 import sys
-#import warnings
+
 import numpy as np
 from difflib import SequenceMatcher
 import functools
 import logging
 import math
-#from MJOLNIR.Marray import *
+
 import os
 import inspect
-import matplotlib
 import regex as re
+import warnings
 
 # E = hbar^2k^2/(2m)
 m = 1.67492749804e-27 # kg
@@ -51,6 +51,38 @@ def cutObject(func): # pragma: no cover
         return co
     return newFunction
 
+def deprecateKwarg(argChanges):
+    """Given a dictionary {old:new} with deprecated kwargs warn the user about a possible upcoming change but allow the old name for now."""
+    def decorator(func):
+        
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            
+            newKwargs = {}
+            changes = []
+            for key,value in kwargs.items():
+
+                if key in argChanges.keys():
+                    
+                    changes.append(key)
+                    newKwargs[argChanges[key]] = value
+                else:
+                    newKwargs[key] = value
+            if len(changes)>0:
+                warningtext = []
+                warningtext.append('The following kwargs have been renamed and will be change in a future release:')
+                for change in changes:
+                    warningtext.append("'"+change+"' --> '"+argChanges[change]+"'")
+
+                warningtext = '\n'.join(warningtext)
+                warnings.warn(warningtext,DeprecationWarning,stacklevel=2)
+            return func(*args, **newKwargs)
+    
+        #wrapper.__signature__ = new_sig
+        return wrapper
+    
+    return decorator
+
 def KwargChecker(function=None,include=None):
     """Function to check if given key-word is in the list of accepted Kwargs. If not directly therein, checks capitalization. If still not match raises error
     with suggestion of closest argument.
@@ -63,7 +95,31 @@ def KwargChecker(function=None,include=None):
 
         - AttributeError
     """
+
+    allowed_set = extractKwargsList(function=function,include=include)
     def KwargCheckerNone(func):
+        sig = inspect.signature(func)
+
+        # Keep the original parameters except **kwargs
+        params = [
+            p for p in sig.parameters.values()
+            if p.kind != inspect.Parameter.VAR_KEYWORD
+        ]
+
+        # Add allowed kwargs as explicit keyword-only parameters
+        for name in allowed_set:
+            
+            params.append(
+                inspect.Parameter(
+                    name,
+                    kind=inspect.Parameter.KEYWORD_ONLY,
+                    default=None
+                )
+            )
+    
+        seen = set()
+        params = [p for p in params if not (p.name in seen or seen.add(p.name))]
+        new_sig = sig.replace(parameters=params)
         @functools.wraps(func)
         def newFunc(*args,**kwargs):
             argList = extractArgsList(func,newFunc,function,include)
@@ -73,12 +129,33 @@ def KwargChecker(function=None,include=None):
         newFunc._original = func
         newFunc._include = include
         newFunc._function = function
+        newFunc.__signature__ = new_sig
         return newFunc
     return KwargCheckerNone
 
 def extractArgsList(func,newFunc,function,include):
     N = func.__code__.co_argcount # Number of arguments with which the function is called
     argList = list(newFunc._original.__code__.co_varnames[:N]) # List of arguments
+    if not function is None:
+        if isinstance(function,(list,np.ndarray)): # allow function kwarg to be list or ndarray
+            for f in function:
+                for arg in f.__code__.co_varnames[:f.__code__.co_argcount]: # extract all arguments from function
+                    argList.append(str(arg))
+        else: # if single function
+            for arg in function.__code__.co_varnames[:function.__code__.co_argcount]:
+                argList.append(str(arg))
+    if not include is None:
+        if isinstance(include,(list,np.ndarray)):
+            for arg in include:
+                argList.append(str(arg))
+        else:
+            argList.append(str(include))
+        argList = list(set(argList)) # Cast to set to remove duplicates
+        argList.sort() #  Sort alphabetically
+    return argList
+
+def extractKwargsList(function,include):
+    argList = []#
     if not function is None:
         if isinstance(function,(list,np.ndarray)): # allow function kwarg to be list or ndarray
             for f in function:
@@ -113,6 +190,7 @@ def checkArgumentList(argList,kwargs):
             errorMsg = notFound[0]
         error = AttributeError(errorMsg)
         raise error
+
 
 def my_timer_N(N=0): # pragma: no cover
     """Timer function to measure time consumbtion of function.
@@ -710,9 +788,9 @@ def writeToSpinWFile(file,position,spinWaveEnergy,spinWaveWidth,spinWaveAmplitud
         raise AttributeError('Arrays for spinWaveEnergy(shape: {}), spinWaveWidth(shape: {}), and spinWaveAmplitude(shape: {}) have to have same shape.'.format(spinWaveEnergy.shape,spinWaveWidth.shape,spinWaveAmplitude.shape))
         
     if len(spinWaveEnergy.shape) == 1:
-        spinWaveEnergy.shape = (1,-1)
-        spinWaveWidth.shape = (1,-1)
-        spinWaveAmplitude.shape = (1,-1)
+        spinWaveEnergy = spinWaveEnergy.reshape((1,-1))
+        spinWaveWidth = spinWaveWidth.reshape((1,-1))
+        spinWaveAmplitude = spinWaveAmplitude.reshape((1,-1))
         
     spinWaves,dataPoints = spinWaveEnergy.shape
     
@@ -1273,6 +1351,10 @@ def histogramdd(sample, bins, weights, returnCounts = False):
     return histograms
 
 
+def identity(x):
+    """Identity function"""
+    return x
+
 class PointerArray():
     """Array-like object designed to facilitate data acquisition from a list of differently sized list of data files having the same attributes.    
 
@@ -1282,10 +1364,15 @@ class PointerArray():
 
         - datafiles (list): List of pointers to the data files
 
+        - function (func): Function to be run on the attribute of a datafile before it is returned
+
     """
-    def __init__(self,attribute,datafiles):
+    def __init__(self,attribute,datafiles,function=None):
         self._attribute = attribute
         self._datafiles = datafiles
+        if function is None:
+            function = identity
+        self._function = function
         self._shape = None
         self._multiD = None
 
@@ -1293,10 +1380,10 @@ class PointerArray():
         gotten = self._datafiles[index]
         if isinstance(gotten,type(self._datafiles[0])):
             
-            return getattr(gotten,self._attribute)
+            return self._function(getattr(gotten,self._attribute))
         else:
         
-            return [getattr(df,self._attribute) for df in gotten]
+            return [self._function(getattr(df,self._attribute)) for df in gotten]
     
     def __iter__(self):
         self._index=0
@@ -1305,7 +1392,7 @@ class PointerArray():
     def __next__(self):
         if self._index >= len(self):
             raise StopIteration
-        result = getattr(self._datafiles[self._index],self._attribute)
+        result = self._function(getattr(self._datafiles[self._index],self._attribute))
         self._index += 1
         return result
 
@@ -1317,7 +1404,7 @@ class PointerArray():
     
     @property
     def shape(self):
-        return [getattr(df,self._attribute).shape for df in self._datafiles]
+        return [self._function(getattr(df,self._attribute).shape) for df in self._datafiles]
     
     
     @property
@@ -1331,20 +1418,20 @@ class PointerArray():
     
     @property
     def size(self):
-        return np.sum([getattr(df,self._attribute).size for df in self._datafiles])
+        return np.sum([self._function(getattr(df,self._attribute)).size for df in self._datafiles])
     
     def extractData(self):
         if self._multiD is None: # State is unknown
-            self._multiD = len(getattr(self._datafiles[0],self._attribute).shape)>1 # 
+            self._multiD = len(self._function(getattr(self._datafiles[0],self._attribute)).shape)>1 # 
 
         if self._multiD:
-            return np.concatenate([getattr(df,self._attribute)[np.logical_not(df.mask)] for df in self._datafiles])
+            return np.concatenate([self._function(getattr(df,self._attribute))[np.logical_not(df.mask)] for df in self._datafiles])
         else:
-            return np.concatenate([getattr(df,self._attribute)[np.logical_not(np.all(df.mask))] for df in self._datafiles])
+            return np.concatenate([self._function(getattr(df,self._attribute))[np.logical_not(np.all(df.mask))] for df in self._datafiles])
         
     @property
     def data(self):
-        return np.concatenate([getattr(df,self._attribute) for df in self._datafiles])
+        return np.concatenate([self._function(getattr(df,self._attribute)) for df in self._datafiles])
     
     
     def min(self):

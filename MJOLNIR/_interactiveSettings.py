@@ -10,8 +10,9 @@ from  matplotlib.backend_tools import Cursors as cursors
 
 import MJOLNIR
 import os
-import PyQt5.QtCore
-from PyQt5.QtGui import QCursor, QPixmap
+
+from MJOLNIR._qt import pointerType
+
 
 import sys
 from collections import defaultdict
@@ -101,6 +102,8 @@ def setupModes(ax):
 
 
 def setCursor(ax,cursor):
+    if cursor is None: # No Qt installed
+        return
     try:
         ax.get_figure().canvas.setCursor(cursor)
     except AttributeError:
@@ -149,15 +152,6 @@ Modes= Enum('Modes', modes)
 #CutImageLocation = os.path.join(os.path.split(MJOLNIR.Data.__file__)[0],'scissors.png')
 #CutCursor = QCursor(QPixmap(CutImageLocation))
 
-
-## Cursor type mode
-pointerType = defaultdict(lambda: PyQt5.QtCore.Qt.ArrowCursor)
-pointerType['CUTTING_EMPTY'] = PyQt5.QtCore.Qt.ForbiddenCursor
-pointerType['CUTTING_INITIAL'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_WIDTH'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_DIRECTION'] = PyQt5.QtCore.Qt.CrossCursor
-pointerType['CUTTING_MOVE'] = PyQt5.QtCore.Qt.OpenHandCursor
-pointerType['RESOLUTION'] = PyQt5.QtCore.Qt.BlankCursor
 
 
 def resetUsingKey(ax,keys):
@@ -305,9 +299,10 @@ def initializeRESOLUTION(ax):
                     #C[0]/=np.linalg.norm(dirVector)**2
 
                     eigenValues,eigenVectors = np.linalg.eig(C[:2,:2])
-                    sigma = np.power(eigenValues,-0.5)
+                    sigma = np.power(eigenValues.real,-0.5)
                     # M,eigenVectors,sigma = ax.ds.calculateResolutionMatrixAndVectors(pos,P1,P2,Ei,Ef,rlu=ax.rlu,rluAxis=True)
                     
+                    eigenVectors = eigenVectors.real
                     ellipseColor = ax.EiColors[Ei]
                     angle = -np.rad2deg(np.arctan2(*eigenVectors[0,::-1])) 
                     E.set_center(np.array([x,y]))

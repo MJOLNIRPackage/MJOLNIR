@@ -1,19 +1,14 @@
 import os
 import sys
-from typing import Type
-
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
 
 import warnings
-import copy
 import matplotlib.cm as cm
 import matplotlib.gridspec
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.widgets import Slider
-from MJOLNIR import _tools
+from matplotlib.backend_bases import KeyEvent
+
 from MJOLNIR._interactiveSettings import Viewer3DSettings, States, cut1DHolder, cancel
 import functools
 
@@ -21,7 +16,6 @@ pythonVersion = sys.version_info[0]
 pythonSubVersion = sys.version_info[1]
 
 class Viewer3D(object):  
-    @_tools.KwargChecker(include=[_tools.MPLKwargs])
     def __init__(self,Data,bins,axis=2, log=False ,ax = None, grid = False, adjustable=True, outputFunction=print, 
                  cmap=None, CurratAxeBraggList=None, plotCurratAxe=False,Ei=None,EfLimits=None, dataset = None, cut1DFunctionRectangle=None,\
                     cut1DFunctionCircle = None, cut1DFunctionRectanglePerp=None,cut1DFunctionRectangleHorizontal=None,cut1DFunctionRectangleVertical=None,
@@ -493,7 +487,12 @@ class Viewer3D(object):
     
     def setProjection(self,value):
         """Change projection between Qx,Qy, and E, or along principal, orthogonal Q direction, or E if plotting in RLU."""
-        self.figure.canvas.key_press_event(str(value))
+        event = KeyEvent(
+            'key_press_event',
+            self.figure.canvas,
+            key=str(value)
+        )
+        self.figure.canvas.callbacks.process('key_press_event', event)
 
     def setPlane(self,value):
         """Change plotting plane to new along same axis"""

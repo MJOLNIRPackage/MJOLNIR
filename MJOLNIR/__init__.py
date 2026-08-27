@@ -5,10 +5,9 @@ MJOLNIR Module
 """
 #import Geometry, Statistic, Data
 
-import sys,os
-sys.path.append('.')
+import os
 
-__version__ = '1.3.5'
+__version__ = '1.4.0'
 __author__ = 'Jakob Lass'
 
 __multiFLEXXNormalization__ = os.path.join(os.path.dirname(__file__),'CalibrationMultiFLEXX.csv') 

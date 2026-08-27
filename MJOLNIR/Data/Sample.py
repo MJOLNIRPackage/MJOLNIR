@@ -1,18 +1,9 @@
-import sys, os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-import scipy
-import matplotlib.pyplot as plt
 import numpy as np
 import h5py as hdf
-import warnings
+
 from MJOLNIR import _tools
-import datetime
-import math
 from MJOLNIR import TasUBlibDEG as TasUBlib
-#from MJOLNIR._tools import Marray
-import MJOLNIR.Data.DataFile
+
 
 
 def cosd(x):
@@ -35,7 +26,6 @@ def camelCase(string,split='_'):
 
 class Sample(object):
     """Sample object to store all information of the sample from the experiment"""
-    @_tools.KwargChecker()
     def __init__(self,a=2.0*np.pi,b=2.0*np.pi,c=2.0*np.pi,alpha=90,beta=90,gamma=90,sample=None,name='Unknown',projectionVector1=None, projectionVector2 = None,recalculateUB=False):
         if isinstance(sample,hdf._hl.group.Group):
             self.name = str(np.array(sample.get('name'))[0].decode())
@@ -335,7 +325,6 @@ class Sample(object):
 
         return returnStr
 
-    @_tools.KwargChecker()
     def CurratAxe(self,Ei,Ef,Bragg,spurionType='Monochromator',HKL=False,Projection=False):
         """Function to calculate Currat-Axe position in QxQy coordinate system.
     
@@ -395,7 +384,7 @@ class Sample(object):
                 returnVal = np.array(self.inv_tr(toProjection[0],toProjection[1]))
                 returnValShape[-1]=2 # reshape Qx,Qy,Qz dimension to P1,P2 (3 -> 2)
             
-            returnVal.shape = returnValShape # Shape (l,m,n,3) or (l,m,n,2)
+            returnVal = returnVal.reshape(returnValShape) # Shape (l,m,n,3) or (l,m,n,2)
         return returnVal
 
     def updateCell(self,unitCell=None):

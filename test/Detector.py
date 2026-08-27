@@ -3,26 +3,25 @@ from MJOLNIR.Geometry.Detector import Detector, TubeDetector1D
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
+import pytest
 
-
+@pytest.mark.unit
 def test_init():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     assert(np.all(GenericDetector.position==np.array([0.0,1.0,0.0])))
     assert(np.all(GenericDetector.direction==(1.0,0.0,0.0)))
 
+@pytest.mark.unit
 def test_Generic_plot():
     GenericDetector = Detector(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    try:
+    with pytest.raises(NotImplementedError):
         GenericDetector.plot(ax)
-        assert False
-    except NotImplementedError:
-        assert True
 
 
-
+@pytest.mark.unit
 def test_TubeDetector_init():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=20,length=0.3,diameter=0.025,split=[0,57,57*2])
     assert(np.all(TubeDetector.position==np.array([0.0,1.0,0.0])))
@@ -32,44 +31,38 @@ def test_TubeDetector_init():
     assert(TubeDetector.diameter==0.025)
     assert(np.all(TubeDetector.split==np.array([0,57,57*2])))
 
+@pytest.mark.unit
 def test_TubeDetector_pixels():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         TubeDetector.pixels=0
-        assert False
-    except AttributeError:
-        assert True
 
+@pytest.mark.unit
 def test_TubeDetector_length():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         TubeDetector.length=-0.1
-        assert False
-    except AttributeError:
-        assert True
-    
+
+@pytest.mark.unit
 def test_TubeDetector_diameter():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
-    try:
+    with pytest.raises(AttributeError):
         TubeDetector.diameter=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
+@pytest.mark.unit
 def test_TubeDetector_split():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0),pixels=100)
-    try:
+
+    with pytest.raises(AttributeError):
         TubeDetector.split=-0.1
-        assert False
-    except AttributeError:
-        assert True
 
     TubeDetector.split=[50,60,100]
     pixelPos = TubeDetector.getPixelPositions()
     assert(len(pixelPos)==2)
     assert(len(pixelPos[0])==10)
 
-
+@pytest.mark.unit
+@pytest.mark.gui
 def test_TubeDetector1D_plot():
     TubeDetector = TubeDetector1D(position=(0.0,1.0,0.0),direction=(1.0,0,0))
     plt.ioff()
@@ -79,6 +72,7 @@ def test_TubeDetector1D_plot():
     TubeDetector.plot(ax)
     
 
+@pytest.mark.unit
 def test_TubeDetector1D_getPixelPositions():
     TubeDetector = TubeDetector1D(position=(1.0,0.0,1.0),direction=(1.0,0,0),length=0.5,pixels=5)
     positions = TubeDetector.getPixelPositions()
