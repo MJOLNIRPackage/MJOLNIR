@@ -1,14 +1,10 @@
 import copy
 import functools
-import os
 import sys
 from operator import sub
 
 pythonVersion = sys.version_info[0]
 
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
 
 import matplotlib.pyplot as plt
 #if pythonVersion == 3: # Only for python 3
@@ -16,8 +12,8 @@ import matplotlib.ticker as mticker
 
 import numpy as np
 from MJOLNIR import _tools
-from matplotlib.patches import Ellipse
-from mpl_toolkits.axisartist import SubplotHost#,axislines
+
+from mpl_toolkits.axisartist import SubplotHost
 import warnings
 try:
     from mpl_toolkits.axisartist.grid_helper_curvelinear import \
@@ -119,7 +115,28 @@ class MultipleLocator(mticker.MultipleLocator):
         self._multiplerVals = multiplerVals
         self.multiples = 1.0/multiplerVals
 
+    def tick_values(self, vmin, vmax):
+        """Return the locations of the ticks.
+        Due to a bug in matplotlib, the vmin and vmax are not always floats, but can be numpy arrays. This is fixed here by converting them to floats explicitly."""
+        vmin = np.asarray(vmin).item()
+        vmax = np.asarray(vmax).item()
 
+        if vmax < vmin:
+            vmin, vmax = vmax, vmin
+
+        step = np.asarray(self._edge.step).item()
+
+        vmin -= self._offset
+        vmax -= self._offset
+
+        vmin = np.asarray(self._edge.ge(vmin)).item() * step
+
+        n = (vmax - vmin + 0.001 * step) // step
+
+        locs = vmin - step + np.arange(int(n) + 3) * step + self._offset
+
+        return locs
+    
     def __call__(self, v1, v2): # pragma: no cover
         if self._factor is not None:
             self.axis.set_view_interval(v1*self._factor, v2*self._factor)

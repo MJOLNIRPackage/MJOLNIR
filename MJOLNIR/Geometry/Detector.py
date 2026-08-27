@@ -1,12 +1,5 @@
-import sys
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
 from MJOLNIR.Geometry import GeometryConcept
-from MJOLNIR import _tools
 import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 
 class Detector(GeometryConcept.GeometryObject):
@@ -62,7 +55,6 @@ class Detector(GeometryConcept.GeometryObject):
 
 class TubeDetector1D(Detector):
     """1D Tube detector used at PSI. The detector is assumed to be a perfect cylinder consisting of pixels."""
-    @_tools.KwargChecker()
     def __init__(self, position, direction,length=0.25, pixels=1024,diameter=0.02,split=[]):
         """
         Args:
@@ -158,7 +150,6 @@ class TubeDetector1D(Detector):
         else:
             self._split = npSplit
 
-    @_tools.KwargChecker()
     def plot(self,ax,offset=(0.0,0.0,0.0),n=100):
         """
         Args:
@@ -192,7 +183,7 @@ class TubeDetector1D(Detector):
         a = np.array([0.0,0.0,1.0]) # Original direction
         b = self.direction.copy()    # Correct direction
 
-        b.shape = (1,3)
+        b = b.reshape((1,3))
 
 
         # Rotation matrix found from http://math.stackexchange.com/questions/180418/calculate-rotation-matrix-to-align-vector-a-to-vector-b-in-3d
@@ -200,7 +191,7 @@ class TubeDetector1D(Detector):
         v = np.cross(a.T,b)
         s = np.linalg.norm(v)
         vmat=np.array([0.0,-v[0,2],v[0,1], v[0,2],0.0,-v[0,0],  -v[0,1],v[0,0],0.0])
-        vmat.shape = (3,3)
+        vmat = vmat.reshape((3,3))
         c = np.dot(a.T,b[0,:])
         R = np.eye(3)+vmat+(1.0-c)/(pow(s,2.0))*np.dot(vmat,vmat)
 
@@ -231,9 +222,9 @@ class TubeDetector1D(Detector):
     def getPixelPositions(self):
         """Return pixel positions relative to center."""
         scale = (np.arange(self.pixels,dtype=float)-(self.pixels-1.0)/2.0)/self.pixels*self.length   # the distance of the pixels relative to the central pixel
-        scale.shape=(self.pixels,1)
+        scale = scale.reshape((self.pixels,1))
         direction = self.direction.copy()
-        direction.shape=(1,3)
+        direction = direction.reshape((1,3))
         pixelPositions = np.dot(scale,direction)+self.position
 
         return np.split(pixelPositions,self.split)[1:-1]

@@ -1,34 +1,24 @@
 # -*- coding: utf-8 -*-
 import sys, os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-
-import h5py as hdf
 import numpy as np
 import pickle as pickle
 import matplotlib.pyplot as plt
-from matplotlib.collections import PatchCollection,PolyCollection
+from matplotlib.collections import PatchCollection
 import matplotlib.ticker as ticker
 from matplotlib.patches import Polygon
 from MJOLNIR.Data import Viewer3D,RLUAxes, Mask, BackgroundModel
 from MJOLNIR import _interactiveSettings
 import MJOLNIR.Data.DataFile
-import MJOLNIR.Data.Sample
+
 from MJOLNIR import _tools
-from mpl_toolkits.axisartist.grid_helper_curvelinear import \
-    GridHelperCurveLinear
-from mpl_toolkits.axisartist import SubplotHost
+
 from matplotlib.ticker import FuncFormatter
 import pandas as pd
-import pytest
-from scipy.ndimage import filters
-import scipy.optimize
-from scipy.spatial import Voronoi,ConvexHull,KDTree
+
+from scipy.spatial import ConvexHull,KDTree
 from scipy.ndimage import gaussian_filter
 from MJOLNIR._interactiveSettings import States, cut1DHolder
 
-import time
 
 
 
@@ -36,6 +26,7 @@ import warnings
 try:
     from ufit import Dataset
 except ImportError:
+    Dataset = None
     warnings.warn('ufit not installed. ufit functionality will not be available.')
     
 pythonVersion = sys.version_info[0]
@@ -91,7 +82,6 @@ pdDoc = '        A Pandas data frame returns is returned with the following colu
 _cache = []
 
 class DataSet(object):
-    @_tools.KwargChecker(include=['Author']) 
     def __init__(self, dataFiles=None, normalizationfiles=None, 
                  calibrationfiles=None, convertedFiles=None, **kwargs):
         """DataSet object to hold all informations about data.
@@ -432,8 +422,7 @@ class DataSet(object):
 
 
 
-    @_tools.KwargChecker()
-    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,saveFile=False,printFunction=None,deleteOnConvert=True):
+    def convertDataFile(self,dataFiles=None,binning=None,saveLocation=None,printFunction=None,deleteOnConvert=True):
         """Conversion method for converting scan file(s) to hkl file. Converts the given hdf file into NXsqom format and saves in a file with same name, but of type .nxs.
         Copies all of the old data file into the new to ensure complete redundancy. Determines the binning wanted from the file name of normalization file.
 
@@ -444,8 +433,6 @@ class DataSet(object):
             - binning (int): Binning to be used when converting files (default 8).
 
             - saveLocation (string): File path to save location of data file(s) (defaults to same as raw file).
-
-            - saveFile (bool): If true, the file(s) will be saved as nxs-files. Otherwise they will only persis in memory.
 
             - printFunction (function): Function called if a message is to be printed (default None, uses warning)
 
@@ -478,20 +465,6 @@ class DataSet(object):
 
             convFile = rawFile.convert(binning,printFunction=printFunction)
             
-            if saveFile: # TODO:
-                if not saveLocation is None:
-                    directory,_ = os.path.split(saveLocation)
-                    directory = os.path.abspath(directory)
-
-                    file = os.path.split(rawFile.fileLocation)[-1]
-                    fileName = os.path.splitext(file)[0]
-                    saveloc = os.path.join(directory,fileName+'.nxs')
-                    
-                else:
-                    saveloc = rawFile.fileLocation.replace('.hdf','.nxs')
-                print(saveloc)
-                convFile.saveNXsqom(saveloc)
-            
             convertedFiles.append(convFile)
         self._convertedFiles = []
         self.convertedFiles = convertedFiles    
@@ -515,7 +488,6 @@ class DataSet(object):
         elif len(self.dataFiles)!=0:
             self.sample = [d.sample for d in self]
 
-    @_tools.KwargChecker()
     def binData3D(self,dx,dy,dz,rlu=True,dataFiles=None,backgroundSubtraction=False,noApproximation=False):
         """Bin a converted data file into voxels with sizes dx*dy*dz. Wrapper for the binData3D functionality.
 
@@ -588,7 +560,6 @@ class DataSet(object):
         return returnData,bins
 
     @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
-    @_tools.KwargChecker()
     def cut1D(self,q1,q2,width,minPixel,EMin,EMax,rlu=True,plotCoverage=False,extend=False,
               dataFiles=None,constantBins=False,positions=None,I=None,Norm=None,Monitor=None,
               backgroundSubtraction=False, ufit=False):
@@ -771,9 +742,7 @@ class DataSet(object):
 
         
     
-    #@_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
     @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']]))
     def plotCut1D(self,q1,q2,width,minPixel,EMin,EMax,rlu=True,ax=None,plotCoverage=False,showEnergy=True,
                   counts=False,extend=False,data=None,dataFiles=None,constantBins=False,backgroundSubtraction=False,
                   ufit=False,plotForeground=False,plotBackground=False,outputFunction=print,**kwargs):  
@@ -904,7 +873,6 @@ class DataSet(object):
         return ax,Data,bins
 
 
-    @_tools.KwargChecker()
     def cutQE(self,q1,q2,width,minPixel,EMin=None,EMax=None,dE=None,EnergyBins=None,rlu=True,extend=False,
               dataFiles=None,constantBins=False,smoothing=None,
               backgroundSubtraction=False,scaledEnergy=False,scaleFunction=_tools.scale,rescaleFunction=_tools.rescale):
@@ -1186,7 +1154,6 @@ class DataSet(object):
 
  
     
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['vmin','vmax','log','edgecolors'],])) # ,'axisRedraw'
     def plotCutQE(self,q1,q2,EMin=None,EMax=None,dE=None,EnergyBins=None,minPixel=0.05,width=0.1,rlu=True,counts=False,
                   smoothing=None,ax=None,grid=False,cmap=None,colorbar=False,outputFunction=print,dataFiles=None,extend=False,
                   backgroundSubtraction = False, scaledEnergy=False,scaleFunction=_tools.scale,
@@ -1348,7 +1315,7 @@ class DataSet(object):
                 pos = np.linalg.norm(HKL-q1,axis=1)
         data[pdNaming['plotPosition']] = pos
 
-        pos.shape = shape
+        pos = pos.reshape(shape)
 
         X,Y = np.meshgrid(pos[0],E[:,0])
 
@@ -1416,7 +1383,6 @@ class DataSet(object):
         return ax,data,bins
         
     
-    @_tools.KwargChecker()
     def cutPowder(self,EBins,QBins,dataFiles=None,constantBins=False,backgroundSubtraction=False):
         """Cut data powder map with intensity as function of the length of q and energy. 
 
@@ -1469,8 +1435,6 @@ class DataSet(object):
 
         return returnValues
 
-    
-    @_tools.KwargChecker(function=plt.pcolormesh,include=np.concatenate([_tools.MPLKwargs,['edgecolors']]))
     def plotCutPowder(self,EBins,QBins,ax=None,dataFiles=None,log=False,colorbar=True, 
                       backgroundSubtraction=False, 
                       vmin=None, vmax=None,outputFunction=print,**kwargs):
@@ -1616,17 +1580,14 @@ class DataSet(object):
 
         return ax,Data,centerPointsQ,centerPointsE
 
-    #@_tools.KwargChecker()
     @_tools.overWritingFunctionDecorator(RLUAxes.createQAxis)
     def createQAxis(*args,**kwargs): # pragma: no cover
         raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQAxis))
 
-    #@_tools.KwargChecker()
     @_tools.overWritingFunctionDecorator(RLUAxes.createQEAxes)
     def createQEAxes(*args,**kwargs): # pragma: no cover
         raise RuntimeError('This code is not meant to be run but rather is to be overwritten by decorator. Something is wrong!! Should run {}'.format(RLUAxes.createQEAxes))
     
-    #@_tools.KwargChecker(function=plt.pcolormesh,include=['vmin','vmax','colorbar','zorder'])
     def plotQPlane(self,EMin=None,EMax=None,EBins=None,binning='xy',xBinTolerance=0.05,yBinTolerance=0.05,enlargen=False,log=False,ax=None,rlu=True,
     dataFiles=None,xScale=1.0,yScale=1.0, backgroundSubtraction=False,
     outputFunction=print,cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut2DFunctionRectangle=None, cut2DFunctionCircle=None, scaleFunction = None,
@@ -2004,7 +1965,6 @@ class DataSet(object):
         else:
             return None,ax
 
-    @_tools.KwargChecker()
     def plotA3A4(self,dataFiles=None,ax=None,planes=[],log=False,returnPatches=False,binningDecimals=3,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
         """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
         This can result in distorted binning when binning across large energy regions. Data is plotted using the pixels calculated for average plane value, i.e. 
@@ -2069,166 +2029,8 @@ class DataSet(object):
         return plotA3A4(dataFiles,ax=ax,planes=planes,log=log, returnPatches=returnPatches,binningDecimals=binningDecimals,
         singleFigure=singleFigure,plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
         magneticField_err=magneticField_err,electricField_err=electricField_err)
-#
-#    def plotQPatches(self,dataFiles=None,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,A4Extend=0.2,A3Extend=0.5,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2):
-#        """Plot data files together with pixels created around each point in Q space. 
-#
-#        .. warning::
-#           This method plots all measurement points unless they are literaly on top of each other and is thus really slow! Binning 8 planes for two files takes approximately
-#           3.5 minutes. Alternatively use binning, i.e. plotQPlane.
-#
-#        Kwargs:
-#
-#            - dataFiles (DataFiles): single file or list of files to be binned together (Default self.convertedFiles)
-#
-#            - ax (matplotlib axis): Axis into which the planes are to be plotted (Default None, i.e. new)
-#
-#            - planes (list (of lists)): Planes to be plotted and binned (default [])
-#
-#            - binningDecimals (int): Number of decimal places Q positions are rounded before binning (default 3)
-#            
-#            - log (bool): Whether or not to plot intensities as logarithm (default False)
-#
-#            - returnPatches (bool): If true the method returns the patches otherwise plotted in the given axis (default False)
-#
-#            - A4Extend (float): Angle value with which the boundary is extended away from points in A4 direction (default 0.2)
-#            
-#            - A3Extend (float): Angle value with which the boundary is extended away from points in A3 direction (default 0.5)
-#
-#            - singleFigure (bool): If true, all planes are plotted in same figure (default False)
-#
-#            - plotTessellation (bool): Plot Tessellation of points (default False)
-#
-#            - Ei_err (float): Tolerance of E_i for which the values are equal (default = 0.05)
-#
-#            - temperature_err (float): Tolerance of temperature for which the values are equal (default = 0.2)
-#            
-#            - magneticField_err (float): Tolerance of magnetic field for which the values are equal (default = 0.2)
-#            
-#            - electricField_err (float): Tolerance of electric field for which the values are equal (default = 0.2)
-#
-#        Returns:
-#            
-#            - ax (matplotlib axis or list of): axis (list of) containing figures for plotted planes.
-#
-#        Raises:
-#
-#            - AttributeError
-#
-#        The following example will combine the two files and plot all of the available planes in different figures.
-#
-#        >>> DS = DataSet.DataSet(convertedFiles=[--.nxs,---.nxs])
-#        >>> plt.figure()
-#        >>> ax = plt.gca()
-#        >>>
-#        >>> DataSet.plotQPatches(DS.convertedFiles,ax=ax)
-#
-#        If only a subset of planes or different planes are to be combined the following will achieve this:
-#
-#        >>> DataSet.plotQPatches(DS.convertedFiles,ax=ax,planes=[0,1,2,3,[4,5,6],[8,9]])
-#
-#        Here planes 0 through 3 are plotted separately while 4,5, and 6 as well as 8 and 9 are binned.
-#
-#        .. note::
-#            Binning planes from different analysers might result in nonsensible binnings.
-#
-#        """
-#        if dataFiles is None:
-#            dataFiles = self.convertedFiles
-#        
-#        return plotQPatches(dataFiles,ax=ax,planes=planes,binningDecimals=binningDecimals,log=log,returnPatches=returnPatches,A4Extend=A4Extend,A3Extend=A3Extend,singleFigure=singleFigure,\
-#        plotTessellation=plotTessellation,Ei_err=Ei_err,temperature_err=temperature_err,\
-#        magneticField_err=magneticField_err,electricField_err=electricField_err)
 
     
-    # @_tools.KwargChecker()
-    # def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,dataFiles=None,constantBins=False, backgroundSubtraction = False):
-    #     """
-    #     Method to perform Q-energy cuts from a variable number of points. The function takes both qx/qy or hkl positions. In the case of using only two Q points,
-    #     the method is equivalent to cutQE.
-        
-    #     Args:
-            
-    #         - QPoints (list of points): Q positions between which cuts are performed. Can be specified with both qx, qy or hkl positions dependent on the choice of format.
-            
-    #         - EnergyBins (list of floats): Energy bins for which the cuts are performed
-            
-    #     Kwargs:
-        
-    #         - width (float): Width of the cut in 1/AA (default 0.1).
-            
-    #         - minPixel (float): Minimal size of binning along the cutting directions. Points will be binned if they arecloser than minPixel (default=0.01)
-        
-    #         - rlu (bool): If True, provided QPoints are interpreted as (h,k,l) otherwise as (qx,qy), (default True).
-        
-    #         - dataFiles (list): List of dataFiles to cut. If none, the ones in the object will be used (default None).
-
-    #         - constantBins (bool): If True only bins of size minPixel is used (default False)
-
-    #         - backgroundSubtraction (bool): If true, utilize the Background object on the data set to perform background subtraction (default False)
-        
-    #     .. warning::
-    #         The way the binning works is by extending the end points with 0.5*minPixel, but the method sorts away points not between the two Q points given and thus the start and end
-    #         bins are only half filled. This might result in discrepancies between a single cut and the same cut split into different steps. Further, splitting lines into sub-cuts 
-    #         forces a new binning to be done and the bin positions can then differ from the case where only one cut is performed.
-
-        
-    #     Returns: m = Q points, n = energy bins
-                
-    #         - Data list (pandas DataFrame): See below
-            
-    #         Bin list (m * n * 3 arrays): n instances of bin edge positions in plane of size (m+1,3), orthogonal positions of bin edges in plane of size (2,2), and energy edges of size (2).
-
-    #     .. note::
-    #         If an HKL point outside of the scattering plane is given, the program will just take the projection onto the scattering plane.
-            
-    #     """
-    #     if not isinstance(QPoints,np.ndarray):
-    #         QPoints = np.array(QPoints)
-
-    #     if(len(QPoints)<2):
-    #         raise AttributeError('Number of Q points given is less than 2.')
-    #     if rlu==True: # Recalculate q points into qx and qy points
-    #     #    sample =self.sample[0]
-    #     #    positions = self.convertToQxQy(QPoints)
-    #         pass
-            
-    #     elif rlu==False: # RLU is false
-    #     #    positions = QPoints
-    #         if QPoints.shape[1]!=2:
-    #             raise AttributeError('Provide Q list is not 2 dimensional, should have shape (n,2) in QxQy mode but got shape {}.'.format(QPoints.shape))
-    #     else:
-    #         raise AttributeError('Given Q mode not understood. Got {} but must be either "RLU", "HKL" or "QxQy"')
-
-    #     if EnergyBins.shape == ():
-    #         EnergyBins = np.array([EnergyBins])
-
-    #     if len(EnergyBins.shape)==1 and not isinstance(EnergyBins[0],(list,np.ndarray)):
-    #         EnergyBins = np.array([EnergyBins for _ in range(len(QPoints)-1)]).reshape(len(QPoints)-1,-1)
-
-    #     if not isinstance(width,(list,np.ndarray)):
-    #         width = np.array([width for _ in range(len(QPoints)-1)]).reshape(len(QPoints)-1)
-
-    #     if not isinstance(minPixel,(list,np.ndarray)):
-    #         minPixel = np.array([minPixel for _ in range(len(QPoints)-1)]).reshape(len(QPoints)-1)
-
-    #     DataList = []
-    #     BinList = []
-
-    #     for cutIndex,[pStart,pStop,w,mP,EB] in enumerate(zip(QPoints,QPoints[1:],width,minPixel,EnergyBins)):
-    #         _DataList,_Bins,_minmax = self.cutQE(q1=pStart,q2=pStop,width=w,minPixel=mP,EnergyBins=EB,rlu=rlu,
-    #                                              backgroundSubtraction = backgroundSubtraction,dataFiles=dataFiles,
-    #                                              extend=False,constantBins=constantBins)
-    #         _DataList['qCut']=cutIndex
-    #         DataList.append(_DataList)
-            
-    #         BinList.append(_Bins)
-            
-    #     DataList = pd.concat(DataList)
-    #     return DataList,np.array(BinList,dtype=object)
-
-    
-    @_tools.KwargChecker()
     def cutQELine(self,QPoints,EnergyBins,width=0.1,minPixel=0.01,rlu=True,dataFiles=None,constantBins=True,
                       backgroundSubtraction=False):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
@@ -2326,7 +2128,6 @@ class DataSet(object):
         return DataList,BinList#,OffSets,OffSetWidth    
         
         
-    @_tools.KwargChecker(include=np.concatenate([_tools.MPLKwargs,['log','ticks','seperatorWidth','plotSeperator','seperatorColor','cmap','colorbar','vmin','vmax']]))
     def plotCutQELine(self,QPoints=None,EnergyBins=None,width=0.1,minPixel=0.01,rlu=True,ax=None,dataFiles=None,constantBins=True,
                       outputFunction=print,backgroundSubtraction=False,dataList=None,**kwargs):
         """Plotting wrapper for the cutQELine method. Plots the scattering intensity as a function of Q and E for cuts between specified Q-points.
@@ -2411,11 +2212,11 @@ class DataSet(object):
         if QPoints is None:
             QPoints = [*[self.sample[0].calculateHKLToQxQy(*d[['H','K','L']].iloc[0].to_numpy()) for d in list(dataList)],
                     self.sample[0].calculateHKLToQxQy(*dataList[-1][['H','K','L']].iloc[-1].to_numpy())]
-        else:
+        elif rlu is True:
             QPoints = [self.sample[0].calculateHKLToQxQy(*q) for q in QPoints]
         if not rlu:
 
-            QPoints = [d[['Qx','Qy']].iloc[0].to_numpy() for d in QPoints]
+            QPoints = [d[['Qx','Qy']].iloc[0].to_numpy() for d in dataList]
             QPoints.append(dataList[-1][['Qx','Qy']].iloc[-1].to_numpy())
 
         OffSets = np.cumsum([0,*np.linalg.norm(np.diff(QPoints,axis=0),axis=1)])[:-1]
@@ -2592,7 +2393,7 @@ class DataSet(object):
                 E = np.asarray(df[pdNaming['e']]).reshape(shape)
                 pos = ax.calculatePositionInv(HKL)
                 
-                pos.shape = shape
+                pos = pos.reshape(shape)
                 
                 X,Y = np.meshgrid(pos[0],E[:,0])
                 
@@ -2700,12 +2501,9 @@ class DataSet(object):
                     
                     ax.outputFunction(printString)
 
-            # def onkeypress(event,ax):
-            #     if event.key in ['r']:
-            #         ax.resolutionMode = not ax.resolutionMode    
             ax.onClick = lambda event:onclick(event,ax)
             ax._button_press_event = ax.figure.canvas.mpl_connect('button_press_event',ax.onClick)
-            # ax._key_press_event    = ax.figure.canvas.mpl_connect('key_press_event',lambda event: onkeypress(event, ax) )
+            
             return ax,dataList#, BinList
             
         else: 
@@ -2791,7 +2589,6 @@ class DataSet(object):
         
         return ax,DataList,BinListTotal
 
-    @_tools.KwargChecker()
     def extractData(self, A4 = None, A4Id = None, Ef = None, EfId = None, raw = False, A4Tolerance = 0.1, EfTolerance = 0.1):
         """Extract data given A4 value and Ef (or the corresponding indices).
         
@@ -2871,8 +2668,6 @@ class DataSet(object):
 
         return returnData
 
-    
-    @_tools.KwargChecker()
     def cut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, dataFiles = None,constantBins=False,ufit=False,backgroundSubtraction=False):
         """Perform 1D cut through constant Q point returning binned intensity, monitor, normalization and normcount. The width of the cut is given by 
         the width attribute.
@@ -2990,7 +2785,6 @@ class DataSet(object):
         
         return ufitData
 
-    @_tools.KwargChecker(function=plt.errorbar,include=np.concatenate([_tools.MPLKwargs,['ticks','tickRound','mfc','markeredgewidth','markersize']])) #Advanced KWargs checker for figures
     def plotCut1DE(self,E1,E2,q,rlu=True,width=0.02, minPixel = 0.1, showQ= True, counts=False, 
                    dataFiles = None,constantBins=False,ax=None,ufit=False,data=None,
                    backgroundSubtraction=False,plotForeground=False,plotBackground=False, outputFunction=print,**kwargs):
@@ -3130,7 +2924,7 @@ class DataSet(object):
         return ax,ufitData
 
     @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
-    def cutELine(self, Q1, Q2, EMn=None, EMax=None, energyWidth = 0.05, minPixel = 0.02, 
+    def cutELine(self, Q1, Q2, EMin=None, EMax=None, energyWidth = 0.05, minPixel = 0.02, 
                  width = 0.02, rlu=True, dataFiles=None, constantBins=False, backgroundSubtraction=False):
         """Perform cut along energy in steps between two Q Point 
         
@@ -3417,7 +3211,6 @@ class DataSet(object):
         return ax, Data, Bins
 
 
-    @_tools.KwargChecker(function=createQAxis,include=['Data','bins'])
     def View3D(self,dQx,dQy,dE,rlu=True, log=False,grid=False,axis=2,counts=False,adjustable=True,customSlicer=False,
                instrumentAngles=False,outputFunction=print,backgroundSubtraction=False,cmap=None, CurratAxeBraggList=None,plotCurratAxe=False,
                cut1DFunctionRectangle=None, cut1DFunctionCircle=None, cut1DFunctionRectanglePerp=None,
@@ -3643,7 +3436,8 @@ class DataSet(object):
                 
             
         if customSlicer == True:
-            
+            from MJOLNIR._qt import QtWidgets, QtGui, QtCore
+            from MJOLNIR.Data import Viewer3DPyQtGraph
             if QtWidgets.QApplication.instance() is None:
                 _cache.append(QtWidgets.QApplication(sys.argv))
             win = QtGui.QMainWindow()
@@ -3962,6 +3756,8 @@ class DataSet(object):
             - QDirection (bool): If true ufitdata is created along Q, otherwise energy (default True)
 
         """
+        if Dataset is None:
+            raise AttributeError('ufitData requires ufit to be installed. Please install ufit to use this feature.')
 
         if rlu:
             variables = [pdNaming['h'],pdNaming['k'],pdNaming['l']]
@@ -4378,7 +4174,6 @@ class DataSet(object):
             badEis.append(np.mean(EiInside[elasticLines]))
         return badEis
 
-    @_tools.KwargChecker()
     def symmetrize(self,function):
         """Symmetrize data by providing a custom function
 
@@ -4418,7 +4213,6 @@ def load(filename):
         return tmp_dict
 
 @_tools.deprecateKwarg({'Emin':'EMin','Emax':'EMax'})
-@_tools.KwargChecker()
 def cut1D(positions,I,Norm,Monitor,q1,q2,width,minPixel,EMin,EMax,I_err=None,background=None,plotCoverage=False,extend=False,constantBins=False):
     """Perform 1D cut through constant energy plane from q1 to q2 returning binned intensity, monitor, normalization and normcount. The full width of the line is width while height is given by EMin and EMax. 
     the minimum step sizes is given by minPixel.
@@ -4594,7 +4388,7 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,I_err=None,constantBi
         
     """
     if len(q.shape)==1:
-        q.shape = (2,1)
+        q = q.reshape((2,1))
     distToQ = np.linalg.norm(positions[:2]-q,axis=0)
 
     inside = distToQ<width
@@ -4638,8 +4432,6 @@ def cut1DE(positions,I,Norm,Monitor,E1,E2,q,width,minPixel,I_err=None,constantBi
     return returnData,[bins]
 
 
-
-@_tools.KwargChecker()
 def cutPowder(positions,I,Norm,Monitor,EBins,QBins, background=None):
     """Cut data powder map with intensity as function of the length of q and energy. 
 
@@ -4708,9 +4500,6 @@ def cutPowder(positions,I,Norm,Monitor,EBins,QBins, background=None):
     return _data
 
 
-
-
-@_tools.KwargChecker()
 def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=False,singleFigure=False,plotTessellation=False,Ei_err = 0.05,temperature_err=0.2,magneticField_err=0.2,electricField_err=0.2): # pragma: no cover
     """Plot data files together with pixels created around each point in A3-A4 space. Data is binned in the specified planes through their A3 and A4 values. 
     This can result in distorted binning when binning across large energy regions. Data is plotted using the pixels calculated for average plane value, i.e. 
@@ -5069,8 +4858,6 @@ def plotA3A4(files,ax=None,planes=[],binningDecimals=3,log=False,returnPatches=F
 
 
 
-
-@_tools.KwargChecker() # Following function is not used
 def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0): # pragma: no cover
     """Calculate the boundary of a given scan in Q space
     A4Extend: in degrees
@@ -5101,10 +4888,10 @@ def boundaryQ(file,plane,A4Extend=0.0,A3Extend=0.0): # pragma: no cover
         kfmax=np.array([kfmax])
         A4Min = np.array([A4Min])
         A4Max = np.array([A4Max])
-    kfmin.shape= (-1)
-    kfmax.shape= (-1)
-    A4Min.shape= (-1)
-    A4Max.shape= (-1)
+    kfmin = kfmin.reshape((-1))
+    kfmax = kfmax.reshape((-1))
+    A4Min = A4Min.reshape((-1))
+    A4Max = A4Max.reshape((-1))
     
     A4Min-=A4Extend*np.pi/180.0
     A4Max+=A4Extend*np.pi/180.0
@@ -5302,7 +5089,6 @@ def calculateGrid3D(X,Y,Z):
 
 
 
-@_tools.KwargChecker()
 def binData3D(dx,dy,dz,pos,data,norm=None,mon=None,bins=None):
     """ 3D binning of data.
 
@@ -5586,7 +5372,7 @@ def generate1DAxis(q1,q2,ds,rlu=True,showEnergy=True,dimensionality=1,outputFunc
     
     def calculatePositionInv(ax,HKL):
         HKL = np.asarray(HKL).copy()
-        HKL.shape = (-1,len(variables)-1)
+        HKL = HKL.reshape(-1,len(variables)-1)
         return np.dot((HKL-ax.startPoint),ax.plotDirection)/(np.dot(ax.plotDirection.T,ax.plotDirection))
     
     # Add methods to the axis

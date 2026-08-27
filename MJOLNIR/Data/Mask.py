@@ -5,11 +5,7 @@ from MJOLNIR.Data import DataSet,DataFile
 import sympy
 import warnings
 import pickle
-# Compability of python 2 and 3 with metaclasses
-# Python 2 and 3:
-from six import with_metaclass
-# or
-from future.utils import with_metaclass
+import re
 
 def requiredArguments(func,requiredNames):
     """Return list of arguments not found in arguments of func"""
@@ -59,7 +55,7 @@ class MaskingObjectMeta(ABCMeta):
         return ABCMeta.__new__(mcls,name,bases,namespace)
     
             
-class MaskingObject(with_metaclass(MaskingObjectMeta)):
+class MaskingObject(metaclass=MaskingObjectMeta):#with_metaclass(MaskingObjectMeta)):
     """Base class for all masking objects"""
     #dimensionality = '2D'
     def __init__(self,coordinates=None,maskInside=True,name=None):
@@ -286,8 +282,11 @@ def RotationMatrix3D(theta,n=None,deg=True):
     else:
         n = np.array(n,dtype=float)
         n*=1.0/np.linalg.norm(n)
-        cost = np.cos(theta)
-        sint = np.sin(theta)
+        cost = np.cos(theta).item()
+        sint = np.sin(theta).item()
+        print("DEBUG:",type(cost), np.shape(cost))
+        print("DEBUG:",type(n), np.shape(n))
+        print("DEBUG:",type(n[0]), np.shape(n[0]))
         M = np.zeros((3,3))
          # taken from http://scipp.ucsc.edu/~haber/ph216/rotation_12.pdf
         M[0,0] = cost+n[0]**2*(1-cost)
@@ -468,10 +467,10 @@ class rectangleMask(MaskingObject):
         # calculate mask by rotating all points so rectangle is along coordinate axes
         # This makes the logical checks easy
         pointShape = points.shape[1:]
-        points.shape = (2,-1)
+        points = points.reshape((2,-1))
         
         rotatedPoints = np.einsum('ij,jk->ik',self.rotationMatrix,np.array(points)-self.center)
-        rotatedPoints.shape = np.concatenate([[2],pointShape])
+        rotatedPoints = rotatedPoints.reshape(np.concatenate([[2],pointShape]))
         logic = np.array([np.logical_and(x>-0.5*edge,x<0.5*edge) for x,edge in zip(rotatedPoints,[self.height,self.length])])
         
         mask = np.all(logic,axis=0)
@@ -645,10 +644,10 @@ class boxMask(MaskingObject):
         # This makes the logical checks easy
         pointShape = points.shape[1:]
         
-        points.shape = (3,-1)
+        points = points.reshape((3,-1))
         
         rotatedPoints = np.einsum('ij,jk->ik',self.rotationMatrix,np.array(points)-self.center.T)
-        rotatedPoints.shape = np.concatenate([[3],pointShape]).astype(int)
+        rotatedPoints = rotatedPoints.reshape(np.concatenate([[3],pointShape]).astype(int))
         logic = np.array([np.logical_and(x>=-0.5*edge,x<=0.5*edge) for x,edge in zip(rotatedPoints,[self.length,self.height,self.width])])
         
         mask = np.all(logic,axis=0)
@@ -751,10 +750,10 @@ class circleMask(MaskingObject):
                     points = np.array([x,y,z])
         
         pointShape = points.shape[1:]
-        points.shape = (points.shape[0],-1)
+        points = points.reshape((points.shape[0],-1))
         
         mask = np.linalg.norm(points-self.center,axis=0)<=self.radius
-        mask.shape = pointShape
+        mask = mask.reshape(pointShape)
         
         if self.maskInside == False:
             mask = np.logical_not(mask)
@@ -858,12 +857,17 @@ class CurratAxeMask(MaskingObject):
         return x.calculateCurratAxeMask(self.braggPeaks,dqx=self.dqx,dqy=self.dqy,dH=self.dH,dK=self.dK,dL=self.dL,spurionType=self.spurionType,maskInside=self.maskInside)
 
 
-def parse(string,masks):
-    for m in masks:
-        locals()[m.name]=m
-    
-    return eval(string)
+def parse(string, masks):
+    namespace = {m.name: m for m in masks}
+    if not re.fullmatch(r'[\w\s+*()]+', string):
+        raise ValueError("Invalid mask expression")
 
+    names = re.findall(r'[A-Za-z_][A-Za-z0-9_]*', string)
+
+    if any(name not in namespace for name in names):
+        raise ValueError("Unknown mask")
+
+    return eval(string, {"__builtins__": {}}, namespace)
 
 
 def flatten(t):

@@ -23,6 +23,20 @@ version = sys.argv[1]
 # 	f.write(writeLines)
 
 
+## Pixi toml
+with open('pixi.toml') as f:
+	lines = f.readlines()
+	writeLines = ''
+	for l in lines:
+		if l.find('version = "')!=-1:
+			l = 'version = "'+version+'"\n'
+		writeLines+=l
+			
+with open('pixi.toml','w') as f:
+	f.write(writeLines)
+
+
+
 
 with open('docs/conf.py') as f:
 	lines = f.readlines()

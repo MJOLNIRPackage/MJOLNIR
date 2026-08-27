@@ -11,14 +11,8 @@ from  matplotlib.backend_tools import Cursors as cursors
 import MJOLNIR
 import os
 
-try:
-    from PyQt5.QtCore import Qt
-    QtVersion = 5
-except ImportError:
-    from PyQt6.QtCore import Qt
-    QtVersion = 6
+from MJOLNIR._qt import pointerType
 
-#from PyQt5.QtGui import QCursor, QPixmap
 
 import sys
 from collections import defaultdict
@@ -108,6 +102,8 @@ def setupModes(ax):
 
 
 def setCursor(ax,cursor):
+    if cursor is None: # No Qt installed
+        return
     try:
         ax.get_figure().canvas.setCursor(cursor)
     except AttributeError:
@@ -156,24 +152,6 @@ Modes= Enum('Modes', modes)
 #CutImageLocation = os.path.join(os.path.split(MJOLNIR.Data.__file__)[0],'scissors.png')
 #CutCursor = QCursor(QPixmap(CutImageLocation))
 
-
-## Cursor type mode
-if QtVersion == 5:
-    pointerType = defaultdict(lambda: Qt.ArrowCursor)
-    pointerType['CUTTING_EMPTY'] = Qt.ForbiddenCursor
-    pointerType['CUTTING_INITIAL'] = Qt.CrossCursor
-    pointerType['CUTTING_WIDTH'] = Qt.CrossCursor
-    pointerType['CUTTING_DIRECTION'] = Qt.CrossCursor
-    pointerType['CUTTING_MOVE'] = Qt.OpenHandCursor
-    pointerType['RESOLUTION'] = Qt.BlankCursor
-else:
-    pointerType = defaultdict(lambda: Qt.CursorShape.ArrowCursor)
-    pointerType['CUTTING_EMPTY'] = Qt.CursorShape.ForbiddenCursor
-    pointerType['CUTTING_INITIAL'] = Qt.CursorShape.CrossCursor
-    pointerType['CUTTING_WIDTH'] = Qt.CursorShape.CrossCursor
-    pointerType['CUTTING_DIRECTION'] = Qt.CursorShape.CrossCursor
-    pointerType['CUTTING_MOVE'] = Qt.CursorShape.OpenHandCursor
-    pointerType['RESOLUTION'] = Qt.CursorShape.BlankCursor
 
 
 def resetUsingKey(ax,keys):
@@ -321,9 +299,10 @@ def initializeRESOLUTION(ax):
                     #C[0]/=np.linalg.norm(dirVector)**2
 
                     eigenValues,eigenVectors = np.linalg.eig(C[:2,:2])
-                    sigma = np.power(eigenValues,-0.5)
+                    sigma = np.power(eigenValues.real,-0.5)
                     # M,eigenVectors,sigma = ax.ds.calculateResolutionMatrixAndVectors(pos,P1,P2,Ei,Ef,rlu=ax.rlu,rluAxis=True)
                     
+                    eigenVectors = eigenVectors.real
                     ellipseColor = ax.EiColors[Ei]
                     angle = -np.rad2deg(np.arctan2(*eigenVectors[0,::-1])) 
                     E.set_center(np.array([x,y]))

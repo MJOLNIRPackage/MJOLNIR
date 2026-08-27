@@ -1,7 +1,4 @@
-import sys,os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
+import os
 import numpy as np
 from MJOLNIR.Geometry import GeometryConcept,Analyser,Detector,Wedge
 from MJOLNIR import _tools
@@ -11,21 +8,17 @@ from MJOLNIR.Data import RLUAxes,DataFile
 from MJOLNIR.TasUBlibDEG import factorsqrtEK
 import warnings
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import scipy.optimize
 from scipy.stats import norm
 import h5py as hdf
 import datetime
-import pytest
 from MJOLNIR.Geometry.eck_Flipped import get_E, get_scattering_angle,get_mono_angle,get_angle_ki_Q,get_angle_kf_Q,calc_eck
-from MJOLNIR import _interactiveSettings
 
 NumberOfSigmas= 3.0 # Defining the active area of a peak on a detector as \pm n*sigma
 predictionInstrumentSupport = ['CAMEA','MultiFLEXX','Bambus'] # Instrument supported in prediction function
 
 
 class Instrument(GeometryConcept.GeometryConcept):
-    @_tools.KwargChecker(include=['Author','Instrument','Date','Initialized']) # Not used as excess kwargs are put into settings
     def __init__(self, position=(0,0,0),wedges=[],fileName='',**kwargs):
         """Instrument object used to calculated analytic scattering coverage. 
         Based on the GeometryConcept object it contains all needed information about the setup used in further calculations.
@@ -314,7 +307,6 @@ class Instrument(GeometryConcept.GeometryConcept):
         with open(fileName,'w') as f:
             f.write(string)
 
-    @_tools.KwargChecker()
     def generateCalibration(self,Vanadiumdatafile,A4datafile=False,savelocation='calibration/', 
     tables=['Single','PrismaticLowDefinition','PrismaticHighDefinition'], plot=False, mask=True, adaptiveBinning=False, ignoreTubes=None,
     sample='V',sampleMass=None,sampleDebyeWallerFactor=1.0,formulaUnitsPerUnitCell=1.0,sampleIncoherent=5.08):

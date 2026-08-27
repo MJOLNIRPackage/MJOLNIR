@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import sys, os
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
-
-
 import numpy as np
 import pickle as pickle
 import matplotlib.pyplot as plt

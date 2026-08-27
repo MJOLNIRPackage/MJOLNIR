@@ -1,7 +1,3 @@
-import sys
-sys.path.append('.')
-sys.path.append('..')
-sys.path.append('../..')
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.gridspec
@@ -125,7 +121,6 @@ class Viewer1D: # pragma: no cover
     initialText = r'Press "i" to initialize fitting procedure.'    
     fitObjects = FittingFunction.__subclasses__()
 
-    @_tools.KwargChecker()
     def __init__(self, XData,YData,YErr,fitFunction=fitObjects[0](),xLabel='',dataLabel='',xID = 0, plotAll = False,**kwargs):
         """Interactive visualization of 1D data with fitting capabilities. Currently only inteded for 1 scan file.
         
