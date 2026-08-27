@@ -5,6 +5,10 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.dynamic]
 version = {attr = "MJOLNIR.__version__"}
 
+[tool.setuptools.packages.find]
+include = ["MJOLNIR*"]
+
+
 [project]
 name = "MJOLNIR"
 dynamic = ["version"]
